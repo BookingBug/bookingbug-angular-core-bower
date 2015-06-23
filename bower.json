@@ -1,12 +1,15 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
     "Ed Clements <ed@bookingbug.com>"
   ],
-  "main": "bookingbug-angular-core.js",
+  "main": [
+    "bookingbug-angular-core.js",
+    "bookingbug-angular-core-templates.js"
+  ],
   "license": "MIT",
   "ignore": [
     "**/.*",
@@ -38,7 +41,6 @@
     "fontawesome": "~4.2.0",
     "ng-idle": "~0.3.5",
     "underscore": "~1.7.0",
-    "angular-ui-calendar": "~1.0.0",
     "sprintf": "~1.0.2",
     "angular-bootstrap": "https://github.com/BookingBug/bootstrap-bower.git#774d6a295da0813aac23cd1cf6e9ca396a461232",
     "angular-google-maps": "~2.0.15",
@@ -51,7 +53,6 @@
     "angular-slick": "~0.2.1",
     "angular-translate-storage-cookie": "~2.6.1",
     "uri-templates": "~0.1.5",
-    "fullcalendar": "2.3.1",
     "angular-recaptcha": "~2.2.3"
   }
 }
