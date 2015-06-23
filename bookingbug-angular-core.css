@@ -1,0 +1,12 @@
+[pricepicker] {
+  position: relative; }
+  [pricepicker] input {
+    padding-left: 22px; }
+  [pricepicker] span {
+    position: absolute;
+    padding: 7px 12px;
+    pointer-events: none; }
+
+img.loader {
+  margin: auto;
+  display: block; }
