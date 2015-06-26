@@ -53,7 +53,6 @@
     "angular-slick": "~0.2.1",
     "angular-translate-storage-cookie": "~2.6.1",
     "uri-templates": "~0.1.5",
-    "angular-recaptcha": "~2.2.3",
-    "angulartics": "~0.17.2"
+    "angular-recaptcha": "~2.2.3"
   }
 }
