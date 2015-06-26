@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -55,6 +55,5 @@
     "uri-templates": "~0.1.5",
     "angular-recaptcha": "~2.2.3",
     "angulartics": "~0.17.2"
-
   }
 }
