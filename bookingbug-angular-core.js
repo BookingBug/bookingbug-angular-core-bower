@@ -5329,6 +5329,7 @@ function getURIparam( name ){
         params.event_chain_id = $scope.bb.item_defaults.event_chain;
       }
       chains = $scope.loadEventChainData(comp);
+      $scope.events = {};
       EventService.query(comp, params).then(function(events) {
         var key, value;
         events = _.groupBy(events, function(event) {
@@ -10933,7 +10934,7 @@ function getURIparam( name ){
               for (j = 0, len1 = ref1.length; j < len1; j++) {
                 day = ref1[j];
                 if ((day.data && day.data.spaces > 0) && (day.date.isSame(month.start_date, 'day') || day.date.isAfter(month.start_date, 'day'))) {
-                  $scope.showDate(day.date);
+                  $scope.showDay(day);
                   return;
                 }
               }
