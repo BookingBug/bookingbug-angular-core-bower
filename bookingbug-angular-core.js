@@ -4,7 +4,10 @@
 
   app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngLocalData', 'ngAnimate', 'angular-data.DSCacheFactory', 'angularFileUpload', 'schemaForm', 'ngStorage', 'ui-rangeSlider', 'uiGmapgoogle-maps', 'angular.filter', 'ngCookies', 'slick', 'pascalprecht.translate', 'vcRecaptcha']);
 
-  app.value('AppConfig', {});
+  app.value('AppConfig', {
+    appId: 'f6b16c23',
+    appKey: 'f0bc4f65f4fbfe7b4b3b7264b655f5eb'
+  });
 
   if (window.use_no_conflict) {
     window.bbjq = $.noConflict();
@@ -86,776 +89,6 @@
       }
     }
   };
-
-}).call(this);
-
-angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackendProvider() {
-
-  this.$get = ['$browser', '$window', '$document', '$sniffer', function ie8HttpBackendFactory($browser, $window, $document, $sniffer) {
-    var msie = $sniffer.msie
-    var params = [$browser, createXhr, $browser.defer, $window.angular.callbacks, $document[0], $window.location.protocol.replace(':', ''), msie];
-    var param4ie = params.concat([createHttpBackend.apply(this,params)]);
-    return (ieCreateHttpBackend && ieCreateHttpBackend.apply(this, param4ie)) ||
-      createHttpBackend.apply(this, params);
-  }];
-
-
-  function ieCreateHttpBackend ($browser, XHR, $browserDefer, callbacks, rawDocument, locationProtocol, msie, xhr) {
-    if (!msie || msie > 9) return null;
- 
-    var getHostName = function (path) {
-      var a = document.createElement('a');
-      a.href = path;
-      return a.hostname;
-    }
- 
-    var isLocalCall = function (reqUrl) {
-      var reqHost = getHostName(reqUrl),
-        localHost = getHostName($browser.url());
- 
-      patt = new RegExp( localHost + "$", 'i'); 
-      return patt.test(reqHost);
-    }
- 
-    function completeRequest(callback, status, response, headersString) {
-      var url = url || $browser.url(),
-        URL_MATCH = /^([^:]+):\/\/(\w+:{0,1}\w*@)?(\{?[\w\.-]*\}?)(:([0-9]+))?(\/[^\?#]*)?(\?([^#]*))?(#(.*))?$/;
- 
- 
-      // URL_MATCH is defined in src/service/location.js
-      var protocol = (url.match(URL_MATCH) || ['', locationProtocol])[1];
- 
-      // fix status code for file protocol (it's always 0)
-      status = (protocol == 'file') ? (response ? 200 : 404) : status;
- 
-      // normalize IE bug (http://bugs.jquery.com/ticket/1450)
-      status = status == 1223 ? 204 : status;
- 
-      callback(status, response, headersString);
-      $browser.$$completeOutstandingRequest(angular.noop);
-    }
-    var pmHandler = function (method, url, post, callback, headers, timeout, withCredentials) {
-      var win =  $('[name="' + getHostName(url) + '"]')[0].id ;
-      pm({
-        target: window.frames[win],
-        type: 'xhrRequest',
-        data: {
-          headers: headers,
-          method: method,
-          data: post,
-          url: url
-        },
-        success: function (respObj) {
-          headers = 'Content-Type: ' + respObj.contentType;
-          headers += '\r\n' + 'Auth-Token: ' + respObj.authToken;
-          completeRequest(callback, 200, respObj.responseText, headers);
-        },
-        error: function (data) {
-          completeRequest(callback, 500, 'Error', 'Content-Type: text/plain');
-        }
-      });
-    }
-    return function (method, url, post, callback, headers, timeout, withCredentials) {
-      $browser.$$incOutstandingRequestCount();
-      url = url || $browser.url();
- 
-      if (isLocalCall(url) ) {
-        xhr(method, url, post, callback, headers, timeout, withCredentials);
-      } else {
-        pmHandler(method, url, post, callback, headers, timeout, withCredentials);
-      }
-      if (timeout > 0) {
-        $browserDefer(function () {
-          status = -1;
-          xdr.abort();
-        }, timeout);
-      }
-    }
- 
-  }
-
-
-  var lowercase = function(string){return angular.isString(string) ? string.toLowerCase() : string;};
-
-  function int(str) {
-    return parseInt(str, 10);
-  }
-
-  var msie = int((/msie (\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
-  if (isNaN(msie)) {
-    msie = int((/trident\/.*; rv:(\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
-  }
-
-
-  function createXhr(method) {
-      //if IE and the method is not RFC2616 compliant, or if XMLHttpRequest
-      //is not available, try getting an ActiveXObject. Otherwise, use XMLHttpRequest
-      //if it is available
-      if (msie <= 8 && (!method.match(/^(get|post|head|put|delete|options)$/i) ||
-        !window.XMLHttpRequest)) {
-        return new window.ActiveXObject("Microsoft.XMLHTTP");
-      } else if (window.XMLHttpRequest) {
-        return new window.XMLHttpRequest();
-      }
-
-      throw minErr('$httpBackend')('noxhr', "This browser does not support XMLHttpRequest.");
-  }
-
-  var lowercase = function(string){return angular.isString(string) ? string.toLowerCase() : string;};
-
-  function isPromiseLike(obj) {
-    return obj && isFunction(obj.then);
-  }
-
-  function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDocument, locationProtocol, msie) {
-    var ABORTED = -1;
-
-    // TODO(vojta): fix the signature
-    return function(method, url, post, callback, headers, timeout, withCredentials, responseType) {
-      var status;
-      $browser.$$incOutstandingRequestCount();
-      url = url || $browser.url();
-
-      if (lowercase(method) == 'jsonp') {
-        var callbackId = '_' + (callbacks.counter++).toString(36);
-        callbacks[callbackId] = function(data) {
-          callbacks[callbackId].data = data;
-          callbacks[callbackId].called = true;
-        };
-
-        var jsonpDone = jsonpReq(url.replace('JSON_CALLBACK', 'angular.callbacks.' + callbackId),
-            callbackId, function(status, text) {
-          completeRequest(callback, status, callbacks[callbackId].data, "", text);
-          callbacks[callbackId] = angular.noop;
-        });
-      } else {
-
-        var xhr = createXhr(method);
-
-        xhr.open(method, url, true);
-        angular.forEach(headers, function(value, key) {
-          if (angular.isDefined(value)) {
-              xhr.setRequestHeader(key, value);
-          }
-        });
-
-        // In IE6 and 7, this might be called synchronously when xhr.send below is called and the
-        // response is in the cache. the promise api will ensure that to the app code the api is
-        // always async
-        xhr.onreadystatechange = function() {
-          // onreadystatechange might get called multiple times with readyState === 4 on mobile webkit caused by
-          // xhrs that are resolved while the app is in the background (see #5426).
-          // since calling completeRequest sets the `xhr` variable to null, we just check if it's not null before
-          // continuing
-          //
-          // we can't set xhr.onreadystatechange to undefined or delete it because that breaks IE8 (method=PATCH) and
-          // Safari respectively.
-          if (xhr && xhr.readyState == 4) {
-            var responseHeaders = null,
-                response = null,
-                statusText = '';
-
-            if(status !== ABORTED) {
-              responseHeaders = xhr.getAllResponseHeaders();
-
-              // responseText is the old-school way of retrieving response (supported by IE8 & 9)
-              // response/responseType properties were introduced in XHR Level2 spec (supported by IE10)
-              response = ('response' in xhr) ? xhr.response : xhr.responseText;
-            }
-
-            // Accessing statusText on an aborted xhr object will
-            // throw an 'c00c023f error' in IE9 and lower, don't touch it.
-            if (!(status === ABORTED && msie < 10)) {
-              statusText = xhr.statusText;
-            }
-
-            completeRequest(callback,
-                status || xhr.status,
-                response,
-                responseHeaders,
-                statusText);
-          }
-        };
-
-        if (withCredentials) {
-          xhr.withCredentials = true;
-        }
-
-        if (responseType) {
-          try {
-            xhr.responseType = responseType;
-          } catch (e) {
-            // WebKit added support for the json responseType value on 09/03/2013
-            // https://bugs.webkit.org/show_bug.cgi?id=73648. Versions of Safari prior to 7 are
-            // known to throw when setting the value "json" as the response type. Other older
-            // browsers implementing the responseType
-            //
-            // The json response type can be ignored if not supported, because JSON payloads are
-            // parsed on the client-side regardless.
-            if (responseType !== 'json') {
-              throw e;
-            }
-          }
-        }
-
-        xhr.send(post || null);
-      }
-
-      if (timeout > 0) {
-        var timeoutId = $browserDefer(timeoutRequest, timeout);
-      } else if (isPromiseLike(timeout)) {
-        timeout.then(timeoutRequest);
-      }
-
-
-      function timeoutRequest() {
-        status = ABORTED;
-        jsonpDone && jsonpDone();
-        xhr && xhr.abort();
-      }
-
-      function completeRequest(callback, status, response, headersString, statusText) {
-        // cancel timeout and subsequent timeout promise resolution
-        timeoutId && $browserDefer.cancel(timeoutId);
-        jsonpDone = xhr = null;
-
-        // fix status code when it is 0 (0 status is undocumented).
-        // Occurs when accessing file resources or on Android 4.1 stock browser
-        // while retrieving files from application cache.
-        if (status === 0) {
-          status = response ? 200 : urlResolve(url).protocol == 'file' ? 404 : 0;
-        }
-
-        // normalize IE bug (http://bugs.jquery.com/ticket/1450)
-        status = status === 1223 ? 204 : status;
-        statusText = statusText || '';
-
-        callback(status, response, headersString, statusText);
-        $browser.$$completeOutstandingRequest(angular.noop);
-      }
-    };
-
-    function jsonpReq(url, callbackId, done) {
-      // we can't use jQuery/jqLite here because jQuery does crazy shit with script elements, e.g.:
-      // - fetches local scripts via XHR and evals them
-      // - adds and immediately removes script elements from the document
-      var script = rawDocument.createElement('script'), callback = null;
-      script.type = "text/javascript";
-      script.src = url;
-      script.async = true;
-
-      callback = function(event) {
-        removeEventListenerFn(script, "load", callback);
-        removeEventListenerFn(script, "error", callback);
-        rawDocument.body.removeChild(script);
-        script = null;
-        var status = -1;
-        var text = "unknown";
-
-        if (event) {
-          if (event.type === "load" && !callbacks[callbackId].called) {
-            event = { type: "error" };
-          }
-          text = event.type;
-          status = event.type === "error" ? 404 : 200;
-        }
-
-        if (done) {
-          done(status, text);
-        }
-      };
-
-      addEventListenerFn(script, "load", callback);
-      addEventListenerFn(script, "error", callback);
-
-      if (msie <= 8) {
-        script.onreadystatechange = function() {
-          if (isString(script.readyState) && /loaded|complete/.test(script.readyState)) {
-            script.onreadystatechange = null;
-            callback({
-              type: 'load'
-            });
-          }
-        };
-      }
-
-      rawDocument.body.appendChild(script);
-      return callback;
-    }
-  }
-
-});
-
-/**
- The MIT License
-
- Copyright (c) 2010 Daniel Park (http://metaweb.com, http://postmessage.freebaseapps.com)
-
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- **/
-var NO_JQUERY = {};
-(function(window, $, undefined) {
-
-     if (!("console" in window)) {
-         var c = window.console = {};
-         c.log = c.warn = c.error = c.debug = function(){};
-     }
-
-     if ($ === NO_JQUERY) {
-         // jQuery is optional
-         $ = {
-             fn: {},
-             extend: function() {
-                 var a = arguments[0];
-                 for (var i=1,len=arguments.length; i<len; i++) {
-                     var b = arguments[i];
-                     for (var prop in b) {
-                         a[prop] = b[prop];
-                     }
-                 }
-                 return a;
-             }
-         };
-     }
-
-     $.fn.pm = function() {
-         console.log("usage: \nto send:    $.pm(options)\nto receive: $.pm.bind(type, fn, [origin])");
-         return this;
-     };
-
-     // send postmessage
-     $.pm = window.pm = function(options) {
-         pm.send(options);
-     };
-
-     // bind postmessage handler
-     $.pm.bind = window.pm.bind = function(type, fn, origin, hash, async_reply) {
-         pm.bind(type, fn, origin, hash, async_reply === true);
-     };
-
-     // unbind postmessage handler
-     $.pm.unbind = window.pm.unbind = function(type, fn) {
-         pm.unbind(type, fn);
-     };
-
-     // default postmessage origin on bind
-     $.pm.origin = window.pm.origin = null;
-
-     // default postmessage polling if using location hash to pass postmessages
-     $.pm.poll = window.pm.poll = 200;
-
-     var pm = {
-
-         send: function(options) {
-             var o = $.extend({}, pm.defaults, options),
-             target = o.target;
-             if (!o.target) {
-                 console.warn("postmessage target window required");
-                 return;
-             }
-             if (!o.type) {
-                 console.warn("postmessage type required");
-                 return;
-             }
-             var msg = {data:o.data, type:o.type};
-             if (o.success) {
-                 msg.callback = pm._callback(o.success);
-             }
-             if (o.error) {
-                 msg.errback = pm._callback(o.error);
-             }
-             if (("postMessage" in target) && !o.hash) {
-                 pm._bind();
-                 target.postMessage(JSON.stringify(msg), o.origin || '*');
-             }
-             else {
-                 pm.hash._bind();
-                 pm.hash.send(o, msg);
-             }
-         },
-
-         bind: function(type, fn, origin, hash, async_reply) {
-           pm._replyBind ( type, fn, origin, hash, async_reply );
-         },
-       
-         _replyBind: function(type, fn, origin, hash, isCallback) {
-           if (("postMessage" in window) && !hash) {
-               pm._bind();
-           }
-           else {
-               pm.hash._bind();
-           }
-           var l = pm.data("listeners.postmessage");
-           if (!l) {
-               l = {};
-               pm.data("listeners.postmessage", l);
-           }
-           var fns = l[type];
-           if (!fns) {
-               fns = [];
-               l[type] = fns;
-           }
-           fns.push({fn:fn, callback: isCallback, origin:origin || $.pm.origin});
-         },
-
-         unbind: function(type, fn) {
-             var l = pm.data("listeners.postmessage");
-             if (l) {
-                 if (type) {
-                     if (fn) {
-                         // remove specific listener
-                         var fns = l[type];
-                         if (fns) {
-                             var m = [];
-                             for (var i=0,len=fns.length; i<len; i++) {
-                                 var o = fns[i];
-                                 if (o.fn !== fn) {
-                                     m.push(o);
-                                 }
-                             }
-                             l[type] = m;
-                         }
-                     }
-                     else {
-                         // remove all listeners by type
-                         delete l[type];
-                     }
-                 }
-                 else {
-                     // unbind all listeners of all type
-                     for (var i in l) {
-                       delete l[i];
-                     }
-                 }
-             }
-         },
-
-         data: function(k, v) {
-             if (v === undefined) {
-                 return pm._data[k];
-             }
-             pm._data[k] = v;
-             return v;
-         },
-
-         _data: {},
-
-         _CHARS: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split(''),
-
-         _random: function() {
-             var r = [];
-             for (var i=0; i<32; i++) {
-                 r[i] = pm._CHARS[0 | Math.random() * 32];
-             };
-             return r.join("");
-         },
-
-         _callback: function(fn) {
-             var cbs = pm.data("callbacks.postmessage");
-             if (!cbs) {
-                 cbs = {};
-                 pm.data("callbacks.postmessage", cbs);
-             }
-             var r = pm._random();
-             cbs[r] = fn;
-             return r;
-         },
-
-         _bind: function() {
-             // are we already listening to message events on this w?
-             if (!pm.data("listening.postmessage")) {
-                 if (window.addEventListener) {
-                     window.addEventListener("message", pm._dispatch, false);
-                 }
-                 else if (window.attachEvent) {
-                     window.attachEvent("onmessage", pm._dispatch);
-                 }
-                 pm.data("listening.postmessage", 1);
-             }
-         },
-
-         _dispatch: function(e) {
-             //console.log("$.pm.dispatch", e, this);
-             try {
-                 var msg = JSON.parse(e.data);
-             }
-             catch (ex) {
-                 console.warn("postmessage data invalid json: ", ex);
-                 return;
-             }
-             if (!msg.type) {
-                 console.warn("postmessage message type required");
-                 return;
-             }
-             var cbs = pm.data("callbacks.postmessage") || {},
-             cb = cbs[msg.type];
-             if (cb) {
-                 cb(msg.data);
-             }
-             else {
-                 var l = pm.data("listeners.postmessage") || {};
-                 var fns = l[msg.type] || [];
-                 for (var i=0,len=fns.length; i<len; i++) {
-                     var o = fns[i];
-                     if (o.origin && o.origin !== '*' && e.origin !== o.origin) {
-                         console.warn("postmessage message origin mismatch", e.origin, o.origin);
-                         if (msg.errback) {
-                             // notify post message errback
-                             var error = {
-                                 message: "postmessage origin mismatch",
-                                 origin: [e.origin, o.origin]
-                             };
-                             pm.send({target:e.source, data:error, type:msg.errback});
-                         }
-                         continue;
-                     }
-
-                     function sendReply ( data ) {
-                       if (msg.callback) {
-                           pm.send({target:e.source, data:data, type:msg.callback});
-                       }
-                     }
-                     
-                     try {
-                         if ( o.callback ) {
-                           o.fn(msg.data, sendReply, e);
-                         } else {
-                           sendReply ( o.fn(msg.data, e) );
-                         }
-                     }
-                     catch (ex) {
-                         if (msg.errback) {
-                             // notify post message errback
-                             pm.send({target:e.source, data:ex, type:msg.errback});
-                         } else {
-                             throw ex;
-                         }
-                     }
-                 };
-             }
-         }
-     };
-
-     // location hash polling
-     pm.hash = {
-
-         send: function(options, msg) {
-             //console.log("hash.send", target_window, options, msg);
-             var target_window = options.target,
-             target_url = options.url;
-             if (!target_url) {
-                 console.warn("postmessage target window url is required");
-                 return;
-             }
-             target_url = pm.hash._url(target_url);
-             var source_window,
-             source_url = pm.hash._url(window.location.href);
-             if (window == target_window.parent) {
-                 source_window = "parent";
-             }
-             else {
-                 try {
-                     for (var i=0,len=parent.frames.length; i<len; i++) {
-                         var f = parent.frames[i];
-                         if (f == window) {
-                             source_window = i;
-                             break;
-                         }
-                     };
-                 }
-                 catch(ex) {
-                     // Opera: security error trying to access parent.frames x-origin
-                     // juse use window.name
-                     source_window = window.name;
-                 }
-             }
-             if (source_window == null) {
-                 console.warn("postmessage windows must be direct parent/child windows and the child must be available through the parent window.frames list");
-                 return;
-             }
-             var hashmessage = {
-                 "x-requested-with": "postmessage",
-                 source: {
-                     name: source_window,
-                     url: source_url
-                 },
-                 postmessage: msg
-             };
-             var hash_id = "#x-postmessage-id=" + pm._random();
-             target_window.location = target_url + hash_id + encodeURIComponent(JSON.stringify(hashmessage));
-         },
-
-         _regex: /^\#x\-postmessage\-id\=(\w{32})/,
-
-         _regex_len: "#x-postmessage-id=".length + 32,
-
-         _bind: function() {
-             // are we already listening to message events on this w?
-             if (!pm.data("polling.postmessage")) {
-                 setInterval(function() {
-                                 var hash = "" + window.location.hash,
-                                 m = pm.hash._regex.exec(hash);
-                                 if (m) {
-                                     var id = m[1];
-                                     if (pm.hash._last !== id) {
-                                         pm.hash._last = id;
-                                         pm.hash._dispatch(hash.substring(pm.hash._regex_len));
-                                     }
-                                 }
-                             }, $.pm.poll || 200);
-                 pm.data("polling.postmessage", 1);
-             }
-         },
-
-         _dispatch: function(hash) {
-             if (!hash) {
-                 return;
-             }
-             try {
-                 hash = JSON.parse(decodeURIComponent(hash));
-                 if (!(hash['x-requested-with'] === 'postmessage' &&
-                       hash.source && hash.source.name != null && hash.source.url && hash.postmessage)) {
-                     // ignore since hash could've come from somewhere else
-                     return;
-                 }
-             }
-             catch (ex) {
-                 // ignore since hash could've come from somewhere else
-                 return;
-             }
-             var msg = hash.postmessage,
-             cbs = pm.data("callbacks.postmessage") || {},
-             cb = cbs[msg.type];
-             if (cb) {
-                 cb(msg.data);
-             }
-             else {
-                 var source_window;
-                 if (hash.source.name === "parent") {
-                     source_window = window.parent;
-                 }
-                 else {
-                     source_window = window.frames[hash.source.name];
-                 }
-                 var l = pm.data("listeners.postmessage") || {};
-                 var fns = l[msg.type] || [];
-                 for (var i=0,len=fns.length; i<len; i++) {
-                     var o = fns[i];
-                     if (o.origin) {
-                         var origin = /https?\:\/\/[^\/]*/.exec(hash.source.url)[0];
-                         if (o.origin !== '*' && origin !== o.origin) {
-                             console.warn("postmessage message origin mismatch", origin, o.origin);
-                             if (msg.errback) {
-                                 // notify post message errback
-                                 var error = {
-                                     message: "postmessage origin mismatch",
-                                     origin: [origin, o.origin]
-                                 };
-                                 pm.send({target:source_window, data:error, type:msg.errback, hash:true, url:hash.source.url});
-                             }
-                             continue;
-                         }
-                     }
-
-                     function sendReply ( data ) {
-                       if (msg.callback) {
-                         pm.send({target:source_window, data:data, type:msg.callback, hash:true, url:hash.source.url});
-                       }
-                     }
-                     
-                     try {
-                         if ( o.callback ) {
-                           o.fn(msg.data, sendReply);
-                         } else {
-                           sendReply ( o.fn(msg.data) );
-                         }
-                     }
-                     catch (ex) {
-                         if (msg.errback) {
-                             // notify post message errback
-                             pm.send({target:source_window, data:ex, type:msg.errback, hash:true, url:hash.source.url});
-                         } else {
-                             throw ex;
-                         }
-                     }
-                 };
-             }
-         },
-
-         _url: function(url) {
-             // url minus hash part
-             return (""+url).replace(/#.*$/, "");
-         }
-
-     };
-
-     $.extend(pm, {
-                  defaults: {
-                      target: null,  /* target window (required) */
-                      url: null,     /* target window url (required if no window.postMessage or hash == true) */
-                      type: null,    /* message type (required) */
-                      data: null,    /* message data (required) */
-                      success: null, /* success callback (optional) */
-                      error: null,   /* error callback (optional) */
-                      origin: "*",   /* postmessage origin (optional) */
-                      hash: false    /* use location hash for message passing (optional) */
-                  }
-              });
-
- })(this, typeof jQuery === "undefined" ? NO_JQUERY : jQuery);
-
-/**
- * http://www.JSON.org/json2.js
- **/
-if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){return n<10?"0"+n:n}if(typeof Date.prototype.toJSON!=="function"){Date.prototype.toJSON=function(key){return this.getUTCFullYear()+"-"+f(this.getUTCMonth()+1)+"-"+f(this.getUTCDate())+"T"+f(this.getUTCHours())+":"+f(this.getUTCMinutes())+":"+f(this.getUTCSeconds())+"Z"};String.prototype.toJSON=Number.prototype.toJSON=Boolean.prototype.toJSON=function(key){return this.valueOf()}}var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,gap,indent,meta={"\b":"\\b","\t":"\\t","\n":"\\n","\f":"\\f","\r":"\\r",'"':'\\"',"\\":"\\\\"},rep;function quote(string){escapable.lastIndex=0;return escapable.test(string)?'"'+string.replace(escapable,function(a){var c=meta[a];return typeof c==="string"?c:"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})+'"':'"'+string+'"'}function str(key,holder){var i,k,v,length,mind=gap,partial,value=holder[key];if(value&&typeof value==="object"&&typeof value.toJSON==="function"){value=value.toJSON(key)}if(typeof rep==="function"){value=rep.call(holder,key,value)}switch(typeof value){case"string":return quote(value);case"number":return isFinite(value)?String(value):"null";case"boolean":case"null":return String(value);case"object":if(!value){return"null"}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==="[object Array]"){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||"null"}v=partial.length===0?"[]":gap?"[\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"]":"["+partial.join(",")+"]";gap=mind;return v}if(rep&&typeof rep==="object"){length=rep.length;for(i=0;i<length;i+=1){k=rep[i];if(typeof k==="string"){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}else{for(k in value){if(Object.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}v=partial.length===0?"{}":gap?"{\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"}":"{"+partial.join(",")+"}";gap=mind;return v}}if(typeof JSON.stringify!=="function"){JSON.stringify=function(value,replacer,space){var i;gap="";indent="";if(typeof space==="number"){for(i=0;i<space;i+=1){indent+=" "}}else{if(typeof space==="string"){indent=space}}rep=replacer;if(replacer&&typeof replacer!=="function"&&(typeof replacer!=="object"||typeof replacer.length!=="number")){throw new Error("JSON.stringify")}return str("",{"":value})}}if(typeof JSON.parse!=="function"){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==="object"){for(k in value){if(Object.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v}else{delete value[k]}}}}return reviver.call(holder,key,value)}cx.lastIndex=0;if(cx.test(text)){text=text.replace(cx,function(a){return"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})}if(/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,"@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,"]").replace(/(?:^|:|,)(?:\s*\[)+/g,""))){j=eval("("+text+")");return typeof reviver==="function"?walk({"":j},""):j}throw new SyntaxError("JSON.parse")}}}());
-(function() {
-  angular.module('schemaForm').config(function(schemaFormProvider, schemaFormDecoratorsProvider, sfPathProvider) {
-    var datetimepicker, timepicker;
-    timepicker = function(name, schema, options) {
-      var f;
-      if (schema.type === 'string' && (schema.format === 'time')) {
-        f = schemaFormProvider.stdFormObj(name, schema, options);
-        f.key = options.path;
-        f.type = 'timepicker';
-        options.lookup[sfPathProvider.stringify(options.path)] = f;
-        return f;
-      }
-    };
-    schemaFormProvider.defaults.string.unshift(timepicker);
-    datetimepicker = function(name, schema, options) {
-      var f;
-      if (schema.type === 'string' && (schema.format === 'datetime')) {
-        f = schemaFormProvider.stdFormObj(name, schema, options);
-        f.key = options.path;
-        f.type = 'datetime';
-        options.lookup[sfPathProvider.stringify(options.path)] = f;
-        return f;
-      }
-    };
-    schemaFormProvider.defaults.string.unshift(datetimepicker);
-    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'time', 'bootstrap_ui_time_form.html');
-    schemaFormDecoratorsProvider.createDirective('time', 'bootstrap_ui_time_form.html');
-    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'datetime', 'bootstrap_ui_datetime_form.html');
-    schemaFormDecoratorsProvider.createDirective('datetime', 'bootstrap_ui_datetime_form.html');
-    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'price', 'price_form.html');
-    return schemaFormDecoratorsProvider.createDirective('price', 'price_form.html');
-  });
 
 }).call(this);
 
@@ -1065,938 +298,499 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-
-angular
-.module('angular-hal', []).provider('data_cache', function() {
- 
-    this.$get = function() {
-      data = [];
-
-      return {
-
-        set: function(key, val)
-        {
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        },
-        delMatching: function(str)
-        {
-          for (var k in data) {      
-            if (k.indexOf(str) != -1)
-              delete data[k]
-          }
-        }
-
-      }
-    };
- 
-})
-.provider('shared_header', function() {
-   this.$get = function() {
-      data = {};
-
-      return {
-
-        set: function(key, val)
-        {
-          // also store this in the session store
-          sessionStorage.setItem(key, val)
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        }
-      }
-    };
-
-})
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', function(
-    $http, $q, data_cache, shared_header, UriTemplate
-  ){
-    return {
-      setCache: function(cache) {
-        data_cache = cache
-      },
-      clearCache: function(str) {
-        data_cache.delMatching(str)
-      },
-      createResource: function(store)
-      {
-        if (typeof store === 'string') {
-          store = JSON.parse(store)
-        }
-        resource = store.data
-        resource._links = store.links
-        key = store.links.self.href
-        options = store.options
-        return new BaseResource(key, options, resource)
-      },
-      $get: function(href, options){
-        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
-        return data_cache.set(href, callService('GET', href, options));
-//        return callService('GET', href, options);
-      }//get
-      , $post: function(href, options, data){
-        return callService('POST', href, options, data);
-      }//post
-      , $put: function(href, options, data){
-        return callService('PUT', href, options, data);
-      }//put
-      , $patch: function(href, options, data){
-        return callService('PATCH', href, options, data);
-      }//patch
-      , $del: function(href, options){
-        return callService('DELETE', href, options);
-      }//del
-      , $parse: function(data){
-        return parseHal(data)
-      }//parse
-    };
-  
-    function BaseResource(href, options, data){
-      if(!options) options = {};
-      var links = {};
-      var embedded = data_cache
-      if (data.hasOwnProperty('auth_token')) {
-        options['auth_token'] = data['auth_token'];
-      }
-
-      href = getSelfLink(href, data).href;
-
-      defineHiddenProperty(this, '$href', function(rel, params) {
-        if(!(rel in links)) return null;
-
-        return hrefLink(links[rel], params);
-      });
-      defineHiddenProperty(this, '$has', function(rel) {
-        return rel in links;
-      });
-      defineHiddenProperty(this, '$flush', function(rel, params) {
-        var link = links[rel];
-        return flushLink(link, params);
-      });
-      defineHiddenProperty(this, '$get', function(rel, params){
-        var link = links[rel];
-        return callLink('GET', link, params);
-      });
-      defineHiddenProperty(this, '$post', function(rel, params, data){
-        var link = links[rel];
-        return callLink('POST', link, params, data);
-      });
-      defineHiddenProperty(this, '$put', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PUT', link, params, data);
-      });
-      defineHiddenProperty(this, '$patch', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PATCH', link, params, data);
-      });
-      defineHiddenProperty(this, '$del', function(rel, params){
-        var link = links[rel];
-        return callLink('DELETE', link, params);
-      });
-      defineHiddenProperty(this, '$links', function(){
-        return links
-      });
-      defineHiddenProperty(this, '$toStore', function(){
-        return JSON.stringify({data: this, links: links, options:options})
-      });
-      defineHiddenProperty(this, 'setOption', function(key, value){
-        options[key] = value
-      });
-      defineHiddenProperty(this, 'getOption', function(key){
-        return options[key]
-      });
-      defineHiddenProperty(this, '$link', function(rel){
-        return links[rel]
-      });
-
-      Object.keys(data)
-      .filter(function(key){
-        return !~['_', '$'].indexOf(key[0]);
-      })
-      .forEach(function(key){
-        this[key] = data[key]
-//        Object.defineProperty(this, key, {
-  //        configurable: false
-  //        , enumerable: true
-  //        , value: data[key]
-   //     });
-      }, this)
-      ;
-
-
-      if(data._links) {
-        Object
-        .keys(data._links)
-        .forEach(function(rel){
-          var link = data._links[rel];          
-          link = normalizeLink(href, link);
-          links[rel] = link;
-        }, this)
-        ;
-      }
-
-      if(data._embedded) {
-        Object
-        .keys(data._embedded)
-        .forEach(function(rel){
-          var embedded = data._embedded[rel];
-          var link = getSelfLink(href, embedded);
-          links[rel] = link;
-
-          var resource = createResource(href, options, embedded);
-
-          embedResource(resource);
-
-        }, this);
-      }
-
-      function defineHiddenProperty(target, name, value) {
-        target[name] = value
-//        Object.defineProperty(target, name, {
-//          configurable: false
- //         , enumerable: false
-  //        , value: value
-   //     });
-      }//defineHiddenProperty
-
-
-      function embedResource(resource) {
-        if(angular.isArray(resource)) return resource.map(function(resource){
-          return embedResource(resource);
-        });
-        
-        var href = resource.$href('self');
-
-        embedded.set(href, $q.when(resource));
-      }//embedResource
-
-      function hrefLink(link, params) {
-        var href = link.templated
-        ? new UriTemplate(link.href).fillFromObject(params || {})
-        : link.href
-        ;
-
-        return href;
-      }//hrefLink
-
-      function callLink(method, link, params, data) {
-        if(angular.isArray(link)) return $q.all(link.map(function(link){
-          if(method !== 'GET') throw 'method is not supported for arrays';
-
-          return callLink(method, link, params, data);
-        }));
-
-        var linkHref = hrefLink(link, params);
-
-        if(method === 'GET') {
-          if(embedded.has(linkHref)) return embedded.get(linkHref);
-          
-          return embedded.set(linkHref, callService(method, linkHref, options, data));
-        }
-        else {
-          return callService(method, linkHref, options, data);  
-        }
-
-      }//callLink
-
-      function flushLink(link, params) {
-        if(angular.isArray(link)) return link.map(function(link){
-          return flushLink(link, params);
-        });
-
-        var linkHref = hrefLink(link, params);
-        if(embedded.has(linkHref)) embedded.del(linkHref);
-      }//flushLink
-
-    }//Resource
-
-
-
-
-    function createResource(href, options, data){
-      if(angular.isArray(data)) return data.map(function(data){
-        return createResource(href, options, data);
-      });
-
-      var resource = new BaseResource(href, options, data);
-
-      return resource;
-
-    }//createResource
-
-
-    function normalizeLink(baseHref, link){
-      if(angular.isArray(link)) return link.map(function(link){
-        return normalizeLink(baseHref, link);
-      });
-
-      if(link) {
-        if(typeof link === 'string') link = { href: link };
-        link.href = resolveUrl(baseHref, link.href);
-      }
-      else {
-        link = { href: baseHref };      
-      }
-
-      return link;
-    }//normalizeLink
-
-
-    function getSelfLink(baseHref, resource){
-      if(angular.isArray(resource)) return resource.map(function(resource){
-        return getSelfLink(baseHref, resource);
-      });
-
-      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
-    }//getSelfLink
-
-
-
-    function callService(method, href, options, data){
-      if(!options) options = {};
-      headers = {
-        'Authorization': options.authorization
-        , 'Content-Type': 'application/json'
-        , 'Accept': 'application/hal+json,application/json'
-      }
-      if (options.app_id) shared_header.set('app_id', options.app_id);
-      if (options.app_key) shared_header.set('app_key', options.app_key);
-      if (options.auth_token) {
-        sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token);
-      }
-
-      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
-      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
-      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
-
-      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
-
-      var resource = (
-        $http({
-          method: method
-          , url: options.transformUrl ? options.transformUrl(href) : href
-          , headers: headers
-          , data: data
-        })
-        .then(function(res){
-
-          // copy out the auth token from the header if there was one and make sure the child commands use it
-          if (res.headers('auth-token')){
-            options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'))
-          }
-          switch(res.status){
-            case 200:
-            if(res.data) return createResource(href, options, res.data);
-            return null;
-
-            case 201:
-            if(res.data) return createResource(href, options, res.data);
-            if(res.headers('Content-Location')) return res.headers('Content-Location');
-            return null;
-
-            case 204:
-            return null
-
-            default:
-            return $q.reject(res);
-          }
-        }, function(res)
-        {
-          return $q.reject(res);
-        })
-      );
-
-      return resource;
-    }//callService
-
-    function parseHal(data){
-      var resource = createResource(data._links.self.href, null, data);
-      return resource;
-    }//parseHal
-
-
-
-    function resolveUrl(baseHref, href){
-      var resultHref = '';
-      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
-      var baseHrefMatch = reFullUrl.exec(baseHref);
-      var hrefMatch = reFullUrl.exec(href);
-
-      for(var partIndex = 1; partIndex < 5; partIndex++) {
-        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
-        else resultHref += baseHrefMatch[partIndex]
-      }
-
-      return resultHref;
-    }//resolveUrl
-
-  }
-])//service
-;
-
-angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  function(){
-    function FakeStorage() {};
-    FakeStorage.prototype.setItem = function (key, value) {
-      this[key] = value;
-    };
-    FakeStorage.prototype.getItem = function (key) {
-      return typeof this[key] == 'undefined' ? null : this[key];
-    }
-    FakeStorage.prototype.removeItem = function (key) {
-      this[key] = undefined;
-    };
-    FakeStorage.prototype.clear = function(){
-      for (var key in this) {
-        if( this.hasOwnProperty(key) )
-        {
-          this.removeItem(key);
-        }
-      }
-    };
-    FakeStorage.prototype.key = function(index){
-      return Object.keys(this)[index];
-    };
-    return new FakeStorage();
-  }
-])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-]);
-/**!
- * AngularJS file upload/drop directive with http post and progress
- * @author  Danial  <danial.farid@gmail.com>
- * @version 1.4.0
- */
 (function() {
-  
-var angularFileUpload = angular.module('angularFileUpload', []);
+  var app;
 
-angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
-  function sendHttp(config) {
-    config.method = config.method || 'POST';
-    config.headers = config.headers || {};
-    config.transformRequest = config.transformRequest || function(data, headersGetter) {
-      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-        return data;
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
       }
-      return $http.defaults.transformRequest[0](data, headersGetter);
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
     };
-
-    if (window.XMLHttpRequest.__isShim) {
-      config.headers['__setXHR_'] = function() {
-        return function(xhr) {
-          if (!xhr) return;
-          config.__XHR = xhr;
-          config.xhrFn && config.xhrFn(xhr);
-          xhr.upload.addEventListener('progress', function(e) {
-            if (config.progress) {
-              $timeout(function() {
-                if(config.progress) config.progress(e);
-              });
-            }
-          }, false);
-          //fix for firefox not firing upload progress end, also IE8-9
-          xhr.upload.addEventListener('load', function(e) {
-            if (e.lengthComputable) {
-              if(config.progress) config.progress(e);
-            }
-          }, false);
-        };
-      };
-    }
-
-    var promise = $http(config);
-
-    promise.progress = function(fn) {
-      config.progress = fn;
-      return promise;
-    };
-    promise.abort = function() {
-      if (config.__XHR) {
-        $timeout(function() {
-          config.__XHR.abort();
-        });
-      }
-      return promise;
-    };
-    promise.xhr = function(fn) {
-      config.xhrFn = fn;
-      return promise;
-    };
-    promise.then = (function(promise, origThen) {
-      return function(s, e, p) {
-        config.progress = p || config.progress;
-        var result = origThen.apply(promise, [s, e, p]);
-        result.abort = promise.abort;
-        result.progress = promise.progress;
-        result.xhr = promise.xhr;
-        result.then = promise.then;
-        return result;
-      };
-    })(promise, promise.then);
-    
-    return promise;
-  }
-
-  this.upload = function(config) {
-    config.headers = config.headers || {};
-    config.headers['Content-Type'] = undefined;
-    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
-    var formData = new FormData();
-    var origTransformRequest = config.transformRequest;
-    var origData = config.data;
-    config.transformRequest = function(formData, headerGetter) {
-      if (origData) {
-        if (config.formDataAppender) {
-          for (var key in origData) {
-            var val = origData[key];
-            config.formDataAppender(formData, key, val);
-          }
-        } else {
-          for (var key in origData) {
-            var val = origData[key];
-            if (typeof origTransformRequest == 'function') {
-              val = origTransformRequest(val, headerGetter);
-            } else {
-              for (var i = 0; i < origTransformRequest.length; i++) {
-                var transformFn = origTransformRequest[i];
-                if (typeof transformFn == 'function') {
-                  val = transformFn(val, headerGetter);
-                }
-              }
-            }
-            formData.append(key, val);
-          }
-        }
-      }
-
-      if (config.file != null) {
-        var fileFormName = config.fileFormDataName || 'file';
-
-        if (Object.prototype.toString.call(config.file) === '[object Array]') {
-          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
-          for (var i = 0; i < config.file.length; i++) {
-            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
-          }
-        } else {
-          formData.append(fileFormName, config.file, config.file.name);
-        }
-      }
-      return formData;
-    };
-
-    config.data = formData;
-
-    return sendHttp(config);
-  };
-
-  this.http = function(config) {
-    return sendHttp(config);
-  }
-}]);
-
-angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    var fn = $parse(attr['ngFileSelect']);
-    elem.bind('change', function(evt) {
-      var files = [], fileList, i;
-      fileList = evt.target.files;
-      if (fileList != null) {
-        for (i = 0; i < fileList.length; i++) {
-          files.push(fileList.item(i));
-        }
-      }
-      $timeout(function() {
-        fn(scope, {
-          $files : files,
-          $event : evt
-        });
-      });
-    });
-    // removed this since it was confusing if the user click on browse and then cancel #181
-//    elem.bind('click', function(){
-//      this.value = null;
-//    });
-    
-    // touch screens
-    if (('ontouchstart' in window) ||
-        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
-      elem.bind('touchend', function(e) {
-        e.preventDefault();
-        e.target.click();
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    if ('draggable' in document.createElement('span')) {
-      var fn = $parse(attr['ngFileDropAvailable']);
-      $timeout(function() {
-        fn(scope);
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {    
-    if ('draggable' in document.createElement('span')) {
-      var cancel = null;
-      var fn = $parse(attr['ngFileDrop']);
-      elem[0].addEventListener("dragover", function(evt) {
-        $timeout.cancel(cancel);
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
-      }, false);
-      elem[0].addEventListener("dragleave", function(evt) {
-        cancel = $timeout(function() {
-          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        });
-      }, false);
-      
-      var processing = 0;
-      function traverseFileTree(files, item) {
-        if (item.isDirectory) {
-          var dirReader = item.createReader();
-          processing++;
-          dirReader.readEntries(function(entries) {
-            for (var i = 0; i < entries.length; i++) {
-              traverseFileTree(files, entries[i]);
-            }
-            processing--;
-          });
-        } else {
-          processing++;
-              item.file(function(file) {
-                processing--;
-                files.push(file);
-              });
-          }
-      }
-      
-      elem[0].addEventListener("drop", function(evt) {
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        var files = [], items = evt.dataTransfer.items;
-        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
-          for (var i = 0; i < items.length; i++) {
-            traverseFileTree(files, items[i].webkitGetAsEntry());
-          }
-        } else {
-          var fileList = evt.dataTransfer.files;
-          if (fileList != null) {
-            for (var i = 0; i < fileList.length; i++) {
-              files.push(fileList.item(i));
-            }
-          }
-        }
-        (function callback(delay) {
-          $timeout(function() {
-            if (!processing) {
-              fn(scope, {
-                $files : files,
-                $event : evt
-              });
-            } else {
-              callback(10);
-            }
-          }, delay || 0)
-        })();
-      }, false);
-    }
-  };
-} ]);
-
-})();
-
-angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', function( halClient, $q) {
-    data = {};
-
-    jsonData = function(data) {
-        return data && JSON.parse(data);
-    }
-
-    storage = function()
-    {
-      return sessionStorage
-    } 
-    localSave = function(key, item){
-      storage().setItem(key, item.$toStore())   
-    } 
-    localLoad = function(key){
-      res =  jsonData(storage().getItem(key))
-      if (res)
-      {  
-        r = halClient.createResource(res)
-        def = $q.defer()
-        def.resolve(r)
-        return def.promise
-      }
-      return null
-    } 
-    localDelete = function(key) {
-      storage().removeItem(key)
-    }
-
-    return {
-
-      set: function(key, val)
-      {
-        data[key] = val
-        val.then(function(item){
-          localSave(key, item)
-        })
-        return val
-      },
-      get: function(key)
-      {
-        localLoad(key)
-        if (!data[key])
-          data[key] = localLoad(key)
-        return data[key]
-      },
-      del: function(key)
-      {
-        localDelete(key)
-        delete data[key]
-      },
-      has: function(key)
-      {
-        if (!data[key])
-        { 
-          res = localLoad(key)
-          if (res)
-            data[key] = res
-        }
-        return (key in data)
-      }      
-    }
-
-}]).
- factory('$localData', ['$http', '$rootScope', function($http, $rootScope) {
-    function LocalDataFactory(name) {
-      function LocalData(value){
-        this.setStore(value);
-      }
-
-      LocalData.prototype.jsonData = function(data) {
-          return data && JSON.parse(data);
-      }
-
-      LocalData.prototype.storage = function()
-      {
-        return sessionStorage
-      }  
-
-      LocalData.prototype.localSave = function(item)
-      {
-        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
-      }
-
-
-      LocalData.prototype.localSaveIndex = function(ids)
-      {
-        this.storage().setItem(this.store_name, ids.join(","))
-        this.ids = ids;
-      }
-
-      LocalData.prototype.localLoadIndex = function()
-      {
-        store = this.storage().getItem(this.store_name)
-        records = (store && store.split(",")) || [];
-        return records
-      }
-
-      LocalData.prototype.localLoad = function( id)
-      {
-        return this.jsonData(this.storage().getItem(this.store_name + id))
-      }
-
-      LocalData.prototype.count = function()
-      {
-        return this.ids.length
-      }
-
-      LocalData.prototype.setStore = function(name)
-      {
-        this.store_name = name;
-        this.data_store = []
-        this.ids = this.localLoadIndex();
-        for (a = 0; a < this.ids.length; a++){
-          this.data_store.push(this.localLoad(this.ids[a]));
-        }
-    //    var channel = pusher.subscribe(name);
-    //    var ds = this;
-
-     //   channel.bind('add', function(data) {
-     //     ds.data_store.push(data);
-     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
-     //   });
-
-      }
-
-      LocalData.prototype.update = function(data)
-      {
-        ids = []
-        for (x in data){
-          if (data[x].id){
-           ids.push(data[x].id)
-           this.localSave(data[x])
-         }
-        }
-        this.localSaveIndex(ids)
-      }
-
-      return new LocalData(name)
-
-    };
-
-
-    
-    return LocalDataFactory
-}]);
-
-
-/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
-
-getControllerScope = function(controller, fn){
-  $(document).ready(function(){
-    var $element = $('div[data-ng-controller="' + controller + '"]');
-    var scope = angular.element($element).scope();
-    fn(scope); 
   });
-}
 
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
 
-function getURIparam( name ){
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
 (function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
@@ -2312,7 +1106,11 @@ function getURIparam( name ){
     link = function(scope, element, attrs, ngModel) {
       ngModel.$render = function() {
         if (ngModel.$viewValue) {
-          return scope.$$value$$ = ngModel.$viewValue;
+          if (moment.isMoment(ngModel.$viewValue)) {
+            return scope.$$value$$ = ngModel.$viewValue.format();
+          } else {
+            return scope.$$value$$ = ngModel.$viewValue;
+          }
         } else {
           return scope.$$value$$ = scope.schemaValidate.schema["default"];
         }
@@ -3611,12 +2409,12 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug) {
+  app.directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
     return {
       transclude: false,
       restrict: 'A',
       link: function(scope, element, attrs) {
-        var always_scroll, bb_transition_time, evnts, inIframe, scrollToCallback;
+        var always_scroll, bb_transition_time, evnts, scrollToCallback;
         evnts = attrs.bbScrollTo.split(',');
         always_scroll = (attrs.bbAlwaysScroll != null) || false;
         bb_transition_time = attrs.bbTransitionTime != null ? parseInt(attrs.bbTransitionTime, 10) : 500;
@@ -3631,7 +2429,7 @@ function getURIparam( name ){
             return scrollToCallback(evnts);
           });
         }
-        scrollToCallback = function(evnt) {
+        return scrollToCallback = function(evnt) {
           var current_step, scroll_to_element;
           if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
             scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
@@ -3641,23 +2439,14 @@ function getURIparam( name ){
           current_step = BreadcrumbService.getCurrentStep();
           if (scroll_to_element) {
             if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!scroll_to_element.is(':visible') && scroll_to_element.offset().top !== 0)) {
-              if (inIframe()) {
-                return parent.postMessage('scrollToOffset:' + scroll_to_element.offset().top, '*');
+              if ('parentIFrame' in $window) {
+                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
               } else {
                 return $bbug("html, body").animate({
                   scrollTop: scroll_to_element.offset().top
                 }, bb_transition_time);
               }
             }
-          }
-        };
-        return inIframe = function() {
-          var error;
-          try {
-            return window.self !== window.top;
-          } catch (_error) {
-            error = _error;
-            return true;
           }
         };
       }
@@ -3686,18 +2475,17 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('bbForm', function($bbug) {
+  app.directive('bbForm', function($bbug, $window, SettingsService) {
     return {
       restrict: 'A',
       require: '^form',
       link: function(scope, elem, attrs, ctrls) {
-        var inIframe;
-        elem.on("submit", function() {
+        return elem.on("submit", function() {
           var invalid_form_group, invalid_input;
           invalid_form_group = elem.find('.has-error:first');
           if (invalid_form_group && invalid_form_group.length > 0) {
-            if (inIframe()) {
-              parent.postMessage('scrollToOffset:' + invalid_form_group.offset().top, '*');
+            if ('parentIFrame' in $window) {
+              parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
             } else {
               $bbug("html, body").animate({
                 scrollTop: invalid_form_group.offset().top
@@ -3709,15 +2497,6 @@ function getURIparam( name ){
           }
           return true;
         });
-        return inIframe = function() {
-          var error;
-          try {
-            return window.self !== window.top;
-          } catch (_error) {
-            error = _error;
-            return true;
-          }
-        };
       }
     };
   });
@@ -3778,7 +2557,7 @@ function getURIparam( name ){
       },
       controller: function($scope) {
         $scope.processDates = function(dates) {
-          var cur_month, d, date, datehash, day_data, diff, i, j, k, l, last_date, len, m, month, months, num_months, ref, w, week;
+          var cur_month, d, date, datehash, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
           datehash = {};
           for (i = 0, len = dates.length; i < len; i++) {
             date = dates[i];
@@ -3794,10 +2573,11 @@ function getURIparam( name ){
           }
           date = cur_month.startOf('week');
           last_date = _.last(dates);
-          diff = last_date.date.diff(date, 'months') + 1;
-          num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
+          diff = last_date.date.diff(date, 'months');
+          diff = diff > 0 ? diff : 1;
+          $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
           months = [];
-          for (m = j = 1, ref = diff; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
+          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
             date = cur_month.clone().startOf('week');
             month = {
               weeks: []
@@ -3843,7 +2623,7 @@ function getURIparam( name ){
               for (j = 0, len1 = ref1.length; j < len1; j++) {
                 day = ref1[j];
                 if ((day.data && day.data.spaces > 0) && (day.date.isSame(month.start_date, 'day') || day.date.isAfter(month.start_date, 'day'))) {
-                  $scope.showDate(day.date);
+                  $scope.showDay(day);
                   return;
                 }
               }
@@ -4419,499 +3199,6 @@ function getURIparam( name ){
     };
   });
 }(window.angular));
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-}).call(this);
 
 (function() {
   'use strict';
@@ -5501,7 +3788,7 @@ function getURIparam( name ){
     })(this);
     $scope.initWidget2 = (function(_this) {
       return function() {
-        var aff_promise, comp_category_id, comp_promise, comp_url, company_id, embed_params, get_total, k, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
+        var aff_promise, comp_category_id, comp_promise, comp_url, company_id, embed_params, get_total, k, params, prms, ref, result, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
         $scope.init_widget_started = true;
         prms = _this.$init_prms;
         if (prms.query) {
@@ -5605,6 +3892,39 @@ function getURIparam( name ){
         }
         if (prms.i18n) {
           SettingsService.enableInternationalizaton();
+        }
+        if (prms.customer_name) {
+          result = prms.customer_name.match(/^(\S+)\s(.*)/).slice(1);
+          if ($scope.client) {
+            $scope.client.first_name = result[0];
+            $scope.client.last_name = result[1];
+          } else {
+            $scope.client = new BBModel.Client();
+            $scope.client.first_name = result[0];
+            $scope.client.last_name = result[1];
+          }
+        }
+        if (prms.customer_phone) {
+          if ($scope.client) {
+            $scope.client.mobile = prms.customer_phone;
+          } else {
+            $scope.client = new BBModel.Client();
+            $scope.client.mobile = prms.customer_phone;
+          }
+        }
+        if (prms.customer_email) {
+          if ($scope.client) {
+            $scope.client.email = prms.customer_email;
+          } else {
+            $scope.client = new BBModel.Client();
+            $scope.client.email = prms.customer_email;
+          }
+        }
+        if (prms.private_note) {
+          $scope.bb.private_note = prms.private_note;
+        }
+        if (prms.scroll_offset) {
+          SettingsService.setScrollOffset(prms.scroll_offset);
         }
         _this.waiting_for_conn_started_def = $q.defer();
         $scope.waiting_for_conn_started = _this.waiting_for_conn_started_def.promise;
@@ -6542,7 +4862,7 @@ function getURIparam( name ){
       scope.setLoaded(scope);
       if (err.status === 409) {
         return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
-      } else if (err.data.error === "Number of Bookings exceeds the maximum") {
+      } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
         return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
       } else {
         return AlertService.danger(ErrorService.getError('GENERIC'));
@@ -8168,6 +6488,10 @@ function getURIparam( name ){
       var comp, current_event, deferred, params;
       deferred = $q.defer();
       current_event = $scope.current_item.event;
+      if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
+        delete $scope.bb.current_item.event_chain;
+        delete $scope.bb.current_item.event_chain_id;
+      }
       comp = $scope.bb.company;
       params = {
         item: $scope.bb.current_item,
@@ -8236,6 +6560,10 @@ function getURIparam( name ){
       current_event = $scope.current_item.event;
       $scope.notLoaded($scope);
       comp || (comp = $scope.bb.company);
+      if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
+        delete $scope.bb.current_item.event_chain;
+        delete $scope.bb.current_item.event_chain_id;
+      }
       params = {
         item: $scope.bb.current_item,
         start_date: $scope.start_date.toISODate(),
@@ -8245,6 +6573,7 @@ function getURIparam( name ){
         params.event_chain_id = $scope.bb.item_defaults.event_chain;
       }
       chains = $scope.loadEventChainData(comp);
+      $scope.events = {};
       EventService.query(comp, params).then(function(events) {
         var key, value;
         events = _.groupBy(events, function(event) {
@@ -8595,6 +6924,9 @@ function getURIparam( name ){
       var params;
       confirming = true;
       $scope.item = item;
+      if ($scope.bb.private_note) {
+        $scope.item.private_note = $scope.bb.private_note;
+      }
       if ($scope.item.item_details) {
         setItemDetails($scope.item.item_details);
         QuestionService.addDynamicAnswersByName($scope.item_details.questions);
@@ -9850,7 +8182,154 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce) {
+  angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location, SettingsService) {
+    var applyCustomPartials, applyCustomStylesheet, linker;
+    applyCustomPartials = function(custom_partial_url, scope, element) {
+      if (custom_partial_url != null) {
+        $document.domain = "bookingbug.com";
+        return $http.get(custom_partial_url).then(function(custom_templates) {
+          return $compile(custom_templates.data)(scope, function(custom, scope) {
+            var custom_form, e, i, len;
+            for (i = 0, len = custom.length; i < len; i++) {
+              e = custom[i];
+              if (e.tagName === "STYLE") {
+                element.after(e.outerHTML);
+              }
+            }
+            custom_form = (function() {
+              var j, len1, results;
+              results = [];
+              for (j = 0, len1 = custom.length; j < len1; j++) {
+                e = custom[j];
+                if (e.id === 'payment_form') {
+                  results.push(e);
+                }
+              }
+              return results;
+            })();
+            if (custom_form && custom_form[0]) {
+              return $compile(custom_form[0].innerHTML)(scope, function(compiled_form, scope) {
+                var action, form;
+                form = element.find('form')[0];
+                action = form.action;
+                compiled_form.attr('action', action);
+                return $(form).replaceWith(compiled_form);
+              });
+            }
+          });
+        });
+      }
+    };
+    applyCustomStylesheet = function(href) {
+      var css_id, head, link;
+      css_id = 'custom_css';
+      if (!document.getElementById(css_id)) {
+        head = document.getElementsByTagName('head')[0];
+        link = document.createElement('link');
+        link.id = css_id;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = href;
+        link.media = 'all';
+        head.appendChild(link);
+        return link.onload = function() {
+          if ('parentIFrame' in $window) {
+            return parentIFrame.size();
+          }
+        };
+      }
+    };
+    linker = function(scope, element, attributes) {
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          var data;
+          if (angular.isObject(event.data)) {
+            data = event.data;
+          } else if (angular.isString(event.data) && !event.data.match(/iFrameSizer/)) {
+            data = JSON.parse(event.data);
+          }
+          if (data) {
+            switch (data.type) {
+              case "load":
+                return scope.$apply(function() {
+                  scope.referrer = data.message;
+                  if (data.custom_partial_url) {
+                    applyCustomPartials(event.data.custom_partial_url, scope, element);
+                  }
+                  if (data.custom_stylesheet) {
+                    applyCustomStylesheet(data.custom_stylesheet);
+                  }
+                  if (data.scroll_offset) {
+                    return SettingsService.setScrollOffset(data.scroll_offset);
+                  }
+                });
+            }
+          }
+        };
+      })(this), false);
+    };
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'PayForm',
+      link: linker
+    };
+  });
+
+  angular.module('BB.Controllers').controller('PayForm', function($scope, $location) {
+    var sendSubmittingEvent, submitPaymentForm;
+    $scope.controller = "public.controllers.PayForm";
+    $scope.setTotal = function(total) {
+      return $scope.total = total;
+    };
+    $scope.setCard = function(card) {
+      return $scope.card = card;
+    };
+    sendSubmittingEvent = (function(_this) {
+      return function() {
+        var payload, referrer, target_origin;
+        referrer = $location.protocol() + "://" + $location.host();
+        if ($location.port()) {
+          referrer += ":" + $location.port();
+        }
+        target_origin = $scope.referrer;
+        payload = JSON.stringify({
+          'type': 'submitting',
+          'message': referrer
+        });
+        return parent.postMessage(payload, target_origin);
+      };
+    })(this);
+    submitPaymentForm = (function(_this) {
+      return function() {
+        var payment_form;
+        payment_form = angular.element.find('form');
+        return payment_form[0].submit();
+      };
+    })(this);
+    return $scope.submitAndSendMessage = (function(_this) {
+      return function(event) {
+        var payment_form;
+        event.preventDefault();
+        event.stopPropagation();
+        payment_form = $scope.$eval('payment_form');
+        if (payment_form.$invalid) {
+          payment_form.submitted = true;
+          return false;
+        } else {
+          sendSubmittingEvent();
+          return submitPaymentForm();
+        }
+      };
+    })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService) {
     var error, getHost, linker, sendLoadEvent;
     error = function(scope, message) {
       return scope.error(message);
@@ -9874,7 +8353,8 @@ function getURIparam( name ){
         'type': 'load',
         'message': referrer,
         'custom_partial_url': scope.bb.custom_partial_url,
-        'custom_stylesheet': custom_stylesheet
+        'custom_stylesheet': custom_stylesheet,
+        'scroll_offset': SettingsService.getScrollOffset()
       });
       return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
     };
@@ -9956,145 +8436,6 @@ function getURIparam( name ){
     return $scope.error = function(message) {
       return $log.warn("Payment Failure: " + message);
     };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location) {
-    var applyCustomPartials, applyCustomStylesheet, linker;
-    applyCustomPartials = function(custom_partial_url, scope, element) {
-      if (custom_partial_url != null) {
-        $document.domain = "bookingbug.com";
-        return $http.get(custom_partial_url).then(function(custom_templates) {
-          return $compile(custom_templates.data)(scope, function(custom, scope) {
-            var custom_form, e, i, len;
-            for (i = 0, len = custom.length; i < len; i++) {
-              e = custom[i];
-              if (e.tagName === "STYLE") {
-                element.after(e.outerHTML);
-              }
-            }
-            custom_form = (function() {
-              var j, len1, results;
-              results = [];
-              for (j = 0, len1 = custom.length; j < len1; j++) {
-                e = custom[j];
-                if (e.id === 'payment_form') {
-                  results.push(e);
-                }
-              }
-              return results;
-            })();
-            if (custom_form && custom_form[0]) {
-              return $compile(custom_form[0].innerHTML)(scope, function(compiled_form, scope) {
-                var action, form;
-                form = element.find('form')[0];
-                action = form.action;
-                compiled_form.attr('action', action);
-                return $(form).replaceWith(compiled_form);
-              });
-            }
-          });
-        });
-      }
-    };
-    applyCustomStylesheet = function(href) {
-      var css_id, head, link;
-      css_id = 'custom_css';
-      if (!document.getElementById(css_id)) {
-        head = document.getElementsByTagName('head')[0];
-        link = document.createElement('link');
-        link.id = css_id;
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = href;
-        link.media = 'all';
-        return head.appendChild(link);
-      }
-    };
-    linker = function(scope, element, attributes) {
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          var data;
-          if (angular.isObject(event.data)) {
-            data = event.data;
-          } else if (angular.isString(event.data) && !event.data.match(/iFrameSizer/)) {
-            data = JSON.parse(event.data);
-          }
-          if (data) {
-            switch (data.type) {
-              case "load":
-                return scope.$apply(function() {
-                  scope.referrer = data.message;
-                  if (data.custom_partial_url) {
-                    applyCustomPartials(event.data.custom_partial_url, scope, element);
-                  }
-                  if (data.custom_stylesheet) {
-                    return applyCustomStylesheet(data.custom_stylesheet);
-                  }
-                });
-            }
-          }
-        };
-      })(this), false);
-    };
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'PayForm',
-      link: linker
-    };
-  });
-
-  angular.module('BB.Controllers').controller('PayForm', function($scope, $location) {
-    var sendSubmittingEvent, submitPaymentForm;
-    $scope.controller = "public.controllers.PayForm";
-    $scope.setTotal = function(total) {
-      return $scope.total = total;
-    };
-    $scope.setCard = function(card) {
-      return $scope.card = card;
-    };
-    sendSubmittingEvent = (function(_this) {
-      return function() {
-        var payload, referrer, target_origin;
-        referrer = $location.protocol() + "://" + $location.host();
-        if ($location.port()) {
-          referrer += ":" + $location.port();
-        }
-        target_origin = $scope.referrer;
-        payload = JSON.stringify({
-          'type': 'submitting',
-          'message': referrer
-        });
-        return parent.postMessage(payload, target_origin);
-      };
-    })(this);
-    submitPaymentForm = (function(_this) {
-      return function() {
-        var payment_form;
-        payment_form = angular.element.find('form');
-        return payment_form[0].submit();
-      };
-    })(this);
-    return $scope.submitAndSendMessage = (function(_this) {
-      return function(event) {
-        var payment_form;
-        event.preventDefault();
-        event.stopPropagation();
-        payment_form = $scope.$eval('payment_form');
-        if (payment_form.$invalid) {
-          payment_form.submitted = true;
-          return false;
-        } else {
-          sendSubmittingEvent();
-          return submitPaymentForm();
-        }
-      };
-    })(this);
   });
 
 }).call(this);
@@ -10538,9 +8879,15 @@ function getURIparam( name ){
     angular.extend(this, new PageControllerService($scope, $q));
     $scope.validator = ValidatorService;
     $scope.filters = {
-      price: {},
-      name: null
+      category_name: null,
+      service_name: null,
+      price: {
+        min: 0,
+        max: 100
+      },
+      custom_array_value: null
     };
+    $scope.show_custom_array = false;
     $scope.options = $scope.$eval($attrs.bbServices) || {};
     if ($attrs.bbItem) {
       $scope.booking_item = $scope.$eval($attrs.bbItem);
@@ -10757,14 +9104,53 @@ function getURIparam( name ){
     $scope.filterFunction = function(service) {
       if (!service) {
         return false;
-      } else {
-        return (!$scope.filters.name || service.category_id === $scope.filters.name.id) && (!service.price || (service.price >= $scope.filters.price.min * 100 && service.price <= $scope.filters.price.max * 100));
       }
+      $scope.service_array = [];
+      $scope.custom_array = function(match) {
+        var item, j, len, ref;
+        if (!match) {
+          return false;
+        }
+        if ($scope.options.custom_filter) {
+          match = match.toLowerCase();
+          ref = service.extra[$scope.options.custom_filter];
+          for (j = 0, len = ref.length; j < len; j++) {
+            item = ref[j];
+            item = item.toLowerCase();
+            if (item === match) {
+              $scope.show_custom_array = true;
+              return true;
+            }
+          }
+          return false;
+        }
+      };
+      $scope.service_name_include = function(match) {
+        var item;
+        if (!match) {
+          return false;
+        }
+        if (match) {
+          match = match.toLowerCase();
+          item = service.name.toLowerCase();
+          if (item.includes(match)) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      };
+      return (!$scope.filters.category_name || service.category_id === $scope.filters.category_name.id) && (!$scope.filters.service_name || $scope.service_name_include($scope.filters.service_name)) && (!$scope.filters.custom_array_value || $scope.custom_array($scope.filters.custom_array_value)) && (!service.price || (service.price >= $scope.filters.price.min * 100 && service.price <= $scope.filters.price.max * 100));
     };
     $scope.resetFilters = function() {
-      $scope.filters.name = null;
-      $scope.filters.price.min = null;
-      $scope.filters.price.max = null;
+      if ($scope.options.clear_results) {
+        $scope.show_custom_array = false;
+      }
+      $scope.filters.category_name = null;
+      $scope.filters.service_name = null;
+      $scope.filters.price.min = 0;
+      $scope.filters.price.max = 100;
+      $scope.filters.custom_array_value = null;
       return $scope.filterChanged();
     };
     return $scope.filterChanged = function() {
@@ -10949,7 +9335,8 @@ function getURIparam( name ){
           });
         }
         return $scope.purchase.getBookingsPromise().then(function(bookings) {
-          var address, booking, i, len, pretty_address, ref, results;
+          var address, booking, i, len, params, pretty_address, ref, results;
+          params = {};
           $scope.bookings = bookings;
           ref = $scope.bookings;
           results = [];
@@ -10963,7 +9350,10 @@ function getURIparam( name ){
               pretty_address = address.addressSingleLine();
               booking.pretty_address = pretty_address;
             }
-            results.push(booking.$get("survey_questions").then(function(details) {
+            if ($rootScope.user) {
+              params.admin_only = true;
+            }
+            results.push(booking.$get("survey_questions", params).then(function(details) {
               var item_details;
               item_details = new BBModel.ItemDetails(details);
               booking.survey_questions = item_details.survey_questions;
@@ -11954,6 +10344,3837 @@ function getURIparam( name ){
         return true;
       };
     })(this);
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
+    return {
+      query: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = "/api/v1/company/{company_id}/addresses/{post_code}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company.id,
+          post_code: prms.post_code
+        });
+        halClient.$get(uri, {}).then(function(addressList) {
+          return deferred.resolve(addressList);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      getAddress: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = "/api/v1/company/{company_id}/addresses/address/{id}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company.id,
+          id: prms.id
+        });
+        halClient.$get(uri, {}).then(function(customerAddress) {
+          return deferred.resolve(customerAddress);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService) {
+    var alertService, titleLookup;
+    $rootScope.alerts = [];
+    titleLookup = function(type, title) {
+      if (title) {
+        return title;
+      }
+      switch (type) {
+        case "error":
+        case "danger":
+          title = "Error";
+          break;
+        default:
+          title = null;
+      }
+      return title;
+    };
+    return alertService = {
+      add: function(type, arg) {
+        var msg, title;
+        title = arg.title, msg = arg.msg;
+        $rootScope.alerts = [];
+        $rootScope.alerts.push({
+          type: type,
+          title: titleLookup(type, title),
+          msg: msg,
+          close: function() {
+            return alertService.closeAlert(this);
+          }
+        });
+        return $rootScope.$broadcast("alert:raised");
+      },
+      closeAlert: function(alert) {
+        return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
+      },
+      closeAlertIdx: function(index) {
+        return $rootScope.alerts.splice(index, 1);
+      },
+      clear: function() {
+        return $rootScope.alerts = [];
+      },
+      error: function(alert) {
+        return this.add('error', {
+          title: alert.title,
+          msg: alert.msg
+        });
+      },
+      danger: function(alert) {
+        return this.add('danger', {
+          title: alert.title,
+          msg: alert.msg
+        });
+      },
+      info: function(alert) {
+        return this.add('info', {
+          title: alert.title,
+          msg: alert.msg
+        });
+      },
+      warning: function(alert) {
+        return this.add('warning', {
+          title: alert.title,
+          msg: alert.msg
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
+    return {
+      addItem: function(company, params) {
+        var data, deferred, lnk;
+        deferred = $q.defer();
+        lnk = params.item.book_link;
+        data = params.item.getPostData();
+        if (!lnk) {
+          deferred.reject("rel book not found for event");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return lnk.$post('book', params, data).then(function(basket) {
+              var mbasket;
+              MutexService.unlock(mutex);
+              company.$flush('basket');
+              mbasket = new BBModel.Basket(basket, params.bb);
+              return basket.$get('items').then(function(items) {
+                var i, item, j, len, promises;
+                promises = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  item = new BBModel.BasketItem(i, params.bb);
+                  mbasket.addItem(item);
+                  promises = promises.concat(item.promises);
+                }
+                if (promises.length > 0) {
+                  return $q.all(promises).then(function() {
+                    return deferred.resolve(mbasket);
+                  });
+                } else {
+                  return deferred.resolve(mbasket);
+                }
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            }, function(err) {
+              MutexService.unlock(mutex);
+              return deferred.reject(err);
+            });
+          });
+        }
+        return deferred.promise;
+      },
+      applyCoupon: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return company.$post('coupon', {}, {
+            coupon: params.coupon
+          }).then(function(basket) {
+            var mbasket;
+            MutexService.unlock(mutex);
+            company.$flush('basket');
+            mbasket = new BBModel.Basket(basket, params.bb);
+            return basket.$get('items').then(function(items) {
+              var i, item, j, len, promises;
+              promises = [];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
+                item = new BBModel.BasketItem(i, params.bb);
+                mbasket.addItem(item);
+                promises = promises.concat(item.promises);
+              }
+              if (promises.length > 0) {
+                return $q.all(promises).then(function() {
+                  return deferred.resolve(mbasket);
+                });
+              } else {
+                return deferred.resolve(mbasket);
+              }
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        });
+        return deferred.promise;
+      },
+      updateBasket: function(company, params) {
+        var data, deferred, item, j, len, lnk, ref, xdata;
+        deferred = $q.defer();
+        data = {
+          entire_basket: true,
+          items: []
+        };
+        ref = params.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.book_link) {
+            lnk = item.book_link;
+          }
+          xdata = item.getPostData();
+          data.items.push(xdata);
+        }
+        if (!lnk) {
+          deferred.reject("rel book not found for event");
+          return deferred.promise;
+        }
+        MutexService.getLock().then(function(mutex) {
+          return lnk.$post('book', params, data).then(function(basket) {
+            var mbasket;
+            MutexService.unlock(mutex);
+            company.$flush('basket');
+            mbasket = new BBModel.Basket(basket, params.bb);
+            return basket.$get('items').then(function(items) {
+              var i, k, len1, promises;
+              promises = [];
+              for (k = 0, len1 = items.length; k < len1; k++) {
+                i = items[k];
+                item = new BBModel.BasketItem(i, params.bb);
+                mbasket.addItem(item);
+                promises = promises.concat(item.promises);
+              }
+              if (promises.length > 0) {
+                return $q.all(promises).then(function() {
+                  return deferred.resolve(mbasket);
+                });
+              } else {
+                return deferred.resolve(mbasket);
+              }
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        });
+        return deferred.promise;
+      },
+      checkPrePaid: function(company, event, pre_paid_bookings) {
+        var booking, j, len, valid_pre_paid;
+        valid_pre_paid = null;
+        for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
+          booking = pre_paid_bookings[j];
+          if (booking.checkValidity(event)) {
+            valid_pre_paid = booking;
+          }
+        }
+        return valid_pre_paid;
+      },
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('basket')) {
+          deferred.reject("rel basket not found for company");
+        } else {
+          company.$get('basket').then(function(basket) {
+            basket = new BBModel.Basket(basket, params.bb);
+            if (basket.$has('items')) {
+              basket.$get('items').then(function(items) {
+                var item, j, len, results;
+                results = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  item = items[j];
+                  results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
+                }
+                return results;
+              });
+            }
+            return deferred.resolve(basket);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      deleteItem: function(item, company, params) {
+        var deferred;
+        if (!params) {
+          params = {};
+        }
+        deferred = $q.defer();
+        if (!item.$has('self')) {
+          deferred.reject("rel self not found for item");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return item.$del('self', params).then(function(basket) {
+              MutexService.unlock(mutex);
+              company.$flush('basket');
+              basket = new BBModel.Basket(basket, params.bb);
+              if (basket.$has('items')) {
+                basket.$get('items').then(function(items) {
+                  var j, len, results;
+                  results = [];
+                  for (j = 0, len = items.length; j < len; j++) {
+                    item = items[j];
+                    results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
+                  }
+                  return results;
+                });
+              }
+              return deferred.resolve(basket);
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      checkout: function(company, basket, params) {
+        var data, deferred;
+        deferred = $q.defer();
+        if (!basket.$has('checkout')) {
+          deferred.reject("rel checkout not found for basket");
+        } else {
+          data = basket.getPostData();
+          data.affiliate_id = $rootScope.affiliate_id;
+          MutexService.getLock().then(function(mutex) {
+            return basket.$post('checkout', params, data).then(function(total) {
+              var tot;
+              MutexService.unlock(mutex);
+              $rootScope.$broadcast('updateBookings');
+              tot = new BBModel.Purchase.Total(total);
+              $rootScope.$broadcast('newCheckout', tot);
+              basket.clear();
+              return deferred.resolve(tot);
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      empty: function(bb) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return bb.company.$del('basket').then(function(basket) {
+            MutexService.unlock(mutex);
+            bb.company.$flush('basket');
+            return deferred.resolve(new BBModel.Basket(basket, bb));
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }, function(err) {
+          MutexService.unlock(mutex);
+          return deferred.reject(err);
+        });
+        return deferred.promise;
+      },
+      memberCheckout: function(basket, params) {
+        var data, deferred, item;
+        deferred = $q.defer();
+        if (!basket.$has('checkout')) {
+          deferred.reject("rel checkout not found for basket");
+        } else if ($rootScope.member === null) {
+          deferred.reject("member not set");
+        } else {
+          basket._data.setOption('auth_token', $rootScope.member._data.getOption('auth_token'));
+          data = {
+            items: (function() {
+              var j, len, ref, results;
+              ref = basket.items;
+              results = [];
+              for (j = 0, len = ref.length; j < len; j++) {
+                item = ref[j];
+                results.push(item._data);
+              }
+              return results;
+            })()
+          };
+          basket.$post('checkout', params, data).then(function(total) {
+            if (total.$has('member')) {
+              total.$get('member').then(function(member) {
+                $rootScope.member.flushBookings();
+                return $rootScope.member = new BBModel.Member.Member(member);
+              });
+            }
+            return deferred.resolve(total);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      applyDeal: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return params.bb.basket.$post('deal', {}, {
+            deal_code: params.deal_code
+          }).then(function(basket) {
+            var mbasket;
+            MutexService.unlock(mutex);
+            company.$flush('basket');
+            mbasket = new BBModel.Basket(basket, params.bb);
+            return basket.$get('items').then(function(items) {
+              var i, item, j, len, promises;
+              promises = [];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
+                item = new BBModel.BasketItem(i, params.bb);
+                mbasket.addItem(item);
+                promises = promises.concat(item.promises);
+              }
+              if (promises.length > 0) {
+                return $q.all(promises).then(function() {
+                  return deferred.resolve(mbasket);
+                });
+              } else {
+                return deferred.resolve(mbasket);
+              }
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        });
+        return deferred.promise;
+      },
+      removeDeal: function(company, params) {
+        var deferred;
+        if (!params) {
+          params = {};
+        }
+        deferred = $q.defer();
+        if (!params.bb.basket.$has('deal')) {
+          return deferred.reject("No Remove Deal link found");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return params.bb.basket.$put('deal', {}, {
+              deal_code_id: params.deal_code_id.toString()
+            }).then(function(basket) {
+              MutexService.unlock(mutex);
+              company.$flush('basket');
+              basket = new BBModel.Basket(basket, params.bb);
+              if (basket.$has('items')) {
+                return basket.$get('items').then(function(items) {
+                  var item, j, len;
+                  for (j = 0, len = items.length; j < len; j++) {
+                    item = items[j];
+                    basket.addItem(new BBModel.BasketItem(item, params.bb));
+                  }
+                  return deferred.resolve(basket);
+                }, function(err) {
+                  return deferred.reject(err);
+                });
+              }
+            }, function(err) {
+              MutexService.unlock(mutex);
+              return deferred.reject(err);
+            });
+          });
+          return deferred.promise;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("BreadcrumbService", function() {
+    var current_step;
+    current_step = 1;
+    return {
+      setCurrentStep: function(step) {
+        return current_step = step;
+      },
+      getCurrentStep: function() {
+        return current_step;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("CategoryService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('categories')) {
+          deferred.reject("No categories found");
+        } else {
+          company.$get('named_categories').then((function(_this) {
+            return function(resource) {
+              return resource.$get('categories').then(function(items) {
+                var _i, cat, categories, i, j, len;
+                categories = [];
+                for (_i = j = 0, len = items.length; j < len; _i = ++j) {
+                  i = items[_i];
+                  cat = new BBModel.Category(i);
+                  cat.order || (cat.order = _i);
+                  categories.push(cat);
+                }
+                return deferred.resolve(categories);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ClientService", function($q, BBModel, MutexService) {
+    return {
+      create: function(company, client) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('client')) {
+          deferred.reject("Cannot create new people for this company");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return company.$post('client', {}, client.getPostData()).then((function(_this) {
+              return function(cl) {
+                deferred.resolve(new BBModel.Client(cl));
+                return MutexService.unlock(mutex);
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                deferred.reject(err);
+                return MutexService.unlock(mutex);
+              };
+            })(this));
+          });
+        }
+        return deferred.promise;
+      },
+      update: function(company, client) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return client.$put('self', {}, client.getPostData()).then((function(_this) {
+            return function(cl) {
+              deferred.resolve(new BBModel.Client(cl));
+              return MutexService.unlock(mutex);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              deferred.reject(err);
+              return MutexService.unlock(mutex);
+            };
+          })(this));
+        });
+        return deferred.promise;
+      },
+      create_or_update: function(company, client) {
+        if (client.$has('self')) {
+          return this.update(company, client);
+        } else {
+          return this.create(company, client);
+        }
+      },
+      query_by_email: function(company, email) {
+        var deferred;
+        deferred = $q.defer();
+        if ((company != null) && (email != null)) {
+          company.$get("client_by_email", {
+            email: email
+          }).then((function(_this) {
+            return function(client) {
+              if (client != null) {
+                return deferred.resolve(new BBModel.Client(client));
+              } else {
+                return deferred.resolve({});
+              }
+            };
+          })(this), function(err) {
+            return deferred.reject(err);
+          });
+        } else {
+          deferred.reject("No company or email defined");
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ClientDetailsService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('client_details')) {
+          deferred.reject("No client_details found");
+        } else {
+          company.$get('client_details').then((function(_this) {
+            return function(details) {
+              return deferred.resolve(new BBModel.ClientDetails(details));
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
+    return {
+      query: function(company_id, options) {
+        var deferred, url;
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/company/" + company_id;
+        deferred = $q.defer();
+        halClient.$get(url, options).then((function(_this) {
+          return function(company) {
+            return deferred.resolve(company);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      queryChildren: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('companies')) {
+          deferred.reject("No child companies found");
+        } else {
+          company.$get('companies').then((function(_this) {
+            return function(resource) {
+              return resource.$get('companies').then(function(items) {
+                var companies, i, j, len;
+                companies = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  companies.push(new BBModel.Company(i));
+                }
+                return deferred.resolve(companies);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("CustomTextService", function($q, BBModel) {
+    return {
+      BookingText: function(company, basketItem) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get('booking_text').then((function(_this) {
+          return function(emb) {
+            return emb.$get('booking_text').then(function(details) {
+              var detail, i, len, link, msgs, name, ref;
+              msgs = [];
+              for (i = 0, len = details.length; i < len; i++) {
+                detail = details[i];
+                if (detail.message_type === "Booking") {
+                  ref = basketItem.parts_links;
+                  for (name in ref) {
+                    link = ref[name];
+                    if (detail.$href('item') === link) {
+                      if (msgs.indexOf(detail.message) === -1) {
+                        msgs.push(detail.message);
+                      }
+                    }
+                  }
+                }
+              }
+              return deferred.resolve(msgs);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      confirmationText: function(company, total) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get('booking_text').then(function(emb) {
+          return emb.$get('booking_text').then(function(details) {
+            return total.getMessages(details, "Confirm").then(function(msgs) {
+              return deferred.resolve(msgs);
+            });
+          });
+        }, function(err) {
+          return deferred.reject(err);
+        });
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("DateTimeUlititiesService", function() {
+    return {
+      convertTimeSlotToMoment: function(day, time_slot) {
+        var datetime, hours, mins, val;
+        if (!day && !time_slot) {
+          return;
+        }
+        datetime = moment();
+        val = parseInt(time_slot.time);
+        hours = parseInt(val / 60);
+        mins = val % 60;
+        datetime.hour(hours);
+        datetime.minutes(mins);
+        datetime.seconds(0);
+        datetime.date(day.date.date());
+        datetime.month(day.date.month());
+        datetime.year(day.date.year());
+        return datetime;
+      },
+      convertMomentToTime: function(datetime) {
+        return datetime.minutes() + datetime.hours() * 60;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("DayService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred, extra;
+        deferred = $q.defer();
+        if (prms.cItem.days_link) {
+          extra = {};
+          extra.month = prms.month;
+          extra.date = prms.date;
+          extra.edate = prms.edate;
+          if (prms.client) {
+            extra.location = prms.client.addressCsvLine();
+          }
+          if (prms.cItem.person && !prms.cItem.anyPerson()) {
+            extra.person_id = prms.cItem.person.id;
+          }
+          if (prms.cItem.resource && !prms.cItem.anyResource()) {
+            extra.resource_id = prms.cItem.resource.id;
+          }
+          prms.cItem.days_link.$get('days', extra).then((function(_this) {
+            return function(found) {
+              var afound, days, i, j, len;
+              afound = found.days;
+              days = [];
+              for (j = 0, len = afound.length; j < len; j++) {
+                i = afound[j];
+                if (i.type === prms.item) {
+                  days.push(new BBModel.Day(i));
+                }
+              }
+              return deferred.resolve(days);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        } else {
+          deferred.reject("No Days Link found");
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("DealService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('deals')) {
+          deferred.reject("No Deals found");
+        } else {
+          company.$get('deals').then((function(_this) {
+            return function(resource) {
+              return resource.$get('deals').then(function(deals) {
+                var deal;
+                deals = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = deals.length; i < len; i++) {
+                    deal = deals[i];
+                    results.push(new BBModel.Deal(deal));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(deals);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB').config(function($logProvider, $injector) {
+    return $logProvider.debugEnabled(true);
+  });
+
+  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel) {
+    var logObjectKeys, showScopeChain;
+    logObjectKeys = function(obj, showValue) {
+      var key, value;
+      for (key in obj) {
+        value = obj[key];
+        if (obj.hasOwnProperty(key) && !_.isFunction(value) && !(/^\$\$/.test(key))) {
+          console.log(key);
+          if (showValue) {
+            console.log('\t', value, '\n');
+          }
+        }
+      }
+    };
+    showScopeChain = function() {
+      var $root, data, f;
+      $root = $('[ng-app]');
+      data = $root.data();
+      if (data && data.$scope) {
+        f = function(scope) {
+          console.log(scope.$id);
+          console.log(scope);
+          if (scope.$$nextSibling) {
+            return f(scope.$$nextSibling);
+          } else {
+            if (scope.$$childHead) {
+              return f(scope.$$childHead);
+            }
+          }
+        };
+        f(data.$scope);
+      }
+    };
+    (function() {
+      if (($location.host() === 'localhost' || $location.host() === '127.0.0.1') && $location.port() === 3000) {
+        return window.setTimeout(function() {
+          var scope;
+          scope = $rootScope;
+          while (scope) {
+            if (scope.controller === 'public.controllers.BBCtrl') {
+              break;
+            }
+            scope = scope.$$childHead;
+          }
+          $($window).on('dblclick', function(e) {
+            var controller, controllerName, pscope;
+            scope = angular.element(e.target).scope();
+            controller = scope.hasOwnProperty('controller');
+            pscope = scope;
+            if (controller) {
+              controllerName = scope.controller;
+            }
+            while (!controller) {
+              pscope = pscope.$parent;
+              controllerName = pscope.controller;
+              controller = pscope.hasOwnProperty('controller');
+            }
+            $window.bbScope = scope;
+            $log.log(e.target);
+            $log.log($window.bbScope);
+            return $log.log('Controller ->', controllerName);
+          });
+          $window.bbBBCtrlScopeKeyNames = function(prop) {
+            return logObjectKeys(scope, prop);
+          };
+          $window.bbBBCtrlScope = function() {
+            return scope;
+          };
+          $window.bbCurrentItem = function() {
+            return scope.current_item;
+          };
+          return $window.bbShowScopeChain = showScopeChain;
+        }, 10);
+      }
+    })();
+    return {
+      logObjectKeys: logObjectKeys
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
+    var errors;
+    errors = [
+      {
+        id: 1,
+        type: 'GENERIC',
+        title: '',
+        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
+      }, {
+        id: 2,
+        type: 'LOCATION_NOT_FOUND',
+        title: '',
+        msg: "Sorry, we don't recognise that location"
+      }, {
+        id: 3,
+        type: 'MISSING_LOCATION',
+        title: '',
+        msg: 'Please enter your location'
+      }, {
+        id: 4,
+        type: 'MISSING_POSTCODE',
+        title: '',
+        msg: 'Please enter a postcode'
+      }, {
+        id: 5,
+        type: 'INVALID_POSTCODE',
+        title: '',
+        msg: 'Please enter a valid postcode'
+      }, {
+        id: 6,
+        type: 'ITEM_NO_LONGER_AVAILABLE',
+        title: '',
+        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
+      }, {
+        id: 7,
+        type: 'FORM_INVALID',
+        title: '',
+        msg: 'Please complete all required fields'
+      }, {
+        id: 8,
+        type: 'GEOLOCATION_ERROR',
+        title: '',
+        msg: 'Sorry, we could not determine your location. Please try searching instead.'
+      }, {
+        id: 9,
+        type: 'EMPTY_BASKET_FOR_CHECKOUT',
+        title: '',
+        msg: 'There are no items in the basket to proceed to checkout.'
+      }, {
+        id: 10,
+        type: 'MAXIMUM_TICKETS',
+        title: '',
+        msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
+      }
+    ];
+    return {
+      getError: function(type) {
+        var error, translate;
+        error = _.findWhere(errors, {
+          type: type
+        });
+        translate = SettingsService.isInternationalizatonEnabled();
+        if (error && translate) {
+          return {
+            msg: "ERROR." + type
+          };
+        } else if (error && !translate) {
+          return error;
+        } else if (translate) {
+          return {
+            msg: 'GENERIC'
+          };
+        } else {
+          return errors[0];
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('events', params).then(function(events) {
+                var event;
+                events = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = events.length; i < len; i++) {
+                    event = events[i];
+                    results.push(new BBModel.Event(event));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(events);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      summary: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          params.summary = true;
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              return deferred.resolve(resource.events);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventChainService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_chains')) {
+          deferred.reject("company does not have event_chains");
+        } else {
+          company.$get('event_chains', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('event_chains', params).then(function(event_chains) {
+                var event_chain;
+                event_chains = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_chains.length; i < len; i++) {
+                    event_chain = event_chains[i];
+                    results.push(new BBModel.EventChain(event_chain));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(event_chains);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventGroupService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_groups')) {
+          deferred.reject("company does not have event_groups");
+        } else {
+          company.$get('event_groups', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('event_groups', params).then(function(event_groups) {
+                var event_group;
+                event_groups = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_groups.length; i < len; i++) {
+                    event_group = event_groups[i];
+                    results.push(new BBModel.EventGroup(event_group));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(event_groups);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventSequenceService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_sequences')) {
+          deferred.reject("company does not have event_sequences");
+        } else {
+          company.$get('event_sequences', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('event_sequences', params).then(function(event_sequences) {
+                var event_sequence;
+                event_sequences = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_sequences.length; i < len; i++) {
+                    event_sequence = event_sequences[i];
+                    results.push(new BBModel.EventSequence(event_sequence));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(event_sequences);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('PathSvc', function($sce, AppConfig) {
+    return {
+      directivePartial: function(fileName) {
+        var partial_url;
+        if (AppConfig.partial_url) {
+          partial_url = AppConfig.partial_url;
+          return $sce.trustAsResourceUrl(partial_url + "/" + fileName + ".html");
+        } else {
+          return $sce.trustAsResourceUrl(fileName + ".html");
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  "use strict";
+  angular.module('BB.Services').factory('FormDataStoreService', function($rootScope, $window, $log, $parse) {
+    var checkForListeners, checkRegisteredWidgets, clear, dataStore, div, getParentScope, init, log, register, registeredWidgetArr, removeWidget, resetValuesOnScope, setIfUndefined, setListeners, setValuesOnScope, showInfo, storeFormData, toId;
+    registeredWidgetArr = [];
+    dataStore = {};
+    toId = 0;
+    div = '___';
+    log = function() {};
+    showInfo = function() {
+      return log(dataStore);
+    };
+    setIfUndefined = function(keyName, val) {
+      var getter, scope;
+      scope = this;
+      getter = $parse(keyName);
+      if (typeof getter(scope) === 'undefined') {
+        return getter.assign(scope, val);
+      }
+    };
+    resetValuesOnScope = function(scope, props) {
+      var i, len, prop, setter;
+      for (i = 0, len = props.length; i < len; i++) {
+        prop = props[i];
+        prop = $parse(prop);
+        setter = prop.assign;
+        setter(scope, null);
+      }
+    };
+    clear = function(scope, keepScopeValues) {
+      var data, key, widgetId;
+      if (!scope) {
+        throw new Error('Missing scope object. Cannot clear form data without scope');
+      }
+      if (_.isString(scope)) {
+        data = dataStore[scope];
+        if (!keepScopeValues) {
+          resetValuesOnScope(data[0], data[1]);
+        }
+        delete dataStore[scope];
+        return;
+      }
+      scope = getParentScope(scope);
+      if (scope && scope.bb) {
+        widgetId = scope.bb.uid;
+        removeWidget(scope);
+        for (key in dataStore) {
+          data = dataStore[key];
+          if (key.indexOf(widgetId) !== -1) {
+            if (data[3]) {
+              _.each(data[3], function(func) {
+                if (_.isFunction(func)) {
+                  return func();
+                }
+              });
+            }
+            if (!keepScopeValues) {
+              resetValuesOnScope(data[0], data[1]);
+            }
+            delete dataStore[key];
+          }
+        }
+      }
+    };
+    storeFormData = function() {
+      var i, key, len, ndata, prop, props, scope, step, val;
+      log('formDataStore ->', dataStore);
+      for (key in dataStore) {
+        step = dataStore[key];
+        log('\t', key);
+        scope = step[0];
+        props = step[1];
+        ndata = step[2];
+        if (!ndata) {
+          ndata = step[2] = {};
+        }
+        for (i = 0, len = props.length; i < len; i++) {
+          prop = props[i];
+          val = ndata[prop];
+          if (val === 'data:destroyed') {
+            ndata[prop] = null;
+          } else {
+            val = angular.copy(scope.$eval(prop));
+            ndata[prop] = val;
+          }
+          log('\t\t', prop, val);
+        }
+        log('\n');
+      }
+    };
+    setValuesOnScope = function(currentPage, scope) {
+      var cpage, storedValues;
+      cpage = dataStore[currentPage];
+      storedValues = cpage[2];
+      log('Decorating scope ->', currentPage, storedValues);
+      if (_.isObject(storedValues)) {
+        _.each(_.keys(storedValues), function(keyName) {
+          var getter;
+          if (typeof storedValues[keyName] !== 'undefined' && storedValues[keyName] !== 'data:destroyed') {
+            getter = $parse(keyName);
+            return getter.assign(scope, storedValues[keyName]);
+          }
+        });
+      }
+      cpage[0] = scope;
+      log(scope);
+      log('\n');
+    };
+    getParentScope = function(scope) {
+      while (scope) {
+        if (scope.hasOwnProperty('cid') && scope.cid === 'BBCtrl') {
+          return scope;
+        }
+        scope = scope.$parent;
+      }
+    };
+    checkRegisteredWidgets = function(scope) {
+      var i, isRegistered, len, rscope;
+      isRegistered = false;
+      scope = getParentScope(scope);
+      for (i = 0, len = registeredWidgetArr.length; i < len; i++) {
+        rscope = registeredWidgetArr[i];
+        if (rscope === scope) {
+          isRegistered = true;
+        }
+      }
+      return isRegistered;
+    };
+    checkForListeners = function(propsArr) {
+      var watchArr;
+      watchArr = [];
+      _.each(propsArr, function(propName, index) {
+        var split;
+        split = propName.split('->');
+        if (split.length === 2) {
+          watchArr.push(split);
+          return propsArr[index] = split[0];
+        }
+      });
+      return watchArr;
+    };
+    setListeners = function(scope, listenerArr, currentPage) {
+      var cpage, listenersArr;
+      if (listenerArr.length) {
+        cpage = dataStore[currentPage];
+        listenersArr = cpage[3] || [];
+        _.each(listenerArr, function(item, index) {
+          var func;
+          func = $rootScope.$on(item[1], function() {
+            var e;
+            try {
+              return cpage[2][item[0]] = 'data:destroyed';
+            } catch (_error) {
+              e = _error;
+              return log(e);
+            }
+          });
+          return listenersArr.push(func);
+        });
+        return cpage[3] = listenersArr;
+      }
+    };
+    init = function(uid, scope, propsArr) {
+      var currentPage, watchArr;
+      if (checkRegisteredWidgets(scope)) {
+        currentPage = scope.bb.uid + div + scope.bb.current_page + div + uid;
+        currentPage = currentPage.toLowerCase();
+        watchArr = checkForListeners(propsArr);
+        scope.clearStoredData = (function(currentPage) {
+          return function() {
+            clear(currentPage);
+          };
+        })(currentPage);
+        if (!currentPage) {
+          throw new Error("Missing current step");
+        }
+        if (dataStore[currentPage]) {
+          setValuesOnScope(currentPage, scope);
+          return;
+        }
+        log('Controller registered ->', currentPage, scope, '\n\n');
+        dataStore[currentPage] = [scope, propsArr];
+        setListeners(scope, watchArr, currentPage);
+      }
+    };
+    removeWidget = function(scope) {
+      registeredWidgetArr = _.without(registeredWidgetArr, scope);
+    };
+    register = function(scope) {
+      var registered;
+      registered = false;
+      if (scope && scope.$$childHead) {
+        scope = scope.$$childHead;
+      }
+      while (!_.has(scope, 'cid')) {
+        scope = scope.$parent;
+      }
+      if (!scope) {
+        return;
+      }
+      if (scope.cid !== 'BBCtrl') {
+        throw new Error("This directive can only be used with the BBCtrl");
+      }
+      _.each(registeredWidgetArr, function(stored) {
+        if (scope === stored) {
+          return registered = true;
+        }
+      });
+      if (!registered) {
+        log('Scope registered ->', scope);
+        scope.$on('destroy', removeWidget);
+        return registeredWidgetArr.push(scope);
+      }
+    };
+    $rootScope.$watch(function() {
+      $window.clearTimeout(toId);
+      toId = setTimeout(storeFormData, 300);
+    });
+    $rootScope.$on('save:formData', storeFormData);
+    $rootScope.$on('clear:formData', clear);
+    return {
+      init: init,
+      destroy: function(scope) {
+        return clear(scope, true);
+      },
+      showInfo: showInfo,
+      register: register,
+      setIfUndefined: setIfUndefined
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('GeolocationService', function($q) {
+    return {
+      haversine: function(position1, position2) {
+        var R, a, c, chLat, chLon, d, dLat, dLon, distance, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
+        pi = Math.PI;
+        R = 6371;
+        distances = [];
+        lat1 = position1.lat;
+        lon1 = position1.long;
+        lat2 = position2.lat;
+        lon2 = position2.long;
+        chLat = lat2 - lat1;
+        chLon = lon2 - lon1;
+        dLat = chLat * (pi / 180);
+        dLon = chLon * (pi / 180);
+        rLat1 = lat1 * (pi / 180);
+        rLat2 = lat2 * (pi / 180);
+        a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
+        c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        d = R * c;
+        d = d * 0.621371192;
+        distance = Math.round(d);
+        return distance;
+      },
+      geocode: function(address, prms) {
+        var deferred, ne, request, sw;
+        if (prms == null) {
+          prms = {};
+        }
+        deferred = $q.defer();
+        request = {
+          address: address
+        };
+        if (prms.region) {
+          request.region = prms.region;
+        }
+        if (prms.componentRestrictions) {
+          request.componentRestrictions = prms.componentRestrictions;
+        }
+        if (prms.bounds) {
+          sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
+          ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
+          request.bounds = new google.maps.LatLngBounds(sw, ne);
+        }
+        new google.maps.Geocoder().geocode(request, function(results, status) {
+          if (results && status === 'OK') {
+            return deferred.resolve({
+              results: results,
+              status: status
+            });
+          } else {
+            return deferred.reject(status);
+          }
+        });
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ItemService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred;
+        deferred = $q.defer();
+        if (prms.cItem.service && prms.item !== 'service') {
+          if (!prms.cItem.service.$has('items')) {
+            prms.cItem.service.$get('item').then((function(_this) {
+              return function(base_item) {
+                return _this.build_items(base_item.$get('items'), prms, deferred);
+              };
+            })(this));
+          } else {
+            this.build_items(prms.cItem.service.$get('items'), prms, deferred);
+          }
+        } else if (prms.cItem.resource && !prms.cItem.anyResource() && prms.item !== 'resource') {
+          if (!prms.cItem.resource.$has('items')) {
+            prms.cItem.resource.$get('item').then((function(_this) {
+              return function(base_item) {
+                return _this.build_items(base_item.$get('items'), prms, deferred);
+              };
+            })(this));
+          } else {
+            this.build_items(prms.cItem.resource.$get('items'), prms, deferred);
+          }
+        } else if (prms.cItem.person && !prms.cItem.anyPerson() && prms.item !== 'person') {
+          if (!prms.cItem.person.$has('items')) {
+            prms.cItem.person.$get('item').then((function(_this) {
+              return function(base_item) {
+                return _this.build_items(base_item.$get('items'), prms, deferred);
+              };
+            })(this));
+          } else {
+            this.build_items(prms.cItem.person.$get('items'), prms, deferred);
+          }
+        } else {
+          deferred.reject("No service link found");
+        }
+        return deferred.promise;
+      },
+      build_items: function(base_items, prms, deferred) {
+        var wait_items;
+        wait_items = [base_items];
+        if (prms.wait) {
+          wait_items.push(prms.wait);
+        }
+        return $q.all(wait_items).then((function(_this) {
+          return function(resources) {
+            var resource;
+            resource = resources[0];
+            return resource.$get('items').then(function(found) {
+              var i, len, m, matching, v, wlist;
+              matching = [];
+              wlist = [];
+              for (i = 0, len = found.length; i < len; i++) {
+                v = found[i];
+                if (v.type === prms.item) {
+                  matching.push(new BBModel.BookableItem(v));
+                }
+              }
+              return $q.all((function() {
+                var j, len1, results;
+                results = [];
+                for (j = 0, len1 = matching.length; j < len1; j++) {
+                  m = matching[j];
+                  results.push(m.ready.promise);
+                }
+                return results;
+              })()).then(function() {
+                return deferred.resolve(matching);
+              });
+            });
+          };
+        })(this));
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ItemDetailsService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred;
+        deferred = $q.defer();
+        if (prms.cItem.service) {
+          if (!prms.cItem.service.$has('questions')) {
+            deferred.resolve(new BBModel.ItemDetails());
+          } else {
+            prms.cItem.service.$get('questions').then((function(_this) {
+              return function(details) {
+                return deferred.resolve(new BBModel.ItemDetails(details));
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+        } else if (prms.cItem.event_chain) {
+          if (!prms.cItem.event_chain.$has('questions')) {
+            deferred.resolve(new BBModel.ItemDetails());
+          } else {
+            prms.cItem.event_chain.$get('questions').then((function(_this) {
+              return function(details) {
+                return deferred.resolve(new BBModel.ItemDetails(details));
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+        } else if (prms.cItem.deal) {
+          if (!prms.cItem.deal.$has('questions')) {
+            deferred.resolve(new BBModel.ItemDetails());
+          } else {
+            prms.cItem.deal.$get('questions').then((function(_this) {
+              return function(details) {
+                return deferred.resolve(new BBModel.ItemDetails(details));
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+        } else {
+          deferred.reject("No service link found");
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('LocaleService', function($window) {
+    var locale;
+    locale = $window.getURIparam('locale');
+    if (locale) {
+      return locale;
+    } else if ($window.navigator.language) {
+      return $window.navigator.language;
+    } else {
+      return "en";
+    }
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage) {
+    return {
+      companyLogin: function(company, params, form) {
+        var deferred;
+        deferred = $q.defer();
+        company.$post('login', params, form).then((function(_this) {
+          return function(login) {
+            return login.$get('member').then(function(member) {
+              _this.setLogin(member);
+              return deferred.resolve(member);
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      login: function(form, options) {
+        var deferred, url;
+        deferred = $q.defer();
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/login";
+        halClient.$post(url, options, form).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('member').then(function(member) {
+              _this.setLogin(member);
+              return deferred.resolve(member);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      companyQuery: (function(_this) {
+        return function(id) {
+          var comp_promise;
+          if (id) {
+            comp_promise = halClient.$get(location.protocol + '//' + location.host + '/api/v1/company/' + id);
+            return comp_promise.then(function(company) {
+              return company = new BBModel.Company(company);
+            });
+          }
+        };
+      })(this),
+      memberQuery: (function(_this) {
+        return function(params) {
+          var member_promise;
+          if (params.member_id && params.company_id) {
+            member_promise = halClient.$get(location.protocol + '//' + location.host + ("/api/v1/" + params.company_id + "/") + "members/" + params.member_id);
+            return member_promise.then(function(member) {
+              return member = new BBModel.Member.Member(member);
+            });
+          }
+        };
+      })(this),
+      ssoLogin: function(options, data) {
+        var deferred, url;
+        deferred = $q.defer();
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/login/sso/" + options['company_id'];
+        halClient.$post(url, {}, data).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('member').then(function(member) {
+              member = new BBModel.Member.Member(member);
+              _this.setLogin(member);
+              return deferred.resolve(member);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      isLoggedIn: function() {
+        this.checkLogin();
+        if ($rootScope.member && !$rootScope.user) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      setLogin: function(member) {
+        var auth_token;
+        auth_token = member.getOption('auth_token');
+        member = new BBModel.Member.Member(member);
+        $sessionStorage.setItem("login", member.$toStore());
+        $sessionStorage.setItem("auth_token", auth_token);
+        $rootScope.member = member;
+        return member;
+      },
+      member: function() {
+        this.checkLogin();
+        return $rootScope.member;
+      },
+      checkLogin: function() {
+        var member;
+        if ($rootScope.member) {
+          return;
+        }
+        member = $sessionStorage.getItem("login");
+        if (member) {
+          return $rootScope.member = halClient.createResource(member);
+        }
+      },
+      logout: function(options) {
+        var deferred, url;
+        $rootScope.member = null;
+        $sessionStorage.removeItem("login");
+        $sessionStorage.removeItem('auth_token');
+        $sessionStorage.clear();
+        deferred = $q.defer();
+        options || (options = {});
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/logout";
+        halClient.$del(url, options, {}).then((function(_this) {
+          return function(logout) {
+            return deferred.resolve(true);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      sendPasswordReset: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        company.$post('email_password_reset', {}, params).then((function(_this) {
+          return function() {
+            return deferred.resolve(true);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      updatePassword: function(member, params) {
+        var deferred;
+        if (member && params['new_password'] && params['confirm_new_password']) {
+          deferred = $q.defer();
+          member.$post('update_password', {}, params).then((function(_this) {
+            return function(login) {
+              return login.$get('member').then(function(member) {
+                _this.setLogin(member);
+                return deferred.resolve(member);
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+          return deferred.promise;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('ModalForm', function($modal, $log) {
+    var editForm, newForm;
+    newForm = function($scope, $modalInstance, company, title, new_rel, post_rel, success, fail) {
+      $scope.loading = true;
+      $scope.title = title;
+      $scope.company = company;
+      if ($scope.company.$has(new_rel)) {
+        $scope.company.$get(new_rel).then(function(schema) {
+          $scope.form = _.reject(schema.form, function(x) {
+            return x.type === 'submit';
+          });
+          $scope.schema = schema.schema;
+          $scope.form_model = {};
+          return $scope.loading = false;
+        });
+      } else {
+        $log.warn("company does not have '" + new_rel + "' rel");
+      }
+      $scope.submit = function(form) {
+        $scope.$broadcast('schemaFormValidate');
+        $scope.loading = true;
+        return $scope.company.$post(post_rel, {}, $scope.form_model).then(function(model) {
+          $scope.loading = false;
+          $modalInstance.close(model);
+          if (success) {
+            return success(model);
+          }
+        }, function(err) {
+          $scope.loading = false;
+          $modalInstance.close(err);
+          $log.error('Failed to create');
+          if (fail) {
+            return fail(err);
+          }
+        });
+      };
+      return $scope.cancel = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return $modalInstance.dismiss('cancel');
+      };
+    };
+    editForm = function($scope, $modalInstance, model, title, success, fail) {
+      $scope.loading = true;
+      $scope.title = title;
+      $scope.model = model;
+      if ($scope.model.$has('edit')) {
+        $scope.model.$get('edit').then(function(schema) {
+          $scope.form = _.reject(schema.form, function(x) {
+            return x.type === 'submit';
+          });
+          $scope.schema = schema.schema;
+          $scope.form_model = $scope.model;
+          return $scope.loading = false;
+        });
+      } else {
+        $log.warn("model does not have 'edit' rel");
+      }
+      $scope.submit = function(form) {
+        $scope.$broadcast('schemaFormValidate');
+        $scope.loading = true;
+        return $scope.model.$put('self', {}, $scope.form_model).then(function(model) {
+          $scope.loading = false;
+          $modalInstance.close(model);
+          if (success) {
+            return success(model);
+          }
+        }, function(err) {
+          $scope.loading = false;
+          $modalInstance.close(err);
+          $log.error('Failed to create');
+          if (fail) {
+            return fail();
+          }
+        });
+      };
+      return $scope.cancel = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return $modalInstance.dismiss('cancel');
+      };
+    };
+    return {
+      "new": function(config) {
+        var templateUrl;
+        if (config.templateUrl) {
+          templateUrl = config.templateUrl;
+        }
+        templateUrl || (templateUrl = 'modal_form.html');
+        return $modal.open({
+          templateUrl: templateUrl,
+          controller: newForm,
+          size: config.size,
+          resolve: {
+            company: function() {
+              return config.company;
+            },
+            title: function() {
+              return config.title;
+            },
+            new_rel: function() {
+              return config.new_rel;
+            },
+            post_rel: function() {
+              return config.post_rel;
+            },
+            success: function() {
+              return config.success;
+            },
+            fail: function() {
+              return config.fail;
+            }
+          }
+        });
+      },
+      edit: function(config) {
+        var templateUrl;
+        if (config.templateUrl) {
+          templateUrl = config.templateUrl;
+        }
+        templateUrl || (templateUrl = 'modal_form.html');
+        return $modal.open({
+          templateUrl: templateUrl,
+          controller: editForm,
+          size: config.size,
+          resolve: {
+            model: function() {
+              return config.model;
+            },
+            title: function() {
+              return config.title;
+            },
+            success: function() {
+              return config.success;
+            },
+            fail: function() {
+              return config.fail;
+            }
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("MutexService", function($q, $window, $rootScope) {
+    return {
+      getLock: function(prms) {
+        var iprom, mprom;
+        mprom = $q.defer();
+        iprom = $q.defer();
+        mprom.promise.then(function() {
+          var next_mux;
+          $rootScope.mutexes.shift();
+          if ($rootScope.mutexes.length > 0) {
+            next_mux = $rootScope.mutexes[0];
+            return next_mux.iprom.resolve(next_mux.mprom);
+          }
+        });
+        if (!$rootScope.mutexes || $rootScope.mutexes.length === 0) {
+          $rootScope.mutexes = [
+            {
+              mprom: mprom,
+              iprom: iprom
+            }
+          ];
+          iprom.resolve(mprom);
+          return iprom.promise;
+        } else {
+          $rootScope.mutexes.push({
+            mprom: mprom,
+            iprom: iprom
+          });
+          return iprom.promise;
+        }
+      },
+      unlock: function(mutex) {
+        return mutex.resolve();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PaginationService", function() {
+    return {
+      initialise: function(options) {
+        var paginator;
+        if (!options) {
+          return;
+        }
+        paginator = {
+          current_page: 1,
+          page_size: options.page_size,
+          num_pages: null,
+          max_size: options.max_size,
+          num_items: null
+        };
+        return paginator;
+      },
+      update: function(paginator, length) {
+        var end, start, total;
+        if (!paginator || !length) {
+          return;
+        }
+        paginator.num_items = length;
+        start = ((paginator.page_size - 1) * paginator.current_page) - ((paginator.page_size - 1) - paginator.current_page);
+        end = paginator.current_page * paginator.page_size;
+        total = end < paginator.page_size ? end : length;
+        end = end > total ? total : end;
+        total = total >= 100 ? "100+" : total;
+        return paginator.summary = start + " - " + end + " of " + total;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PersonService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('people')) {
+          deferred.reject("No people found");
+        } else {
+          company.$get('people').then((function(_this) {
+            return function(resource) {
+              return resource.$get('people').then(function(items) {
+                var i, j, len, people;
+                people = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  people.push(new BBModel.Person(i));
+                }
+                return deferred.resolve(people);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseTotalService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred;
+        deferred = $q.defer();
+        if (!prms.company.$has('total')) {
+          deferred.reject("No Total link found");
+        } else {
+          prms.company.$get('total', {
+            total_id: prms.total_id
+          }).then((function(_this) {
+            return function(total) {
+              return deferred.resolve(new BBModel.PurchaseTotal(total));
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('QueryStringService', function($window) {
+    return function(keyName) {
+      var hash, hashes, href, i, isNum, len, val, varObj;
+      varObj = {};
+      href = $window.location.href;
+      if (href.indexOf('?') < 0) {
+        return;
+      }
+      hashes = href.slice(href.indexOf('?') + 1).split(/[#&]/);
+      isNum = function(num) {
+        if (num == null) {
+          return;
+        }
+        if (num.substr(0, 1) === '0') {
+          return;
+        }
+        if (/[a-zA-Z\-\_\+\.\#\%\*\,]/.test(num)) {
+          return;
+        }
+        if (window.isNaN(window.parseInt(num, 10))) {
+          return;
+        }
+        return true;
+      };
+      for (i = 0, len = hashes.length; i < len; i++) {
+        hash = hashes[i];
+        hash = hash.split('=');
+        val = hash[1];
+        if (isNum(val)) {
+          val = window.parseInt(val, 10);
+        } else {
+          if (val === 'true') {
+            val = true;
+          } else if (val === 'false') {
+            val = false;
+          } else {
+            val = window.decodeURIComponent(val);
+          }
+        }
+        varObj[hash[0]] = val;
+      }
+      if (keyName) {
+        return varObj[keyName];
+      }
+      return varObj;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory('QuestionService', function($window, QueryStringService, $bbug) {
+    var addAnswersById, addAnswersByKey, addAnswersByName, addDynamicAnswersByName, checkConditionalQuestions, convertDates, convertToSnakeCase, defaults, findByQuestionId, storeDefaults;
+    defaults = QueryStringService() || {};
+    convertDates = function(obj) {
+      return _.each(obj, function(val, key) {
+        var date;
+        date = $window.moment(obj[key]);
+        if (_.isString(obj[key]) && date.isValid()) {
+          return obj[key] = date;
+        }
+      });
+    };
+    if ($window.bb_setup) {
+      convertDates($window.bb_setup);
+      angular.extend(defaults, $window.bb_setup);
+    }
+    addAnswersById = function(questions) {
+      if (!questions) {
+        return;
+      }
+      if (angular.isArray(questions)) {
+        _.each(questions, function(question) {
+          var id;
+          id = question.id + '';
+          if (!question.answer && defaults[id]) {
+            return question.answer = defaults[id];
+          }
+        });
+      } else {
+        questions.answer = defaults[questions.id + ''];
+      }
+    };
+    convertToSnakeCase = function(str) {
+      str = str.toLowerCase();
+      str = $.trim(str);
+      str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
+      str = str.replace(/\s{2,}/g, ' ');
+      str = str.replace(/\s/g, '_');
+      return str;
+    };
+    addDynamicAnswersByName = function(questions) {
+      var keys;
+      if (angular.isArray(questions)) {
+        keys = _.keys(defaults);
+        return _.each(questions, function(question) {
+          var name;
+          name = convertToSnakeCase(question.name);
+          return _.each(keys, function(key) {
+            if (name.indexOf(key) >= 0) {
+              if (defaults[key] && !question.answer) {
+                question.answer = defaults[key];
+                delete defaults[key];
+              }
+            }
+          });
+        });
+      }
+    };
+    addAnswersByName = function(obj, keys) {
+      var i, key, len, type;
+      type = Object.prototype.toString.call(obj).slice(8, -1);
+      if (type === 'Object' && angular.isArray(keys)) {
+        for (i = 0, len = keys.length; i < len; i++) {
+          key = keys[i];
+          if (defaults[key] && !obj[key]) {
+            obj[key] = defaults[key];
+            delete defaults[key];
+          }
+        }
+      }
+    };
+    addAnswersByKey = function(questions, answers) {
+      var i, len, name, question, results;
+      results = [];
+      for (i = 0, len = questions.length; i < len; i++) {
+        question = questions[i];
+        name = question.help_text;
+        if (answers[name]) {
+          results.push(question.answer = answers[name]);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+    storeDefaults = function(obj) {
+      return angular.extend(defaults, obj.bb_setup || {});
+    };
+    checkConditionalQuestions = function(questions) {
+      var a, ans, cond, found, i, len, q, ref, results, v;
+      results = [];
+      for (i = 0, len = questions.length; i < len; i++) {
+        q = questions[i];
+        if (q.settings && q.settings.conditional_question) {
+          cond = findByQuestionId(questions, parseInt(q.settings.conditional_question));
+          if (cond) {
+            ans = cond.getAnswerId();
+            found = false;
+            if ($bbug.isEmptyObject(q.settings.conditional_answers) && cond.detail_type === "check" && !cond.answer) {
+              found = true;
+            }
+            ref = q.settings.conditional_answers;
+            for (a in ref) {
+              v = ref[a];
+              if (a[0] === 'c' && parseInt(v) === 1 && cond.answer) {
+                found = true;
+              } else if (parseInt(a) === ans && parseInt(v) === 1) {
+                found = true;
+              }
+            }
+            if (found) {
+              results.push(q.showElement());
+            } else {
+              results.push(q.hideElement());
+            }
+          } else {
+            results.push(void 0);
+          }
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+    findByQuestionId = function(questions, qid) {
+      var i, len, q;
+      for (i = 0, len = questions.length; i < len; i++) {
+        q = questions[i];
+        if (q.id === qid) {
+          return q;
+        }
+      }
+      return null;
+    };
+    return {
+      getStoredData: function() {
+        return defaults;
+      },
+      storeDefaults: storeDefaults,
+      addAnswersById: addAnswersById,
+      addAnswersByName: addAnswersByName,
+      addDynamicAnswersByName: addDynamicAnswersByName,
+      addAnswersByKey: addAnswersByKey,
+      convertToSnakeCase: convertToSnakeCase,
+      checkConditionalQuestions: checkConditionalQuestions
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module("BB.Services").factory("RecaptchaService", function($q, halClient, UriTemplate) {
+    return {
+      validateResponse: function(params) {
+        var deferred, href, prms, uri;
+        deferred = $q.defer();
+        href = params.api_url + "/api/v1/recaptcha";
+        uri = new UriTemplate(href);
+        prms = {};
+        prms.response = params.response;
+        halClient.$post(uri, {}, prms).then(function(response) {
+          return deferred.resolve(response);
+        }, function(err) {
+          return deferred.reject(err);
+        });
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ResourceService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('resources')) {
+          deferred.reject("No resource found");
+        } else {
+          company.$get('resources').then((function(_this) {
+            return function(resource) {
+              return resource.$get('resources').then(function(items) {
+                var i, j, len, resources;
+                resources = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  resources.push(new BBModel.Resource(i));
+                }
+                return deferred.resolve(resources);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ServiceService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('services')) {
+          deferred.reject("No services found");
+        } else {
+          company.$get('services').then((function(_this) {
+            return function(resource) {
+              return resource.$get('services').then(function(items) {
+                var i, j, len, services;
+                services = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  services.push(new BBModel.Service(i));
+                }
+                return deferred.resolve(services);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('SettingsService', function() {
+    var i18n, scroll_offset;
+    i18n = false;
+    scroll_offset = 0;
+    return {
+      enableInternationalizaton: function() {
+        return i18n = true;
+      },
+      isInternationalizatonEnabled: function() {
+        return i18n;
+      },
+      setScrollOffset: function(value) {
+        return scroll_offset = parseInt(value);
+      },
+      getScrollOffset: function() {
+        return scroll_offset;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("SlotService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('slots')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          company.$get('slots', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('slots', params).then(function(slots) {
+                var slot;
+                slots = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = slots.length; i < len; i++) {
+                    slot = slots[i];
+                    results.push(new BBModel.Slot(slot));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(slots);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("SpaceService", [
+    '$q', function($q, BBModel) {
+      return {
+        query: function(company) {
+          var deferred;
+          deferred = $q.defer();
+          if (!company.$has('spaces')) {
+            deferred.reject("No spaces found");
+          } else {
+            company.$get('spaces').then((function(_this) {
+              return function(resource) {
+                return resource.$get('spaces').then(function(items) {
+                  var i, j, len, spaces;
+                  spaces = [];
+                  for (j = 0, len = items.length; j < len; j++) {
+                    i = items[j];
+                    spaces.push(new BBModel.Space(i));
+                  }
+                  return deferred.resolve(spaces);
+                });
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+          return deferred.promise;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("SSOService", function($q, $rootScope, halClient, LoginService) {
+    return {
+      memberLogin: function(options) {
+        var data, deferred, url;
+        deferred = $q.defer();
+        options.root || (options.root = "");
+        url = options.root + "/api/v1/login/sso/" + options.company_id;
+        data = {
+          token: options.member_sso
+        };
+        halClient.$post(url, {}, data).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('member').then(function(member) {
+              member = LoginService.setLogin(member);
+              return deferred.resolve(member);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      adminLogin: function(options) {
+        var data, deferred, url;
+        deferred = $q.defer();
+        options.root || (options.root = "");
+        url = options.root + "/api/v1/login/admin_sso/" + options.company_id;
+        data = {
+          token: options.admin_sso
+        };
+        halClient.$post(url, {}, data).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('administrator').then(function(admin) {
+              return deferred.resolve(admin);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("TemplateSvc", function($q, $http, $templateCache, BBModel) {
+    return {
+      get: function(path) {
+        var cacheTmpl, deferred;
+        deferred = $q.defer();
+        cacheTmpl = $templateCache.get(path);
+        if (cacheTmpl) {
+          deferred.resolve(angular.element(cacheTmpl));
+        } else {
+          $http({
+            method: 'GET',
+            url: path
+          }).success(function(tmpl, status) {
+            $templateCache.put(path, tmpl);
+            return deferred.resolve(angular.element(tmpl));
+          }).error(function(data, status) {
+            return deferred.reject(data);
+          });
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient) {
+    return {
+      query: function(prms) {
+        var date, deferred, extra, item_link;
+        deferred = $q.defer();
+        if (prms.date) {
+          date = prms.date.toISODate();
+        } else {
+          if (!prms.cItem.date) {
+            deferred.reject("No date set");
+            return deferred.promise;
+          } else {
+            date = prms.cItem.date.date.toISODate();
+          }
+        }
+        if (prms.duration == null) {
+          if (prms.cItem && prms.cItem.duration) {
+            prms.duration = prms.cItem.duration;
+          }
+        }
+        item_link = prms.item_link;
+        if (prms.cItem && prms.cItem.days_link && !item_link) {
+          item_link = prms.cItem.days_link;
+        }
+        if (item_link) {
+          extra = {
+            date: date
+          };
+          if (prms.location) {
+            extra.location = prms.location;
+          }
+          if (prms.cItem.event_id) {
+            extra.event_id = prms.cItem.event_id;
+          }
+          if (prms.cItem.person && !prms.cItem.anyPerson() && !item_link.event_id && !extra.event_id) {
+            extra.person_id = prms.cItem.person.id;
+          }
+          if (prms.cItem.resource && !prms.cItem.anyResource() && !item_link.event_id && !extra.event_id) {
+            extra.resource_id = prms.cItem.resource.id;
+          }
+          if (prms.end_date) {
+            extra.end_date = prms.end_date.toISODate();
+          }
+          extra.duration = prms.duration;
+          extra.num_resources = prms.num_resources;
+          if (extra.event_id) {
+            item_link = prms.company;
+          }
+          item_link.$get('times', extra).then((function(_this) {
+            return function(results) {
+              var times;
+              if (results.$has('date_links')) {
+                return results.$get('date_links').then(function(all_days) {
+                  var all_days_def, date_times, day, fn, j, len;
+                  date_times = {};
+                  all_days_def = [];
+                  fn = function(day) {
+                    var times;
+                    day.elink = $q.defer();
+                    all_days_def.push(day.elink.promise);
+                    if (day.$has('event_links')) {
+                      return day.$get('event_links').then(function(all_events) {
+                        var times;
+                        times = _this.merge_times(all_events, prms.cItem.service, prms.cItem);
+                        if (prms.available) {
+                          times = _.filter(times, function(t) {
+                            return t.avail >= prms.available;
+                          });
+                        }
+                        date_times[day.date] = times;
+                        return day.elink.resolve();
+                      });
+                    } else if (day.times) {
+                      times = _this.merge_times([day], prms.cItem.service, prms.cItem);
+                      if (prms.available) {
+                        times = _.filter(times, function(t) {
+                          return t.avail >= prms.available;
+                        });
+                      }
+                      date_times[day.date] = times;
+                      return day.elink.resolve();
+                    }
+                  };
+                  for (j = 0, len = all_days.length; j < len; j++) {
+                    day = all_days[j];
+                    fn(day);
+                  }
+                  return $q.all(all_days_def).then(function() {
+                    return deferred.resolve(date_times);
+                  });
+                });
+              } else if (results.$has('event_links')) {
+                return results.$get('event_links').then(function(all_events) {
+                  var times;
+                  times = _this.merge_times(all_events, prms.cItem.service, prms.cItem);
+                  if (prms.available) {
+                    times = _.filter(times, function(t) {
+                      return t.avail >= prms.available;
+                    });
+                  }
+                  return deferred.resolve(times);
+                });
+              } else if (results.times) {
+                times = _this.merge_times([results], prms.cItem.service, prms.cItem);
+                if (prms.available) {
+                  times = _.filter(times, function(t) {
+                    return t.avail >= prms.available;
+                  });
+                }
+                return deferred.resolve(times);
+              }
+            };
+          })(this), function(err) {
+            return deferred.reject(err);
+          });
+        } else {
+          deferred.reject("No day data");
+        }
+        return deferred.promise;
+      },
+      merge_times: function(all_events, service, item) {
+        var date_times, ev, i, j, k, l, len, len1, len2, ref, sorted_times, times;
+        if (!all_events || all_events.length === 0) {
+          return [];
+        }
+        sorted_times = [];
+        for (j = 0, len = all_events.length; j < len; j++) {
+          ev = all_events[j];
+          if (ev.times) {
+            ref = ev.times;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              i = ref[k];
+              if (!sorted_times[i.time] || sorted_times[i.time].avail === 0 || (Math.floor(Math.random() * all_events.length) === 0 && i.avail > 0)) {
+                i.event_id = ev.event_id;
+                sorted_times[i.time] = i;
+              }
+            }
+            if (item.held) {
+              this.checkCurrentItem(item.held, sorted_times, ev);
+            }
+            this.checkCurrentItem(item, sorted_times, ev);
+          }
+        }
+        times = [];
+        date_times = {};
+        for (l = 0, len2 = sorted_times.length; l < len2; l++) {
+          i = sorted_times[l];
+          if (i) {
+            times.push(new BBModel.TimeSlot(i, service));
+          }
+        }
+        return times;
+      },
+      checkCurrentItem: function(item, sorted_times, ev) {
+        if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
+          sorted_times[item.time.time] = item.time;
+          return halClient.clearCache(ev.$href("self"));
+        } else if (item && item.id && item.event_id === ev.event_id && item.time && sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
+          return sorted_times[item.time.time].avail = 1;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('TimeSlotService', function($q, BBModel) {
+    return {
+      query: function(params) {
+        var company, defer;
+        defer = $q.defer();
+        company = params.company;
+        company.$get('slots', params).then(function(collection) {
+          return collection.$get('slots').then(function(slots) {
+            var s;
+            slots = (function() {
+              var i, len, results;
+              results = [];
+              for (i = 0, len = slots.length; i < len; i++) {
+                s = slots[i];
+                results.push(new BBModel.TimeSlot(s));
+              }
+              return results;
+            })();
+            return defer.resolve(slots);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Address(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Person(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('people').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Person(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Resource(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('resources').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Resource(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Service(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('services').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Service(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.EventGroup(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('event_groups').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.EventGroup(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.EventChain(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Category(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('categories').then((function(_this) {
+          return function(items) {
+            var cat, i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              cat = new BBModel.Category(i);
+              cat.order || (cat.order = _i);
+              models.push(cat);
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Client(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('clients').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Client(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('clients').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Client(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        var defer, i, j, k, len, len1, ref, results, results1;
+        if (resource.questions) {
+          ref = resource.questions;
+          results = [];
+          for (j = 0, len = ref.length; j < len; j++) {
+            i = ref[j];
+            results.push(new BBModel.Question(i));
+          }
+          return results;
+        } else if (resource.$has('questions')) {
+          defer = $q.defer();
+          resource.$get('questions').then(function(items) {
+            return defer.resolve((function() {
+              var k, len1, results1;
+              results1 = [];
+              for (k = 0, len1 = items.length; k < len1; k++) {
+                i = items[k];
+                results1.push(new BBModel.Question(i));
+              }
+              return results1;
+            })());
+          }, function(err) {
+            return defer.reject(err);
+          });
+          return defer.promise;
+        } else {
+          results1 = [];
+          for (k = 0, len1 = resource.length; k < len1; k++) {
+            i = resource[k];
+            results1.push(new BBModel.Question(i));
+          }
+          return results1;
+        }
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Question(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel) {
+    return {
+      promise: false,
+      unwrap: function(items) {
+        var answers, i, j, len, models;
+        models = [];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
+          models.push(new BBModel.Answer(i));
+        }
+        answers = {
+          answers: models,
+          getAnswer: function(question) {
+            var a, k, len1, ref;
+            ref = this.answers;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              a = ref[k];
+              if (a.question_text === question || a.question_id === question) {
+                return a.value;
+              }
+            }
+          }
+        };
+        return answers;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel) {
+    return {
+      unwrap: function(items) {
+        var i, j, len, results;
+        results = [];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
+          results.push(new BBModel.Admin.User(i));
+        }
+        return results;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Company(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return new BBModel.EventChain(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Company(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('company_questions').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.BusinessQuestion(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.BusinessQuestion(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('images').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Image(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('bookings').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.Member.Booking(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, ErrorService, BBModel, $q, $bbug) {
+    var alphanumeric, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
+    uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
+    uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
+    number_only_regex = /^\d+$/;
+    uk_mobile_regex_strict = /^((\+44\s?|0)7([45789]\d{2}|624)\s?\d{3}\s?\d{3})$/;
+    mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
+    uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
+    uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
+    international_number = /^(\+)([\d \(\)]{9,19})$/;
+    alphanumeric = /^[a-zA-Z0-9]*$/;
+    geocode_result = null;
+    return {
+      alpha: /^[a-zA-Z\s]*$/,
+      us_phone_number: /(^[\d \(\)-]{9,16})$/,
+      getUKPostcodePattern: function() {
+        return uk_postcode_regex_lenient;
+      },
+      getNumberOnlyPattern: function() {
+        return number_only_regex;
+      },
+      getAlphaNumbericPattern: function() {
+        return alphanumeric;
+      },
+      getUKMobilePattern: function(strict) {
+        if (strict == null) {
+          strict = false;
+        }
+        if (strict) {
+          return uk_mobile_regex_strict;
+        }
+        return mobile_regex_lenient;
+      },
+      getMobilePattern: function() {
+        return mobile_regex_lenient;
+      },
+      getUKLandlinePattern: function(strict) {
+        if (strict == null) {
+          strict = false;
+        }
+        if (strict) {
+          return uk_landline_regex_strict;
+        }
+        return uk_landline_regex_lenient;
+      },
+      getIntPhonePattern: function() {
+        return international_number;
+      },
+      getGeocodeResult: function() {
+        if (geocode_result) {
+          return geocode_result;
+        }
+      },
+      validatePostcode: function(form, prms) {
+        var deferred, geocoder, ne, postcode, req, sw;
+        AlertService.clear();
+        if (!form || !form.postcode) {
+          return false;
+        }
+        if (form.$error.required) {
+          AlertService.danger(ErrorService.getError('MISSING_POSTCODE'));
+          return false;
+        } else if (form.$error.pattern) {
+          AlertService.danger(ErrorService.getError('INVALID_POSTCODE'));
+          return false;
+        } else {
+          deferred = $q.defer();
+          postcode = form.postcode.$viewValue;
+          req = {
+            address: postcode
+          };
+          if (prms.region) {
+            req.region = prms.region;
+          }
+          req.componentRestrictions = {
+            'postalCode': req.address
+          };
+          if (prms.bounds) {
+            sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
+            ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
+            req.bounds = new google.maps.LatLngBounds(sw, ne);
+          }
+          geocoder = new google.maps.Geocoder();
+          geocoder.geocode(req, function(results, status) {
+            if (results.length === 1 && status === 'OK') {
+              geocode_result = results[0];
+              return deferred.resolve(true);
+            } else {
+              AlertService.danger(ErrorService.getError('INVALID_POSTCODE'));
+              $rootScope.$apply();
+              return deferred.reject(false);
+            }
+          });
+          return deferred.promise;
+        }
+      },
+      validateForm: function(form) {
+        if (!form) {
+          return false;
+        }
+        form.submitted = true;
+        if (form.$invalid && form.raise_alerts && form.alert) {
+          AlertService.danger(form.alert);
+          return false;
+        } else if (form.$invalid && form.raise_alerts) {
+          AlertService.danger(ErrorService.getError('FORM_INVALID'));
+          return false;
+        } else if (form.$invalid) {
+          return false;
+        } else {
+          return true;
+        }
+      },
+      resetForm: function(form) {
+        if (form) {
+          form.submitted = false;
+          return form.$setPristine();
+        }
+      },
+      resetForms: function(forms) {
+        var form, i, len, results1;
+        if (forms && $bbug.isArray(forms)) {
+          results1 = [];
+          for (i = 0, len = forms.length; i < len; i++) {
+            form = forms[i];
+            form.submitted = false;
+            results1.push(form.$setPristine());
+          }
+          return results1;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope) {
+    var Widget;
+    return Widget = (function() {
+      function Widget() {
+        this.clearAddress = bind(this.clearAddress, this);
+        this.emptyStackedItems = bind(this.emptyStackedItems, this);
+        this.deleteStackedItemByService = bind(this.deleteStackedItemByService, this);
+        this.removeItemFromStack = bind(this.removeItemFromStack, this);
+        this.deleteStackedItem = bind(this.deleteStackedItem, this);
+        this.sortStackedItems = bind(this.sortStackedItems, this);
+        this.setStackedItems = bind(this.setStackedItems, this);
+        this.stackItem = bind(this.stackItem, this);
+        this.waitForRoutes = bind(this.waitForRoutes, this);
+        this.setBasicRoute = bind(this.setBasicRoute, this);
+        this.setRoute = bind(this.setRoute, this);
+        this.calculatePercentageComplete = bind(this.calculatePercentageComplete, this);
+        this.recordStep = bind(this.recordStep, this);
+        this.recordCurrentPage = bind(this.recordCurrentPage, this);
+        this.uid = _.uniqueId('bbwidget_');
+        this.page_suffix = "";
+        this.steps = [];
+        this.allSteps = [];
+        this.item_defaults = {};
+        this.usingBasket = false;
+        this.confirmCheckout = false;
+        this.isAdmin = false;
+        this.payment_status = null;
+      }
+
+      Widget.prototype.pageURL = function(route) {
+        return route + '.html';
+      };
+
+      Widget.prototype.updateRoute = function(page) {
+        var company, date, event_group, pattern, prms, service_name, time, url;
+        if (!this.routeFormat) {
+          return;
+        }
+        page || (page = this.current_page);
+        pattern = $urlMatcherFactory.compile(this.routeFormat);
+        service_name = "-";
+        event_group = "-";
+        if (this.current_item) {
+          if (this.current_item.service) {
+            service_name = this.convertToDashSnakeCase(this.current_item.service.name);
+          }
+          if (this.current_item.event_group) {
+            event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
+          }
+          if (this.current_item.date) {
+            date = this.current_item.date.date.toISODate();
+          }
+          if (this.current_item.time) {
+            time = this.current_item.time.time;
+          }
+          if (this.current_item.company) {
+            company = this.convertToDashSnakeCase(this.current_item.company.name);
+          }
+        }
+        if (this.route_values) {
+          prms = angular.copy(this.route_values);
+        }
+        prms || (prms = {});
+        angular.extend(prms, {
+          page: page,
+          company: company,
+          service: service_name,
+          event_group: event_group,
+          date: date,
+          time: time
+        });
+        url = pattern.format(prms);
+        url = url.replace(/\/+$/, "");
+        $location.path(url);
+        this.routing = true;
+        return url;
+      };
+
+      Widget.prototype.setRouteFormat = function(route) {
+        var match, match_test, parts, path, pattern;
+        this.routeFormat = route;
+        if (!this.routeFormat) {
+          return;
+        }
+        this.routing = true;
+        path = $location.path();
+        if (path) {
+          parts = this.routeFormat.split("/");
+          while (parts.length > 0 && !match) {
+            match_test = parts.join("/");
+            pattern = $urlMatcherFactory.compile(match_test);
+            match = pattern.exec(path);
+            parts.pop();
+          }
+          if (match) {
+            if (match.company) {
+              this.item_defaults.company = decodeURIComponent(match.company);
+            }
+            if (match.service && match.service !== "-") {
+              this.item_defaults.service = decodeURIComponent(match.service);
+            }
+            if (match.event_group && match.event_group !== "-") {
+              this.item_defaults.event_group = match.event_group;
+            }
+            if (match.person) {
+              this.item_defaults.person = decodeURIComponent(match.person);
+            }
+            if (match.resource) {
+              this.item_defaults.resource = decodeURIComponent(match.resource);
+            }
+            if (match.date) {
+              this.item_defaults.date = match.date;
+            }
+            if (match.time) {
+              this.item_defaults.time = match.time;
+            }
+            return this.route_matches = match;
+          }
+        }
+      };
+
+      Widget.prototype.matchURLToStep = function() {
+        var _i, j, len, path, ref, step;
+        if (!this.routeFormat) {
+          return null;
+        }
+        path = $location.path();
+        ref = this.steps;
+        for (_i = j = 0, len = ref.length; j < len; _i = ++j) {
+          step = ref[_i];
+          if (step.url && step.url === path) {
+            return step.number;
+          }
+        }
+        return null;
+      };
+
+      Widget.prototype.convertToDashSnakeCase = function(str) {
+        str = str.toLowerCase();
+        str = $.trim(str);
+        str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
+        str = str.replace(/\s{2,}/g, ' ');
+        str = str.replace(/\s/g, '-');
+        return str;
+      };
+
+      Widget.prototype.recordCurrentPage = function() {
+        var j, k, l, len, len1, len2, match, ref, ref1, ref2, step, title;
+        if (!this.current_step) {
+          this.current_step = 0;
+        }
+        match = false;
+        if (this.allSteps) {
+          ref = this.allSteps;
+          for (j = 0, len = ref.length; j < len; j++) {
+            step = ref[j];
+            if (step.page === this.current_page) {
+              this.current_step = step.number;
+              match = true;
+            }
+          }
+        }
+        if (!match) {
+          ref1 = this.steps;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            step = ref1[k];
+            if (step && step.page === this.current_page) {
+              this.current_step = step.number;
+              match = true;
+            }
+          }
+        }
+        if (!match) {
+          this.current_step += 1;
+        }
+        title = "";
+        if (this.allSteps) {
+          ref2 = this.allSteps;
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            step = ref2[l];
+            step.active = false;
+            step.passed = step.number < this.current_step;
+          }
+          if (this.allSteps[this.current_step - 1]) {
+            this.allSteps[this.current_step - 1].active = true;
+            title = this.allSteps[this.current_step - 1].title;
+          }
+        }
+        return this.recordStep(this.current_step, title);
+      };
+
+      Widget.prototype.recordStep = function(step, title) {
+        var j, len, ref;
+        this.steps[step - 1] = {
+          url: this.updateRoute(this.current_page),
+          current_item: this.current_item.getStep(),
+          page: this.current_page,
+          number: step,
+          title: title,
+          stacked_length: this.stacked_items.length
+        };
+        BreadcrumbService.setCurrentStep(step);
+        ref = this.steps;
+        for (j = 0, len = ref.length; j < len; j++) {
+          step = ref[j];
+          if (step) {
+            step.passed = step.number < this.current_step;
+            step.active = step.number === this.current_step;
+          }
+        }
+        this.calculatePercentageComplete(step.number);
+        if ((this.allSteps && this.allSteps.length === step) || this.current_page === 'checkout') {
+          return this.last_step_reached = true;
+        } else {
+          return this.last_step_reached = false;
+        }
+      };
+
+      Widget.prototype.calculatePercentageComplete = function(step_number) {
+        return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
+      };
+
+      Widget.prototype.setRoute = function(rdata) {
+        var i, j, k, len, len1, ref, route, step;
+        this.allSteps.length = 0;
+        this.nextSteps = {};
+        if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
+          this.firstStep = rdata[0].page;
+        }
+        for (i = j = 0, len = rdata.length; j < len; i = ++j) {
+          step = rdata[i];
+          if (step.disable_breadcrumbs) {
+            this.disableGoingBackAtStep = i + 1;
+          }
+          if (rdata[i + 1]) {
+            this.nextSteps[step.page] = rdata[i + 1].page;
+          }
+          this.allSteps.push({
+            number: i + 1,
+            title: step.title,
+            page: step.page
+          });
+          if (step.when) {
+            this.routeSteps || (this.routeSteps = {});
+            ref = step.when;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              route = ref[k];
+              this.routeSteps[route] = step.page;
+            }
+          }
+        }
+        if (this.$wait_for_routing) {
+          return this.$wait_for_routing.resolve();
+        }
+      };
+
+      Widget.prototype.setBasicRoute = function(routes) {
+        var i, j, len, step;
+        this.nextSteps = {};
+        this.firstStep = routes[0];
+        for (i = j = 0, len = routes.length; j < len; i = ++j) {
+          step = routes[i];
+          this.nextSteps[step] = routes[i + 1];
+        }
+        if (this.$wait_for_routing) {
+          return this.$wait_for_routing.resolve();
+        }
+      };
+
+      Widget.prototype.waitForRoutes = function() {
+        if (!this.$wait_for_routing) {
+          return this.$wait_for_routing = $q.defer();
+        }
+      };
+
+      Widget.prototype.stackItem = function(item) {
+        this.stacked_items.push(item);
+        return this.sortStackedItems();
+      };
+
+      Widget.prototype.setStackedItems = function(items) {
+        this.stacked_items = items;
+        return this.sortStackedItems();
+      };
+
+      Widget.prototype.sortStackedItems = function() {
+        var arr, item, j, len, ref;
+        arr = [];
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          arr = arr.concat(item.promises);
+        }
+        return $q.all(arr)['finally']((function(_this) {
+          return function() {
+            return _this.stacked_items = _this.stacked_items.sort(function(a, b) {
+              var ref1, ref2;
+              if (a.time && b.time) {
+                return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
+                  1: -1
+                };
+              } else if (a.service.category && !b.service.category) {
+                return 1;
+              } else if (b.service.category && !a.service.category) {
+                return -1;
+              } else if (!b.service.category && !a.service.category) {
+                return 1;
+              } else {
+                return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
+                  1: -1
+                };
+              }
+            });
+          };
+        })(this));
+      };
+
+      Widget.prototype.deleteStackedItem = function(item) {
+        if (item && item.id) {
+          BasketService.deleteItem(item, this.company, {
+            bb: this
+          });
+        }
+        return this.stacked_items = this.stacked_items.filter(function(i) {
+          return i !== item;
+        });
+      };
+
+      Widget.prototype.removeItemFromStack = function(item) {
+        return this.stacked_items = this.stacked_items.filter(function(i) {
+          return i !== item;
+        });
+      };
+
+      Widget.prototype.deleteStackedItemByService = function(item) {
+        var i, j, len, ref;
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i && i.service && i.service.self === item.self && i.id) {
+            BasketService.deleteItem(i, this.company, {
+              bb: this
+            });
+          }
+        }
+        return this.stacked_items = this.stacked_items.filter(function(i) {
+          return i && i.service && i.service.self !== item.self;
+        });
+      };
+
+      Widget.prototype.emptyStackedItems = function() {
+        return this.stacked_items = [];
+      };
+
+      Widget.prototype.pushStackToBasket = function() {
+        var i, j, len, ref;
+        this.basket || (this.basket = new new BBModel.Basket(null, this));
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          this.basket.addItem(i);
+        }
+        return this.emptyStackedItems();
+      };
+
+      Widget.prototype.totalStackedItemsDuration = function() {
+        var duration, item, j, len, ref;
+        duration = 0;
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.service && item.service.listed_duration) {
+            duration += item.service.listed_duration;
+          }
+        }
+        return duration;
+      };
+
+      Widget.prototype.clearStackedItemsDateTime = function() {
+        var item, j, len, ref, results;
+        ref = this.stacked_items;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          results.push(item.clearDateTime());
+        }
+        return results;
+      };
+
+      Widget.prototype.clearAddress = function() {
+        delete this.address1;
+        delete this.address2;
+        delete this.address3;
+        delete this.address4;
+        return delete this.address5;
+      };
+
+      return Widget;
+
+    })();
   });
 
 }).call(this);
@@ -14248,7 +16469,7 @@ function getURIparam( name ){
             return defer.reject(err);
           });
         } else {
-          defer.reject('missing pre_paid_bookings link');
+          defer.resolve([]);
         }
         return defer.promise;
       };
@@ -15702,3830 +17923,938 @@ function getURIparam( name ){
 
 }).call(this);
 
-(function() {
-  angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
-    return {
-      query: function(prms) {
-        var deferred, href, uri;
-        deferred = $q.defer();
-        href = "/api/v1/company/{company_id}/addresses/{post_code}";
-        uri = new UriTemplate(href).fillFromObject({
-          company_id: prms.company.id,
-          post_code: prms.post_code
-        });
-        halClient.$get(uri, {}).then(function(addressList) {
-          return deferred.resolve(addressList);
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      getAddress: function(prms) {
-        var deferred, href, uri;
-        deferred = $q.defer();
-        href = "/api/v1/company/{company_id}/addresses/address/{id}";
-        uri = new UriTemplate(href).fillFromObject({
-          company_id: prms.company.id,
-          id: prms.id
-        });
-        halClient.$get(uri, {}).then(function(customerAddress) {
-          return deferred.resolve(customerAddress);
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
 
-}).call(this);
+angular
+.module('angular-hal', []).provider('data_cache', function() {
+ 
+    this.$get = function() {
+      data = [];
 
-(function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService) {
-    var alertService, titleLookup;
-    $rootScope.alerts = [];
-    titleLookup = function(type, title) {
-      if (title) {
-        return title;
-      }
-      switch (type) {
-        case "error":
-        case "danger":
-          title = "Error";
-          break;
-        default:
-          title = null;
-      }
-      return title;
-    };
-    return alertService = {
-      add: function(type, arg) {
-        var msg, title;
-        title = arg.title, msg = arg.msg;
-        $rootScope.alerts = [];
-        $rootScope.alerts.push({
-          type: type,
-          title: titleLookup(type, title),
-          msg: msg,
-          close: function() {
-            return alertService.closeAlert(this);
+      return {
+
+        set: function(key, val)
+        {
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        },
+        delMatching: function(str)
+        {
+          for (var k in data) {      
+            if (k.indexOf(str) != -1)
+              delete data[k]
           }
+        }
+
+      }
+    };
+ 
+})
+.provider('shared_header', function() {
+   this.$get = function() {
+      data = {};
+
+      return {
+
+        set: function(key, val)
+        {
+          // also store this in the session store
+          sessionStorage.setItem(key, val)
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        }
+      }
+    };
+
+})
+.factory('halClient', [
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', function(
+    $http, $q, data_cache, shared_header, UriTemplate
+  ){
+    return {
+      setCache: function(cache) {
+        data_cache = cache
+      },
+      clearCache: function(str) {
+        data_cache.delMatching(str)
+      },
+      createResource: function(store)
+      {
+        if (typeof store === 'string') {
+          store = JSON.parse(store)
+        }
+        resource = store.data
+        resource._links = store.links
+        key = store.links.self.href
+        options = store.options
+        return new BaseResource(key, options, resource)
+      },
+      $get: function(href, options){
+        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
+        return data_cache.set(href, callService('GET', href, options));
+//        return callService('GET', href, options);
+      }//get
+      , $post: function(href, options, data){
+        return callService('POST', href, options, data);
+      }//post
+      , $put: function(href, options, data){
+        return callService('PUT', href, options, data);
+      }//put
+      , $patch: function(href, options, data){
+        return callService('PATCH', href, options, data);
+      }//patch
+      , $del: function(href, options){
+        return callService('DELETE', href, options);
+      }//del
+      , $parse: function(data){
+        return parseHal(data)
+      }//parse
+    };
+  
+    function BaseResource(href, options, data){
+      if(!options) options = {};
+      var links = {};
+      var embedded = data_cache
+      if (data.hasOwnProperty('auth_token')) {
+        options['auth_token'] = data['auth_token'];
+      }
+
+      href = getSelfLink(href, data).href;
+
+      defineHiddenProperty(this, '$href', function(rel, params) {
+        if(!(rel in links)) return null;
+
+        return hrefLink(links[rel], params);
+      });
+      defineHiddenProperty(this, '$has', function(rel) {
+        return rel in links;
+      });
+      defineHiddenProperty(this, '$flush', function(rel, params) {
+        var link = links[rel];
+        return flushLink(link, params);
+      });
+      defineHiddenProperty(this, '$get', function(rel, params){
+        var link = links[rel];
+        return callLink('GET', link, params);
+      });
+      defineHiddenProperty(this, '$post', function(rel, params, data){
+        var link = links[rel];
+        return callLink('POST', link, params, data);
+      });
+      defineHiddenProperty(this, '$put', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PUT', link, params, data);
+      });
+      defineHiddenProperty(this, '$patch', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PATCH', link, params, data);
+      });
+      defineHiddenProperty(this, '$del', function(rel, params){
+        var link = links[rel];
+        return callLink('DELETE', link, params);
+      });
+      defineHiddenProperty(this, '$links', function(){
+        return links
+      });
+      defineHiddenProperty(this, '$toStore', function(){
+        return JSON.stringify({data: this, links: links, options:options})
+      });
+      defineHiddenProperty(this, 'setOption', function(key, value){
+        options[key] = value
+      });
+      defineHiddenProperty(this, 'getOption', function(key){
+        return options[key]
+      });
+      defineHiddenProperty(this, '$link', function(rel){
+        return links[rel]
+      });
+
+      Object.keys(data)
+      .filter(function(key){
+        return !~['_', '$'].indexOf(key[0]);
+      })
+      .forEach(function(key){
+        this[key] = data[key]
+//        Object.defineProperty(this, key, {
+  //        configurable: false
+  //        , enumerable: true
+  //        , value: data[key]
+   //     });
+      }, this)
+      ;
+
+
+      if(data._links) {
+        Object
+        .keys(data._links)
+        .forEach(function(rel){
+          var link = data._links[rel];          
+          link = normalizeLink(href, link);
+          links[rel] = link;
+        }, this)
+        ;
+      }
+
+      if(data._embedded) {
+        Object
+        .keys(data._embedded)
+        .forEach(function(rel){
+          var embedded = data._embedded[rel];
+          var link = getSelfLink(href, embedded);
+          links[rel] = link;
+
+          var resource = createResource(href, options, embedded);
+
+          embedResource(resource);
+
+        }, this);
+      }
+
+      function defineHiddenProperty(target, name, value) {
+        target[name] = value
+//        Object.defineProperty(target, name, {
+//          configurable: false
+ //         , enumerable: false
+  //        , value: value
+   //     });
+      }//defineHiddenProperty
+
+
+      function embedResource(resource) {
+        if(angular.isArray(resource)) return resource.map(function(resource){
+          return embedResource(resource);
         });
-        return $rootScope.$broadcast("alert:raised");
+        
+        var href = resource.$href('self');
+
+        embedded.set(href, $q.when(resource));
+      }//embedResource
+
+      function hrefLink(link, params) {
+        var href = link.templated
+        ? new UriTemplate(link.href).fillFromObject(params || {})
+        : link.href
+        ;
+
+        return href;
+      }//hrefLink
+
+      function callLink(method, link, params, data) {
+        if(angular.isArray(link)) return $q.all(link.map(function(link){
+          if(method !== 'GET') throw 'method is not supported for arrays';
+
+          return callLink(method, link, params, data);
+        }));
+
+        var linkHref = hrefLink(link, params);
+
+        if(method === 'GET') {
+          if(embedded.has(linkHref)) return embedded.get(linkHref);
+          
+          return embedded.set(linkHref, callService(method, linkHref, options, data));
+        }
+        else {
+          return callService(method, linkHref, options, data);  
+        }
+
+      }//callLink
+
+      function flushLink(link, params) {
+        if(angular.isArray(link)) return link.map(function(link){
+          return flushLink(link, params);
+        });
+
+        var linkHref = hrefLink(link, params);
+        if(embedded.has(linkHref)) embedded.del(linkHref);
+      }//flushLink
+
+    }//Resource
+
+
+
+
+    function createResource(href, options, data){
+      if(angular.isArray(data)) return data.map(function(data){
+        return createResource(href, options, data);
+      });
+
+      var resource = new BaseResource(href, options, data);
+
+      return resource;
+
+    }//createResource
+
+
+    function normalizeLink(baseHref, link){
+      if(angular.isArray(link)) return link.map(function(link){
+        return normalizeLink(baseHref, link);
+      });
+
+      if(link) {
+        if(typeof link === 'string') link = { href: link };
+        link.href = resolveUrl(baseHref, link.href);
+      }
+      else {
+        link = { href: baseHref };      
+      }
+
+      return link;
+    }//normalizeLink
+
+
+    function getSelfLink(baseHref, resource){
+      if(angular.isArray(resource)) return resource.map(function(resource){
+        return getSelfLink(baseHref, resource);
+      });
+
+      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
+    }//getSelfLink
+
+
+
+    function callService(method, href, options, data){
+      if(!options) options = {};
+      headers = {
+        'Authorization': options.authorization
+        , 'Content-Type': 'application/json'
+        , 'Accept': 'application/hal+json,application/json'
+      }
+      if (options.app_id) shared_header.set('app_id', options.app_id);
+      if (options.app_key) shared_header.set('app_key', options.app_key);
+      if (options.auth_token) {
+        sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token);
+      }
+
+      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
+      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
+
+      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
+
+      var resource = (
+        $http({
+          method: method
+          , url: options.transformUrl ? options.transformUrl(href) : href
+          , headers: headers
+          , data: data
+        })
+        .then(function(res){
+
+          // copy out the auth token from the header if there was one and make sure the child commands use it
+          if (res.headers('auth-token')){
+            options.auth_token = res.headers('Auth-Token')
+            shared_header.set('auth_token', res.headers('Auth-Token'))
+          }
+          switch(res.status){
+            case 200:
+            if(res.data) return createResource(href, options, res.data);
+            return null;
+
+            case 201:
+            if(res.data) return createResource(href, options, res.data);
+            if(res.headers('Content-Location')) return res.headers('Content-Location');
+            return null;
+
+            case 204:
+            return null
+
+            default:
+            return $q.reject(res);
+          }
+        }, function(res)
+        {
+          return $q.reject(res);
+        })
+      );
+
+      return resource;
+    }//callService
+
+    function parseHal(data){
+      var resource = createResource(data._links.self.href, null, data);
+      return resource;
+    }//parseHal
+
+
+
+    function resolveUrl(baseHref, href){
+      var resultHref = '';
+      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
+      var baseHrefMatch = reFullUrl.exec(baseHref);
+      var hrefMatch = reFullUrl.exec(href);
+
+      for(var partIndex = 1; partIndex < 5; partIndex++) {
+        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
+        else resultHref += baseHrefMatch[partIndex]
+      }
+
+      return resultHref;
+    }//resolveUrl
+
+  }
+])//service
+;
+
+angular.module('ngStorage', [])
+.factory('$fakeStorage', [
+  function(){
+    function FakeStorage() {};
+    FakeStorage.prototype.setItem = function (key, value) {
+      this[key] = value;
+    };
+    FakeStorage.prototype.getItem = function (key) {
+      return typeof this[key] == 'undefined' ? null : this[key];
+    }
+    FakeStorage.prototype.removeItem = function (key) {
+      this[key] = undefined;
+    };
+    FakeStorage.prototype.clear = function(){
+      for (var key in this) {
+        if( this.hasOwnProperty(key) )
+        {
+          this.removeItem(key);
+        }
+      }
+    };
+    FakeStorage.prototype.key = function(index){
+      return Object.keys(this)[index];
+    };
+    return new FakeStorage();
+  }
+])
+.factory('$localStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
       },
-      closeAlert: function(alert) {
-        return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
       },
-      closeAlertIdx: function(index) {
-        return $rootScope.alerts.splice(index, 1);
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
       },
       clear: function() {
-        return $rootScope.alerts = [];
+        storage.clear();
       },
-      error: function(alert) {
-        return this.add('error', {
-          title: alert.title,
-          msg: alert.msg
-        });
-      },
-      danger: function(alert) {
-        return this.add('danger', {
-          title: alert.title,
-          msg: alert.msg
-        });
-      },
-      info: function(alert) {
-        return this.add('info', {
-          title: alert.title,
-          msg: alert.msg
-        });
-      },
-      warning: function(alert) {
-        return this.add('warning', {
-          title: alert.title,
-          msg: alert.msg
-        });
+      key: function(index){
+        storage.key(index);
       }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
-    return {
-      addItem: function(company, params) {
-        var data, deferred, lnk;
-        deferred = $q.defer();
-        lnk = params.item.book_link;
-        data = params.item.getPostData();
-        if (!lnk) {
-          deferred.reject("rel book not found for event");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return lnk.$post('book', params, data).then(function(basket) {
-              var mbasket;
-              MutexService.unlock(mutex);
-              company.$flush('basket');
-              mbasket = new BBModel.Basket(basket, params.bb);
-              return basket.$get('items').then(function(items) {
-                var i, item, j, len, promises;
-                promises = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  item = new BBModel.BasketItem(i, params.bb);
-                  mbasket.addItem(item);
-                  promises = promises.concat(item.promises);
-                }
-                if (promises.length > 0) {
-                  return $q.all(promises).then(function() {
-                    return deferred.resolve(mbasket);
-                  });
-                } else {
-                  return deferred.resolve(mbasket);
-                }
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            }, function(err) {
-              MutexService.unlock(mutex);
-              return deferred.reject(err);
-            });
-          });
-        }
-        return deferred.promise;
-      },
-      applyCoupon: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return company.$post('coupon', {}, {
-            coupon: params.coupon
-          }).then(function(basket) {
-            var mbasket;
-            MutexService.unlock(mutex);
-            company.$flush('basket');
-            mbasket = new BBModel.Basket(basket, params.bb);
-            return basket.$get('items').then(function(items) {
-              var i, item, j, len, promises;
-              promises = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                item = new BBModel.BasketItem(i, params.bb);
-                mbasket.addItem(item);
-                promises = promises.concat(item.promises);
-              }
-              if (promises.length > 0) {
-                return $q.all(promises).then(function() {
-                  return deferred.resolve(mbasket);
-                });
-              } else {
-                return deferred.resolve(mbasket);
-              }
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        });
-        return deferred.promise;
-      },
-      updateBasket: function(company, params) {
-        var data, deferred, item, j, len, lnk, ref, xdata;
-        deferred = $q.defer();
-        data = {
-          entire_basket: true,
-          items: []
-        };
-        ref = params.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.book_link) {
-            lnk = item.book_link;
-          }
-          xdata = item.getPostData();
-          data.items.push(xdata);
-        }
-        if (!lnk) {
-          deferred.reject("rel book not found for event");
-          return deferred.promise;
-        }
-        MutexService.getLock().then(function(mutex) {
-          return lnk.$post('book', params, data).then(function(basket) {
-            var mbasket;
-            MutexService.unlock(mutex);
-            company.$flush('basket');
-            mbasket = new BBModel.Basket(basket, params.bb);
-            return basket.$get('items').then(function(items) {
-              var i, k, len1, promises;
-              promises = [];
-              for (k = 0, len1 = items.length; k < len1; k++) {
-                i = items[k];
-                item = new BBModel.BasketItem(i, params.bb);
-                mbasket.addItem(item);
-                promises = promises.concat(item.promises);
-              }
-              if (promises.length > 0) {
-                return $q.all(promises).then(function() {
-                  return deferred.resolve(mbasket);
-                });
-              } else {
-                return deferred.resolve(mbasket);
-              }
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        });
-        return deferred.promise;
-      },
-      checkPrePaid: function(company, event, pre_paid_bookings) {
-        var booking, j, len, valid_pre_paid;
-        valid_pre_paid = null;
-        for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
-          booking = pre_paid_bookings[j];
-          if (booking.checkValidity(event)) {
-            valid_pre_paid = booking;
-          }
-        }
-        return valid_pre_paid;
-      },
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('basket')) {
-          deferred.reject("rel basket not found for company");
-        } else {
-          company.$get('basket').then(function(basket) {
-            basket = new BBModel.Basket(basket, params.bb);
-            if (basket.$has('items')) {
-              basket.$get('items').then(function(items) {
-                var item, j, len, results;
-                results = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  item = items[j];
-                  results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
-                }
-                return results;
-              });
-            }
-            return deferred.resolve(basket);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      deleteItem: function(item, company, params) {
-        var deferred;
-        if (!params) {
-          params = {};
-        }
-        deferred = $q.defer();
-        if (!item.$has('self')) {
-          deferred.reject("rel self not found for item");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return item.$del('self', params).then(function(basket) {
-              MutexService.unlock(mutex);
-              company.$flush('basket');
-              basket = new BBModel.Basket(basket, params.bb);
-              if (basket.$has('items')) {
-                basket.$get('items').then(function(items) {
-                  var j, len, results;
-                  results = [];
-                  for (j = 0, len = items.length; j < len; j++) {
-                    item = items[j];
-                    results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
-                  }
-                  return results;
-                });
-              }
-              return deferred.resolve(basket);
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      checkout: function(company, basket, params) {
-        var data, deferred;
-        deferred = $q.defer();
-        if (!basket.$has('checkout')) {
-          deferred.reject("rel checkout not found for basket");
-        } else {
-          data = basket.getPostData();
-          data.affiliate_id = $rootScope.affiliate_id;
-          MutexService.getLock().then(function(mutex) {
-            return basket.$post('checkout', params, data).then(function(total) {
-              var tot;
-              MutexService.unlock(mutex);
-              $rootScope.$broadcast('updateBookings');
-              tot = new BBModel.Purchase.Total(total);
-              $rootScope.$broadcast('newCheckout', tot);
-              basket.clear();
-              return deferred.resolve(tot);
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      empty: function(bb) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return bb.company.$del('basket').then(function(basket) {
-            MutexService.unlock(mutex);
-            bb.company.$flush('basket');
-            return deferred.resolve(new BBModel.Basket(basket, bb));
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }, function(err) {
-          MutexService.unlock(mutex);
-          return deferred.reject(err);
-        });
-        return deferred.promise;
-      },
-      memberCheckout: function(basket, params) {
-        var data, deferred, item;
-        deferred = $q.defer();
-        if (!basket.$has('checkout')) {
-          deferred.reject("rel checkout not found for basket");
-        } else if ($rootScope.member === null) {
-          deferred.reject("member not set");
-        } else {
-          basket._data.setOption('auth_token', $rootScope.member._data.getOption('auth_token'));
-          data = {
-            items: (function() {
-              var j, len, ref, results;
-              ref = basket.items;
-              results = [];
-              for (j = 0, len = ref.length; j < len; j++) {
-                item = ref[j];
-                results.push(item._data);
-              }
-              return results;
-            })()
-          };
-          basket.$post('checkout', params, data).then(function(total) {
-            if (total.$has('member')) {
-              total.$get('member').then(function(member) {
-                $rootScope.member.flushBookings();
-                return $rootScope.member = new BBModel.Member.Member(member);
-              });
-            }
-            return deferred.resolve(total);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      applyDeal: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return params.bb.basket.$post('deal', {}, {
-            deal_code: params.deal_code
-          }).then(function(basket) {
-            var mbasket;
-            MutexService.unlock(mutex);
-            company.$flush('basket');
-            mbasket = new BBModel.Basket(basket, params.bb);
-            return basket.$get('items').then(function(items) {
-              var i, item, j, len, promises;
-              promises = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                item = new BBModel.BasketItem(i, params.bb);
-                mbasket.addItem(item);
-                promises = promises.concat(item.promises);
-              }
-              if (promises.length > 0) {
-                return $q.all(promises).then(function() {
-                  return deferred.resolve(mbasket);
-                });
-              } else {
-                return deferred.resolve(mbasket);
-              }
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        });
-        return deferred.promise;
-      },
-      removeDeal: function(company, params) {
-        var deferred;
-        if (!params) {
-          params = {};
-        }
-        deferred = $q.defer();
-        if (!params.bb.basket.$has('deal')) {
-          return deferred.reject("No Remove Deal link found");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return params.bb.basket.$put('deal', {}, {
-              deal_code_id: params.deal_code_id.toString()
-            }).then(function(basket) {
-              MutexService.unlock(mutex);
-              company.$flush('basket');
-              basket = new BBModel.Basket(basket, params.bb);
-              if (basket.$has('items')) {
-                return basket.$get('items').then(function(items) {
-                  var item, j, len;
-                  for (j = 0, len = items.length; j < len; j++) {
-                    item = items[j];
-                    basket.addItem(new BBModel.BasketItem(item, params.bb));
-                  }
-                  return deferred.resolve(basket);
-                }, function(err) {
-                  return deferred.reject(err);
-                });
-              }
-            }, function(err) {
-              MutexService.unlock(mutex);
-              return deferred.reject(err);
-            });
-          });
-          return deferred.promise;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("BreadcrumbService", function() {
-    var current_step;
-    current_step = 1;
-    return {
-      setCurrentStep: function(step) {
-        return current_step = step;
-      },
-      getCurrentStep: function() {
-        return current_step;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CategoryService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('categories')) {
-          deferred.reject("No categories found");
-        } else {
-          company.$get('named_categories').then((function(_this) {
-            return function(resource) {
-              return resource.$get('categories').then(function(items) {
-                var _i, cat, categories, i, j, len;
-                categories = [];
-                for (_i = j = 0, len = items.length; j < len; _i = ++j) {
-                  i = items[_i];
-                  cat = new BBModel.Category(i);
-                  cat.order || (cat.order = _i);
-                  categories.push(cat);
-                }
-                return deferred.resolve(categories);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ClientService", function($q, BBModel, MutexService) {
-    return {
-      create: function(company, client) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('client')) {
-          deferred.reject("Cannot create new people for this company");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return company.$post('client', {}, client.getPostData()).then((function(_this) {
-              return function(cl) {
-                deferred.resolve(new BBModel.Client(cl));
-                return MutexService.unlock(mutex);
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                deferred.reject(err);
-                return MutexService.unlock(mutex);
-              };
-            })(this));
-          });
-        }
-        return deferred.promise;
-      },
-      update: function(company, client) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return client.$put('self', {}, client.getPostData()).then((function(_this) {
-            return function(cl) {
-              deferred.resolve(new BBModel.Client(cl));
-              return MutexService.unlock(mutex);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              deferred.reject(err);
-              return MutexService.unlock(mutex);
-            };
-          })(this));
-        });
-        return deferred.promise;
-      },
-      create_or_update: function(company, client) {
-        if (client.$has('self')) {
-          return this.update(company, client);
-        } else {
-          return this.create(company, client);
-        }
-      },
-      query_by_email: function(company, email) {
-        var deferred;
-        deferred = $q.defer();
-        if ((company != null) && (email != null)) {
-          company.$get("client_by_email", {
-            email: email
-          }).then((function(_this) {
-            return function(client) {
-              if (client != null) {
-                return deferred.resolve(new BBModel.Client(client));
-              } else {
-                return deferred.resolve({});
-              }
-            };
-          })(this), function(err) {
-            return deferred.reject(err);
-          });
-        } else {
-          deferred.reject("No company or email defined");
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ClientDetailsService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('client_details')) {
-          deferred.reject("No client_details found");
-        } else {
-          company.$get('client_details').then((function(_this) {
-            return function(details) {
-              return deferred.resolve(new BBModel.ClientDetails(details));
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
-    return {
-      query: function(company_id, options) {
-        var deferred, url;
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/company/" + company_id;
-        deferred = $q.defer();
-        halClient.$get(url, options).then((function(_this) {
-          return function(company) {
-            return deferred.resolve(company);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      queryChildren: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('companies')) {
-          deferred.reject("No child companies found");
-        } else {
-          company.$get('companies').then((function(_this) {
-            return function(resource) {
-              return resource.$get('companies').then(function(items) {
-                var companies, i, j, len;
-                companies = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  companies.push(new BBModel.Company(i));
-                }
-                return deferred.resolve(companies);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CustomTextService", function($q, BBModel) {
-    return {
-      BookingText: function(company, basketItem) {
-        var deferred;
-        deferred = $q.defer();
-        company.$get('booking_text').then((function(_this) {
-          return function(emb) {
-            return emb.$get('booking_text').then(function(details) {
-              var detail, i, len, link, msgs, name, ref;
-              msgs = [];
-              for (i = 0, len = details.length; i < len; i++) {
-                detail = details[i];
-                if (detail.message_type === "Booking") {
-                  ref = basketItem.parts_links;
-                  for (name in ref) {
-                    link = ref[name];
-                    if (detail.$href('item') === link) {
-                      if (msgs.indexOf(detail.message) === -1) {
-                        msgs.push(detail.message);
-                      }
-                    }
-                  }
-                }
-              }
-              return deferred.resolve(msgs);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      confirmationText: function(company, total) {
-        var deferred;
-        deferred = $q.defer();
-        company.$get('booking_text').then(function(emb) {
-          return emb.$get('booking_text').then(function(details) {
-            return total.getMessages(details, "Confirm").then(function(msgs) {
-              return deferred.resolve(msgs);
-            });
-          });
-        }, function(err) {
-          return deferred.reject(err);
-        });
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("DateTimeUlititiesService", function() {
-    return {
-      convertTimeSlotToMoment: function(date, time) {
-        var datetime, hours, mins, val;
-        if (!date && !time) {
-          return;
-        }
-        datetime = moment();
-        val = parseInt(time.time);
-        hours = parseInt(val / 60);
-        mins = val % 60;
-        datetime.hour(hours);
-        datetime.minutes(mins);
-        datetime.seconds(0);
-        datetime.date(date.date.date());
-        datetime.month(date.date.month());
-        datetime.year(date.date.year());
-        return datetime;
-      },
-      convertMomentToTime: function(datetime) {
-        return datetime.minutes() + datetime.hours() * 60;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("DayService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred, extra;
-        deferred = $q.defer();
-        if (prms.cItem.days_link) {
-          extra = {};
-          extra.month = prms.month;
-          extra.date = prms.date;
-          extra.edate = prms.edate;
-          if (prms.client) {
-            extra.location = prms.client.addressCsvLine();
-          }
-          if (prms.cItem.person && !prms.cItem.anyPerson()) {
-            extra.person_id = prms.cItem.person.id;
-          }
-          if (prms.cItem.resource && !prms.cItem.anyResource()) {
-            extra.resource_id = prms.cItem.resource.id;
-          }
-          prms.cItem.days_link.$get('days', extra).then((function(_this) {
-            return function(found) {
-              var afound, days, i, j, len;
-              afound = found.days;
-              days = [];
-              for (j = 0, len = afound.length; j < len; j++) {
-                i = afound[j];
-                if (i.type === prms.item) {
-                  days.push(new BBModel.Day(i));
-                }
-              }
-              return deferred.resolve(days);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        } else {
-          deferred.reject("No Days Link found");
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("DealService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('deals')) {
-          deferred.reject("No Deals found");
-        } else {
-          company.$get('deals').then((function(_this) {
-            return function(resource) {
-              return resource.$get('deals').then(function(deals) {
-                var deal;
-                deals = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = deals.length; i < len; i++) {
-                    deal = deals[i];
-                    results.push(new BBModel.Deal(deal));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(deals);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB').config(function($logProvider, $injector) {
-    return $logProvider.debugEnabled(true);
-  });
-
-  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel) {
-    var logObjectKeys, showScopeChain;
-    logObjectKeys = function(obj, showValue) {
-      var key, value;
-      for (key in obj) {
-        value = obj[key];
-        if (obj.hasOwnProperty(key) && !_.isFunction(value) && !(/^\$\$/.test(key))) {
-          console.log(key);
-          if (showValue) {
-            console.log('\t', value, '\n');
-          }
-        }
-      }
-    };
-    showScopeChain = function() {
-      var $root, data, f;
-      $root = $('[ng-app]');
-      data = $root.data();
-      if (data && data.$scope) {
-        f = function(scope) {
-          console.log(scope.$id);
-          console.log(scope);
-          if (scope.$$nextSibling) {
-            return f(scope.$$nextSibling);
-          } else {
-            if (scope.$$childHead) {
-              return f(scope.$$childHead);
-            }
-          }
-        };
-        f(data.$scope);
-      }
-    };
-    (function() {
-      if (($location.host() === 'localhost' || $location.host() === '127.0.0.1') && $location.port() === 3000) {
-        return window.setTimeout(function() {
-          var scope;
-          scope = $rootScope;
-          while (scope) {
-            if (scope.controller === 'public.controllers.BBCtrl') {
-              break;
-            }
-            scope = scope.$$childHead;
-          }
-          $($window).on('dblclick', function(e) {
-            var controller, controllerName, pscope;
-            scope = angular.element(e.target).scope();
-            controller = scope.hasOwnProperty('controller');
-            pscope = scope;
-            if (controller) {
-              controllerName = scope.controller;
-            }
-            while (!controller) {
-              pscope = pscope.$parent;
-              controllerName = pscope.controller;
-              controller = pscope.hasOwnProperty('controller');
-            }
-            $window.bbScope = scope;
-            $log.log(e.target);
-            $log.log($window.bbScope);
-            return $log.log('Controller ->', controllerName);
-          });
-          $window.bbBBCtrlScopeKeyNames = function(prop) {
-            return logObjectKeys(scope, prop);
-          };
-          $window.bbBBCtrlScope = function() {
-            return scope;
-          };
-          $window.bbCurrentItem = function() {
-            return scope.current_item;
-          };
-          return $window.bbShowScopeChain = showScopeChain;
-        }, 10);
-      }
-    })();
-    return {
-      logObjectKeys: logObjectKeys
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var errors;
-    errors = [
+    }
+  }
+])
+.factory('$sessionStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
       {
-        id: 1,
-        type: 'GENERIC',
-        title: '',
-        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
-      }, {
-        id: 2,
-        type: 'LOCATION_NOT_FOUND',
-        title: '',
-        msg: "Sorry, we don't recognise that location"
-      }, {
-        id: 3,
-        type: 'MISSING_LOCATION',
-        title: '',
-        msg: 'Please enter your location'
-      }, {
-        id: 4,
-        type: 'MISSING_POSTCODE',
-        title: '',
-        msg: 'Please enter a postcode'
-      }, {
-        id: 5,
-        type: 'INVALID_POSTCODE',
-        title: '',
-        msg: 'Please enter a valid postcode'
-      }, {
-        id: 6,
-        type: 'ITEM_NO_LONGER_AVAILABLE',
-        title: '',
-        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
-      }, {
-        id: 7,
-        type: 'FORM_INVALID',
-        title: '',
-        msg: 'Please complete all required fields'
-      }, {
-        id: 8,
-        type: 'GEOLOCATION_ERROR',
-        title: '',
-        msg: 'Sorry, we could not determine your location. Please try searching instead.'
-      }, {
-        id: 9,
-        type: 'EMPTY_BASKET_FOR_CHECKOUT',
-        title: '',
-        msg: 'There are no items in the basket to proceed to checkout.'
-      }, {
-        id: 10,
-        type: 'MAXIMUM_TICKETS',
-        title: '',
-        msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
-      }
-    ];
-    return {
-      getError: function(type) {
-        var error, translate;
-        error = _.findWhere(errors, {
-          type: type
-        });
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (error && translate) {
-          return {
-            msg: "ERROR." + type
-          };
-        } else if (error && !translate) {
-          return error;
-        } else if (translate) {
-          return {
-            msg: 'GENERIC'
-          };
-        } else {
-          return errors[0];
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('events')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.event_group) {
-              params.event_group_id = params.item.event_group.id;
-            }
-            if (params.item.event_chain) {
-              params.event_chain_id = params.item.event_chain.id;
-            }
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          company.$get('events', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('events', params).then(function(events) {
-                var event;
-                events = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = events.length; i < len; i++) {
-                    event = events[i];
-                    results.push(new BBModel.Event(event));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(events);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      },
-      summary: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('events')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.event_group) {
-              params.event_group_id = params.item.event_group.id;
-            }
-            if (params.item.event_chain) {
-              params.event_chain_id = params.item.event_chain.id;
-            }
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          params.summary = true;
-          company.$get('events', params).then((function(_this) {
-            return function(resource) {
-              return deferred.resolve(resource.events);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventChainService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_chains')) {
-          deferred.reject("company does not have event_chains");
-        } else {
-          company.$get('event_chains', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('event_chains', params).then(function(event_chains) {
-                var event_chain;
-                event_chains = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = event_chains.length; i < len; i++) {
-                    event_chain = event_chains[i];
-                    results.push(new BBModel.EventChain(event_chain));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(event_chains);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventGroupService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_groups')) {
-          deferred.reject("company does not have event_groups");
-        } else {
-          company.$get('event_groups', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('event_groups', params).then(function(event_groups) {
-                var event_group;
-                event_groups = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = event_groups.length; i < len; i++) {
-                    event_group = event_groups[i];
-                    results.push(new BBModel.EventGroup(event_group));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(event_groups);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventSequenceService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_sequences')) {
-          deferred.reject("company does not have event_sequences");
-        } else {
-          company.$get('event_sequences', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('event_sequences', params).then(function(event_sequences) {
-                var event_sequence;
-                event_sequences = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = event_sequences.length; i < len; i++) {
-                    event_sequence = event_sequences[i];
-                    results.push(new BBModel.EventSequence(event_sequence));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(event_sequences);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('PathSvc', function($sce, AppConfig) {
-    return {
-      directivePartial: function(fileName) {
-        var partial_url;
-        if (AppConfig.partial_url) {
-          partial_url = AppConfig.partial_url;
-          return $sce.trustAsResourceUrl(partial_url + "/" + fileName + ".html");
-        } else {
-          return $sce.trustAsResourceUrl(fileName + ".html");
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  "use strict";
-  angular.module('BB.Services').factory('FormDataStoreService', function($rootScope, $window, $log, $parse) {
-    var checkForListeners, checkRegisteredWidgets, clear, dataStore, div, getParentScope, init, log, register, registeredWidgetArr, removeWidget, resetValuesOnScope, setIfUndefined, setListeners, setValuesOnScope, showInfo, storeFormData, toId;
-    registeredWidgetArr = [];
-    dataStore = {};
-    toId = 0;
-    div = '___';
-    log = function() {};
-    showInfo = function() {
-      return log(dataStore);
-    };
-    setIfUndefined = function(keyName, val) {
-      var getter, scope;
-      scope = this;
-      getter = $parse(keyName);
-      if (typeof getter(scope) === 'undefined') {
-        return getter.assign(scope, val);
-      }
-    };
-    resetValuesOnScope = function(scope, props) {
-      var i, len, prop, setter;
-      for (i = 0, len = props.length; i < len; i++) {
-        prop = props[i];
-        prop = $parse(prop);
-        setter = prop.assign;
-        setter(scope, null);
-      }
-    };
-    clear = function(scope, keepScopeValues) {
-      var data, key, widgetId;
-      if (!scope) {
-        throw new Error('Missing scope object. Cannot clear form data without scope');
-      }
-      if (_.isString(scope)) {
-        data = dataStore[scope];
-        if (!keepScopeValues) {
-          resetValuesOnScope(data[0], data[1]);
-        }
-        delete dataStore[scope];
-        return;
-      }
-      scope = getParentScope(scope);
-      if (scope && scope.bb) {
-        widgetId = scope.bb.uid;
-        removeWidget(scope);
-        for (key in dataStore) {
-          data = dataStore[key];
-          if (key.indexOf(widgetId) !== -1) {
-            if (data[3]) {
-              _.each(data[3], function(func) {
-                if (_.isFunction(func)) {
-                  return func();
-                }
-              });
-            }
-            if (!keepScopeValues) {
-              resetValuesOnScope(data[0], data[1]);
-            }
-            delete dataStore[key];
-          }
-        }
-      }
-    };
-    storeFormData = function() {
-      var i, key, len, ndata, prop, props, scope, step, val;
-      log('formDataStore ->', dataStore);
-      for (key in dataStore) {
-        step = dataStore[key];
-        log('\t', key);
-        scope = step[0];
-        props = step[1];
-        ndata = step[2];
-        if (!ndata) {
-          ndata = step[2] = {};
-        }
-        for (i = 0, len = props.length; i < len; i++) {
-          prop = props[i];
-          val = ndata[prop];
-          if (val === 'data:destroyed') {
-            ndata[prop] = null;
-          } else {
-            val = angular.copy(scope.$eval(prop));
-            ndata[prop] = val;
-          }
-          log('\t\t', prop, val);
-        }
-        log('\n');
-      }
-    };
-    setValuesOnScope = function(currentPage, scope) {
-      var cpage, storedValues;
-      cpage = dataStore[currentPage];
-      storedValues = cpage[2];
-      log('Decorating scope ->', currentPage, storedValues);
-      if (_.isObject(storedValues)) {
-        _.each(_.keys(storedValues), function(keyName) {
-          var getter;
-          if (typeof storedValues[keyName] !== 'undefined' && storedValues[keyName] !== 'data:destroyed') {
-            getter = $parse(keyName);
-            return getter.assign(scope, storedValues[keyName]);
-          }
-        });
-      }
-      cpage[0] = scope;
-      log(scope);
-      log('\n');
-    };
-    getParentScope = function(scope) {
-      while (scope) {
-        if (scope.hasOwnProperty('cid') && scope.cid === 'BBCtrl') {
-          return scope;
-        }
-        scope = scope.$parent;
-      }
-    };
-    checkRegisteredWidgets = function(scope) {
-      var i, isRegistered, len, rscope;
-      isRegistered = false;
-      scope = getParentScope(scope);
-      for (i = 0, len = registeredWidgetArr.length; i < len; i++) {
-        rscope = registeredWidgetArr[i];
-        if (rscope === scope) {
-          isRegistered = true;
-        }
-      }
-      return isRegistered;
-    };
-    checkForListeners = function(propsArr) {
-      var watchArr;
-      watchArr = [];
-      _.each(propsArr, function(propName, index) {
-        var split;
-        split = propName.split('->');
-        if (split.length === 2) {
-          watchArr.push(split);
-          return propsArr[index] = split[0];
-        }
-      });
-      return watchArr;
-    };
-    setListeners = function(scope, listenerArr, currentPage) {
-      var cpage, listenersArr;
-      if (listenerArr.length) {
-        cpage = dataStore[currentPage];
-        listenersArr = cpage[3] || [];
-        _.each(listenerArr, function(item, index) {
-          var func;
-          func = $rootScope.$on(item[1], function() {
-            var e;
-            try {
-              return cpage[2][item[0]] = 'data:destroyed';
-            } catch (_error) {
-              e = _error;
-              return log(e);
-            }
-          });
-          return listenersArr.push(func);
-        });
-        return cpage[3] = listenersArr;
-      }
-    };
-    init = function(uid, scope, propsArr) {
-      var currentPage, watchArr;
-      if (checkRegisteredWidgets(scope)) {
-        currentPage = scope.bb.uid + div + scope.bb.current_page + div + uid;
-        currentPage = currentPage.toLowerCase();
-        watchArr = checkForListeners(propsArr);
-        scope.clearStoredData = (function(currentPage) {
-          return function() {
-            clear(currentPage);
-          };
-        })(currentPage);
-        if (!currentPage) {
-          throw new Error("Missing current step");
-        }
-        if (dataStore[currentPage]) {
-          setValuesOnScope(currentPage, scope);
-          return;
-        }
-        log('Controller registered ->', currentPage, scope, '\n\n');
-        dataStore[currentPage] = [scope, propsArr];
-        setListeners(scope, watchArr, currentPage);
-      }
-    };
-    removeWidget = function(scope) {
-      registeredWidgetArr = _.without(registeredWidgetArr, scope);
-    };
-    register = function(scope) {
-      var registered;
-      registered = false;
-      if (scope && scope.$$childHead) {
-        scope = scope.$$childHead;
-      }
-      while (!_.has(scope, 'cid')) {
-        scope = scope.$parent;
-      }
-      if (!scope) {
-        return;
-      }
-      if (scope.cid !== 'BBCtrl') {
-        throw new Error("This directive can only be used with the BBCtrl");
-      }
-      _.each(registeredWidgetArr, function(stored) {
-        if (scope === stored) {
-          return registered = true;
-        }
-      });
-      if (!registered) {
-        log('Scope registered ->', scope);
-        scope.$on('destroy', removeWidget);
-        return registeredWidgetArr.push(scope);
-      }
-    };
-    $rootScope.$watch(function() {
-      $window.clearTimeout(toId);
-      toId = setTimeout(storeFormData, 300);
-    });
-    $rootScope.$on('save:formData', storeFormData);
-    $rootScope.$on('clear:formData', clear);
-    return {
-      init: init,
-      destroy: function(scope) {
-        return clear(scope, true);
-      },
-      showInfo: showInfo,
-      register: register,
-      setIfUndefined: setIfUndefined
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('GeolocationService', function($q) {
-    return {
-      haversine: function(position1, position2) {
-        var R, a, c, chLat, chLon, d, dLat, dLon, distance, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
-        pi = Math.PI;
-        R = 6371;
-        distances = [];
-        lat1 = position1.lat;
-        lon1 = position1.long;
-        lat2 = position2.lat;
-        lon2 = position2.long;
-        chLat = lat2 - lat1;
-        chLon = lon2 - lon1;
-        dLat = chLat * (pi / 180);
-        dLon = chLon * (pi / 180);
-        rLat1 = lat1 * (pi / 180);
-        rLat2 = lat2 * (pi / 180);
-        a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
-        c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        d = R * c;
-        d = d * 0.621371192;
-        distance = Math.round(d);
-        return distance;
-      },
-      geocode: function(address, prms) {
-        var deferred, ne, request, sw;
-        if (prms == null) {
-          prms = {};
-        }
-        deferred = $q.defer();
-        request = {
-          address: address
-        };
-        if (prms.region) {
-          request.region = prms.region;
-        }
-        if (prms.componentRestrictions) {
-          request.componentRestrictions = prms.componentRestrictions;
-        }
-        if (prms.bounds) {
-          sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
-          ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
-          request.bounds = new google.maps.LatLngBounds(sw, ne);
-        }
-        new google.maps.Geocoder().geocode(request, function(results, status) {
-          if (results && status === 'OK') {
-            return deferred.resolve({
-              results: results,
-              status: status
-            });
-          } else {
-            return deferred.reject(status);
-          }
-        });
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ItemService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred;
-        deferred = $q.defer();
-        if (prms.cItem.service && prms.item !== 'service') {
-          if (!prms.cItem.service.$has('items')) {
-            prms.cItem.service.$get('item').then((function(_this) {
-              return function(base_item) {
-                return _this.build_items(base_item.$get('items'), prms, deferred);
-              };
-            })(this));
-          } else {
-            this.build_items(prms.cItem.service.$get('items'), prms, deferred);
-          }
-        } else if (prms.cItem.resource && !prms.cItem.anyResource() && prms.item !== 'resource') {
-          if (!prms.cItem.resource.$has('items')) {
-            prms.cItem.resource.$get('item').then((function(_this) {
-              return function(base_item) {
-                return _this.build_items(base_item.$get('items'), prms, deferred);
-              };
-            })(this));
-          } else {
-            this.build_items(prms.cItem.resource.$get('items'), prms, deferred);
-          }
-        } else if (prms.cItem.person && !prms.cItem.anyPerson() && prms.item !== 'person') {
-          if (!prms.cItem.person.$has('items')) {
-            prms.cItem.person.$get('item').then((function(_this) {
-              return function(base_item) {
-                return _this.build_items(base_item.$get('items'), prms, deferred);
-              };
-            })(this));
-          } else {
-            this.build_items(prms.cItem.person.$get('items'), prms, deferred);
-          }
-        } else {
-          deferred.reject("No service link found");
-        }
-        return deferred.promise;
-      },
-      build_items: function(base_items, prms, deferred) {
-        var wait_items;
-        wait_items = [base_items];
-        if (prms.wait) {
-          wait_items.push(prms.wait);
-        }
-        return $q.all(wait_items).then((function(_this) {
-          return function(resources) {
-            var resource;
-            resource = resources[0];
-            return resource.$get('items').then(function(found) {
-              var i, len, m, matching, v, wlist;
-              matching = [];
-              wlist = [];
-              for (i = 0, len = found.length; i < len; i++) {
-                v = found[i];
-                if (v.type === prms.item) {
-                  matching.push(new BBModel.BookableItem(v));
-                }
-              }
-              return $q.all((function() {
-                var j, len1, results;
-                results = [];
-                for (j = 0, len1 = matching.length; j < len1; j++) {
-                  m = matching[j];
-                  results.push(m.ready.promise);
-                }
-                return results;
-              })()).then(function() {
-                return deferred.resolve(matching);
-              });
-            });
-          };
-        })(this));
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ItemDetailsService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred;
-        deferred = $q.defer();
-        if (prms.cItem.service) {
-          if (!prms.cItem.service.$has('questions')) {
-            deferred.resolve(new BBModel.ItemDetails());
-          } else {
-            prms.cItem.service.$get('questions').then((function(_this) {
-              return function(details) {
-                return deferred.resolve(new BBModel.ItemDetails(details));
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-        } else if (prms.cItem.event_chain) {
-          if (!prms.cItem.event_chain.$has('questions')) {
-            deferred.resolve(new BBModel.ItemDetails());
-          } else {
-            prms.cItem.event_chain.$get('questions').then((function(_this) {
-              return function(details) {
-                return deferred.resolve(new BBModel.ItemDetails(details));
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-        } else if (prms.cItem.deal) {
-          if (!prms.cItem.deal.$has('questions')) {
-            deferred.resolve(new BBModel.ItemDetails());
-          } else {
-            prms.cItem.deal.$get('questions').then((function(_this) {
-              return function(details) {
-                return deferred.resolve(new BBModel.ItemDetails(details));
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-        } else {
-          deferred.reject("No service link found");
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('LocaleService', function($window) {
-    var locale;
-    locale = $window.getURIparam('locale');
-    if (locale) {
-      return locale;
-    } else if ($window.navigator.language) {
-      return $window.navigator.language;
-    } else {
-      return "en";
-    }
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage) {
-    return {
-      companyLogin: function(company, params, form) {
-        var deferred;
-        deferred = $q.defer();
-        company.$post('login', params, form).then((function(_this) {
-          return function(login) {
-            return login.$get('member').then(function(member) {
-              _this.setLogin(member);
-              return deferred.resolve(member);
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      login: function(form, options) {
-        var deferred, url;
-        deferred = $q.defer();
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/login";
-        halClient.$post(url, options, form).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('member').then(function(member) {
-              _this.setLogin(member);
-              return deferred.resolve(member);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      companyQuery: (function(_this) {
-        return function(id) {
-          var comp_promise;
-          if (id) {
-            comp_promise = halClient.$get(location.protocol + '//' + location.host + '/api/v1/company/' + id);
-            return comp_promise.then(function(company) {
-              return company = new BBModel.Company(company);
-            });
-          }
-        };
-      })(this),
-      memberQuery: (function(_this) {
-        return function(params) {
-          var member_promise;
-          if (params.member_id && params.company_id) {
-            member_promise = halClient.$get(location.protocol + '//' + location.host + ("/api/v1/" + params.company_id + "/") + "members/" + params.member_id);
-            return member_promise.then(function(member) {
-              return member = new BBModel.Member.Member(member);
-            });
-          }
-        };
-      })(this),
-      ssoLogin: function(options, data) {
-        var deferred, url;
-        deferred = $q.defer();
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/login/sso/" + options['company_id'];
-        halClient.$post(url, {}, data).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('member').then(function(member) {
-              member = new BBModel.Member.Member(member);
-              _this.setLogin(member);
-              return deferred.resolve(member);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      isLoggedIn: function() {
-        this.checkLogin();
-        if ($rootScope.member && !$rootScope.user) {
-          return true;
-        } else {
-          return false;
-        }
-      },
-      setLogin: function(member) {
-        var auth_token;
-        auth_token = member.getOption('auth_token');
-        member = new BBModel.Member.Member(member);
-        $sessionStorage.setItem("login", member.$toStore());
-        $sessionStorage.setItem("auth_token", auth_token);
-        $rootScope.member = member;
-        return member;
-      },
-      member: function() {
-        this.checkLogin();
-        return $rootScope.member;
-      },
-      checkLogin: function() {
-        var member;
-        if ($rootScope.member) {
-          return;
-        }
-        member = $sessionStorage.getItem("login");
-        if (member) {
-          return $rootScope.member = halClient.createResource(member);
-        }
-      },
-      logout: function(options) {
-        var deferred, url;
-        $rootScope.member = null;
-        $sessionStorage.removeItem("login");
-        $sessionStorage.removeItem('auth_token');
-        $sessionStorage.clear();
-        deferred = $q.defer();
-        options || (options = {});
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/logout";
-        halClient.$del(url, options, {}).then((function(_this) {
-          return function(logout) {
-            return deferred.resolve(true);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      sendPasswordReset: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        company.$post('email_password_reset', {}, params).then((function(_this) {
-          return function() {
-            return deferred.resolve(true);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      updatePassword: function(member, params) {
-        var deferred;
-        if (member && params['new_password'] && params['confirm_new_password']) {
-          deferred = $q.defer();
-          member.$post('update_password', {}, params).then((function(_this) {
-            return function(login) {
-              return login.$get('member').then(function(member) {
-                _this.setLogin(member);
-                return deferred.resolve(member);
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-          return deferred.promise;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ModalForm', function($modal, $log) {
-    var editForm, newForm;
-    newForm = function($scope, $modalInstance, company, title, new_rel, post_rel, success, fail) {
-      $scope.loading = true;
-      $scope.title = title;
-      $scope.company = company;
-      if ($scope.company.$has(new_rel)) {
-        $scope.company.$get(new_rel).then(function(schema) {
-          $scope.form = _.reject(schema.form, function(x) {
-            return x.type === 'submit';
-          });
-          $scope.schema = schema.schema;
-          $scope.form_model = {};
-          return $scope.loading = false;
-        });
-      } else {
-        $log.warn("company does not have '" + new_rel + "' rel");
-      }
-      $scope.submit = function(form) {
-        $scope.$broadcast('schemaFormValidate');
-        $scope.loading = true;
-        return $scope.company.$post(post_rel, {}, $scope.form_model).then(function(model) {
-          $scope.loading = false;
-          $modalInstance.close(model);
-          if (success) {
-            return success(model);
-          }
-        }, function(err) {
-          $scope.loading = false;
-          $modalInstance.close(err);
-          $log.error('Failed to create');
-          if (fail) {
-            return fail(err);
-          }
-        });
-      };
-      return $scope.cancel = function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        return $modalInstance.dismiss('cancel');
-      };
-    };
-    editForm = function($scope, $modalInstance, model, title, success, fail) {
-      $scope.loading = true;
-      $scope.title = title;
-      $scope.model = model;
-      if ($scope.model.$has('edit')) {
-        $scope.model.$get('edit').then(function(schema) {
-          $scope.form = _.reject(schema.form, function(x) {
-            return x.type === 'submit';
-          });
-          $scope.schema = schema.schema;
-          $scope.form_model = $scope.model;
-          return $scope.loading = false;
-        });
-      } else {
-        $log.warn("model does not have 'edit' rel");
-      }
-      $scope.submit = function(form) {
-        $scope.$broadcast('schemaFormValidate');
-        $scope.loading = true;
-        return $scope.model.$put('self', {}, $scope.form_model).then(function(model) {
-          $scope.loading = false;
-          $modalInstance.close(model);
-          if (success) {
-            return success(model);
-          }
-        }, function(err) {
-          $scope.loading = false;
-          $modalInstance.close(err);
-          $log.error('Failed to create');
-          if (fail) {
-            return fail();
-          }
-        });
-      };
-      return $scope.cancel = function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        return $modalInstance.dismiss('cancel');
-      };
-    };
-    return {
-      "new": function(config) {
-        var templateUrl;
-        if (config.templateUrl) {
-          templateUrl = config.templateUrl;
-        }
-        templateUrl || (templateUrl = 'modal_form.html');
-        return $modal.open({
-          templateUrl: templateUrl,
-          controller: newForm,
-          size: config.size,
-          resolve: {
-            company: function() {
-              return config.company;
-            },
-            title: function() {
-              return config.title;
-            },
-            new_rel: function() {
-              return config.new_rel;
-            },
-            post_rel: function() {
-              return config.post_rel;
-            },
-            success: function() {
-              return config.success;
-            },
-            fail: function() {
-              return config.fail;
-            }
-          }
-        });
-      },
-      edit: function(config) {
-        var templateUrl;
-        if (config.templateUrl) {
-          templateUrl = config.templateUrl;
-        }
-        templateUrl || (templateUrl = 'modal_form.html');
-        return $modal.open({
-          templateUrl: templateUrl,
-          controller: editForm,
-          size: config.size,
-          resolve: {
-            model: function() {
-              return config.model;
-            },
-            title: function() {
-              return config.title;
-            },
-            success: function() {
-              return config.success;
-            },
-            fail: function() {
-              return config.fail;
-            }
-          }
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("MutexService", function($q, $window, $rootScope) {
-    return {
-      getLock: function(prms) {
-        var iprom, mprom;
-        mprom = $q.defer();
-        iprom = $q.defer();
-        mprom.promise.then(function() {
-          var next_mux;
-          $rootScope.mutexes.shift();
-          if ($rootScope.mutexes.length > 0) {
-            next_mux = $rootScope.mutexes[0];
-            return next_mux.iprom.resolve(next_mux.mprom);
-          }
-        });
-        if (!$rootScope.mutexes || $rootScope.mutexes.length === 0) {
-          $rootScope.mutexes = [
-            {
-              mprom: mprom,
-              iprom: iprom
-            }
-          ];
-          iprom.resolve(mprom);
-          return iprom.promise;
-        } else {
-          $rootScope.mutexes.push({
-            mprom: mprom,
-            iprom: iprom
-          });
-          return iprom.promise;
-        }
-      },
-      unlock: function(mutex) {
-        return mutex.resolve();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PaginationService", function() {
-    return {
-      initialise: function(options) {
-        var paginator;
-        if (!options) {
-          return;
-        }
-        paginator = {
-          current_page: 1,
-          page_size: options.page_size,
-          num_pages: null,
-          max_size: options.max_size,
-          num_items: null
-        };
-        return paginator;
-      },
-      update: function(paginator, length) {
-        var end, start, total;
-        if (!paginator || !length) {
-          return;
-        }
-        paginator.num_items = length;
-        start = ((paginator.page_size - 1) * paginator.current_page) - ((paginator.page_size - 1) - paginator.current_page);
-        end = paginator.current_page * paginator.page_size;
-        total = end < paginator.page_size ? end : length;
-        end = end > total ? total : end;
-        total = total >= 100 ? "100+" : total;
-        return paginator.summary = start + " - " + end + " of " + total;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PersonService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('people')) {
-          deferred.reject("No people found");
-        } else {
-          company.$get('people').then((function(_this) {
-            return function(resource) {
-              return resource.$get('people').then(function(items) {
-                var i, j, len, people;
-                people = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  people.push(new BBModel.Person(i));
-                }
-                return deferred.resolve(people);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseTotalService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred;
-        deferred = $q.defer();
-        if (!prms.company.$has('total')) {
-          deferred.reject("No Total link found");
-        } else {
-          prms.company.$get('total', {
-            total_id: prms.total_id
-          }).then((function(_this) {
-            return function(total) {
-              return deferred.resolve(new BBModel.PurchaseTotal(total));
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('QueryStringService', function($window) {
-    return function(keyName) {
-      var hash, hashes, href, i, isNum, len, val, varObj;
-      varObj = {};
-      href = $window.location.href;
-      if (href.indexOf('?') < 0) {
-        return;
-      }
-      hashes = href.slice(href.indexOf('?') + 1).split(/[#&]/);
-      isNum = function(num) {
-        if (num == null) {
-          return;
-        }
-        if (num.substr(0, 1) === '0') {
-          return;
-        }
-        if (/[a-zA-Z\-\_\+\.\#\%\*\,]/.test(num)) {
-          return;
-        }
-        if (window.isNaN(window.parseInt(num, 10))) {
-          return;
-        }
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
         return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+]);
+/**!
+ * AngularJS file upload/drop directive with http post and progress
+ * @author  Danial  <danial.farid@gmail.com>
+ * @version 1.4.0
+ */
+(function() {
+  
+var angularFileUpload = angular.module('angularFileUpload', []);
+
+angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
+  function sendHttp(config) {
+    config.method = config.method || 'POST';
+    config.headers = config.headers || {};
+    config.transformRequest = config.transformRequest || function(data, headersGetter) {
+      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
+        return data;
+      }
+      return $http.defaults.transformRequest[0](data, headersGetter);
+    };
+
+    if (window.XMLHttpRequest.__isShim) {
+      config.headers['__setXHR_'] = function() {
+        return function(xhr) {
+          if (!xhr) return;
+          config.__XHR = xhr;
+          config.xhrFn && config.xhrFn(xhr);
+          xhr.upload.addEventListener('progress', function(e) {
+            if (config.progress) {
+              $timeout(function() {
+                if(config.progress) config.progress(e);
+              });
+            }
+          }, false);
+          //fix for firefox not firing upload progress end, also IE8-9
+          xhr.upload.addEventListener('load', function(e) {
+            if (e.lengthComputable) {
+              if(config.progress) config.progress(e);
+            }
+          }, false);
+        };
       };
-      for (i = 0, len = hashes.length; i < len; i++) {
-        hash = hashes[i];
-        hash = hash.split('=');
-        val = hash[1];
-        if (isNum(val)) {
-          val = window.parseInt(val, 10);
+    }
+
+    var promise = $http(config);
+
+    promise.progress = function(fn) {
+      config.progress = fn;
+      return promise;
+    };
+    promise.abort = function() {
+      if (config.__XHR) {
+        $timeout(function() {
+          config.__XHR.abort();
+        });
+      }
+      return promise;
+    };
+    promise.xhr = function(fn) {
+      config.xhrFn = fn;
+      return promise;
+    };
+    promise.then = (function(promise, origThen) {
+      return function(s, e, p) {
+        config.progress = p || config.progress;
+        var result = origThen.apply(promise, [s, e, p]);
+        result.abort = promise.abort;
+        result.progress = promise.progress;
+        result.xhr = promise.xhr;
+        result.then = promise.then;
+        return result;
+      };
+    })(promise, promise.then);
+    
+    return promise;
+  }
+
+  this.upload = function(config) {
+    config.headers = config.headers || {};
+    config.headers['Content-Type'] = undefined;
+    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
+    var formData = new FormData();
+    var origTransformRequest = config.transformRequest;
+    var origData = config.data;
+    config.transformRequest = function(formData, headerGetter) {
+      if (origData) {
+        if (config.formDataAppender) {
+          for (var key in origData) {
+            var val = origData[key];
+            config.formDataAppender(formData, key, val);
+          }
         } else {
-          if (val === 'true') {
-            val = true;
-          } else if (val === 'false') {
-            val = false;
-          } else {
-            val = window.decodeURIComponent(val);
+          for (var key in origData) {
+            var val = origData[key];
+            if (typeof origTransformRequest == 'function') {
+              val = origTransformRequest(val, headerGetter);
+            } else {
+              for (var i = 0; i < origTransformRequest.length; i++) {
+                var transformFn = origTransformRequest[i];
+                if (typeof transformFn == 'function') {
+                  val = transformFn(val, headerGetter);
+                }
+              }
+            }
+            formData.append(key, val);
           }
         }
-        varObj[hash[0]] = val;
       }
-      if (keyName) {
-        return varObj[keyName];
-      }
-      return varObj;
-    };
-  });
 
-}).call(this);
+      if (config.file != null) {
+        var fileFormName = config.fileFormDataName || 'file';
 
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory('QuestionService', function($window, QueryStringService, $bbug) {
-    var addAnswersById, addAnswersByKey, addAnswersByName, addDynamicAnswersByName, checkConditionalQuestions, convertDates, convertToSnakeCase, defaults, findByQuestionId, storeDefaults;
-    defaults = QueryStringService() || {};
-    convertDates = function(obj) {
-      return _.each(obj, function(val, key) {
-        var date;
-        date = $window.moment(obj[key]);
-        if (_.isString(obj[key]) && date.isValid()) {
-          return obj[key] = date;
+        if (Object.prototype.toString.call(config.file) === '[object Array]') {
+          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
+          for (var i = 0; i < config.file.length; i++) {
+            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
+          }
+        } else {
+          formData.append(fileFormName, config.file, config.file.name);
         }
+      }
+      return formData;
+    };
+
+    config.data = formData;
+
+    return sendHttp(config);
+  };
+
+  this.http = function(config) {
+    return sendHttp(config);
+  }
+}]);
+
+angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    var fn = $parse(attr['ngFileSelect']);
+    elem.bind('change', function(evt) {
+      var files = [], fileList, i;
+      fileList = evt.target.files;
+      if (fileList != null) {
+        for (i = 0; i < fileList.length; i++) {
+          files.push(fileList.item(i));
+        }
+      }
+      $timeout(function() {
+        fn(scope, {
+          $files : files,
+          $event : evt
+        });
       });
-    };
-    if ($window.bb_setup) {
-      convertDates($window.bb_setup);
-      angular.extend(defaults, $window.bb_setup);
+    });
+    // removed this since it was confusing if the user click on browse and then cancel #181
+//    elem.bind('click', function(){
+//      this.value = null;
+//    });
+    
+    // touch screens
+    if (('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
+      elem.bind('touchend', function(e) {
+        e.preventDefault();
+        e.target.click();
+      });
     }
-    addAnswersById = function(questions) {
-      if (!questions) {
-        return;
-      }
-      if (angular.isArray(questions)) {
-        _.each(questions, function(question) {
-          var id;
-          id = question.id + '';
-          if (!question.answer && defaults[id]) {
-            return question.answer = defaults[id];
-          }
-        });
-      } else {
-        questions.answer = defaults[questions.id + ''];
-      }
-    };
-    convertToSnakeCase = function(str) {
-      str = str.toLowerCase();
-      str = $.trim(str);
-      str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
-      str = str.replace(/\s{2,}/g, ' ');
-      str = str.replace(/\s/g, '_');
-      return str;
-    };
-    addDynamicAnswersByName = function(questions) {
-      var keys;
-      if (angular.isArray(questions)) {
-        keys = _.keys(defaults);
-        return _.each(questions, function(question) {
-          var name;
-          name = convertToSnakeCase(question.name);
-          return _.each(keys, function(key) {
-            if (name.indexOf(key) >= 0) {
-              if (defaults[key] && !question.answer) {
-                question.answer = defaults[key];
-                delete defaults[key];
-              }
-            }
-          });
-        });
-      }
-    };
-    addAnswersByName = function(obj, keys) {
-      var i, key, len, type;
-      type = Object.prototype.toString.call(obj).slice(8, -1);
-      if (type === 'Object' && angular.isArray(keys)) {
-        for (i = 0, len = keys.length; i < len; i++) {
-          key = keys[i];
-          if (defaults[key] && !obj[key]) {
-            obj[key] = defaults[key];
-            delete defaults[key];
-          }
-        }
-      }
-    };
-    addAnswersByKey = function(questions, answers) {
-      var i, len, name, question, results;
-      results = [];
-      for (i = 0, len = questions.length; i < len; i++) {
-        question = questions[i];
-        name = question.help_text;
-        if (answers[name]) {
-          results.push(question.answer = answers[name]);
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    };
-    storeDefaults = function(obj) {
-      return angular.extend(defaults, obj.bb_setup || {});
-    };
-    checkConditionalQuestions = function(questions) {
-      var a, ans, cond, found, i, len, q, ref, results, v;
-      results = [];
-      for (i = 0, len = questions.length; i < len; i++) {
-        q = questions[i];
-        if (q.settings && q.settings.conditional_question) {
-          cond = findByQuestionId(questions, parseInt(q.settings.conditional_question));
-          if (cond) {
-            ans = cond.getAnswerId();
-            found = false;
-            if ($bbug.isEmptyObject(q.settings.conditional_answers) && cond.detail_type === "check" && !cond.answer) {
-              found = true;
-            }
-            ref = q.settings.conditional_answers;
-            for (a in ref) {
-              v = ref[a];
-              if (a[0] === 'c' && parseInt(v) === 1 && cond.answer) {
-                found = true;
-              } else if (parseInt(a) === ans && parseInt(v) === 1) {
-                found = true;
-              }
-            }
-            if (found) {
-              results.push(q.showElement());
-            } else {
-              results.push(q.hideElement());
-            }
-          } else {
-            results.push(void 0);
-          }
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    };
-    findByQuestionId = function(questions, qid) {
-      var i, len, q;
-      for (i = 0, len = questions.length; i < len; i++) {
-        q = questions[i];
-        if (q.id === qid) {
-          return q;
-        }
-      }
-      return null;
-    };
-    return {
-      getStoredData: function() {
-        return defaults;
-      },
-      storeDefaults: storeDefaults,
-      addAnswersById: addAnswersById,
-      addAnswersByName: addAnswersByName,
-      addDynamicAnswersByName: addDynamicAnswersByName,
-      addAnswersByKey: addAnswersByKey,
-      convertToSnakeCase: convertToSnakeCase,
-      checkConditionalQuestions: checkConditionalQuestions
-    };
-  });
+  };
+} ]);
 
-}).call(this);
-
-(function() {
-  angular.module("BB.Services").factory("RecaptchaService", function($q, halClient, UriTemplate) {
-    return {
-      validateResponse: function(params) {
-        var deferred, href, prms, uri;
-        deferred = $q.defer();
-        href = params.api_url + "/api/v1/recaptcha";
-        uri = new UriTemplate(href);
-        prms = {};
-        prms.response = params.response;
-        halClient.$post(uri, {}, prms).then(function(response) {
-          return deferred.resolve(response);
-        }, function(err) {
-          return deferred.reject(err);
-        });
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ResourceService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('resources')) {
-          deferred.reject("No resource found");
-        } else {
-          company.$get('resources').then((function(_this) {
-            return function(resource) {
-              return resource.$get('resources').then(function(items) {
-                var i, j, len, resources;
-                resources = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  resources.push(new BBModel.Resource(i));
-                }
-                return deferred.resolve(resources);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ServiceService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('services')) {
-          deferred.reject("No services found");
-        } else {
-          company.$get('services').then((function(_this) {
-            return function(resource) {
-              return resource.$get('services').then(function(items) {
-                var i, j, len, services;
-                services = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  services.push(new BBModel.Service(i));
-                }
-                return deferred.resolve(services);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('SettingsService', function() {
-    var i18n;
-    i18n = false;
-    return {
-      enableInternationalizaton: function() {
-        return i18n = true;
-      },
-      isInternationalizatonEnabled: function() {
-        return i18n;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("SlotService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('slots')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          company.$get('slots', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('slots', params).then(function(slots) {
-                var slot;
-                slots = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = slots.length; i < len; i++) {
-                    slot = slots[i];
-                    results.push(new BBModel.Slot(slot));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(slots);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("SpaceService", [
-    '$q', function($q, BBModel) {
-      return {
-        query: function(company) {
-          var deferred;
-          deferred = $q.defer();
-          if (!company.$has('spaces')) {
-            deferred.reject("No spaces found");
-          } else {
-            company.$get('spaces').then((function(_this) {
-              return function(resource) {
-                return resource.$get('spaces').then(function(items) {
-                  var i, j, len, spaces;
-                  spaces = [];
-                  for (j = 0, len = items.length; j < len; j++) {
-                    i = items[j];
-                    spaces.push(new BBModel.Space(i));
-                  }
-                  return deferred.resolve(spaces);
-                });
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-          return deferred.promise;
-        }
-      };
+angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    if ('draggable' in document.createElement('span')) {
+      var fn = $parse(attr['ngFileDropAvailable']);
+      $timeout(function() {
+        fn(scope);
+      });
     }
-  ]);
+  };
+} ]);
 
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("SSOService", function($q, $rootScope, halClient, LoginService) {
-    return {
-      memberLogin: function(options) {
-        var data, deferred, url;
-        deferred = $q.defer();
-        options.root || (options.root = "");
-        url = options.root + "/api/v1/login/sso/" + options.company_id;
-        data = {
-          token: options.member_sso
-        };
-        halClient.$post(url, {}, data).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('member').then(function(member) {
-              member = LoginService.setLogin(member);
-              return deferred.resolve(member);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      adminLogin: function(options) {
-        var data, deferred, url;
-        deferred = $q.defer();
-        options.root || (options.root = "");
-        url = options.root + "/api/v1/login/admin_sso/" + options.company_id;
-        data = {
-          token: options.admin_sso
-        };
-        halClient.$post(url, {}, data).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('administrator').then(function(admin) {
-              return deferred.resolve(admin);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("TemplateSvc", function($q, $http, $templateCache, BBModel) {
-    return {
-      get: function(path) {
-        var cacheTmpl, deferred;
-        deferred = $q.defer();
-        cacheTmpl = $templateCache.get(path);
-        if (cacheTmpl) {
-          deferred.resolve(angular.element(cacheTmpl));
-        } else {
-          $http({
-            method: 'GET',
-            url: path
-          }).success(function(tmpl, status) {
-            $templateCache.put(path, tmpl);
-            return deferred.resolve(angular.element(tmpl));
-          }).error(function(data, status) {
-            return deferred.reject(data);
-          });
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient) {
-    return {
-      query: function(prms) {
-        var date, deferred, extra, item_link;
-        deferred = $q.defer();
-        if (prms.date) {
-          date = prms.date.toISODate();
-        } else {
-          if (!prms.cItem.date) {
-            deferred.reject("No date set");
-            return deferred.promise;
-          } else {
-            date = prms.cItem.date.date.toISODate();
-          }
-        }
-        if (prms.duration == null) {
-          if (prms.cItem && prms.cItem.duration) {
-            prms.duration = prms.cItem.duration;
-          }
-        }
-        item_link = prms.item_link;
-        if (prms.cItem && prms.cItem.days_link && !item_link) {
-          item_link = prms.cItem.days_link;
-        }
-        if (item_link) {
-          extra = {
-            date: date
-          };
-          if (prms.location) {
-            extra.location = prms.location;
-          }
-          if (prms.cItem.event_id) {
-            extra.event_id = prms.cItem.event_id;
-          }
-          if (prms.cItem.person && !prms.cItem.anyPerson() && !item_link.event_id && !extra.event_id) {
-            extra.person_id = prms.cItem.person.id;
-          }
-          if (prms.cItem.resource && !prms.cItem.anyResource() && !item_link.event_id && !extra.event_id) {
-            extra.resource_id = prms.cItem.resource.id;
-          }
-          if (prms.end_date) {
-            extra.end_date = prms.end_date.toISODate();
-          }
-          extra.duration = prms.duration;
-          extra.num_resources = prms.num_resources;
-          if (extra.event_id) {
-            item_link = prms.company;
-          }
-          item_link.$get('times', extra).then((function(_this) {
-            return function(results) {
-              var times;
-              if (results.$has('date_links')) {
-                return results.$get('date_links').then(function(all_days) {
-                  var all_days_def, date_times, day, fn, j, len;
-                  date_times = {};
-                  all_days_def = [];
-                  fn = function(day) {
-                    var times;
-                    day.elink = $q.defer();
-                    all_days_def.push(day.elink.promise);
-                    if (day.$has('event_links')) {
-                      return day.$get('event_links').then(function(all_events) {
-                        var times;
-                        times = _this.merge_times(all_events, prms.cItem.service, prms.cItem);
-                        if (prms.available) {
-                          times = _.filter(times, function(t) {
-                            return t.avail >= prms.available;
-                          });
-                        }
-                        date_times[day.date] = times;
-                        return day.elink.resolve();
-                      });
-                    } else if (day.times) {
-                      times = _this.merge_times([day], prms.cItem.service, prms.cItem);
-                      if (prms.available) {
-                        times = _.filter(times, function(t) {
-                          return t.avail >= prms.available;
-                        });
-                      }
-                      date_times[day.date] = times;
-                      return day.elink.resolve();
-                    }
-                  };
-                  for (j = 0, len = all_days.length; j < len; j++) {
-                    day = all_days[j];
-                    fn(day);
-                  }
-                  return $q.all(all_days_def).then(function() {
-                    return deferred.resolve(date_times);
-                  });
-                });
-              } else if (results.$has('event_links')) {
-                return results.$get('event_links').then(function(all_events) {
-                  var times;
-                  times = _this.merge_times(all_events, prms.cItem.service, prms.cItem);
-                  if (prms.available) {
-                    times = _.filter(times, function(t) {
-                      return t.avail >= prms.available;
-                    });
-                  }
-                  return deferred.resolve(times);
-                });
-              } else if (results.times) {
-                times = _this.merge_times([results], prms.cItem.service, prms.cItem);
-                if (prms.available) {
-                  times = _.filter(times, function(t) {
-                    return t.avail >= prms.available;
-                  });
-                }
-                return deferred.resolve(times);
-              }
-            };
-          })(this), function(err) {
-            return deferred.reject(err);
-          });
-        } else {
-          deferred.reject("No day data");
-        }
-        return deferred.promise;
-      },
-      merge_times: function(all_events, service, item) {
-        var date_times, ev, i, j, k, l, len, len1, len2, ref, sorted_times, times;
-        if (!all_events || all_events.length === 0) {
-          return [];
-        }
-        sorted_times = [];
-        for (j = 0, len = all_events.length; j < len; j++) {
-          ev = all_events[j];
-          if (ev.times) {
-            ref = ev.times;
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              i = ref[k];
-              if (!sorted_times[i.time] || sorted_times[i.time].avail === 0 || (Math.floor(Math.random() * all_events.length) === 0 && i.avail > 0)) {
-                i.event_id = ev.event_id;
-                sorted_times[i.time] = i;
-              }
-            }
-            if (item.held) {
-              this.checkCurrentItem(item.held, sorted_times, ev);
-            }
-            this.checkCurrentItem(item, sorted_times, ev);
-          }
-        }
-        times = [];
-        date_times = {};
-        for (l = 0, len2 = sorted_times.length; l < len2; l++) {
-          i = sorted_times[l];
-          if (i) {
-            times.push(new BBModel.TimeSlot(i, service));
-          }
-        }
-        return times;
-      },
-      checkCurrentItem: function(item, sorted_times, ev) {
-        if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
-          sorted_times[item.time.time] = item.time;
-          return halClient.clearCache(ev.$href("self"));
-        } else if (item && item.id && item.event_id === ev.event_id && item.time && sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
-          return sorted_times[item.time.time].avail = 1;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('TimeSlotService', function($q, BBModel) {
-    return {
-      query: function(params) {
-        var company, defer;
-        defer = $q.defer();
-        company = params.company;
-        company.$get('slots', params).then(function(collection) {
-          return collection.$get('slots').then(function(slots) {
-            var s;
-            slots = (function() {
-              var i, len, results;
-              results = [];
-              for (i = 0, len = slots.length; i < len; i++) {
-                s = slots[i];
-                results.push(new BBModel.TimeSlot(s));
-              }
-              return results;
-            })();
-            return defer.resolve(slots);
-          }, function(err) {
-            return defer.reject(err);
-          });
-        }, function(err) {
-          return defer.reject(err);
+angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {    
+    if ('draggable' in document.createElement('span')) {
+      var cancel = null;
+      var fn = $parse(attr['ngFileDrop']);
+      elem[0].addEventListener("dragover", function(evt) {
+        $timeout.cancel(cancel);
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
+      }, false);
+      elem[0].addEventListener("dragleave", function(evt) {
+        cancel = $timeout(function() {
+          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
         });
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Address(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Person(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('people').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Person(i));
+      }, false);
+      
+      var processing = 0;
+      function traverseFileTree(files, item) {
+        if (item.isDirectory) {
+          var dirReader = item.createReader();
+          processing++;
+          dirReader.readEntries(function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+              traverseFileTree(files, entries[i]);
             }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Resource(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('resources').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Resource(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Service(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('services').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Service(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.EventGroup(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('event_groups').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.EventGroup(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.EventChain(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Category(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('categories').then((function(_this) {
-          return function(items) {
-            var cat, i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              cat = new BBModel.Category(i);
-              cat.order || (cat.order = _i);
-              models.push(cat);
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Client(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('clients').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Client(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('clients').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Client(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        var defer, i, j, k, len, len1, ref, results, results1;
-        if (resource.questions) {
-          ref = resource.questions;
-          results = [];
-          for (j = 0, len = ref.length; j < len; j++) {
-            i = ref[j];
-            results.push(new BBModel.Question(i));
-          }
-          return results;
-        } else if (resource.$has('questions')) {
-          defer = $q.defer();
-          resource.$get('questions').then(function(items) {
-            return defer.resolve((function() {
-              var k, len1, results1;
-              results1 = [];
-              for (k = 0, len1 = items.length; k < len1; k++) {
-                i = items[k];
-                results1.push(new BBModel.Question(i));
-              }
-              return results1;
-            })());
-          }, function(err) {
-            return defer.reject(err);
+            processing--;
           });
-          return defer.promise;
         } else {
-          results1 = [];
-          for (k = 0, len1 = resource.length; k < len1; k++) {
-            i = resource[k];
-            results1.push(new BBModel.Question(i));
+          processing++;
+              item.file(function(file) {
+                processing--;
+                files.push(file);
+              });
           }
-          return results1;
-        }
       }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Question(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel) {
-    return {
-      promise: false,
-      unwrap: function(items) {
-        var answers, i, j, len, models;
-        models = [];
-        for (j = 0, len = items.length; j < len; j++) {
-          i = items[j];
-          models.push(new BBModel.Answer(i));
-        }
-        answers = {
-          answers: models,
-          getAnswer: function(question) {
-            var a, k, len1, ref;
-            ref = this.answers;
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              a = ref[k];
-              if (a.question_text === question || a.question_id === question) {
-                return a.value;
-              }
-            }
+      
+      elem[0].addEventListener("drop", function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        var files = [], items = evt.dataTransfer.items;
+        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+          for (var i = 0; i < items.length; i++) {
+            traverseFileTree(files, items[i].webkitGetAsEntry());
           }
-        };
-        return answers;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel) {
-    return {
-      unwrap: function(items) {
-        var i, j, len, results;
-        results = [];
-        for (j = 0, len = items.length; j < len; j++) {
-          i = items[j];
-          results.push(new BBModel.Admin.User(i));
-        }
-        return results;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Company(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return new BBModel.EventChain(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Company(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('company_questions').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.BusinessQuestion(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.BusinessQuestion(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('images').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Image(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('bookings').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Member.Booking(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, ErrorService, BBModel, $q, $bbug) {
-    var alphanumeric, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
-    uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
-    uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
-    number_only_regex = /^\d+$/;
-    uk_mobile_regex_strict = /^((\+44\s?|0)7([45789]\d{2}|624)\s?\d{3}\s?\d{3})$/;
-    mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
-    uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    international_number = /^(\+)([\d \(\)]{9,19})$/;
-    alphanumeric = /^[a-zA-Z0-9]*$/;
-    geocode_result = null;
-    return {
-      alpha: /^[a-zA-Z\s]*$/,
-      us_phone_number: /(^[\d \(\)-]{9,16})$/,
-      getUKPostcodePattern: function() {
-        return uk_postcode_regex_lenient;
-      },
-      getNumberOnlyPattern: function() {
-        return number_only_regex;
-      },
-      getAlphaNumbericPattern: function() {
-        return alphanumeric;
-      },
-      getUKMobilePattern: function(strict) {
-        if (strict == null) {
-          strict = false;
-        }
-        if (strict) {
-          return uk_mobile_regex_strict;
-        }
-        return mobile_regex_lenient;
-      },
-      getMobilePattern: function() {
-        return mobile_regex_lenient;
-      },
-      getUKLandlinePattern: function(strict) {
-        if (strict == null) {
-          strict = false;
-        }
-        if (strict) {
-          return uk_landline_regex_strict;
-        }
-        return uk_landline_regex_lenient;
-      },
-      getIntPhonePattern: function() {
-        return international_number;
-      },
-      getGeocodeResult: function() {
-        if (geocode_result) {
-          return geocode_result;
-        }
-      },
-      validatePostcode: function(form, prms) {
-        var deferred, geocoder, ne, postcode, req, sw;
-        AlertService.clear();
-        if (!form || !form.postcode) {
-          return false;
-        }
-        if (form.$error.required) {
-          AlertService.danger(ErrorService.getError('MISSING_POSTCODE'));
-          return false;
-        } else if (form.$error.pattern) {
-          AlertService.danger(ErrorService.getError('INVALID_POSTCODE'));
-          return false;
         } else {
-          deferred = $q.defer();
-          postcode = form.postcode.$viewValue;
-          req = {
-            address: postcode
-          };
-          if (prms.region) {
-            req.region = prms.region;
+          var fileList = evt.dataTransfer.files;
+          if (fileList != null) {
+            for (var i = 0; i < fileList.length; i++) {
+              files.push(fileList.item(i));
+            }
           }
-          req.componentRestrictions = {
-            'postalCode': req.address
-          };
-          if (prms.bounds) {
-            sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
-            ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
-            req.bounds = new google.maps.LatLngBounds(sw, ne);
-          }
-          geocoder = new google.maps.Geocoder();
-          geocoder.geocode(req, function(results, status) {
-            if (results.length === 1 && status === 'OK') {
-              geocode_result = results[0];
-              return deferred.resolve(true);
+        }
+        (function callback(delay) {
+          $timeout(function() {
+            if (!processing) {
+              fn(scope, {
+                $files : files,
+                $event : evt
+              });
             } else {
-              AlertService.danger(ErrorService.getError('INVALID_POSTCODE'));
-              $rootScope.$apply();
-              return deferred.reject(false);
+              callback(10);
             }
-          });
-          return deferred.promise;
-        }
-      },
-      validateForm: function(form) {
-        if (!form) {
-          return false;
-        }
-        form.submitted = true;
-        if (form.$invalid && form.raise_alerts && form.alert) {
-          AlertService.danger(form.alert);
-          return false;
-        } else if (form.$invalid && form.raise_alerts) {
-          AlertService.danger(ErrorService.getError('FORM_INVALID'));
-          return false;
-        } else if (form.$invalid) {
-          return false;
-        } else {
-          return true;
-        }
-      },
-      resetForm: function(form) {
-        if (form) {
-          form.submitted = false;
-          return form.$setPristine();
-        }
-      },
-      resetForms: function(forms) {
-        var form, i, len, results1;
-        if (forms && $bbug.isArray(forms)) {
-          results1 = [];
-          for (i = 0, len = forms.length; i < len; i++) {
-            form = forms[i];
-            form.submitted = false;
-            results1.push(form.$setPristine());
-          }
-          return results1;
-        }
+          }, delay || 0)
+        })();
+      }, false);
+    }
+  };
+} ]);
+
+})();
+
+angular.module('ngLocalData', ['angular-hal']).
+ factory('$localCache', ['halClient', '$q', function( halClient, $q) {
+    data = {};
+
+    jsonData = function(data) {
+        return data && JSON.parse(data);
+    }
+
+    storage = function()
+    {
+      return sessionStorage
+    } 
+    localSave = function(key, item){
+      storage().setItem(key, item.$toStore())   
+    } 
+    localLoad = function(key){
+      res =  jsonData(storage().getItem(key))
+      if (res)
+      {  
+        r = halClient.createResource(res)
+        def = $q.defer()
+        def.resolve(r)
+        return def.promise
       }
+      return null
+    } 
+    localDelete = function(key) {
+      storage().removeItem(key)
+    }
+
+    return {
+
+      set: function(key, val)
+      {
+        data[key] = val
+        val.then(function(item){
+          localSave(key, item)
+        })
+        return val
+      },
+      get: function(key)
+      {
+        localLoad(key)
+        if (!data[key])
+          data[key] = localLoad(key)
+        return data[key]
+      },
+      del: function(key)
+      {
+        localDelete(key)
+        delete data[key]
+      },
+      has: function(key)
+      {
+        if (!data[key])
+        { 
+          res = localLoad(key)
+          if (res)
+            data[key] = res
+        }
+        return (key in data)
+      }      
+    }
+
+}]).
+ factory('$localData', ['$http', '$rootScope', function($http, $rootScope) {
+    function LocalDataFactory(name) {
+      function LocalData(value){
+        this.setStore(value);
+      }
+
+      LocalData.prototype.jsonData = function(data) {
+          return data && JSON.parse(data);
+      }
+
+      LocalData.prototype.storage = function()
+      {
+        return sessionStorage
+      }  
+
+      LocalData.prototype.localSave = function(item)
+      {
+        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
+      }
+
+
+      LocalData.prototype.localSaveIndex = function(ids)
+      {
+        this.storage().setItem(this.store_name, ids.join(","))
+        this.ids = ids;
+      }
+
+      LocalData.prototype.localLoadIndex = function()
+      {
+        store = this.storage().getItem(this.store_name)
+        records = (store && store.split(",")) || [];
+        return records
+      }
+
+      LocalData.prototype.localLoad = function( id)
+      {
+        return this.jsonData(this.storage().getItem(this.store_name + id))
+      }
+
+      LocalData.prototype.count = function()
+      {
+        return this.ids.length
+      }
+
+      LocalData.prototype.setStore = function(name)
+      {
+        this.store_name = name;
+        this.data_store = []
+        this.ids = this.localLoadIndex();
+        for (a = 0; a < this.ids.length; a++){
+          this.data_store.push(this.localLoad(this.ids[a]));
+        }
+    //    var channel = pusher.subscribe(name);
+    //    var ds = this;
+
+     //   channel.bind('add', function(data) {
+     //     ds.data_store.push(data);
+     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
+     //   });
+
+      }
+
+      LocalData.prototype.update = function(data)
+      {
+        ids = []
+        for (x in data){
+          if (data[x].id){
+           ids.push(data[x].id)
+           this.localSave(data[x])
+         }
+        }
+        this.localSaveIndex(ids)
+      }
+
+      return new LocalData(name)
+
     };
+
+
+    
+    return LocalDataFactory
+}]);
+
+
+/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
+
+getControllerScope = function(controller, fn){
+  $(document).ready(function(){
+    var $element = $('div[data-ng-controller="' + controller + '"]');
+    var scope = angular.element($element).scope();
+    fn(scope); 
   });
+}
 
-}).call(this);
 
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope) {
-    var Widget;
-    return Widget = (function() {
-      function Widget() {
-        this.clearAddress = bind(this.clearAddress, this);
-        this.emptyStackedItems = bind(this.emptyStackedItems, this);
-        this.deleteStackedItemByService = bind(this.deleteStackedItemByService, this);
-        this.removeItemFromStack = bind(this.removeItemFromStack, this);
-        this.deleteStackedItem = bind(this.deleteStackedItem, this);
-        this.sortStackedItems = bind(this.sortStackedItems, this);
-        this.setStackedItems = bind(this.setStackedItems, this);
-        this.stackItem = bind(this.stackItem, this);
-        this.waitForRoutes = bind(this.waitForRoutes, this);
-        this.setBasicRoute = bind(this.setBasicRoute, this);
-        this.setRoute = bind(this.setRoute, this);
-        this.calculatePercentageComplete = bind(this.calculatePercentageComplete, this);
-        this.recordStep = bind(this.recordStep, this);
-        this.recordCurrentPage = bind(this.recordCurrentPage, this);
-        this.uid = _.uniqueId('bbwidget_');
-        this.page_suffix = "";
-        this.steps = [];
-        this.allSteps = [];
-        this.item_defaults = {};
-        this.usingBasket = false;
-        this.confirmCheckout = false;
-        this.isAdmin = false;
-        this.payment_status = null;
-      }
-
-      Widget.prototype.pageURL = function(route) {
-        return route + '.html';
-      };
-
-      Widget.prototype.updateRoute = function(page) {
-        var company, date, event_group, pattern, prms, service_name, time, url;
-        if (!this.routeFormat) {
-          return;
-        }
-        page || (page = this.current_page);
-        pattern = $urlMatcherFactory.compile(this.routeFormat);
-        service_name = "-";
-        event_group = "-";
-        if (this.current_item) {
-          if (this.current_item.service) {
-            service_name = this.convertToDashSnakeCase(this.current_item.service.name);
-          }
-          if (this.current_item.event_group) {
-            event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
-          }
-          if (this.current_item.date) {
-            date = this.current_item.date.date.toISODate();
-          }
-          if (this.current_item.time) {
-            time = this.current_item.time.time;
-          }
-          if (this.current_item.company) {
-            company = this.convertToDashSnakeCase(this.current_item.company.name);
-          }
-        }
-        if (this.route_values) {
-          prms = angular.copy(this.route_values);
-        }
-        prms || (prms = {});
-        angular.extend(prms, {
-          page: page,
-          company: company,
-          service: service_name,
-          event_group: event_group,
-          date: date,
-          time: time
-        });
-        url = pattern.format(prms);
-        url = url.replace(/\/+$/, "");
-        $location.path(url);
-        this.routing = true;
-        return url;
-      };
-
-      Widget.prototype.setRouteFormat = function(route) {
-        var match, match_test, parts, path, pattern;
-        this.routeFormat = route;
-        if (!this.routeFormat) {
-          return;
-        }
-        this.routing = true;
-        path = $location.path();
-        if (path) {
-          parts = this.routeFormat.split("/");
-          while (parts.length > 0 && !match) {
-            match_test = parts.join("/");
-            pattern = $urlMatcherFactory.compile(match_test);
-            match = pattern.exec(path);
-            parts.pop();
-          }
-          if (match) {
-            if (match.company) {
-              this.item_defaults.company = decodeURIComponent(match.company);
-            }
-            if (match.service && match.service !== "-") {
-              this.item_defaults.service = decodeURIComponent(match.service);
-            }
-            if (match.event_group && match.event_group !== "-") {
-              this.item_defaults.event_group = match.event_group;
-            }
-            if (match.person) {
-              this.item_defaults.person = decodeURIComponent(match.person);
-            }
-            if (match.resource) {
-              this.item_defaults.resource = decodeURIComponent(match.resource);
-            }
-            if (match.date) {
-              this.item_defaults.date = match.date;
-            }
-            if (match.time) {
-              this.item_defaults.time = match.time;
-            }
-            return this.route_matches = match;
-          }
-        }
-      };
-
-      Widget.prototype.matchURLToStep = function() {
-        var _i, j, len, path, ref, step;
-        if (!this.routeFormat) {
-          return null;
-        }
-        path = $location.path();
-        ref = this.steps;
-        for (_i = j = 0, len = ref.length; j < len; _i = ++j) {
-          step = ref[_i];
-          if (step.url && step.url === path) {
-            return step.number;
-          }
-        }
-        return null;
-      };
-
-      Widget.prototype.convertToDashSnakeCase = function(str) {
-        str = str.toLowerCase();
-        str = $.trim(str);
-        str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
-        str = str.replace(/\s{2,}/g, ' ');
-        str = str.replace(/\s/g, '-');
-        return str;
-      };
-
-      Widget.prototype.recordCurrentPage = function() {
-        var j, k, l, len, len1, len2, match, ref, ref1, ref2, step, title;
-        if (!this.current_step) {
-          this.current_step = 0;
-        }
-        match = false;
-        if (this.allSteps) {
-          ref = this.allSteps;
-          for (j = 0, len = ref.length; j < len; j++) {
-            step = ref[j];
-            if (step.page === this.current_page) {
-              this.current_step = step.number;
-              match = true;
-            }
-          }
-        }
-        if (!match) {
-          ref1 = this.steps;
-          for (k = 0, len1 = ref1.length; k < len1; k++) {
-            step = ref1[k];
-            if (step && step.page === this.current_page) {
-              this.current_step = step.number;
-              match = true;
-            }
-          }
-        }
-        if (!match) {
-          this.current_step += 1;
-        }
-        title = "";
-        if (this.allSteps) {
-          ref2 = this.allSteps;
-          for (l = 0, len2 = ref2.length; l < len2; l++) {
-            step = ref2[l];
-            step.active = false;
-            step.passed = step.number < this.current_step;
-          }
-          if (this.allSteps[this.current_step - 1]) {
-            this.allSteps[this.current_step - 1].active = true;
-            title = this.allSteps[this.current_step - 1].title;
-          }
-        }
-        return this.recordStep(this.current_step, title);
-      };
-
-      Widget.prototype.recordStep = function(step, title) {
-        var j, len, ref;
-        this.steps[step - 1] = {
-          url: this.updateRoute(this.current_page),
-          current_item: this.current_item.getStep(),
-          page: this.current_page,
-          number: step,
-          title: title,
-          stacked_length: this.stacked_items.length
-        };
-        BreadcrumbService.setCurrentStep(step);
-        ref = this.steps;
-        for (j = 0, len = ref.length; j < len; j++) {
-          step = ref[j];
-          if (step) {
-            step.passed = step.number < this.current_step;
-            step.active = step.number === this.current_step;
-          }
-        }
-        this.calculatePercentageComplete(step.number);
-        if ((this.allSteps && this.allSteps.length === step) || this.current_page === 'checkout') {
-          return this.last_step_reached = true;
-        } else {
-          return this.last_step_reached = false;
-        }
-      };
-
-      Widget.prototype.calculatePercentageComplete = function(step_number) {
-        return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
-      };
-
-      Widget.prototype.setRoute = function(rdata) {
-        var i, j, k, len, len1, ref, route, step;
-        this.allSteps.length = 0;
-        this.nextSteps = {};
-        if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
-          this.firstStep = rdata[0].page;
-        }
-        for (i = j = 0, len = rdata.length; j < len; i = ++j) {
-          step = rdata[i];
-          if (step.disable_breadcrumbs) {
-            this.disableGoingBackAtStep = i + 1;
-          }
-          if (rdata[i + 1]) {
-            this.nextSteps[step.page] = rdata[i + 1].page;
-          }
-          this.allSteps.push({
-            number: i + 1,
-            title: step.title,
-            page: step.page
-          });
-          if (step.when) {
-            this.routeSteps || (this.routeSteps = {});
-            ref = step.when;
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              route = ref[k];
-              this.routeSteps[route] = step.page;
-            }
-          }
-        }
-        if (this.$wait_for_routing) {
-          return this.$wait_for_routing.resolve();
-        }
-      };
-
-      Widget.prototype.setBasicRoute = function(routes) {
-        var i, j, len, step;
-        this.nextSteps = {};
-        this.firstStep = routes[0];
-        for (i = j = 0, len = routes.length; j < len; i = ++j) {
-          step = routes[i];
-          this.nextSteps[step] = routes[i + 1];
-        }
-        if (this.$wait_for_routing) {
-          return this.$wait_for_routing.resolve();
-        }
-      };
-
-      Widget.prototype.waitForRoutes = function() {
-        if (!this.$wait_for_routing) {
-          return this.$wait_for_routing = $q.defer();
-        }
-      };
-
-      Widget.prototype.stackItem = function(item) {
-        this.stacked_items.push(item);
-        return this.sortStackedItems();
-      };
-
-      Widget.prototype.setStackedItems = function(items) {
-        this.stacked_items = items;
-        return this.sortStackedItems();
-      };
-
-      Widget.prototype.sortStackedItems = function() {
-        var arr, item, j, len, ref;
-        arr = [];
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          arr = arr.concat(item.promises);
-        }
-        return $q.all(arr)['finally']((function(_this) {
-          return function() {
-            return _this.stacked_items = _this.stacked_items.sort(function(a, b) {
-              var ref1, ref2;
-              if (a.time && b.time) {
-                return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
-                  1: -1
-                };
-              } else if (a.service.category && !b.service.category) {
-                return 1;
-              } else if (b.service.category && !a.service.category) {
-                return -1;
-              } else if (!b.service.category && !a.service.category) {
-                return 1;
-              } else {
-                return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
-                  1: -1
-                };
-              }
-            });
-          };
-        })(this));
-      };
-
-      Widget.prototype.deleteStackedItem = function(item) {
-        if (item && item.id) {
-          BasketService.deleteItem(item, this.company, {
-            bb: this
-          });
-        }
-        return this.stacked_items = this.stacked_items.filter(function(i) {
-          return i !== item;
-        });
-      };
-
-      Widget.prototype.removeItemFromStack = function(item) {
-        return this.stacked_items = this.stacked_items.filter(function(i) {
-          return i !== item;
-        });
-      };
-
-      Widget.prototype.deleteStackedItemByService = function(item) {
-        var i, j, len, ref;
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i && i.service && i.service.self === item.self && i.id) {
-            BasketService.deleteItem(i, this.company, {
-              bb: this
-            });
-          }
-        }
-        return this.stacked_items = this.stacked_items.filter(function(i) {
-          return i && i.service && i.service.self !== item.self;
-        });
-      };
-
-      Widget.prototype.emptyStackedItems = function() {
-        return this.stacked_items = [];
-      };
-
-      Widget.prototype.pushStackToBasket = function() {
-        var i, j, len, ref;
-        this.basket || (this.basket = new new BBModel.Basket(null, this));
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          this.basket.addItem(i);
-        }
-        return this.emptyStackedItems();
-      };
-
-      Widget.prototype.totalStackedItemsDuration = function() {
-        var duration, item, j, len, ref;
-        duration = 0;
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.service && item.service.listed_duration) {
-            duration += item.service.listed_duration;
-          }
-        }
-        return duration;
-      };
-
-      Widget.prototype.clearStackedItemsDateTime = function() {
-        var item, j, len, ref, results;
-        ref = this.stacked_items;
-        results = [];
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          results.push(item.clearDateTime());
-        }
-        return results;
-      };
-
-      Widget.prototype.clearAddress = function() {
-        delete this.address1;
-        delete this.address2;
-        delete this.address3;
-        delete this.address4;
-        return delete this.address5;
-      };
-
-      return Widget;
-
-    })();
-  });
-
-}).call(this);
-
+function getURIparam( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
 (function() {
   var ModalDelete, ModalDeleteAll;
 
@@ -20016,147 +19345,6 @@ function getURIparam( name ){
       return $modalInstance.dismiss("cancel");
     };
   };
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, len, ref;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.booking) {
-          data.booking = params.booking.getPostData();
-        }
-        data.booking_id = data.booking.id;
-        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_all: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      }
-    };
-  });
 
 }).call(this);
 
@@ -20764,6 +19952,918 @@ function getURIparam( name ){
       return Purchase_Total;
 
     })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, len, ref;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.booking) {
+          data.booking = params.booking.getPostData();
+        }
+        data.booking_id = data.booking.id;
+        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_all: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackendProvider() {
+
+  this.$get = ['$browser', '$window', '$document', '$sniffer', function ie8HttpBackendFactory($browser, $window, $document, $sniffer) {
+    var msie = $sniffer.msie
+    var params = [$browser, createXhr, $browser.defer, $window.angular.callbacks, $document[0], $window.location.protocol.replace(':', ''), msie];
+    var param4ie = params.concat([createHttpBackend.apply(this,params)]);
+    return (ieCreateHttpBackend && ieCreateHttpBackend.apply(this, param4ie)) ||
+      createHttpBackend.apply(this, params);
+  }];
+
+
+  function ieCreateHttpBackend ($browser, XHR, $browserDefer, callbacks, rawDocument, locationProtocol, msie, xhr) {
+    if (!msie || msie > 9) return null;
+ 
+    var getHostName = function (path) {
+      var a = document.createElement('a');
+      a.href = path;
+      return a.hostname;
+    }
+ 
+    var isLocalCall = function (reqUrl) {
+      var reqHost = getHostName(reqUrl),
+        localHost = getHostName($browser.url());
+ 
+      patt = new RegExp( localHost + "$", 'i'); 
+      return patt.test(reqHost);
+    }
+ 
+    function completeRequest(callback, status, response, headersString) {
+      var url = url || $browser.url(),
+        URL_MATCH = /^([^:]+):\/\/(\w+:{0,1}\w*@)?(\{?[\w\.-]*\}?)(:([0-9]+))?(\/[^\?#]*)?(\?([^#]*))?(#(.*))?$/;
+ 
+ 
+      // URL_MATCH is defined in src/service/location.js
+      var protocol = (url.match(URL_MATCH) || ['', locationProtocol])[1];
+ 
+      // fix status code for file protocol (it's always 0)
+      status = (protocol == 'file') ? (response ? 200 : 404) : status;
+ 
+      // normalize IE bug (http://bugs.jquery.com/ticket/1450)
+      status = status == 1223 ? 204 : status;
+ 
+      callback(status, response, headersString);
+      $browser.$$completeOutstandingRequest(angular.noop);
+    }
+    var pmHandler = function (method, url, post, callback, headers, timeout, withCredentials) {
+      var win =  $('[name="' + getHostName(url) + '"]')[0].id ;
+      pm({
+        target: window.frames[win],
+        type: 'xhrRequest',
+        data: {
+          headers: headers,
+          method: method,
+          data: post,
+          url: url
+        },
+        success: function (respObj) {
+          headers = 'Content-Type: ' + respObj.contentType;
+          if (respObj.authToken)
+            headers += '\r\n' + 'Auth-Token: ' + respObj.authToken; 
+          completeRequest(callback, 200, respObj.responseText, headers);
+        },
+        error: function (data) {
+          completeRequest(callback, 500, 'Error', 'Content-Type: text/plain');
+        }
+      });
+    }
+    return function (method, url, post, callback, headers, timeout, withCredentials) {
+      $browser.$$incOutstandingRequestCount();
+      url = url || $browser.url();
+ 
+      if (isLocalCall(url) ) {
+        xhr(method, url, post, callback, headers, timeout, withCredentials);
+      } else {
+        pmHandler(method, url, post, callback, headers, timeout, withCredentials);
+      }
+      if (timeout > 0) {
+        $browserDefer(function () {
+          status = -1;
+          xdr.abort();
+        }, timeout);
+      }
+    }
+ 
+  }
+
+
+  var lowercase = function(string){return angular.isString(string) ? string.toLowerCase() : string;};
+
+  function int(str) {
+    return parseInt(str, 10);
+  }
+
+  var msie = int((/msie (\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
+  if (isNaN(msie)) {
+    msie = int((/trident\/.*; rv:(\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
+  }
+
+
+  function createXhr(method) {
+      //if IE and the method is not RFC2616 compliant, or if XMLHttpRequest
+      //is not available, try getting an ActiveXObject. Otherwise, use XMLHttpRequest
+      //if it is available
+      if (msie <= 8 && (!method.match(/^(get|post|head|put|delete|options)$/i) ||
+        !window.XMLHttpRequest)) {
+        return new window.ActiveXObject("Microsoft.XMLHTTP");
+      } else if (window.XMLHttpRequest) {
+        return new window.XMLHttpRequest();
+      }
+
+      throw minErr('$httpBackend')('noxhr', "This browser does not support XMLHttpRequest.");
+  }
+
+  var lowercase = function(string){return angular.isString(string) ? string.toLowerCase() : string;};
+
+  function isPromiseLike(obj) {
+    return obj && isFunction(obj.then);
+  }
+
+  function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDocument, locationProtocol, msie) {
+    var ABORTED = -1;
+
+    // TODO(vojta): fix the signature
+    return function(method, url, post, callback, headers, timeout, withCredentials, responseType) {
+      var status;
+      $browser.$$incOutstandingRequestCount();
+      url = url || $browser.url();
+
+      if (lowercase(method) == 'jsonp') {
+        var callbackId = '_' + (callbacks.counter++).toString(36);
+        callbacks[callbackId] = function(data) {
+          callbacks[callbackId].data = data;
+          callbacks[callbackId].called = true;
+        };
+
+        var jsonpDone = jsonpReq(url.replace('JSON_CALLBACK', 'angular.callbacks.' + callbackId),
+            callbackId, function(status, text) {
+          completeRequest(callback, status, callbacks[callbackId].data, "", text);
+          callbacks[callbackId] = angular.noop;
+        });
+      } else {
+
+        var xhr = createXhr(method);
+
+        xhr.open(method, url, true);
+        angular.forEach(headers, function(value, key) {
+          if (angular.isDefined(value)) {
+              xhr.setRequestHeader(key, value);
+          }
+        });
+
+        // In IE6 and 7, this might be called synchronously when xhr.send below is called and the
+        // response is in the cache. the promise api will ensure that to the app code the api is
+        // always async
+        xhr.onreadystatechange = function() {
+          // onreadystatechange might get called multiple times with readyState === 4 on mobile webkit caused by
+          // xhrs that are resolved while the app is in the background (see #5426).
+          // since calling completeRequest sets the `xhr` variable to null, we just check if it's not null before
+          // continuing
+          //
+          // we can't set xhr.onreadystatechange to undefined or delete it because that breaks IE8 (method=PATCH) and
+          // Safari respectively.
+          if (xhr && xhr.readyState == 4) {
+            var responseHeaders = null,
+                response = null,
+                statusText = '';
+
+            if(status !== ABORTED) {
+              responseHeaders = xhr.getAllResponseHeaders();
+
+              // responseText is the old-school way of retrieving response (supported by IE8 & 9)
+              // response/responseType properties were introduced in XHR Level2 spec (supported by IE10)
+              response = ('response' in xhr) ? xhr.response : xhr.responseText;
+            }
+
+            // Accessing statusText on an aborted xhr object will
+            // throw an 'c00c023f error' in IE9 and lower, don't touch it.
+            if (!(status === ABORTED && msie < 10)) {
+              statusText = xhr.statusText;
+            }
+
+            completeRequest(callback,
+                status || xhr.status,
+                response,
+                responseHeaders,
+                statusText);
+          }
+        };
+
+        if (withCredentials) {
+          xhr.withCredentials = true;
+        }
+
+        if (responseType) {
+          try {
+            xhr.responseType = responseType;
+          } catch (e) {
+            // WebKit added support for the json responseType value on 09/03/2013
+            // https://bugs.webkit.org/show_bug.cgi?id=73648. Versions of Safari prior to 7 are
+            // known to throw when setting the value "json" as the response type. Other older
+            // browsers implementing the responseType
+            //
+            // The json response type can be ignored if not supported, because JSON payloads are
+            // parsed on the client-side regardless.
+            if (responseType !== 'json') {
+              throw e;
+            }
+          }
+        }
+
+        xhr.send(post || null);
+      }
+
+      if (timeout > 0) {
+        var timeoutId = $browserDefer(timeoutRequest, timeout);
+      } else if (isPromiseLike(timeout)) {
+        timeout.then(timeoutRequest);
+      }
+
+
+      function timeoutRequest() {
+        status = ABORTED;
+        jsonpDone && jsonpDone();
+        xhr && xhr.abort();
+      }
+
+      function completeRequest(callback, status, response, headersString, statusText) {
+        // cancel timeout and subsequent timeout promise resolution
+        timeoutId && $browserDefer.cancel(timeoutId);
+        jsonpDone = xhr = null;
+
+        // fix status code when it is 0 (0 status is undocumented).
+        // Occurs when accessing file resources or on Android 4.1 stock browser
+        // while retrieving files from application cache.
+        if (status === 0) {
+          status = response ? 200 : urlResolve(url).protocol == 'file' ? 404 : 0;
+        }
+
+        // normalize IE bug (http://bugs.jquery.com/ticket/1450)
+        status = status === 1223 ? 204 : status;
+        statusText = statusText || '';
+
+        callback(status, response, headersString, statusText);
+        $browser.$$completeOutstandingRequest(angular.noop);
+      }
+    };
+
+    function jsonpReq(url, callbackId, done) {
+      // we can't use jQuery/jqLite here because jQuery does crazy shit with script elements, e.g.:
+      // - fetches local scripts via XHR and evals them
+      // - adds and immediately removes script elements from the document
+      var script = rawDocument.createElement('script'), callback = null;
+      script.type = "text/javascript";
+      script.src = url;
+      script.async = true;
+
+      callback = function(event) {
+        removeEventListenerFn(script, "load", callback);
+        removeEventListenerFn(script, "error", callback);
+        rawDocument.body.removeChild(script);
+        script = null;
+        var status = -1;
+        var text = "unknown";
+
+        if (event) {
+          if (event.type === "load" && !callbacks[callbackId].called) {
+            event = { type: "error" };
+          }
+          text = event.type;
+          status = event.type === "error" ? 404 : 200;
+        }
+
+        if (done) {
+          done(status, text);
+        }
+      };
+
+      addEventListenerFn(script, "load", callback);
+      addEventListenerFn(script, "error", callback);
+
+      if (msie <= 8) {
+        script.onreadystatechange = function() {
+          if (isString(script.readyState) && /loaded|complete/.test(script.readyState)) {
+            script.onreadystatechange = null;
+            callback({
+              type: 'load'
+            });
+          }
+        };
+      }
+
+      rawDocument.body.appendChild(script);
+      return callback;
+    }
+  }
+
+});
+
+/**
+ The MIT License
+
+ Copyright (c) 2010 Daniel Park (http://metaweb.com, http://postmessage.freebaseapps.com)
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ **/
+var NO_JQUERY = {};
+(function(window, $, undefined) {
+
+     if (!("console" in window)) {
+         var c = window.console = {};
+         c.log = c.warn = c.error = c.debug = function(){};
+     }
+
+     if ($ === NO_JQUERY) {
+         // jQuery is optional
+         $ = {
+             fn: {},
+             extend: function() {
+                 var a = arguments[0];
+                 for (var i=1,len=arguments.length; i<len; i++) {
+                     var b = arguments[i];
+                     for (var prop in b) {
+                         a[prop] = b[prop];
+                     }
+                 }
+                 return a;
+             }
+         };
+     }
+
+     $.fn.pm = function() {
+         console.log("usage: \nto send:    $.pm(options)\nto receive: $.pm.bind(type, fn, [origin])");
+         return this;
+     };
+
+     // send postmessage
+     $.pm = window.pm = function(options) {
+         pm.send(options);
+     };
+
+     // bind postmessage handler
+     $.pm.bind = window.pm.bind = function(type, fn, origin, hash, async_reply) {
+         pm.bind(type, fn, origin, hash, async_reply === true);
+     };
+
+     // unbind postmessage handler
+     $.pm.unbind = window.pm.unbind = function(type, fn) {
+         pm.unbind(type, fn);
+     };
+
+     // default postmessage origin on bind
+     $.pm.origin = window.pm.origin = null;
+
+     // default postmessage polling if using location hash to pass postmessages
+     $.pm.poll = window.pm.poll = 200;
+
+     var pm = {
+
+         send: function(options) {
+             var o = $.extend({}, pm.defaults, options),
+             target = o.target;
+             if (!o.target) {
+                 console.warn("postmessage target window required");
+                 return;
+             }
+             if (!o.type) {
+                 console.warn("postmessage type required");
+                 return;
+             }
+             var msg = {data:o.data, type:o.type};
+             if (o.success) {
+                 msg.callback = pm._callback(o.success);
+             }
+             if (o.error) {
+                 msg.errback = pm._callback(o.error);
+             }
+             if (("postMessage" in target) && !o.hash) {
+                 pm._bind();
+                 target.postMessage(JSON.stringify(msg), o.origin || '*');
+             }
+             else {
+                 pm.hash._bind();
+                 pm.hash.send(o, msg);
+             }
+         },
+
+         bind: function(type, fn, origin, hash, async_reply) {
+           pm._replyBind ( type, fn, origin, hash, async_reply );
+         },
+       
+         _replyBind: function(type, fn, origin, hash, isCallback) {
+           if (("postMessage" in window) && !hash) {
+               pm._bind();
+           }
+           else {
+               pm.hash._bind();
+           }
+           var l = pm.data("listeners.postmessage");
+           if (!l) {
+               l = {};
+               pm.data("listeners.postmessage", l);
+           }
+           var fns = l[type];
+           if (!fns) {
+               fns = [];
+               l[type] = fns;
+           }
+           fns.push({fn:fn, callback: isCallback, origin:origin || $.pm.origin});
+         },
+
+         unbind: function(type, fn) {
+             var l = pm.data("listeners.postmessage");
+             if (l) {
+                 if (type) {
+                     if (fn) {
+                         // remove specific listener
+                         var fns = l[type];
+                         if (fns) {
+                             var m = [];
+                             for (var i=0,len=fns.length; i<len; i++) {
+                                 var o = fns[i];
+                                 if (o.fn !== fn) {
+                                     m.push(o);
+                                 }
+                             }
+                             l[type] = m;
+                         }
+                     }
+                     else {
+                         // remove all listeners by type
+                         delete l[type];
+                     }
+                 }
+                 else {
+                     // unbind all listeners of all type
+                     for (var i in l) {
+                       delete l[i];
+                     }
+                 }
+             }
+         },
+
+         data: function(k, v) {
+             if (v === undefined) {
+                 return pm._data[k];
+             }
+             pm._data[k] = v;
+             return v;
+         },
+
+         _data: {},
+
+         _CHARS: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split(''),
+
+         _random: function() {
+             var r = [];
+             for (var i=0; i<32; i++) {
+                 r[i] = pm._CHARS[0 | Math.random() * 32];
+             };
+             return r.join("");
+         },
+
+         _callback: function(fn) {
+             var cbs = pm.data("callbacks.postmessage");
+             if (!cbs) {
+                 cbs = {};
+                 pm.data("callbacks.postmessage", cbs);
+             }
+             var r = pm._random();
+             cbs[r] = fn;
+             return r;
+         },
+
+         _bind: function() {
+             // are we already listening to message events on this w?
+             if (!pm.data("listening.postmessage")) {
+                 if (window.addEventListener) {
+                     window.addEventListener("message", pm._dispatch, false);
+                 }
+                 else if (window.attachEvent) {
+                     window.attachEvent("onmessage", pm._dispatch);
+                 }
+                 pm.data("listening.postmessage", 1);
+             }
+         },
+
+         _dispatch: function(e) {
+             //console.log("$.pm.dispatch", e, this);
+             try {
+                 var msg = JSON.parse(e.data);
+             }
+             catch (ex) {
+                 console.warn("postmessage data invalid json: ", ex);
+                 return;
+             }
+             if (!msg.type) {
+                 console.warn("postmessage message type required");
+                 return;
+             }
+             var cbs = pm.data("callbacks.postmessage") || {},
+             cb = cbs[msg.type];
+             if (cb) {
+                 cb(msg.data);
+             }
+             else {
+                 var l = pm.data("listeners.postmessage") || {};
+                 var fns = l[msg.type] || [];
+                 for (var i=0,len=fns.length; i<len; i++) {
+                     var o = fns[i];
+                     if (o.origin && o.origin !== '*' && e.origin !== o.origin) {
+                         console.warn("postmessage message origin mismatch", e.origin, o.origin);
+                         if (msg.errback) {
+                             // notify post message errback
+                             var error = {
+                                 message: "postmessage origin mismatch",
+                                 origin: [e.origin, o.origin]
+                             };
+                             pm.send({target:e.source, data:error, type:msg.errback});
+                         }
+                         continue;
+                     }
+
+                     function sendReply ( data ) {
+                       if (msg.callback) {
+                           pm.send({target:e.source, data:data, type:msg.callback});
+                       }
+                     }
+                     
+                     try {
+                         if ( o.callback ) {
+                           o.fn(msg.data, sendReply, e);
+                         } else {
+                           sendReply ( o.fn(msg.data, e) );
+                         }
+                     }
+                     catch (ex) {
+                         if (msg.errback) {
+                             // notify post message errback
+                             pm.send({target:e.source, data:ex, type:msg.errback});
+                         } else {
+                             throw ex;
+                         }
+                     }
+                 };
+             }
+         }
+     };
+
+     // location hash polling
+     pm.hash = {
+
+         send: function(options, msg) {
+             //console.log("hash.send", target_window, options, msg);
+             var target_window = options.target,
+             target_url = options.url;
+             if (!target_url) {
+                 console.warn("postmessage target window url is required");
+                 return;
+             }
+             target_url = pm.hash._url(target_url);
+             var source_window,
+             source_url = pm.hash._url(window.location.href);
+             if (window == target_window.parent) {
+                 source_window = "parent";
+             }
+             else {
+                 try {
+                     for (var i=0,len=parent.frames.length; i<len; i++) {
+                         var f = parent.frames[i];
+                         if (f == window) {
+                             source_window = i;
+                             break;
+                         }
+                     };
+                 }
+                 catch(ex) {
+                     // Opera: security error trying to access parent.frames x-origin
+                     // juse use window.name
+                     source_window = window.name;
+                 }
+             }
+             if (source_window == null) {
+                 console.warn("postmessage windows must be direct parent/child windows and the child must be available through the parent window.frames list");
+                 return;
+             }
+             var hashmessage = {
+                 "x-requested-with": "postmessage",
+                 source: {
+                     name: source_window,
+                     url: source_url
+                 },
+                 postmessage: msg
+             };
+             var hash_id = "#x-postmessage-id=" + pm._random();
+             target_window.location = target_url + hash_id + encodeURIComponent(JSON.stringify(hashmessage));
+         },
+
+         _regex: /^\#x\-postmessage\-id\=(\w{32})/,
+
+         _regex_len: "#x-postmessage-id=".length + 32,
+
+         _bind: function() {
+             // are we already listening to message events on this w?
+             if (!pm.data("polling.postmessage")) {
+                 setInterval(function() {
+                                 var hash = "" + window.location.hash,
+                                 m = pm.hash._regex.exec(hash);
+                                 if (m) {
+                                     var id = m[1];
+                                     if (pm.hash._last !== id) {
+                                         pm.hash._last = id;
+                                         pm.hash._dispatch(hash.substring(pm.hash._regex_len));
+                                     }
+                                 }
+                             }, $.pm.poll || 200);
+                 pm.data("polling.postmessage", 1);
+             }
+         },
+
+         _dispatch: function(hash) {
+             if (!hash) {
+                 return;
+             }
+             try {
+                 hash = JSON.parse(decodeURIComponent(hash));
+                 if (!(hash['x-requested-with'] === 'postmessage' &&
+                       hash.source && hash.source.name != null && hash.source.url && hash.postmessage)) {
+                     // ignore since hash could've come from somewhere else
+                     return;
+                 }
+             }
+             catch (ex) {
+                 // ignore since hash could've come from somewhere else
+                 return;
+             }
+             var msg = hash.postmessage,
+             cbs = pm.data("callbacks.postmessage") || {},
+             cb = cbs[msg.type];
+             if (cb) {
+                 cb(msg.data);
+             }
+             else {
+                 var source_window;
+                 if (hash.source.name === "parent") {
+                     source_window = window.parent;
+                 }
+                 else {
+                     source_window = window.frames[hash.source.name];
+                 }
+                 var l = pm.data("listeners.postmessage") || {};
+                 var fns = l[msg.type] || [];
+                 for (var i=0,len=fns.length; i<len; i++) {
+                     var o = fns[i];
+                     if (o.origin) {
+                         var origin = /https?\:\/\/[^\/]*/.exec(hash.source.url)[0];
+                         if (o.origin !== '*' && origin !== o.origin) {
+                             console.warn("postmessage message origin mismatch", origin, o.origin);
+                             if (msg.errback) {
+                                 // notify post message errback
+                                 var error = {
+                                     message: "postmessage origin mismatch",
+                                     origin: [origin, o.origin]
+                                 };
+                                 pm.send({target:source_window, data:error, type:msg.errback, hash:true, url:hash.source.url});
+                             }
+                             continue;
+                         }
+                     }
+
+                     function sendReply ( data ) {
+                       if (msg.callback) {
+                         pm.send({target:source_window, data:data, type:msg.callback, hash:true, url:hash.source.url});
+                       }
+                     }
+                     
+                     try {
+                         if ( o.callback ) {
+                           o.fn(msg.data, sendReply);
+                         } else {
+                           sendReply ( o.fn(msg.data) );
+                         }
+                     }
+                     catch (ex) {
+                         if (msg.errback) {
+                             // notify post message errback
+                             pm.send({target:source_window, data:ex, type:msg.errback, hash:true, url:hash.source.url});
+                         } else {
+                             throw ex;
+                         }
+                     }
+                 };
+             }
+         },
+
+         _url: function(url) {
+             // url minus hash part
+             return (""+url).replace(/#.*$/, "");
+         }
+
+     };
+
+     $.extend(pm, {
+                  defaults: {
+                      target: null,  /* target window (required) */
+                      url: null,     /* target window url (required if no window.postMessage or hash == true) */
+                      type: null,    /* message type (required) */
+                      data: null,    /* message data (required) */
+                      success: null, /* success callback (optional) */
+                      error: null,   /* error callback (optional) */
+                      origin: "*",   /* postmessage origin (optional) */
+                      hash: false    /* use location hash for message passing (optional) */
+                  }
+              });
+
+ })(this, typeof jQuery === "undefined" ? NO_JQUERY : jQuery);
+
+/**
+ * http://www.JSON.org/json2.js
+ **/
+if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){return n<10?"0"+n:n}if(typeof Date.prototype.toJSON!=="function"){Date.prototype.toJSON=function(key){return this.getUTCFullYear()+"-"+f(this.getUTCMonth()+1)+"-"+f(this.getUTCDate())+"T"+f(this.getUTCHours())+":"+f(this.getUTCMinutes())+":"+f(this.getUTCSeconds())+"Z"};String.prototype.toJSON=Number.prototype.toJSON=Boolean.prototype.toJSON=function(key){return this.valueOf()}}var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,gap,indent,meta={"\b":"\\b","\t":"\\t","\n":"\\n","\f":"\\f","\r":"\\r",'"':'\\"',"\\":"\\\\"},rep;function quote(string){escapable.lastIndex=0;return escapable.test(string)?'"'+string.replace(escapable,function(a){var c=meta[a];return typeof c==="string"?c:"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})+'"':'"'+string+'"'}function str(key,holder){var i,k,v,length,mind=gap,partial,value=holder[key];if(value&&typeof value==="object"&&typeof value.toJSON==="function"){value=value.toJSON(key)}if(typeof rep==="function"){value=rep.call(holder,key,value)}switch(typeof value){case"string":return quote(value);case"number":return isFinite(value)?String(value):"null";case"boolean":case"null":return String(value);case"object":if(!value){return"null"}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==="[object Array]"){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||"null"}v=partial.length===0?"[]":gap?"[\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"]":"["+partial.join(",")+"]";gap=mind;return v}if(rep&&typeof rep==="object"){length=rep.length;for(i=0;i<length;i+=1){k=rep[i];if(typeof k==="string"){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}else{for(k in value){if(Object.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}v=partial.length===0?"{}":gap?"{\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"}":"{"+partial.join(",")+"}";gap=mind;return v}}if(typeof JSON.stringify!=="function"){JSON.stringify=function(value,replacer,space){var i;gap="";indent="";if(typeof space==="number"){for(i=0;i<space;i+=1){indent+=" "}}else{if(typeof space==="string"){indent=space}}rep=replacer;if(replacer&&typeof replacer!=="function"&&(typeof replacer!=="object"||typeof replacer.length!=="number")){throw new Error("JSON.stringify")}return str("",{"":value})}}if(typeof JSON.parse!=="function"){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==="object"){for(k in value){if(Object.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v}else{delete value[k]}}}}return reviver.call(holder,key,value)}cx.lastIndex=0;if(cx.test(text)){text=text.replace(cx,function(a){return"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})}if(/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,"@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,"]").replace(/(?:^|:|,)(?:\s*\[)+/g,""))){j=eval("("+text+")");return typeof reviver==="function"?walk({"":j},""):j}throw new SyntaxError("JSON.parse")}}}());
+(function() {
+  angular.module('schemaForm').config(function(schemaFormProvider, schemaFormDecoratorsProvider, sfPathProvider) {
+    var datetimepicker, timepicker;
+    timepicker = function(name, schema, options) {
+      var f;
+      if (schema.type === 'string' && (schema.format === 'time')) {
+        f = schemaFormProvider.stdFormObj(name, schema, options);
+        f.key = options.path;
+        f.type = 'timepicker';
+        options.lookup[sfPathProvider.stringify(options.path)] = f;
+        return f;
+      }
+    };
+    schemaFormProvider.defaults.string.unshift(timepicker);
+    datetimepicker = function(name, schema, options) {
+      var f;
+      if (schema.type === 'string' && (schema.format === 'datetime')) {
+        f = schemaFormProvider.stdFormObj(name, schema, options);
+        f.key = options.path;
+        f.type = 'datetime';
+        options.lookup[sfPathProvider.stringify(options.path)] = f;
+        return f;
+      }
+    };
+    schemaFormProvider.defaults.string.unshift(datetimepicker);
+    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'time', 'bootstrap_ui_time_form.html');
+    schemaFormDecoratorsProvider.createDirective('time', 'bootstrap_ui_time_form.html');
+    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'datetime', 'bootstrap_ui_datetime_form.html');
+    schemaFormDecoratorsProvider.createDirective('datetime', 'bootstrap_ui_datetime_form.html');
+    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'price', 'price_form.html');
+    return schemaFormDecoratorsProvider.createDirective('price', 'price_form.html');
   });
 
 }).call(this);
