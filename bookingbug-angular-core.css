@@ -10,3 +10,8 @@
 img.loader {
   margin: auto;
   display: block; }
+
+div.loader {
+  margin: auto;
+  display: block;
+  background: url("images/BB_wait.gif"); }
