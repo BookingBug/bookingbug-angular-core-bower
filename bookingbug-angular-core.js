@@ -20249,6 +20249,614 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("Purchase.BookingModel", function($q, $window, BBModel, BaseModel, $bbug) {
+    var Purchase_Booking;
+    return Purchase_Booking = (function(superClass) {
+      extend(Purchase_Booking, superClass);
+
+      function Purchase_Booking(data) {
+        this.getSurveyAnswersPromise = bind(this.getSurveyAnswersPromise, this);
+        this.getAnswersPromise = bind(this.getAnswersPromise, this);
+        Purchase_Booking.__super__.constructor.call(this, data);
+        this.ready = false;
+        this.datetime = moment.parseZone(this.datetime);
+        if (this.time_zone) {
+          this.datetime.tz(this.time_zone);
+        }
+        this.original_datetime = moment(this.datetime);
+        this.end_datetime = moment.parseZone(this.end_datetime);
+        if (this.time_zone) {
+          this.end_datetime.tz(this.time_zone);
+        }
+      }
+
+      Purchase_Booking.prototype.getGroup = function() {
+        if (this.group) {
+          return this.group;
+        }
+        if (this._data.$has('event_groups')) {
+          return this._data.$get('event_groups').then((function(_this) {
+            return function(group) {
+              _this.group = group;
+              return _this.group;
+            };
+          })(this));
+        }
+      };
+
+      Purchase_Booking.prototype.getColour = function() {
+        if (this.getGroup()) {
+          return this.getGroup().colour;
+        } else {
+          return "#FFFFFF";
+        }
+      };
+
+      Purchase_Booking.prototype.getCompany = function() {
+        if (this.company) {
+          return this.company;
+        }
+        if (this.$has('company')) {
+          return this._data.$get('company').then((function(_this) {
+            return function(company) {
+              _this.company = new BBModel.Company(company);
+              return _this.company;
+            };
+          })(this));
+        }
+      };
+
+      Purchase_Booking.prototype.getAnswersPromise = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.answers) {
+          defer.resolve(this.answers);
+        }
+        if (this._data.$has('answers')) {
+          this._data.$get('answers').then((function(_this) {
+            return function(answers) {
+              var a;
+              _this.answers = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = answers.length; i < len; i++) {
+                  a = answers[i];
+                  results.push(new BBModel.Answer(a));
+                }
+                return results;
+              })();
+              return defer.resolve(_this.answers);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Booking.prototype.getSurveyAnswersPromise = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.survey_answers) {
+          defer.resolve(this.survey_answers);
+        }
+        if (this._data.$has('survey_answers')) {
+          this._data.$get('survey_answers').then((function(_this) {
+            return function(survey_answers) {
+              var a;
+              _this.survey_answers = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = survey_answers.length; i < len; i++) {
+                  a = survey_answers[i];
+                  results.push(new BBModel.Answer(a));
+                }
+                return results;
+              })();
+              return defer.resolve(_this.survey_answers);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Booking.prototype.getPostData = function() {
+        var data, formatted_survey_answers, i, len, q, ref;
+        data = {};
+        data.attended = this.attended;
+        data.client_id = this.client_id;
+        data.company_id = this.company_id;
+        data.time = (this.datetime.hour() * 60) + this.datetime.minute();
+        data.date = this.datetime.toISODate();
+        data.deleted = this.deleted;
+        data.describe = this.describe;
+        data.duration = this.duration;
+        data.end_datetime = this.end_datetime;
+        if (this.event) {
+          data.event_id = this.event.id;
+        }
+        if (this.time && this.time.event_id) {
+          data.event_id = this.time.event_id;
+        }
+        data.full_describe = this.full_describe;
+        data.id = this.id;
+        data.min_cancellation_time = this.min_cancellation_time;
+        data.on_waitlist = this.on_waitlist;
+        data.paid = this.paid;
+        data.person_name = this.person_name;
+        data.price = this.price;
+        data.purchase_id = this.purchase_id;
+        data.purchase_ref = this.purchase_ref;
+        data.quantity = this.quantity;
+        data.self = this.self;
+        if (this.move_item_id) {
+          data.move_item_id = this.move_item_id;
+        }
+        if (this.srcBooking) {
+          data.move_item_id = this.srcBooking.id;
+        }
+        if (this.person) {
+          data.person_id = this.person.id;
+        }
+        if (this.service) {
+          data.service_id = this.service.id;
+        }
+        if (this.resource) {
+          data.resource_id = this.resource.id;
+        }
+        if (this.item_details) {
+          data.questions = this.item_details.getPostData();
+        }
+        data.service_name = this.service_name;
+        data.settings = this.settings;
+        if (this.status) {
+          data.status = this.status;
+        }
+        if (this.email != null) {
+          data.email = this.email;
+        }
+        if (this.email_admin != null) {
+          data.email_admin = this.email_admin;
+        }
+        formatted_survey_answers = [];
+        if (this.survey_questions) {
+          data.survey_questions = this.survey_questions;
+          ref = this.survey_questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            formatted_survey_answers.push({
+              value: q.answer,
+              outcome: q.outcome,
+              detail_type_id: q.id,
+              price: q.price
+            });
+          }
+          data.survey_answers = formatted_survey_answers;
+        }
+        return data;
+      };
+
+      Purchase_Booking.prototype.checkReady = function() {
+        if (this.datetime && this.id && this.purchase_ref) {
+          return this.ready = true;
+        }
+      };
+
+      Purchase_Booking.prototype.printed_price = function() {
+        if (parseFloat(this.price) % 1 === 0) {
+          return "£" + parseInt(this.price);
+        }
+        return $window.sprintf("£%.2f", parseFloat(this.price));
+      };
+
+      Purchase_Booking.prototype.getDateString = function() {
+        return this.datetime.toISODate();
+      };
+
+      Purchase_Booking.prototype.getTimeInMins = function() {
+        return (this.datetime.hour() * 60) + this.datetime.minute();
+      };
+
+      Purchase_Booking.prototype.getAttachments = function() {
+        if (this.attachments) {
+          return this.attachments;
+        }
+        if (this.$has('attachments')) {
+          return this._data.$get('attachments').then((function(_this) {
+            return function(atts) {
+              _this.attachments = atts.attachments;
+              return _this.attachments;
+            };
+          })(this));
+        }
+      };
+
+      Purchase_Booking.prototype.canCancel = function() {
+        return moment(this.min_cancellation_time).isAfter(moment());
+      };
+
+      Purchase_Booking.prototype.canMove = function() {
+        return this.canCancel();
+      };
+
+      return Purchase_Booking;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("Purchase.CourseBookingModel", function($q, BBModel, BaseModel) {
+    var Purchase_Course_Booking;
+    return Purchase_Course_Booking = (function(superClass) {
+      extend(Purchase_Course_Booking, superClass);
+
+      function Purchase_Course_Booking(data) {
+        this.getBookings = bind(this.getBookings, this);
+        Purchase_Course_Booking.__super__.constructor.call(this, data);
+      }
+
+      Purchase_Course_Booking.prototype.getBookings = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.bookings) {
+          defer.resolve(this.bookings);
+        }
+        if (this._data.$has('bookings')) {
+          this._data.$get('bookings').then((function(_this) {
+            return function(bookings) {
+              var b;
+              _this.bookings = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  b = bookings[i];
+                  results.push(new BBModel.Purchase.Booking(b));
+                }
+                return results;
+              })();
+              _this.bookings.sort(function(a, b) {
+                return a.datetime.unix() - b.datetime.unix();
+              });
+              return defer.resolve(_this.bookings);
+            };
+          })(this));
+        } else {
+          this.bookings = [];
+          defer.resolve(this.bookings);
+        }
+        return defer.promise;
+      };
+
+      return Purchase_Course_Booking;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("Purchase.TotalModel", function($q, $window, BBModel, BaseModel, $sce) {
+    var Purchase_Total;
+    return Purchase_Total = (function(superClass) {
+      extend(Purchase_Total, superClass);
+
+      function Purchase_Total(data) {
+        this.getConfirmMessages = bind(this.getConfirmMessages, this);
+        this.getClient = bind(this.getClient, this);
+        this.getMessages = bind(this.getMessages, this);
+        this.getDeals = bind(this.getDeals, this);
+        this.getProducts = bind(this.getProducts, this);
+        this.getPackages = bind(this.getPackages, this);
+        this.getCourseBookingsPromise = bind(this.getCourseBookingsPromise, this);
+        this.getBookingsPromise = bind(this.getBookingsPromise, this);
+        this.getItems = bind(this.getItems, this);
+        Purchase_Total.__super__.constructor.call(this, data);
+        this.getItems().then((function(_this) {
+          return function(items) {
+            return _this.items = items;
+          };
+        })(this));
+        this.getClient().then((function(_this) {
+          return function(client) {
+            return _this.client = client;
+          };
+        })(this));
+      }
+
+      Purchase_Total.prototype.id = function() {
+        return this.get('id');
+      };
+
+      Purchase_Total.prototype.icalLink = function() {
+        return this._data.$href('ical');
+      };
+
+      Purchase_Total.prototype.webcalLink = function() {
+        return this._data.$href('ical');
+      };
+
+      Purchase_Total.prototype.gcalLink = function() {
+        return this._data.$href('gcal');
+      };
+
+      Purchase_Total.prototype.getItems = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.items) {
+          defer.resolve(this.items);
+        }
+        $q.all([this.getBookingsPromise(), this.getCourseBookingsPromise(), this.getPackages(), this.getProducts(), this.getDeals()]).then(function(result) {
+          var items;
+          items = _.flatten(result);
+          return defer.resolve(items);
+        });
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getBookingsPromise = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.bookings) {
+          defer.resolve(this.bookings);
+        }
+        if (this._data.$has('bookings')) {
+          this._data.$get('bookings').then((function(_this) {
+            return function(bookings) {
+              var b;
+              _this.bookings = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  b = bookings[i];
+                  results.push(new BBModel.Purchase.Booking(b));
+                }
+                return results;
+              })();
+              _this.bookings.sort(function(a, b) {
+                return a.datetime.unix() - b.datetime.unix();
+              });
+              return defer.resolve(_this.bookings);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getCourseBookingsPromise = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.course_bookings) {
+          defer.resolve(this.course_bookings);
+        }
+        if (this._data.$has('course_bookings')) {
+          this._data.$get('course_bookings').then((function(_this) {
+            return function(bookings) {
+              var b;
+              _this.course_bookings = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  b = bookings[i];
+                  results.push(new BBModel.Purchase.CourseBooking(b));
+                }
+                return results;
+              })();
+              return $q.all(_.map(_this.course_bookings, function(b) {
+                return b.getBookings();
+              })).then(function() {
+                return defer.resolve(_this.course_bookings);
+              });
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getPackages = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.packages) {
+          defer.resolve(this.packages);
+        }
+        if (this._data.$has('packages')) {
+          this._data.$get('packages').then((function(_this) {
+            return function(packages) {
+              _this.packages = packages;
+              return defer.resolve(_this.packages);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getProducts = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.products) {
+          defer.resolve(this.products);
+        }
+        if (this._data.$has('products')) {
+          this._data.$get('products').then((function(_this) {
+            return function(products) {
+              _this.products = products;
+              return defer.resolve(_this.products);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getDeals = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.deals) {
+          defer.resolve(this.deals);
+        }
+        if (this._data.$has('deals')) {
+          this._data.$get('deals').then((function(_this) {
+            return function(deals) {
+              _this.deals = deals;
+              return defer.resolve(_this.deals);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getMessages = function(booking_texts, msg_type) {
+        var bt, defer;
+        defer = $q.defer();
+        booking_texts = (function() {
+          var i, len, results;
+          results = [];
+          for (i = 0, len = booking_texts.length; i < len; i++) {
+            bt = booking_texts[i];
+            if (bt.message_type === msg_type) {
+              results.push(bt);
+            }
+          }
+          return results;
+        })();
+        if (booking_texts.length === 0) {
+          defer.resolve([]);
+        } else {
+          this.getItems().then(function(items) {
+            var booking_text, i, item, j, k, len, len1, len2, msgs, ref, type;
+            msgs = [];
+            for (i = 0, len = booking_texts.length; i < len; i++) {
+              booking_text = booking_texts[i];
+              for (j = 0, len1 = items.length; j < len1; j++) {
+                item = items[j];
+                ref = ['company', 'person', 'resource', 'service'];
+                for (k = 0, len2 = ref.length; k < len2; k++) {
+                  type = ref[k];
+                  if (item.$has(type) && item.$href(type) === booking_text.$href('item')) {
+                    if (msgs.indexOf(booking_text.message) === -1) {
+                      msgs.push(booking_text.message);
+                    }
+                  }
+                }
+              }
+            }
+            return defer.resolve(msgs);
+          });
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getClient = function() {
+        var defer;
+        defer = $q.defer();
+        if (this._data.$has('client')) {
+          this._data.$get('client').then((function(_this) {
+            return function(client) {
+              _this.client = new BBModel.Client(client);
+              return defer.resolve(_this.client);
+            };
+          })(this));
+        } else {
+          defer.reject('No client');
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getConfirmMessages = function() {
+        var defer;
+        defer = $q.defer();
+        if (this._data.$has('confirm_messages')) {
+          this._data.$get('confirm_messages').then((function(_this) {
+            return function(msgs) {
+              return _this.getMessages(msgs, 'Confirm').then(function(filtered_msgs) {
+                return defer.resolve(filtered_msgs);
+              });
+            };
+          })(this));
+        } else {
+          defer.reject('no messages');
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.printed_total_price = function() {
+        if (parseFloat(this.total_price) % 1 === 0) {
+          return "£" + parseInt(this.total_price);
+        }
+        return $window.sprintf("£%.2f", parseFloat(this.total_price));
+      };
+
+      Purchase_Total.prototype.newPaymentUrl = function() {
+        if (this._data.$has('new_payment')) {
+          return $sce.trustAsResourceUrl(this._data.$href('new_payment'));
+        }
+      };
+
+      Purchase_Total.prototype.totalDuration = function() {
+        var duration, i, item, len, ref;
+        duration = 0;
+        ref = this.items;
+        for (i = 0, len = ref.length; i < len; i++) {
+          item = ref[i];
+          if (item.duration) {
+            duration += item.duration;
+          }
+        }
+        duration /= 60;
+        return duration;
+      };
+
+      Purchase_Total.prototype.containsWaitlistItems = function() {
+        var i, item, len, ref, waitlist;
+        waitlist = [];
+        ref = this.items;
+        for (i = 0, len = ref.length; i < len; i++) {
+          item = ref[i];
+          if (item.on_waitlist === true) {
+            waitlist.push(item);
+          }
+        }
+        if (waitlist.length > 0) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+      return Purchase_Total;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
   var ModalDelete, ModalDeleteAll;
 
   angular.module('BB.Directives').directive('bbPurchase', function() {
@@ -20878,614 +21486,6 @@ function getURIparam( name ){
         return defer.promise;
       }
     };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("Purchase.BookingModel", function($q, $window, BBModel, BaseModel, $bbug) {
-    var Purchase_Booking;
-    return Purchase_Booking = (function(superClass) {
-      extend(Purchase_Booking, superClass);
-
-      function Purchase_Booking(data) {
-        this.getSurveyAnswersPromise = bind(this.getSurveyAnswersPromise, this);
-        this.getAnswersPromise = bind(this.getAnswersPromise, this);
-        Purchase_Booking.__super__.constructor.call(this, data);
-        this.ready = false;
-        this.datetime = moment.parseZone(this.datetime);
-        if (this.time_zone) {
-          this.datetime.tz(this.time_zone);
-        }
-        this.original_datetime = moment(this.datetime);
-        this.end_datetime = moment.parseZone(this.end_datetime);
-        if (this.time_zone) {
-          this.end_datetime.tz(this.time_zone);
-        }
-      }
-
-      Purchase_Booking.prototype.getGroup = function() {
-        if (this.group) {
-          return this.group;
-        }
-        if (this._data.$has('event_groups')) {
-          return this._data.$get('event_groups').then((function(_this) {
-            return function(group) {
-              _this.group = group;
-              return _this.group;
-            };
-          })(this));
-        }
-      };
-
-      Purchase_Booking.prototype.getColour = function() {
-        if (this.getGroup()) {
-          return this.getGroup().colour;
-        } else {
-          return "#FFFFFF";
-        }
-      };
-
-      Purchase_Booking.prototype.getCompany = function() {
-        if (this.company) {
-          return this.company;
-        }
-        if (this.$has('company')) {
-          return this._data.$get('company').then((function(_this) {
-            return function(company) {
-              _this.company = new BBModel.Company(company);
-              return _this.company;
-            };
-          })(this));
-        }
-      };
-
-      Purchase_Booking.prototype.getAnswersPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.answers) {
-          defer.resolve(this.answers);
-        }
-        if (this._data.$has('answers')) {
-          this._data.$get('answers').then((function(_this) {
-            return function(answers) {
-              var a;
-              _this.answers = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = answers.length; i < len; i++) {
-                  a = answers[i];
-                  results.push(new BBModel.Answer(a));
-                }
-                return results;
-              })();
-              return defer.resolve(_this.answers);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Booking.prototype.getSurveyAnswersPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.survey_answers) {
-          defer.resolve(this.survey_answers);
-        }
-        if (this._data.$has('survey_answers')) {
-          this._data.$get('survey_answers').then((function(_this) {
-            return function(survey_answers) {
-              var a;
-              _this.survey_answers = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = survey_answers.length; i < len; i++) {
-                  a = survey_answers[i];
-                  results.push(new BBModel.Answer(a));
-                }
-                return results;
-              })();
-              return defer.resolve(_this.survey_answers);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Booking.prototype.getPostData = function() {
-        var data, formatted_survey_answers, i, len, q, ref;
-        data = {};
-        data.attended = this.attended;
-        data.client_id = this.client_id;
-        data.company_id = this.company_id;
-        data.time = (this.datetime.hour() * 60) + this.datetime.minute();
-        data.date = this.datetime.toISODate();
-        data.deleted = this.deleted;
-        data.describe = this.describe;
-        data.duration = this.duration;
-        data.end_datetime = this.end_datetime;
-        if (this.event) {
-          data.event_id = this.event.id;
-        }
-        if (this.time && this.time.event_id) {
-          data.event_id = this.time.event_id;
-        }
-        data.full_describe = this.full_describe;
-        data.id = this.id;
-        data.min_cancellation_time = this.min_cancellation_time;
-        data.on_waitlist = this.on_waitlist;
-        data.paid = this.paid;
-        data.person_name = this.person_name;
-        data.price = this.price;
-        data.purchase_id = this.purchase_id;
-        data.purchase_ref = this.purchase_ref;
-        data.quantity = this.quantity;
-        data.self = this.self;
-        if (this.move_item_id) {
-          data.move_item_id = this.move_item_id;
-        }
-        if (this.srcBooking) {
-          data.move_item_id = this.srcBooking.id;
-        }
-        if (this.person) {
-          data.person_id = this.person.id;
-        }
-        if (this.service) {
-          data.service_id = this.service.id;
-        }
-        if (this.resource) {
-          data.resource_id = this.resource.id;
-        }
-        if (this.item_details) {
-          data.questions = this.item_details.getPostData();
-        }
-        data.service_name = this.service_name;
-        data.settings = this.settings;
-        if (this.status) {
-          data.status = this.status;
-        }
-        if (this.email != null) {
-          data.email = this.email;
-        }
-        if (this.email_admin != null) {
-          data.email_admin = this.email_admin;
-        }
-        formatted_survey_answers = [];
-        if (this.survey_questions) {
-          data.survey_questions = this.survey_questions;
-          ref = this.survey_questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            formatted_survey_answers.push({
-              value: q.answer,
-              outcome: q.outcome,
-              detail_type_id: q.id,
-              price: q.price
-            });
-          }
-          data.survey_answers = formatted_survey_answers;
-        }
-        return data;
-      };
-
-      Purchase_Booking.prototype.checkReady = function() {
-        if (this.datetime && this.id && this.purchase_ref) {
-          return this.ready = true;
-        }
-      };
-
-      Purchase_Booking.prototype.printed_price = function() {
-        if (parseFloat(this.price) % 1 === 0) {
-          return "£" + parseInt(this.price);
-        }
-        return $window.sprintf("£%.2f", parseFloat(this.price));
-      };
-
-      Purchase_Booking.prototype.getDateString = function() {
-        return this.datetime.toISODate();
-      };
-
-      Purchase_Booking.prototype.getTimeInMins = function() {
-        return (this.datetime.hour() * 60) + this.datetime.minute();
-      };
-
-      Purchase_Booking.prototype.getAttachments = function() {
-        if (this.attachments) {
-          return this.attachments;
-        }
-        if (this.$has('attachments')) {
-          return this._data.$get('attachments').then((function(_this) {
-            return function(atts) {
-              _this.attachments = atts.attachments;
-              return _this.attachments;
-            };
-          })(this));
-        }
-      };
-
-      Purchase_Booking.prototype.canCancel = function() {
-        return moment(this.min_cancellation_time).isAfter(moment());
-      };
-
-      Purchase_Booking.prototype.canMove = function() {
-        return this.canCancel();
-      };
-
-      return Purchase_Booking;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("Purchase.CourseBookingModel", function($q, BBModel, BaseModel) {
-    var Purchase_Course_Booking;
-    return Purchase_Course_Booking = (function(superClass) {
-      extend(Purchase_Course_Booking, superClass);
-
-      function Purchase_Course_Booking(data) {
-        this.getBookings = bind(this.getBookings, this);
-        Purchase_Course_Booking.__super__.constructor.call(this, data);
-      }
-
-      Purchase_Course_Booking.prototype.getBookings = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.bookings) {
-          defer.resolve(this.bookings);
-        }
-        if (this._data.$has('bookings')) {
-          this._data.$get('bookings').then((function(_this) {
-            return function(bookings) {
-              var b;
-              _this.bookings = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  b = bookings[i];
-                  results.push(new BBModel.Purchase.Booking(b));
-                }
-                return results;
-              })();
-              _this.bookings.sort(function(a, b) {
-                return a.datetime.unix() - b.datetime.unix();
-              });
-              return defer.resolve(_this.bookings);
-            };
-          })(this));
-        } else {
-          this.bookings = [];
-          defer.resolve(this.bookings);
-        }
-        return defer.promise;
-      };
-
-      return Purchase_Course_Booking;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("Purchase.TotalModel", function($q, $window, BBModel, BaseModel, $sce) {
-    var Purchase_Total;
-    return Purchase_Total = (function(superClass) {
-      extend(Purchase_Total, superClass);
-
-      function Purchase_Total(data) {
-        this.getConfirmMessages = bind(this.getConfirmMessages, this);
-        this.getClient = bind(this.getClient, this);
-        this.getMessages = bind(this.getMessages, this);
-        this.getDeals = bind(this.getDeals, this);
-        this.getProducts = bind(this.getProducts, this);
-        this.getPackages = bind(this.getPackages, this);
-        this.getCourseBookingsPromise = bind(this.getCourseBookingsPromise, this);
-        this.getBookingsPromise = bind(this.getBookingsPromise, this);
-        this.getItems = bind(this.getItems, this);
-        Purchase_Total.__super__.constructor.call(this, data);
-        this.getItems().then((function(_this) {
-          return function(items) {
-            return _this.items = items;
-          };
-        })(this));
-        this.getClient().then((function(_this) {
-          return function(client) {
-            return _this.client = client;
-          };
-        })(this));
-      }
-
-      Purchase_Total.prototype.id = function() {
-        return this.get('id');
-      };
-
-      Purchase_Total.prototype.icalLink = function() {
-        return this._data.$href('ical');
-      };
-
-      Purchase_Total.prototype.webcalLink = function() {
-        return this._data.$href('ical');
-      };
-
-      Purchase_Total.prototype.gcalLink = function() {
-        return this._data.$href('gcal');
-      };
-
-      Purchase_Total.prototype.getItems = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.items) {
-          defer.resolve(this.items);
-        }
-        $q.all([this.getBookingsPromise(), this.getCourseBookingsPromise(), this.getPackages(), this.getProducts(), this.getDeals()]).then(function(result) {
-          var items;
-          items = _.flatten(result);
-          return defer.resolve(items);
-        });
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getBookingsPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.bookings) {
-          defer.resolve(this.bookings);
-        }
-        if (this._data.$has('bookings')) {
-          this._data.$get('bookings').then((function(_this) {
-            return function(bookings) {
-              var b;
-              _this.bookings = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  b = bookings[i];
-                  results.push(new BBModel.Purchase.Booking(b));
-                }
-                return results;
-              })();
-              _this.bookings.sort(function(a, b) {
-                return a.datetime.unix() - b.datetime.unix();
-              });
-              return defer.resolve(_this.bookings);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getCourseBookingsPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.course_bookings) {
-          defer.resolve(this.course_bookings);
-        }
-        if (this._data.$has('course_bookings')) {
-          this._data.$get('course_bookings').then((function(_this) {
-            return function(bookings) {
-              var b;
-              _this.course_bookings = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  b = bookings[i];
-                  results.push(new BBModel.Purchase.CourseBooking(b));
-                }
-                return results;
-              })();
-              return $q.all(_.map(_this.course_bookings, function(b) {
-                return b.getBookings();
-              })).then(function() {
-                return defer.resolve(_this.course_bookings);
-              });
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getPackages = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.packages) {
-          defer.resolve(this.packages);
-        }
-        if (this._data.$has('packages')) {
-          this._data.$get('packages').then((function(_this) {
-            return function(packages) {
-              _this.packages = packages;
-              return defer.resolve(_this.packages);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getProducts = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.products) {
-          defer.resolve(this.products);
-        }
-        if (this._data.$has('products')) {
-          this._data.$get('products').then((function(_this) {
-            return function(products) {
-              _this.products = products;
-              return defer.resolve(_this.products);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getDeals = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.deals) {
-          defer.resolve(this.deals);
-        }
-        if (this._data.$has('deals')) {
-          this._data.$get('deals').then((function(_this) {
-            return function(deals) {
-              _this.deals = deals;
-              return defer.resolve(_this.deals);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getMessages = function(booking_texts, msg_type) {
-        var bt, defer;
-        defer = $q.defer();
-        booking_texts = (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = booking_texts.length; i < len; i++) {
-            bt = booking_texts[i];
-            if (bt.message_type === msg_type) {
-              results.push(bt);
-            }
-          }
-          return results;
-        })();
-        if (booking_texts.length === 0) {
-          defer.resolve([]);
-        } else {
-          this.getItems().then(function(items) {
-            var booking_text, i, item, j, k, len, len1, len2, msgs, ref, type;
-            msgs = [];
-            for (i = 0, len = booking_texts.length; i < len; i++) {
-              booking_text = booking_texts[i];
-              for (j = 0, len1 = items.length; j < len1; j++) {
-                item = items[j];
-                ref = ['company', 'person', 'resource', 'service'];
-                for (k = 0, len2 = ref.length; k < len2; k++) {
-                  type = ref[k];
-                  if (item.$has(type) && item.$href(type) === booking_text.$href('item')) {
-                    if (msgs.indexOf(booking_text.message) === -1) {
-                      msgs.push(booking_text.message);
-                    }
-                  }
-                }
-              }
-            }
-            return defer.resolve(msgs);
-          });
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getClient = function() {
-        var defer;
-        defer = $q.defer();
-        if (this._data.$has('client')) {
-          this._data.$get('client').then((function(_this) {
-            return function(client) {
-              _this.client = new BBModel.Client(client);
-              return defer.resolve(_this.client);
-            };
-          })(this));
-        } else {
-          defer.reject('No client');
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.getConfirmMessages = function() {
-        var defer;
-        defer = $q.defer();
-        if (this._data.$has('confirm_messages')) {
-          this._data.$get('confirm_messages').then((function(_this) {
-            return function(msgs) {
-              return _this.getMessages(msgs, 'Confirm').then(function(filtered_msgs) {
-                return defer.resolve(filtered_msgs);
-              });
-            };
-          })(this));
-        } else {
-          defer.reject('no messages');
-        }
-        return defer.promise;
-      };
-
-      Purchase_Total.prototype.printed_total_price = function() {
-        if (parseFloat(this.total_price) % 1 === 0) {
-          return "£" + parseInt(this.total_price);
-        }
-        return $window.sprintf("£%.2f", parseFloat(this.total_price));
-      };
-
-      Purchase_Total.prototype.newPaymentUrl = function() {
-        if (this._data.$has('new_payment')) {
-          return $sce.trustAsResourceUrl(this._data.$href('new_payment'));
-        }
-      };
-
-      Purchase_Total.prototype.totalDuration = function() {
-        var duration, i, item, len, ref;
-        duration = 0;
-        ref = this.items;
-        for (i = 0, len = ref.length; i < len; i++) {
-          item = ref[i];
-          if (item.duration) {
-            duration += item.duration;
-          }
-        }
-        duration /= 60;
-        return duration;
-      };
-
-      Purchase_Total.prototype.containsWaitlistItems = function() {
-        var i, item, len, ref, waitlist;
-        waitlist = [];
-        ref = this.items;
-        for (i = 0, len = ref.length; i < len; i++) {
-          item = ref[i];
-          if (item.on_waitlist === true) {
-            waitlist.push(item);
-          }
-        }
-        if (waitlist.length > 0) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-
-      return Purchase_Total;
-
-    })(BaseModel);
   });
 
 }).call(this);
