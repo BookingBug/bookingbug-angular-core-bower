@@ -2594,7 +2594,7 @@ function getURIparam( name ){
     })(this);
     $scope.initWidget2 = (function(_this) {
       return function() {
-        var aff_promise, comp_category_id, comp_promise, comp_url, company_id, embed_params, get_total, k, params, prms, ref, result, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
+        var aff_promise, comp_category_id, comp_promise, comp_url, company_id, embed_params, get_total, k, match, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
         $scope.init_widget_started = true;
         prms = _this.$init_prms;
         if (prms.query) {
@@ -2648,13 +2648,15 @@ function getURIparam( name ){
         if ($window.bb_setup || prms.client) {
           prms.clear_member || (prms.clear_member = true);
         }
-        if (prms.client) {
-          $scope.bb.client_defaults = prms.client;
-        }
+        $scope.bb.client_defaults = prms.client || {};
         if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
-          result = $scope.bb.client_defaults.name.match(/^(\S+)\s(.*)/).slice(1);
-          $scope.bb.client_defaults.first_name = result[0];
-          $scope.bb.client_defaults.last_name = result[1];
+          match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
+          if (match) {
+            $scope.bb.client_defaults.first_name = match[1];
+            if (match[2] != null) {
+              $scope.bb.client_defaults.last_name = match[2];
+            }
+          }
         }
         if (prms.clear_member) {
           $scope.bb.clear_member = prms.clear_member;
@@ -5555,7 +5557,7 @@ function getURIparam( name ){
                   break;
                 }
               }
-            } else if (item.chain.extra[name] === void 0 && (item.chain != null)) {
+            } else if (item.chain.extra[name] === void 0 && (_.isEmpty($scope.dynamic_filters.values) || ($scope.dynamic_filters.values[dynamic_filter.name] == null))) {
               filter = true;
             }
             result = result && filter;
@@ -5680,6 +5682,7 @@ function getURIparam( name ){
       scope: true,
       controller: 'ItemDetails',
       link: function(scope, element, attrs) {
+        debugger;
         var item;
         if (attrs.bbItemDetails) {
           item = scope.$eval(attrs.bbItemDetails);
@@ -5712,6 +5715,7 @@ function getURIparam( name ){
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
     $scope.loadItem = function(item) {
+      debugger;
       var params;
       confirming = true;
       $scope.item = item;
@@ -6468,6 +6472,7 @@ function getURIparam( name ){
       });
     });
     initialise = function() {
+      debugger;
       var promises;
       if (!$scope.items || !$scope.company) {
         return;
