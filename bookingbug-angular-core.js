@@ -8344,7 +8344,7 @@ function getURIparam( name ){
                 _this.skipped = true;
               }
             } else {
-              setServiceItem(items);
+              setServiceItem(services);
             }
             return $scope.setLoaded($scope);
           };
