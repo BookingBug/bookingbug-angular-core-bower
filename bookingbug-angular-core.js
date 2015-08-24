@@ -1434,7 +1434,7 @@ angular
         .then(function(res){
 
           // copy out the auth token from the header if there was one and make sure the child commands use it
-          if (res.headers('auth-token')){
+          if (res.headers('auth-token') && res.status != 304){
             options.auth_token = res.headers('Auth-Token')
             shared_header.set('auth_token', res.headers('Auth-Token'))
           }
@@ -7499,6 +7499,119 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService) {
+    var error, getHost, linker, sendLoadEvent;
+    error = function(scope, message) {
+      return scope.error(message);
+    };
+    getHost = function(url) {
+      var a;
+      a = document.createElement('a');
+      a.href = url;
+      return a['protocol'] + '//' + a['host'];
+    };
+    sendLoadEvent = function(element, origin, scope) {
+      var custom_stylesheet, payload, referrer;
+      referrer = $location.protocol() + "://" + $location.host();
+      if ($location.port()) {
+        referrer += ":" + $location.port();
+      }
+      if (scope.payment_options.custom_stylesheet) {
+        custom_stylesheet = scope.payment_options.custom_stylesheet;
+      }
+      payload = JSON.stringify({
+        'type': 'load',
+        'message': referrer,
+        'custom_partial_url': scope.bb.custom_partial_url,
+        'custom_stylesheet': custom_stylesheet,
+        'scroll_offset': SettingsService.getScrollOffset()
+      });
+      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+    };
+    linker = function(scope, element, attributes) {
+      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      element.find('iframe').bind('load', (function(_this) {
+        return function(event) {
+          var origin, url;
+          url = scope.bb.total.$href('new_payment');
+          origin = getHost(url);
+          sendLoadEvent(element, origin, scope);
+          return scope.$apply(function() {
+            return scope.callSetLoaded();
+          });
+        };
+      })(this));
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          var data;
+          if (angular.isObject(event.data)) {
+            data = event.data;
+          } else if (!event.data.match(/iFrameSizer/)) {
+            data = JSON.parse(event.data);
+          }
+          return scope.$apply(function() {
+            if (data) {
+              switch (data.type) {
+                case "submitting":
+                  return scope.callNotLoaded();
+                case "error":
+                  scope.callSetLoaded();
+                  return error(scope, event.data.message);
+                case "payment_complete":
+                  scope.callSetLoaded();
+                  return scope.paymentDone();
+              }
+            }
+          });
+        };
+      })(this), false);
+    };
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: linker
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if ($scope.total) {
+          $scope.bb.total = $scope.total;
+        }
+        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+      };
+    })(this));
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return $scope.setLoaded($scope);
+      };
+    })(this);
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      return $scope.decideNextPage();
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location, SettingsService) {
     var applyCustomPartials, applyCustomStylesheet, linker;
     applyCustomPartials = function(custom_partial_url, scope, element) {
@@ -7640,119 +7753,6 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService) {
-    var error, getHost, linker, sendLoadEvent;
-    error = function(scope, message) {
-      return scope.error(message);
-    };
-    getHost = function(url) {
-      var a;
-      a = document.createElement('a');
-      a.href = url;
-      return a['protocol'] + '//' + a['host'];
-    };
-    sendLoadEvent = function(element, origin, scope) {
-      var custom_stylesheet, payload, referrer;
-      referrer = $location.protocol() + "://" + $location.host();
-      if ($location.port()) {
-        referrer += ":" + $location.port();
-      }
-      if (scope.payment_options.custom_stylesheet) {
-        custom_stylesheet = scope.payment_options.custom_stylesheet;
-      }
-      payload = JSON.stringify({
-        'type': 'load',
-        'message': referrer,
-        'custom_partial_url': scope.bb.custom_partial_url,
-        'custom_stylesheet': custom_stylesheet,
-        'scroll_offset': SettingsService.getScrollOffset()
-      });
-      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-    };
-    linker = function(scope, element, attributes) {
-      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      element.find('iframe').bind('load', (function(_this) {
-        return function(event) {
-          var origin, url;
-          url = scope.bb.total.$href('new_payment');
-          origin = getHost(url);
-          sendLoadEvent(element, origin, scope);
-          return scope.$apply(function() {
-            return scope.callSetLoaded();
-          });
-        };
-      })(this));
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          var data;
-          if (angular.isObject(event.data)) {
-            data = event.data;
-          } else if (!event.data.match(/iFrameSizer/)) {
-            data = JSON.parse(event.data);
-          }
-          return scope.$apply(function() {
-            if (data) {
-              switch (data.type) {
-                case "submitting":
-                  return scope.callNotLoaded();
-                case "error":
-                  scope.callSetLoaded();
-                  return error(scope, event.data.message);
-                case "payment_complete":
-                  scope.callSetLoaded();
-                  return scope.paymentDone();
-              }
-            }
-          });
-        };
-      })(this), false);
-    };
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: linker
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if ($scope.total) {
-          $scope.bb.total = $scope.total;
-        }
-        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-      };
-    })(this));
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return $scope.setLoaded($scope);
-      };
-    })(this);
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      return $scope.decideNextPage();
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
   });
 
 }).call(this);
@@ -9220,7 +9220,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, ErrorService) {
     var checkRequestedTime, currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -9278,7 +9278,6 @@ function getURIparam( name ){
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
     setTimeRange = function(selected_date, start_date) {
-      console.log("set range", selected_date, start_date);
       if (start_date) {
         $scope.start_date = start_date;
       } else if ($scope.day_of_week) {
@@ -9296,7 +9295,6 @@ function getURIparam( name ){
       if (options == null) {
         options = {};
       }
-      console.log("init", options);
       if (options.selected_day != null) {
         if (!options.selected_day._isAMomementObject) {
           return $scope.selected_day = moment(options.selected_day);
@@ -9547,9 +9545,7 @@ function getURIparam( name ){
         }
         if (!found_time) {
           current_item.requestedTimeUnavailable();
-          return AlertService.add("danger", {
-            msg: "The requested time slot is not available. Please choose a different time."
-          });
+          return AlertService.raise(ErrorService.getAlert('REQ_TIME_NOT_AVAIL'));
         }
       }
     };
@@ -9558,14 +9554,10 @@ function getURIparam( name ){
     };
     $scope.setReady = function() {
       if (!$scope.bb.current_item.time) {
-        AlertService.add("danger", {
-          msg: "You need to select a time slot"
-        });
+        AlertService.raise(ErrorService.getAlert('TIME_SLOT_NOT_SELECTED'));
         return false;
       } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime)) {
-        AlertService.add("danger", {
-          msg: "Your appointment is already booked for this time."
-        });
+        AlertService.raise(ErrorService.getAlert('APPT_AT_SAME_TIME'));
         return false;
       } else if ($scope.bb.moving_booking) {
         if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource) {
@@ -11309,7 +11301,7 @@ function getURIparam( name ){
                 return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
               } else {
                 return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top
+                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
                 }, bb_transition_time);
               }
             }
@@ -11354,7 +11346,7 @@ function getURIparam( name ){
               parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
             } else {
               $bbug("html, body").animate({
-                scrollTop: invalid_form_group.offset().top
+                scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
               }, 1000);
             }
             invalid_input = invalid_form_group.find('.ng-invalid');
@@ -14050,10 +14042,10 @@ function getURIparam( name ){
       };
 
       BasketItem.prototype.checkReady = function() {
-        if (((this.date && this.time && this.service) || this.event || this.product || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
+        if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
           this.ready = true;
         }
-        if (((this.date && this.time && this.service) || this.event || this.product || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions || this.reserve_without_questions)) {
+        if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions || this.reserve_without_questions)) {
           return this.reserve_ready = true;
         }
       };
@@ -14141,6 +14133,7 @@ function getURIparam( name ){
           data.num_resources = parseInt(this.num_resources);
         }
         data.product = this.product;
+        data.external_purchase = this.external_purchase;
         if (this.deal) {
           data.deal = this.deal;
         }
@@ -14255,6 +14248,9 @@ function getURIparam( name ){
         }
         if (this.product) {
           title = this.product.name;
+        }
+        if (this.external_purchase) {
+          title = this.external_purchase.name;
         }
         if (this.deal) {
           title = this.deal.name;
@@ -14381,7 +14377,18 @@ function getURIparam( name ){
       BasketItem.prototype.setProduct = function(product) {
         this.product = product;
         if (this.product.$has('book')) {
-          return this.book_link = this.product;
+          this.book_link = this.product;
+        }
+        if (product.price) {
+          return this.setPrice(product.price);
+        }
+      };
+
+      BasketItem.prototype.setExternalPurchase = function(external_purchase) {
+        this.external_purchase = external_purchase;
+        this.book_link = this.company;
+        if (external_purchase.price) {
+          return this.setPrice(external_purchase.price);
         }
       };
 
@@ -16412,7 +16419,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService) {
+  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
     var alertService, titleLookup;
     $rootScope.alerts = [];
     titleLookup = function(type, title) {
@@ -16431,17 +16438,23 @@ function getURIparam( name ){
     };
     return alertService = {
       add: function(type, arg) {
-        var msg, title;
-        title = arg.title, msg = arg.msg;
+        var alert, msg, persist, title;
+        title = arg.title, msg = arg.msg, persist = arg.persist;
         $rootScope.alerts = [];
-        $rootScope.alerts.push({
+        alert = {
           type: type,
           title: titleLookup(type, title),
           msg: msg,
           close: function() {
             return alertService.closeAlert(this);
           }
-        });
+        };
+        $rootScope.alerts.push(alert);
+        if (!persist) {
+          $timeout(function() {
+            return $rootScope.alerts.splice($rootScope.alerts.indexOf(alert), 1);
+          }, 3000);
+        }
         return $rootScope.$broadcast("alert:raised");
       },
       closeAlert: function(alert) {
@@ -16454,27 +16467,53 @@ function getURIparam( name ){
         return $rootScope.alerts = [];
       },
       error: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('error', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       danger: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('danger', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       info: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('info', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       warning: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('warning', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+      raise: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add(alert.type, {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
         });
       }
     };
@@ -17371,70 +17410,99 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var errors;
-    errors = [
+    var alerts;
+    alerts = [
       {
-        id: 1,
-        type: 'GENERIC',
+        key: 'GENERIC',
+        type: 'error',
         title: '',
+        persist: true,
         msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
       }, {
-        id: 2,
-        type: 'LOCATION_NOT_FOUND',
+        key: 'LOCATION_NOT_FOUND',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: "Sorry, we don't recognise that location"
       }, {
-        id: 3,
-        type: 'MISSING_LOCATION',
+        key: 'MISSING_LOCATION',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter your location'
       }, {
-        id: 4,
-        type: 'MISSING_POSTCODE',
+        key: 'MISSING_POSTCODE',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter a postcode'
       }, {
-        id: 5,
-        type: 'INVALID_POSTCODE',
+        key: 'INVALID_POSTCODE',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter a valid postcode'
       }, {
-        id: 6,
-        type: 'ITEM_NO_LONGER_AVAILABLE',
+        key: 'ITEM_NO_LONGER_AVAILABLE',
+        type: 'error',
         title: '',
+        persist: true,
         msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
       }, {
-        id: 7,
-        type: 'FORM_INVALID',
+        key: 'FORM_INVALID',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please complete all required fields'
       }, {
-        id: 8,
-        type: 'GEOLOCATION_ERROR',
+        key: 'GEOLOCATION_ERROR',
+        type: 'error',
         title: '',
+        persist: true,
         msg: 'Sorry, we could not determine your location. Please try searching instead.'
       }, {
-        id: 9,
-        type: 'EMPTY_BASKET_FOR_CHECKOUT',
+        key: 'EMPTY_BASKET_FOR_CHECKOUT',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'There are no items in the basket to proceed to checkout.'
       }, {
-        id: 10,
-        type: 'MAXIMUM_TICKETS',
+        key: 'MAXIMUM_TICKETS',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
+      }, {
+        key: 'TIME_SLOT_NOT_SELECTED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You need to select a time slot'
+      }, {
+        key: 'APPT_AT_SAME_TIME',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Your appointment is already booked for this time'
+      }, {
+        key: 'REQ_TIME_NOT_AVAIL',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'The requested time slot is not available. Please choose a different time.'
       }
     ];
     return {
-      getError: function(type) {
+      getError: function(key) {
         var error, translate;
-        error = _.findWhere(errors, {
-          type: type
+        error = _.findWhere(alerts, {
+          key: key
         });
+        error.persist = true;
         translate = SettingsService.isInternationalizatonEnabled();
         if (error && translate) {
           return {
-            msg: "ERROR." + type
+            msg: "ERROR." + key
           };
         } else if (error && !translate) {
           return error;
@@ -17443,7 +17511,23 @@ function getURIparam( name ){
             msg: 'GENERIC'
           };
         } else {
-          return errors[0];
+          return alerts[0];
+        }
+      },
+      getAlert: function(key) {
+        var alert, translate;
+        alert = _.findWhere(alerts, {
+          key: key
+        });
+        translate = SettingsService.isInternationalizatonEnabled();
+        if (alert && translate) {
+          return {
+            msg: "ALERT." + key
+          };
+        } else if (alert && !translate) {
+          return alert;
+        } else {
+          return null;
         }
       }
     };
