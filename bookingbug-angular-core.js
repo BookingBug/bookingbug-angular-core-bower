@@ -2922,7 +2922,7 @@ function getURIparam( name ){
     })(this);
     setupDefaults = (function(_this) {
       return function(company_id) {
-        var category, def, event, event_group, k, person, ref, resource, service, v;
+        var category, clinic, def, event, event_group, k, person, ref, resource, service, v;
         def = $q.defer();
         if (first_call || ($scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id)) {
           $scope.bb.orginal_company_id = company_id;
@@ -2988,6 +2988,13 @@ function getURIparam( name ){
             $scope.bb.default_setup_promises.push(category);
             category.then(function(res) {
               return $scope.bb.item_defaults.category = new BBModel.Category(res);
+            });
+          }
+          if ($scope.bb.item_defaults.clinic) {
+            clinic = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/clinics/' + $scope.bb.item_defaults.clinic);
+            $scope.bb.default_setup_promises.push(clinic);
+            clinic.then(function(res) {
+              return $scope.bb.item_defaults.clinic = new BBModel.Clinic(res);
             });
           }
           if ($scope.bb.item_defaults.duration) {
@@ -3361,7 +3368,7 @@ function getURIparam( name ){
       $scope.basket = basket;
       $scope.bb.basket.company_id = $scope.bb.company_id;
       if ($scope.bb.stacked_items) {
-        return $scope.bb.setStackedItems(basket.items);
+        return $scope.bb.setStackedItems(basket.timeItems());
       }
     };
     $scope.logout = function(route) {
@@ -6512,24 +6519,17 @@ function getURIparam( name ){
         var item, j, k, len, len1, ref, ref1, stacked_item;
         $scope.company_questions = result[1];
         initialiseCategories(result[0]);
-        if (($scope.bb.basket && $scope.bb.basket.items.length > 0) || ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0)) {
-          if ($scope.bb.basket && $scope.bb.basket.items.length > 0 && $scope.bb.basket.items[0].service) {
-            if (!$scope.bb.stacked_items || $scope.bb.stacked_items.length === 0) {
-              $scope.bb.setStackedItems($scope.bb.basket.items);
-            }
-          }
-          if ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0) {
-            ref = $scope.bb.stacked_items;
-            for (j = 0, len = ref.length; j < len; j++) {
-              stacked_item = ref[j];
-              ref1 = $scope.items;
-              for (k = 0, len1 = ref1.length; k < len1; k++) {
-                item = ref1[k];
-                if (item.self === stacked_item.service.self) {
-                  stacked_item.service = item;
-                  stacked_item.service.selected = true;
-                  break;
-                }
+        if ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0) {
+          ref = $scope.bb.stacked_items;
+          for (j = 0, len = ref.length; j < len; j++) {
+            stacked_item = ref[j];
+            ref1 = $scope.items;
+            for (k = 0, len1 = ref1.length; k < len1; k++) {
+              item = ref1[k];
+              if (item.self === stacked_item.service.self) {
+                stacked_item.service = item;
+                stacked_item.service.selected = true;
+                break;
               }
             }
           }
@@ -6539,6 +6539,7 @@ function getURIparam( name ){
         if ($scope.bb.moving_booking) {
           $scope.nextStep();
         }
+        $scope.$broadcast("multi_service_select:loaded");
         return $scope.setLoaded($scope);
       }, function(err) {
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
@@ -6659,7 +6660,13 @@ function getURIparam( name ){
         }
         iitem.setGroup(item.group);
         $scope.bb.stackItem(iitem);
-        return $rootScope.$broadcast("multi_service_select:item_added");
+        $rootScope.$broadcast("multi_service_select:item_added");
+        if ($scope.options.raise_alerts) {
+          return AlertService.info({
+            msg: item.name + " added to your treatment selection",
+            persist: false
+          });
+        }
       } else {
         ref = $scope.items;
         results = [];
@@ -7104,8 +7111,11 @@ function getURIparam( name ){
         return $scope.start_date.format(month_year_format);
       }
     };
-    return $scope.confirm = function(route) {
-      var booking, different, found, i, item, j, l, len, len1, len2, len3, m, prom, ref, ref1, ref2, ref3;
+    $scope.confirm = function(route, options) {
+      var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
+      if (options == null) {
+        options = {};
+      }
       ref = $scope.bb.stacked_items;
       for (i = 0, len = ref.length; i < len; i++) {
         item = ref[i];
@@ -7142,11 +7152,7 @@ function getURIparam( name ){
         }
       }
       $scope.bb.basket.clear();
-      ref3 = $scope.bb.stacked_items;
-      for (m = 0, len3 = ref3.length; m < len3; m++) {
-        item = ref3[m];
-        $scope.bb.basket.addItem(item);
-      }
+      $scope.bb.pushStackToBasket();
       if ($scope.bb.moving_booking) {
         $scope.notLoaded($scope);
         prom = PurchaseService.update({
@@ -7155,17 +7161,17 @@ function getURIparam( name ){
         });
         prom.then(function(purchase) {
           purchase.getBookingsPromise().then(function(bookings) {
-            var _i, len4, n, oldb, results;
+            var _i, len3, m, oldb, results;
             results = [];
-            for (n = 0, len4 = bookings.length; n < len4; n++) {
-              booking = bookings[n];
+            for (m = 0, len3 = bookings.length; m < len3; m++) {
+              booking = bookings[m];
               if ($scope.bookings) {
                 results.push((function() {
-                  var len5, o, ref4, results1;
-                  ref4 = $scope.bookings;
+                  var len4, n, ref3, results1;
+                  ref3 = $scope.bookings;
                   results1 = [];
-                  for (_i = o = 0, len5 = ref4.length; o < len5; _i = ++o) {
-                    oldb = ref4[_i];
+                  for (_i = n = 0, len4 = ref3.length; n < len4; _i = ++n) {
+                    oldb = ref3[_i];
                     if (oldb.id === booking.id) {
                       results1.push($scope.bookings[_i] = booking);
                     } else {
@@ -7192,11 +7198,20 @@ function getURIparam( name ){
         return;
       }
       $scope.notLoaded($scope);
-      return $scope.updateBasket().then(function() {
-        $scope.setLoaded($scope);
-        return $scope.decideNextPage(route);
-      }, function(err) {
-        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+      if (options.do_not_route) {
+        return $scope.updateBasket();
+      } else {
+        return $scope.updateBasket().then(function() {
+          $scope.setLoaded($scope);
+          return $scope.decideNextPage(route);
+        }, function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      }
+    };
+    return $scope.setReady = function() {
+      return $scope.confirm('', {
+        do_not_route: true
       });
     };
   });
@@ -9220,7 +9235,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, ErrorService) {
     var checkRequestedTime, currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -9278,7 +9293,6 @@ function getURIparam( name ){
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
     setTimeRange = function(selected_date, start_date) {
-      console.log("set range", selected_date, start_date);
       if (start_date) {
         $scope.start_date = start_date;
       } else if ($scope.day_of_week) {
@@ -9296,7 +9310,6 @@ function getURIparam( name ){
       if (options == null) {
         options = {};
       }
-      console.log("init", options);
       if (options.selected_day != null) {
         if (!options.selected_day._isAMomementObject) {
           return $scope.selected_day = moment(options.selected_day);
@@ -9547,9 +9560,7 @@ function getURIparam( name ){
         }
         if (!found_time) {
           current_item.requestedTimeUnavailable();
-          return AlertService.add("danger", {
-            msg: "The requested time slot is not available. Please choose a different time."
-          });
+          return AlertService.raise(ErrorService.getAlert('REQ_TIME_NOT_AVAIL'));
         }
       }
     };
@@ -9558,14 +9569,10 @@ function getURIparam( name ){
     };
     $scope.setReady = function() {
       if (!$scope.bb.current_item.time) {
-        AlertService.add("danger", {
-          msg: "You need to select a time slot"
-        });
+        AlertService.raise(ErrorService.getAlert('TIME_SLOT_NOT_SELECTED'));
         return false;
       } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime)) {
-        AlertService.add("danger", {
-          msg: "Your appointment is already booked for this time."
-        });
+        AlertService.raise(ErrorService.getAlert('APPT_AT_SAME_TIME'));
         return false;
       } else if ($scope.bb.moving_booking) {
         if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource) {
@@ -9675,499 +9682,6 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-}).call(this);
-
-(function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
     return {
@@ -10240,7 +9754,7 @@ function getURIparam( name ){
     return {
       restrict: 'A',
       scope: true,
-      controller: function($scope, $element, $attrs, AlertService) {
+      controller: function($scope, $element, $attrs, AlertService, $filter) {
         var checkMinSpend, options;
         options = $scope.$eval($attrs.bbMinSpend || {});
         $scope.min_spend = options.min_spend || 0;
@@ -10260,8 +9774,9 @@ function getURIparam( name ){
             return true;
           } else {
             AlertService.clear();
+            price = $filter('ipretty_price')($scope.min_spend);
             AlertService.add("warning", {
-              msg: "You need to spend at least &pound;" + ($scope.min_spend / 100) + " to make a booking."
+              msg: "You need to spend at least " + price + " to make a booking."
             });
             return false;
           }
@@ -11802,7 +11317,7 @@ function getURIparam( name ){
                 return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
               } else {
                 return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top
+                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
                 }, bb_transition_time);
               }
             }
@@ -11847,7 +11362,7 @@ function getURIparam( name ){
               parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
             } else {
               $bbug("html, body").animate({
-                scrollTop: invalid_form_group.offset().top
+                scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
               }, 1000);
             }
             invalid_input = invalid_form_group.find('.ng-invalid');
@@ -12595,6 +12110,499 @@ function getURIparam( name ){
 }(window.angular));
 
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -12813,7 +12821,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -13113,7 +13121,7 @@ function getURIparam( name ){
         ref = this.items;
         for (j = 0, len = ref.length; j < len; j++) {
           i = ref[j];
-          if (!i.is_coupon && !i.ready) {
+          if (!i.is_coupon) {
             titems.push(i);
           }
         }
@@ -13134,15 +13142,9 @@ function getURIparam( name ){
       };
 
       Basket.prototype.removeCoupons = function() {
-        var i, item, j, len, ref;
-        ref = this.items;
-        for (i = j = 0, len = ref.length; j < len; i = ++j) {
-          item = ref[i];
-          if (item.is_coupon) {
-            this.items.splice(i, 1);
-          }
-        }
-        return this.items;
+        return this.items = _.reject(this.items, function(x) {
+          return x.is_coupon;
+        });
       };
 
       Basket.prototype.setSettings = function(set) {
@@ -13579,6 +13581,9 @@ function getURIparam( name ){
         }
         if (defaults.group) {
           this.group = defaults.group;
+        }
+        if (defaults.clinic) {
+          this.clinic = defaults.clinic;
         }
         if (defaults.private_note) {
           this.private_note = defaults.private_note;
@@ -14976,6 +14981,63 @@ function getURIparam( name ){
       };
 
       return ClientDetails;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
+    var Clinic;
+    return Clinic = (function(superClass) {
+      extend(Clinic, superClass);
+
+      function Clinic(data) {
+        Clinic.__super__.constructor.call(this, data);
+        this.setTimes();
+        this.setResourcesAndPeople();
+        this.settings || (this.settings = {});
+      }
+
+      Clinic.prototype.setResourcesAndPeople = function() {
+        this.resources = _.reduce(this.resource_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.people = _.reduce(this.person_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.services = _.reduce(this.service_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.uncovered = !this.person_ids || this.person_ids.length === 0;
+        if (this.uncovered) {
+          return this.className = "clinic_uncovered";
+        } else {
+          return this.className = "clinic_covered";
+        }
+      };
+
+      Clinic.prototype.setTimes = function() {
+        if (this.start_time) {
+          this.start_time = moment(this.start_time);
+          this.start = this.start_time;
+        }
+        if (this.end_time) {
+          this.end_time = moment(this.end_time);
+          this.end = this.end_time;
+        }
+        return this.title = this.name;
+      };
+
+      return Clinic;
 
     })(BaseModel);
   });
@@ -16427,7 +16489,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService) {
+  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
     var alertService, titleLookup;
     $rootScope.alerts = [];
     titleLookup = function(type, title) {
@@ -16446,17 +16508,26 @@ function getURIparam( name ){
     };
     return alertService = {
       add: function(type, arg) {
-        var msg, title;
-        title = arg.title, msg = arg.msg;
+        var alert, msg, persist, title;
+        title = arg.title, msg = arg.msg, persist = arg.persist;
+        if (persist == null) {
+          persist = true;
+        }
         $rootScope.alerts = [];
-        $rootScope.alerts.push({
+        alert = {
           type: type,
           title: titleLookup(type, title),
           msg: msg,
           close: function() {
             return alertService.closeAlert(this);
           }
-        });
+        };
+        $rootScope.alerts.push(alert);
+        if (!persist) {
+          $timeout(function() {
+            return $rootScope.alerts.splice($rootScope.alerts.indexOf(alert), 1);
+          }, 3000);
+        }
         return $rootScope.$broadcast("alert:raised");
       },
       closeAlert: function(alert) {
@@ -16469,27 +16540,53 @@ function getURIparam( name ){
         return $rootScope.alerts = [];
       },
       error: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('error', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       danger: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('danger', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       info: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('info', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       warning: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('warning', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+      raise: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add(alert.type, {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
         });
       }
     };
@@ -17022,6 +17119,53 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Services').factory('ClinicService', function($q, BBModel, $window) {
+    return {
+      query: function(params) {
+        var company, defer, existing;
+        company = params.company;
+        defer = $q.defer();
+        if (params.id) {
+          company.$get('clinics', params).then(function(clinic) {
+            clinic = new BBModel.Clinic(clinic);
+            return defer.resolve(clinic);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        } else {
+          existing = ClinicCollections.find(params);
+          if (existing) {
+            defer.resolve(existing);
+          } else {
+            company.$get('clinics', params).then(function(collection) {
+              return collection.$get('clinics').then(function(clinics) {
+                var s;
+                clinics = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = clinics.length; i < len; i++) {
+                    s = clinics[i];
+                    results.push(new BBModel.Clinic(s));
+                  }
+                  return results;
+                })();
+                return defer.resolve(clinics);
+              }, function(err) {
+                return defer.reject(err);
+              });
+            }, function(err) {
+              return defer.reject(err);
+            });
+          }
+        }
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
     return {
       query: function(company_id, options) {
@@ -17386,70 +17530,99 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var errors;
-    errors = [
+    var alerts;
+    alerts = [
       {
-        id: 1,
-        type: 'GENERIC',
+        key: 'GENERIC',
+        type: 'error',
         title: '',
+        persist: true,
         msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
       }, {
-        id: 2,
-        type: 'LOCATION_NOT_FOUND',
+        key: 'LOCATION_NOT_FOUND',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: "Sorry, we don't recognise that location"
       }, {
-        id: 3,
-        type: 'MISSING_LOCATION',
+        key: 'MISSING_LOCATION',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter your location'
       }, {
-        id: 4,
-        type: 'MISSING_POSTCODE',
+        key: 'MISSING_POSTCODE',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter a postcode'
       }, {
-        id: 5,
-        type: 'INVALID_POSTCODE',
+        key: 'INVALID_POSTCODE',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter a valid postcode'
       }, {
-        id: 6,
-        type: 'ITEM_NO_LONGER_AVAILABLE',
+        key: 'ITEM_NO_LONGER_AVAILABLE',
+        type: 'error',
         title: '',
+        persist: true,
         msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
       }, {
-        id: 7,
-        type: 'FORM_INVALID',
+        key: 'FORM_INVALID',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please complete all required fields'
       }, {
-        id: 8,
-        type: 'GEOLOCATION_ERROR',
+        key: 'GEOLOCATION_ERROR',
+        type: 'error',
         title: '',
+        persist: true,
         msg: 'Sorry, we could not determine your location. Please try searching instead.'
       }, {
-        id: 9,
-        type: 'EMPTY_BASKET_FOR_CHECKOUT',
+        key: 'EMPTY_BASKET_FOR_CHECKOUT',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'There are no items in the basket to proceed to checkout.'
       }, {
-        id: 10,
-        type: 'MAXIMUM_TICKETS',
+        key: 'MAXIMUM_TICKETS',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
+      }, {
+        key: 'TIME_SLOT_NOT_SELECTED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You need to select a time slot'
+      }, {
+        key: 'APPT_AT_SAME_TIME',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Your appointment is already booked for this time'
+      }, {
+        key: 'REQ_TIME_NOT_AVAIL',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'The requested time slot is not available. Please choose a different time.'
       }
     ];
     return {
-      getError: function(type) {
+      getError: function(key) {
         var error, translate;
-        error = _.findWhere(errors, {
-          type: type
+        error = _.findWhere(alerts, {
+          key: key
         });
+        error.persist = true;
         translate = SettingsService.isInternationalizatonEnabled();
         if (error && translate) {
           return {
-            msg: "ERROR." + type
+            msg: "ERROR." + key
           };
         } else if (error && !translate) {
           return error;
@@ -17458,7 +17631,23 @@ function getURIparam( name ){
             msg: 'GENERIC'
           };
         } else {
-          return errors[0];
+          return alerts[0];
+        }
+      },
+      getAlert: function(key) {
+        var alert, translate;
+        alert = _.findWhere(alerts, {
+          key: key
+        });
+        translate = SettingsService.isInternationalizatonEnabled();
+        if (alert && translate) {
+          return {
+            msg: "ALERT." + key
+          };
+        } else if (alert && !translate) {
+          return alert;
+        } else {
+          return null;
         }
       }
     };
