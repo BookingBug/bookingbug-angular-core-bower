@@ -865,6 +865,1166 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 }).call(this);
 
 (function() {
+  window.Collection = (function() {
+    function Collection() {}
+
+    return Collection;
+
+  })();
+
+  window.Collection.Base = (function() {
+    function Base(res, items, params) {
+      var clean_params, key, m, n, val;
+      this.res = res;
+      this.items = items;
+      this.params = params;
+      this.callbacks = [];
+      clean_params = {};
+      for (key in params) {
+        val = params[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      this.jparams = JSON.stringify(clean_params);
+      if (res) {
+        for (n in res) {
+          m = res[n];
+          this[n] = m;
+        }
+      }
+    }
+
+    Base.prototype.checkItem = function(item) {
+      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
+      if (!this.matchesParams(item)) {
+        this.deleteItem(item);
+        return true;
+      } else {
+        ref = this.items;
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          existingItem = ref[index];
+          if (item.self === existingItem.self) {
+            this.items[index] = item;
+            ref1 = this.callbacks;
+            for (j = 0, len2 = ref1.length; j < len2; j++) {
+              call = ref1[j];
+              call[1](item, "update");
+            }
+            return true;
+          }
+        }
+      }
+      this.items.push(item);
+      ref2 = this.callbacks;
+      results = [];
+      for (k = 0, len3 = ref2.length; k < len3; k++) {
+        call = ref2[k];
+        results.push(call[1](item, "add"));
+      }
+      return results;
+    };
+
+    Base.prototype.deleteItem = function(item) {
+      var call, i, len, len1, ref, results;
+      len = this.items.length;
+      this.items = this.items.filter(function(x) {
+        return x.self !== item.self;
+      });
+      if (this.items.length !== len) {
+        ref = this.callbacks;
+        results = [];
+        for (i = 0, len1 = ref.length; i < len1; i++) {
+          call = ref[i];
+          results.push(call[1](item, "delete"));
+        }
+        return results;
+      }
+    };
+
+    Base.prototype.getItems = function() {
+      return this.items;
+    };
+
+    Base.prototype.addCallback = function(obj, fn) {
+      var call, i, len1, ref;
+      ref = this.callbacks;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        call = ref[i];
+        if (call[0] === obj) {
+          return;
+        }
+      }
+      return this.callbacks.push([obj, fn]);
+    };
+
+    Base.prototype.matchesParams = function(item) {
+      return true;
+    };
+
+    return Base;
+
+  })();
+
+  window.BaseCollections = (function() {
+    function BaseCollections() {
+      this.collections = [];
+    }
+
+    BaseCollections.prototype.count = function() {
+      return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function(col) {
+      return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.checkItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.deleteItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.deleteItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.find = function(prms) {
+      var clean_params, col, i, jprms, key, len1, ref, val;
+      clean_params = {};
+      for (key in prms) {
+        val = prms[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      jprms = JSON.stringify(clean_params);
+      ref = this.collections;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        if (jprms === col.jparams) {
+          return col;
+        }
+      }
+    };
+
+    return BaseCollections;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Day = (function(superClass) {
+    extend(Day, superClass);
+
+    function Day() {
+      return Day.__super__.constructor.apply(this, arguments);
+    }
+
+    Day.prototype.checkItem = function(item) {
+      return Day.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Day;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("DayCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Space = (function(superClass) {
+    extend(Space, superClass);
+
+    function Space() {
+      return Space.__super__.constructor.apply(this, arguments);
+    }
+
+    Space.prototype.checkItem = function(item) {
+      return Space.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Space;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("SpaceCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
+    };
+  });
+
+}).call(this);
+
+
+angular
+.module('angular-hal', []).provider('data_cache', function() {
+ 
+    this.$get = function() {
+      data = [];
+
+      return {
+
+        set: function(key, val)
+        {
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        },
+        delMatching: function(str)
+        {
+          for (var k in data) {      
+            if (k.indexOf(str) != -1)
+              delete data[k]
+          }
+        }
+
+      }
+    };
+ 
+})
+.provider('shared_header', function() {
+   this.$get = function() {
+      data = {};
+
+      return {
+
+        set: function(key, val)
+        {
+          // also store this in the session store
+          sessionStorage.setItem(key, val)
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        }
+      }
+    };
+
+})
+.factory('halClient', [
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', function(
+    $http, $q, data_cache, shared_header, UriTemplate
+  ){
+    return {
+      setCache: function(cache) {
+        data_cache = cache
+      },
+      clearCache: function(str) {
+        data_cache.delMatching(str)
+      },
+      createResource: function(store)
+      {
+        if (typeof store === 'string') {
+          store = JSON.parse(store)
+        }
+        resource = store.data
+        resource._links = store.links
+        key = store.links.self.href
+        options = store.options
+        return new BaseResource(key, options, resource)
+      },
+      $get: function(href, options){
+        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
+        return data_cache.set(href, callService('GET', href, options));
+//        return callService('GET', href, options);
+      }//get
+      , $post: function(href, options, data){
+        return callService('POST', href, options, data);
+      }//post
+      , $put: function(href, options, data){
+        return callService('PUT', href, options, data);
+      }//put
+      , $patch: function(href, options, data){
+        return callService('PATCH', href, options, data);
+      }//patch
+      , $del: function(href, options){
+        return callService('DELETE', href, options);
+      }//del
+      , $parse: function(data){
+        return parseHal(data)
+      }//parse
+    };
+  
+    function BaseResource(href, options, data){
+      if(!options) options = {};
+      var links = {};
+      var embedded = data_cache
+      if (data.hasOwnProperty('auth_token')) {
+        options['auth_token'] = data['auth_token'];
+      }
+
+      href = getSelfLink(href, data).href;
+
+      defineHiddenProperty(this, '$href', function(rel, params) {
+        if(!(rel in links)) return null;
+
+        return hrefLink(links[rel], params);
+      });
+      defineHiddenProperty(this, '$has', function(rel) {
+        return rel in links;
+      });
+      defineHiddenProperty(this, '$flush', function(rel, params) {
+        var link = links[rel];
+        return flushLink(link, params);
+      });
+      defineHiddenProperty(this, '$get', function(rel, params){
+        var link = links[rel];
+        return callLink('GET', link, params);
+      });
+      defineHiddenProperty(this, '$post', function(rel, params, data){
+        var link = links[rel];
+        return callLink('POST', link, params, data);
+      });
+      defineHiddenProperty(this, '$put', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PUT', link, params, data);
+      });
+      defineHiddenProperty(this, '$patch', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PATCH', link, params, data);
+      });
+      defineHiddenProperty(this, '$del', function(rel, params){
+        var link = links[rel];
+        return callLink('DELETE', link, params);
+      });
+      defineHiddenProperty(this, '$links', function(){
+        return links
+      });
+      defineHiddenProperty(this, '$toStore', function(){
+        return JSON.stringify({data: this, links: links, options:options})
+      });
+      defineHiddenProperty(this, 'setOption', function(key, value){
+        options[key] = value
+      });
+      defineHiddenProperty(this, 'getOption', function(key){
+        return options[key]
+      });
+      defineHiddenProperty(this, '$link', function(rel){
+        return links[rel]
+      });
+
+      Object.keys(data)
+      .filter(function(key){
+        return !~['_', '$'].indexOf(key[0]);
+      })
+      .forEach(function(key){
+        this[key] = data[key]
+//        Object.defineProperty(this, key, {
+  //        configurable: false
+  //        , enumerable: true
+  //        , value: data[key]
+   //     });
+      }, this)
+      ;
+
+
+      if(data._links) {
+        Object
+        .keys(data._links)
+        .forEach(function(rel){
+          var link = data._links[rel];          
+          link = normalizeLink(href, link);
+          links[rel] = link;
+        }, this)
+        ;
+      }
+
+      if(data._embedded) {
+        Object
+        .keys(data._embedded)
+        .forEach(function(rel){
+          var embedded = data._embedded[rel];
+          var link = getSelfLink(href, embedded);
+          links[rel] = link;
+
+          var resource = createResource(href, options, embedded);
+
+          embedResource(resource);
+
+        }, this);
+      }
+
+      function defineHiddenProperty(target, name, value) {
+        target[name] = value
+//        Object.defineProperty(target, name, {
+//          configurable: false
+ //         , enumerable: false
+  //        , value: value
+   //     });
+      }//defineHiddenProperty
+
+
+      function embedResource(resource) {
+        if(angular.isArray(resource)) return resource.map(function(resource){
+          return embedResource(resource);
+        });
+        
+        var href = resource.$href('self');
+
+        embedded.set(href, $q.when(resource));
+      }//embedResource
+
+      function hrefLink(link, params) {
+        var href = link.templated
+        ? new UriTemplate(link.href).fillFromObject(params || {})
+        : link.href
+        ;
+
+        return href;
+      }//hrefLink
+
+      function callLink(method, link, params, data) {
+        if(angular.isArray(link)) return $q.all(link.map(function(link){
+          if(method !== 'GET') throw 'method is not supported for arrays';
+
+          return callLink(method, link, params, data);
+        }));
+
+        var linkHref = hrefLink(link, params);
+
+        if(method === 'GET') {
+          if(embedded.has(linkHref)) return embedded.get(linkHref);
+          
+          return embedded.set(linkHref, callService(method, linkHref, options, data));
+        }
+        else {
+          return callService(method, linkHref, options, data);  
+        }
+
+      }//callLink
+
+      function flushLink(link, params) {
+        if(angular.isArray(link)) return link.map(function(link){
+          return flushLink(link, params);
+        });
+
+        var linkHref = hrefLink(link, params);
+        if(embedded.has(linkHref)) embedded.del(linkHref);
+      }//flushLink
+
+    }//Resource
+
+
+
+
+    function createResource(href, options, data){
+      if(angular.isArray(data)) return data.map(function(data){
+        return createResource(href, options, data);
+      });
+
+      var resource = new BaseResource(href, options, data);
+
+      return resource;
+
+    }//createResource
+
+
+    function normalizeLink(baseHref, link){
+      if(angular.isArray(link)) return link.map(function(link){
+        return normalizeLink(baseHref, link);
+      });
+
+      if(link) {
+        if(typeof link === 'string') link = { href: link };
+        link.href = resolveUrl(baseHref, link.href);
+      }
+      else {
+        link = { href: baseHref };      
+      }
+
+      return link;
+    }//normalizeLink
+
+
+    function getSelfLink(baseHref, resource){
+      if(angular.isArray(resource)) return resource.map(function(resource){
+        return getSelfLink(baseHref, resource);
+      });
+
+      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
+    }//getSelfLink
+
+
+
+    function callService(method, href, options, data){
+      if(!options) options = {};
+      headers = {
+        'Authorization': options.authorization
+        , 'Content-Type': 'application/json'
+        , 'Accept': 'application/hal+json,application/json'
+      }
+      if (options.app_id) shared_header.set('app_id', options.app_id);
+      if (options.app_key) shared_header.set('app_key', options.app_key);
+      if (options.auth_token) {
+        sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token);
+      }
+
+      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
+      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
+
+      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
+
+      var resource = (
+        $http({
+          method: method
+          , url: options.transformUrl ? options.transformUrl(href) : href
+          , headers: headers
+          , data: data
+        })
+        .then(function(res){
+
+          // copy out the auth token from the header if there was one and make sure the child commands use it
+          if (res.headers('auth-token') && res.status != 304){
+            options.auth_token = res.headers('Auth-Token')
+            shared_header.set('auth_token', res.headers('Auth-Token'))
+          }
+          switch(res.status){
+            case 200:
+            if(res.data) return createResource(href, options, res.data);
+            return null;
+
+            case 201:
+            if(res.data) return createResource(href, options, res.data);
+            if(res.headers('Content-Location')) return res.headers('Content-Location');
+            return null;
+
+            case 204:
+            return null
+
+            default:
+            return $q.reject(res);
+          }
+        }, function(res)
+        {
+          return $q.reject(res);
+        })
+      );
+
+      return resource;
+    }//callService
+
+    function parseHal(data){
+      var resource = createResource(data._links.self.href, null, data);
+      return resource;
+    }//parseHal
+
+
+
+    function resolveUrl(baseHref, href){
+      var resultHref = '';
+      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
+      var baseHrefMatch = reFullUrl.exec(baseHref);
+      var hrefMatch = reFullUrl.exec(href);
+
+      for(var partIndex = 1; partIndex < 5; partIndex++) {
+        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
+        else resultHref += baseHrefMatch[partIndex]
+      }
+
+      return resultHref;
+    }//resolveUrl
+
+  }
+])//service
+;
+
+angular.module('ngStorage', [])
+.factory('$fakeStorage', [
+  function(){
+    function FakeStorage() {};
+    FakeStorage.prototype.setItem = function (key, value) {
+      this[key] = value;
+    };
+    FakeStorage.prototype.getItem = function (key) {
+      return typeof this[key] == 'undefined' ? null : this[key];
+    }
+    FakeStorage.prototype.removeItem = function (key) {
+      this[key] = undefined;
+    };
+    FakeStorage.prototype.clear = function(){
+      for (var key in this) {
+        if( this.hasOwnProperty(key) )
+        {
+          this.removeItem(key);
+        }
+      }
+    };
+    FakeStorage.prototype.key = function(index){
+      return Object.keys(this)[index];
+    };
+    return new FakeStorage();
+  }
+])
+.factory('$localStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+])
+.factory('$sessionStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+]);
+/**!
+ * AngularJS file upload/drop directive with http post and progress
+ * @author  Danial  <danial.farid@gmail.com>
+ * @version 1.4.0
+ */
+(function() {
+  
+var angularFileUpload = angular.module('angularFileUpload', []);
+
+angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
+  function sendHttp(config) {
+    config.method = config.method || 'POST';
+    config.headers = config.headers || {};
+    config.transformRequest = config.transformRequest || function(data, headersGetter) {
+      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
+        return data;
+      }
+      return $http.defaults.transformRequest[0](data, headersGetter);
+    };
+
+    if (window.XMLHttpRequest.__isShim) {
+      config.headers['__setXHR_'] = function() {
+        return function(xhr) {
+          if (!xhr) return;
+          config.__XHR = xhr;
+          config.xhrFn && config.xhrFn(xhr);
+          xhr.upload.addEventListener('progress', function(e) {
+            if (config.progress) {
+              $timeout(function() {
+                if(config.progress) config.progress(e);
+              });
+            }
+          }, false);
+          //fix for firefox not firing upload progress end, also IE8-9
+          xhr.upload.addEventListener('load', function(e) {
+            if (e.lengthComputable) {
+              if(config.progress) config.progress(e);
+            }
+          }, false);
+        };
+      };
+    }
+
+    var promise = $http(config);
+
+    promise.progress = function(fn) {
+      config.progress = fn;
+      return promise;
+    };
+    promise.abort = function() {
+      if (config.__XHR) {
+        $timeout(function() {
+          config.__XHR.abort();
+        });
+      }
+      return promise;
+    };
+    promise.xhr = function(fn) {
+      config.xhrFn = fn;
+      return promise;
+    };
+    promise.then = (function(promise, origThen) {
+      return function(s, e, p) {
+        config.progress = p || config.progress;
+        var result = origThen.apply(promise, [s, e, p]);
+        result.abort = promise.abort;
+        result.progress = promise.progress;
+        result.xhr = promise.xhr;
+        result.then = promise.then;
+        return result;
+      };
+    })(promise, promise.then);
+    
+    return promise;
+  }
+
+  this.upload = function(config) {
+    config.headers = config.headers || {};
+    config.headers['Content-Type'] = undefined;
+    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
+    var formData = new FormData();
+    var origTransformRequest = config.transformRequest;
+    var origData = config.data;
+    config.transformRequest = function(formData, headerGetter) {
+      if (origData) {
+        if (config.formDataAppender) {
+          for (var key in origData) {
+            var val = origData[key];
+            config.formDataAppender(formData, key, val);
+          }
+        } else {
+          for (var key in origData) {
+            var val = origData[key];
+            if (typeof origTransformRequest == 'function') {
+              val = origTransformRequest(val, headerGetter);
+            } else {
+              for (var i = 0; i < origTransformRequest.length; i++) {
+                var transformFn = origTransformRequest[i];
+                if (typeof transformFn == 'function') {
+                  val = transformFn(val, headerGetter);
+                }
+              }
+            }
+            formData.append(key, val);
+          }
+        }
+      }
+
+      if (config.file != null) {
+        var fileFormName = config.fileFormDataName || 'file';
+
+        if (Object.prototype.toString.call(config.file) === '[object Array]') {
+          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
+          for (var i = 0; i < config.file.length; i++) {
+            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
+          }
+        } else {
+          formData.append(fileFormName, config.file, config.file.name);
+        }
+      }
+      return formData;
+    };
+
+    config.data = formData;
+
+    return sendHttp(config);
+  };
+
+  this.http = function(config) {
+    return sendHttp(config);
+  }
+}]);
+
+angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    var fn = $parse(attr['ngFileSelect']);
+    elem.bind('change', function(evt) {
+      var files = [], fileList, i;
+      fileList = evt.target.files;
+      if (fileList != null) {
+        for (i = 0; i < fileList.length; i++) {
+          files.push(fileList.item(i));
+        }
+      }
+      $timeout(function() {
+        fn(scope, {
+          $files : files,
+          $event : evt
+        });
+      });
+    });
+    // removed this since it was confusing if the user click on browse and then cancel #181
+//    elem.bind('click', function(){
+//      this.value = null;
+//    });
+    
+    // touch screens
+    if (('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
+      elem.bind('touchend', function(e) {
+        e.preventDefault();
+        e.target.click();
+      });
+    }
+  };
+} ]);
+
+angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    if ('draggable' in document.createElement('span')) {
+      var fn = $parse(attr['ngFileDropAvailable']);
+      $timeout(function() {
+        fn(scope);
+      });
+    }
+  };
+} ]);
+
+angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {    
+    if ('draggable' in document.createElement('span')) {
+      var cancel = null;
+      var fn = $parse(attr['ngFileDrop']);
+      elem[0].addEventListener("dragover", function(evt) {
+        $timeout.cancel(cancel);
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
+      }, false);
+      elem[0].addEventListener("dragleave", function(evt) {
+        cancel = $timeout(function() {
+          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        });
+      }, false);
+      
+      var processing = 0;
+      function traverseFileTree(files, item) {
+        if (item.isDirectory) {
+          var dirReader = item.createReader();
+          processing++;
+          dirReader.readEntries(function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+              traverseFileTree(files, entries[i]);
+            }
+            processing--;
+          });
+        } else {
+          processing++;
+              item.file(function(file) {
+                processing--;
+                files.push(file);
+              });
+          }
+      }
+      
+      elem[0].addEventListener("drop", function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        var files = [], items = evt.dataTransfer.items;
+        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+          for (var i = 0; i < items.length; i++) {
+            traverseFileTree(files, items[i].webkitGetAsEntry());
+          }
+        } else {
+          var fileList = evt.dataTransfer.files;
+          if (fileList != null) {
+            for (var i = 0; i < fileList.length; i++) {
+              files.push(fileList.item(i));
+            }
+          }
+        }
+        (function callback(delay) {
+          $timeout(function() {
+            if (!processing) {
+              fn(scope, {
+                $files : files,
+                $event : evt
+              });
+            } else {
+              callback(10);
+            }
+          }, delay || 0)
+        })();
+      }, false);
+    }
+  };
+} ]);
+
+})();
+
+angular.module('ngLocalData', ['angular-hal']).
+ factory('$localCache', ['halClient', '$q', function( halClient, $q) {
+    data = {};
+
+    jsonData = function(data) {
+        return data && JSON.parse(data);
+    }
+
+    storage = function()
+    {
+      return sessionStorage
+    } 
+    localSave = function(key, item){
+      storage().setItem(key, item.$toStore())   
+    } 
+    localLoad = function(key){
+      res =  jsonData(storage().getItem(key))
+      if (res)
+      {  
+        r = halClient.createResource(res)
+        def = $q.defer()
+        def.resolve(r)
+        return def.promise
+      }
+      return null
+    } 
+    localDelete = function(key) {
+      storage().removeItem(key)
+    }
+
+    return {
+
+      set: function(key, val)
+      {
+        data[key] = val
+        val.then(function(item){
+          localSave(key, item)
+        })
+        return val
+      },
+      get: function(key)
+      {
+        localLoad(key)
+        if (!data[key])
+          data[key] = localLoad(key)
+        return data[key]
+      },
+      del: function(key)
+      {
+        localDelete(key)
+        delete data[key]
+      },
+      has: function(key)
+      {
+        if (!data[key])
+        { 
+          res = localLoad(key)
+          if (res)
+            data[key] = res
+        }
+        return (key in data)
+      }      
+    }
+
+}]).
+ factory('$localData', ['$http', '$rootScope', function($http, $rootScope) {
+    function LocalDataFactory(name) {
+      function LocalData(value){
+        this.setStore(value);
+      }
+
+      LocalData.prototype.jsonData = function(data) {
+          return data && JSON.parse(data);
+      }
+
+      LocalData.prototype.storage = function()
+      {
+        return sessionStorage
+      }  
+
+      LocalData.prototype.localSave = function(item)
+      {
+        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
+      }
+
+
+      LocalData.prototype.localSaveIndex = function(ids)
+      {
+        this.storage().setItem(this.store_name, ids.join(","))
+        this.ids = ids;
+      }
+
+      LocalData.prototype.localLoadIndex = function()
+      {
+        store = this.storage().getItem(this.store_name)
+        records = (store && store.split(",")) || [];
+        return records
+      }
+
+      LocalData.prototype.localLoad = function( id)
+      {
+        return this.jsonData(this.storage().getItem(this.store_name + id))
+      }
+
+      LocalData.prototype.count = function()
+      {
+        return this.ids.length
+      }
+
+      LocalData.prototype.setStore = function(name)
+      {
+        this.store_name = name;
+        this.data_store = []
+        this.ids = this.localLoadIndex();
+        for (a = 0; a < this.ids.length; a++){
+          this.data_store.push(this.localLoad(this.ids[a]));
+        }
+    //    var channel = pusher.subscribe(name);
+    //    var ds = this;
+
+     //   channel.bind('add', function(data) {
+     //     ds.data_store.push(data);
+     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
+     //   });
+
+      }
+
+      LocalData.prototype.update = function(data)
+      {
+        ids = []
+        for (x in data){
+          if (data[x].id){
+           ids.push(data[x].id)
+           this.localSave(data[x])
+         }
+        }
+        this.localSaveIndex(ids)
+      }
+
+      return new LocalData(name)
+
+    };
+
+
+    
+    return LocalDataFactory
+}]);
+
+
+/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
+
+getControllerScope = function(controller, fn){
+  $(document).ready(function(){
+    var $element = $('div[data-ng-controller="' + controller + '"]');
+    var scope = angular.element($element).scope();
+    fn(scope); 
+  });
+}
+
+
+function getURIparam( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+(function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
     return {
@@ -937,7 +2097,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     return {
       restrict: 'A',
       scope: true,
-      controller: function($scope, $element, $attrs, AlertService) {
+      controller: function($scope, $element, $attrs, AlertService, $filter) {
         var checkMinSpend, options;
         options = $scope.$eval($attrs.bbMinSpend || {});
         $scope.min_spend = options.min_spend || 0;
@@ -957,8 +2117,9 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
             return true;
           } else {
             AlertService.clear();
+            price = $filter('ipretty_price')($scope.min_spend);
             AlertService.add("warning", {
-              msg: "You need to spend at least &pound;" + ($scope.min_spend / 100) + " to make a booking."
+              msg: "You need to spend at least " + price + " to make a booking."
             });
             return false;
           }
@@ -2499,7 +3660,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
                 return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
               } else {
                 return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top
+                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
                 }, bb_transition_time);
               }
             }
@@ -2544,7 +3705,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
               parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
             } else {
               $bbug("html, body").animate({
-                scrollTop: invalid_form_group.offset().top
+                scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
               }, 1000);
             }
             invalid_input = invalid_form_group.find('.ng-invalid');
@@ -2718,32 +3879,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
                   return;
                 }
               }
-<<<<<<< HEAD
-            });
-          }, function(err) {
-            con_started.reject("Failed to start widget");
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        }, function(err) {
-          con_started.reject("Failed to start widget");
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-    setupDefaults = (function(_this) {
-      return function(company_id) {
-        var category, clinic, def, event, event_group, k, person, ref, resource, service, v;
-        def = $q.defer();
-        if (first_call || ($scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id)) {
-          $scope.bb.orginal_company_id = company_id;
-          $scope.bb.default_setup_promises = [];
-          if ($scope.bb.item_defaults.query) {
-            ref = $scope.bb.item_defaults.query;
-            for (k in ref) {
-              v = ref[k];
-              $scope.bb.item_defaults[k] = QueryStringService(v);
-=======
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
             }
           }
         };
@@ -2785,41 +3920,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
             last_month_shown = $scope.months[index + (slides_to_show - 1)];
             return $scope.$emit('month_picker:month_changed', $scope.months[index], last_month_shown);
           }
-<<<<<<< HEAD
-          if ($scope.bb.item_defaults.event_group) {
-            event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
-            $scope.bb.default_setup_promises.push(event_group);
-            event_group.then(function(res) {
-              return $scope.bb.item_defaults.event_group = new BBModel.EventGroup(res);
-            });
-          }
-          if ($scope.bb.item_defaults.event) {
-            event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
-            $scope.bb.default_setup_promises.push(event);
-            event.then(function(res) {
-              return $scope.bb.item_defaults.event = new BBModel.Event(res);
-            });
-          }
-          if ($scope.bb.item_defaults.category) {
-            category = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/categories/' + $scope.bb.item_defaults.category);
-            $scope.bb.default_setup_promises.push(category);
-            category.then(function(res) {
-              return $scope.bb.item_defaults.category = new BBModel.Category(res);
-            });
-          }
-          if ($scope.bb.item_defaults.clinic) {
-            clinic = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/clinics/' + $scope.bb.item_defaults.clinic);
-            $scope.bb.default_setup_promises.push(clinic);
-            clinic.then(function(res) {
-              return $scope.bb.item_defaults.clinic = new BBModel.Clinic(res);
-            });
-          }
-          if ($scope.bb.item_defaults.duration) {
-            $scope.bb.item_defaults.duration = parseInt($scope.bb.item_defaults.duration);
-          }
-          $q.all($scope.bb.default_setup_promises)['finally'](function() {
-            return def.resolve();
-=======
         };
       }
     };
@@ -2858,7 +3958,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
           return $rootScope.$on('loading:finished', function() {
             el.focus();
             return $('body').focus();
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
           });
         }
       }
@@ -3097,22 +4196,12 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
       } else {
         testSheet.insertRule('c{}', 0);
       }
-<<<<<<< HEAD
-    };
-    $scope.setBasket = function(basket) {
-      $scope.bb.basket = basket;
-      $scope.basket = basket;
-      $scope.bb.basket.company_id = $scope.bb.company_id;
-      if ($scope.bb.stacked_items) {
-        return $scope.bb.setStackedItems(basket.timeItems());
-=======
       DOMRules = testSheet.rules ? 'rules' : 'cssRules';
       testStyle = testSheet[DOMRules][0];
       try {
         testStyle.selectorText = 'd';
       } catch (_error) {
         e = _error;
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       }
       changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
       check.parentNode.removeChild(check);
@@ -3362,1166 +4451,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     };
   });
 }(window.angular));
-
-
-angular
-.module('angular-hal', []).provider('data_cache', function() {
- 
-    this.$get = function() {
-      data = [];
-
-      return {
-
-        set: function(key, val)
-        {
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        },
-        delMatching: function(str)
-        {
-          for (var k in data) {      
-            if (k.indexOf(str) != -1)
-              delete data[k]
-          }
-        }
-
-      }
-    };
- 
-})
-.provider('shared_header', function() {
-   this.$get = function() {
-      data = {};
-
-      return {
-
-        set: function(key, val)
-        {
-          // also store this in the session store
-          sessionStorage.setItem(key, val)
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        }
-      }
-    };
-
-})
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', function(
-    $http, $q, data_cache, shared_header, UriTemplate
-  ){
-    return {
-      setCache: function(cache) {
-        data_cache = cache
-      },
-      clearCache: function(str) {
-        data_cache.delMatching(str)
-      },
-      createResource: function(store)
-      {
-        if (typeof store === 'string') {
-          store = JSON.parse(store)
-        }
-        resource = store.data
-        resource._links = store.links
-        key = store.links.self.href
-        options = store.options
-        return new BaseResource(key, options, resource)
-      },
-      $get: function(href, options){
-        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
-        return data_cache.set(href, callService('GET', href, options));
-//        return callService('GET', href, options);
-      }//get
-      , $post: function(href, options, data){
-        return callService('POST', href, options, data);
-      }//post
-      , $put: function(href, options, data){
-        return callService('PUT', href, options, data);
-      }//put
-      , $patch: function(href, options, data){
-        return callService('PATCH', href, options, data);
-      }//patch
-      , $del: function(href, options){
-        return callService('DELETE', href, options);
-      }//del
-      , $parse: function(data){
-        return parseHal(data)
-      }//parse
-    };
-  
-    function BaseResource(href, options, data){
-      if(!options) options = {};
-      var links = {};
-      var embedded = data_cache
-      if (data.hasOwnProperty('auth_token')) {
-        options['auth_token'] = data['auth_token'];
-      }
-
-      href = getSelfLink(href, data).href;
-
-      defineHiddenProperty(this, '$href', function(rel, params) {
-        if(!(rel in links)) return null;
-
-        return hrefLink(links[rel], params);
-      });
-      defineHiddenProperty(this, '$has', function(rel) {
-        return rel in links;
-      });
-      defineHiddenProperty(this, '$flush', function(rel, params) {
-        var link = links[rel];
-        return flushLink(link, params);
-      });
-      defineHiddenProperty(this, '$get', function(rel, params){
-        var link = links[rel];
-        return callLink('GET', link, params);
-      });
-      defineHiddenProperty(this, '$post', function(rel, params, data){
-        var link = links[rel];
-        return callLink('POST', link, params, data);
-      });
-      defineHiddenProperty(this, '$put', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PUT', link, params, data);
-      });
-      defineHiddenProperty(this, '$patch', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PATCH', link, params, data);
-      });
-      defineHiddenProperty(this, '$del', function(rel, params){
-        var link = links[rel];
-        return callLink('DELETE', link, params);
-      });
-      defineHiddenProperty(this, '$links', function(){
-        return links
-      });
-      defineHiddenProperty(this, '$toStore', function(){
-        return JSON.stringify({data: this, links: links, options:options})
-      });
-      defineHiddenProperty(this, 'setOption', function(key, value){
-        options[key] = value
-      });
-      defineHiddenProperty(this, 'getOption', function(key){
-        return options[key]
-      });
-      defineHiddenProperty(this, '$link', function(rel){
-        return links[rel]
-      });
-
-      Object.keys(data)
-      .filter(function(key){
-        return !~['_', '$'].indexOf(key[0]);
-      })
-      .forEach(function(key){
-        this[key] = data[key]
-//        Object.defineProperty(this, key, {
-  //        configurable: false
-  //        , enumerable: true
-  //        , value: data[key]
-   //     });
-      }, this)
-      ;
-
-
-      if(data._links) {
-        Object
-        .keys(data._links)
-        .forEach(function(rel){
-          var link = data._links[rel];          
-          link = normalizeLink(href, link);
-          links[rel] = link;
-        }, this)
-        ;
-      }
-
-      if(data._embedded) {
-        Object
-        .keys(data._embedded)
-        .forEach(function(rel){
-          var embedded = data._embedded[rel];
-          var link = getSelfLink(href, embedded);
-          links[rel] = link;
-
-          var resource = createResource(href, options, embedded);
-
-          embedResource(resource);
-
-        }, this);
-      }
-
-      function defineHiddenProperty(target, name, value) {
-        target[name] = value
-//        Object.defineProperty(target, name, {
-//          configurable: false
- //         , enumerable: false
-  //        , value: value
-   //     });
-      }//defineHiddenProperty
-
-
-      function embedResource(resource) {
-        if(angular.isArray(resource)) return resource.map(function(resource){
-          return embedResource(resource);
-        });
-        
-        var href = resource.$href('self');
-
-        embedded.set(href, $q.when(resource));
-      }//embedResource
-
-      function hrefLink(link, params) {
-        var href = link.templated
-        ? new UriTemplate(link.href).fillFromObject(params || {})
-        : link.href
-        ;
-
-        return href;
-      }//hrefLink
-
-      function callLink(method, link, params, data) {
-        if(angular.isArray(link)) return $q.all(link.map(function(link){
-          if(method !== 'GET') throw 'method is not supported for arrays';
-
-          return callLink(method, link, params, data);
-        }));
-
-        var linkHref = hrefLink(link, params);
-
-        if(method === 'GET') {
-          if(embedded.has(linkHref)) return embedded.get(linkHref);
-          
-          return embedded.set(linkHref, callService(method, linkHref, options, data));
-        }
-        else {
-          return callService(method, linkHref, options, data);  
-        }
-
-      }//callLink
-
-      function flushLink(link, params) {
-        if(angular.isArray(link)) return link.map(function(link){
-          return flushLink(link, params);
-        });
-
-        var linkHref = hrefLink(link, params);
-        if(embedded.has(linkHref)) embedded.del(linkHref);
-      }//flushLink
-
-    }//Resource
-
-
-
-
-    function createResource(href, options, data){
-      if(angular.isArray(data)) return data.map(function(data){
-        return createResource(href, options, data);
-      });
-
-      var resource = new BaseResource(href, options, data);
-
-      return resource;
-
-    }//createResource
-
-
-    function normalizeLink(baseHref, link){
-      if(angular.isArray(link)) return link.map(function(link){
-        return normalizeLink(baseHref, link);
-      });
-
-      if(link) {
-        if(typeof link === 'string') link = { href: link };
-        link.href = resolveUrl(baseHref, link.href);
-      }
-      else {
-        link = { href: baseHref };      
-      }
-
-      return link;
-    }//normalizeLink
-
-
-    function getSelfLink(baseHref, resource){
-      if(angular.isArray(resource)) return resource.map(function(resource){
-        return getSelfLink(baseHref, resource);
-      });
-
-      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
-    }//getSelfLink
-
-
-
-    function callService(method, href, options, data){
-      if(!options) options = {};
-      headers = {
-        'Authorization': options.authorization
-        , 'Content-Type': 'application/json'
-        , 'Accept': 'application/hal+json,application/json'
-      }
-      if (options.app_id) shared_header.set('app_id', options.app_id);
-      if (options.app_key) shared_header.set('app_key', options.app_key);
-      if (options.auth_token) {
-        sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token);
-      }
-
-      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
-      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
-      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
-
-      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
-
-      var resource = (
-        $http({
-          method: method
-          , url: options.transformUrl ? options.transformUrl(href) : href
-          , headers: headers
-          , data: data
-        })
-        .then(function(res){
-
-          // copy out the auth token from the header if there was one and make sure the child commands use it
-          if (res.headers('auth-token') && res.status != 304){
-            options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'))
-          }
-          switch(res.status){
-            case 200:
-            if(res.data) return createResource(href, options, res.data);
-            return null;
-
-            case 201:
-            if(res.data) return createResource(href, options, res.data);
-            if(res.headers('Content-Location')) return res.headers('Content-Location');
-            return null;
-
-            case 204:
-            return null
-
-            default:
-            return $q.reject(res);
-          }
-        }, function(res)
-        {
-          return $q.reject(res);
-        })
-      );
-
-      return resource;
-    }//callService
-
-    function parseHal(data){
-      var resource = createResource(data._links.self.href, null, data);
-      return resource;
-    }//parseHal
-
-
-
-    function resolveUrl(baseHref, href){
-      var resultHref = '';
-      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
-      var baseHrefMatch = reFullUrl.exec(baseHref);
-      var hrefMatch = reFullUrl.exec(href);
-
-      for(var partIndex = 1; partIndex < 5; partIndex++) {
-        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
-        else resultHref += baseHrefMatch[partIndex]
-      }
-
-      return resultHref;
-    }//resolveUrl
-
-  }
-])//service
-;
-
-angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  function(){
-    function FakeStorage() {};
-    FakeStorage.prototype.setItem = function (key, value) {
-      this[key] = value;
-    };
-    FakeStorage.prototype.getItem = function (key) {
-      return typeof this[key] == 'undefined' ? null : this[key];
-    }
-    FakeStorage.prototype.removeItem = function (key) {
-      this[key] = undefined;
-    };
-    FakeStorage.prototype.clear = function(){
-      for (var key in this) {
-        if( this.hasOwnProperty(key) )
-        {
-          this.removeItem(key);
-        }
-      }
-    };
-    FakeStorage.prototype.key = function(index){
-      return Object.keys(this)[index];
-    };
-    return new FakeStorage();
-  }
-])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-]);
-/**!
- * AngularJS file upload/drop directive with http post and progress
- * @author  Danial  <danial.farid@gmail.com>
- * @version 1.4.0
- */
-(function() {
-  
-var angularFileUpload = angular.module('angularFileUpload', []);
-
-angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
-  function sendHttp(config) {
-    config.method = config.method || 'POST';
-    config.headers = config.headers || {};
-    config.transformRequest = config.transformRequest || function(data, headersGetter) {
-      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-        return data;
-      }
-      return $http.defaults.transformRequest[0](data, headersGetter);
-    };
-
-    if (window.XMLHttpRequest.__isShim) {
-      config.headers['__setXHR_'] = function() {
-        return function(xhr) {
-          if (!xhr) return;
-          config.__XHR = xhr;
-          config.xhrFn && config.xhrFn(xhr);
-          xhr.upload.addEventListener('progress', function(e) {
-            if (config.progress) {
-              $timeout(function() {
-                if(config.progress) config.progress(e);
-              });
-            }
-          }, false);
-          //fix for firefox not firing upload progress end, also IE8-9
-          xhr.upload.addEventListener('load', function(e) {
-            if (e.lengthComputable) {
-              if(config.progress) config.progress(e);
-            }
-          }, false);
-        };
-      };
-    }
-
-    var promise = $http(config);
-
-    promise.progress = function(fn) {
-      config.progress = fn;
-      return promise;
-    };
-    promise.abort = function() {
-      if (config.__XHR) {
-        $timeout(function() {
-          config.__XHR.abort();
-        });
-      }
-      return promise;
-    };
-    promise.xhr = function(fn) {
-      config.xhrFn = fn;
-      return promise;
-    };
-    promise.then = (function(promise, origThen) {
-      return function(s, e, p) {
-        config.progress = p || config.progress;
-        var result = origThen.apply(promise, [s, e, p]);
-        result.abort = promise.abort;
-        result.progress = promise.progress;
-        result.xhr = promise.xhr;
-        result.then = promise.then;
-        return result;
-      };
-    })(promise, promise.then);
-    
-    return promise;
-  }
-
-  this.upload = function(config) {
-    config.headers = config.headers || {};
-    config.headers['Content-Type'] = undefined;
-    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
-    var formData = new FormData();
-    var origTransformRequest = config.transformRequest;
-    var origData = config.data;
-    config.transformRequest = function(formData, headerGetter) {
-      if (origData) {
-        if (config.formDataAppender) {
-          for (var key in origData) {
-            var val = origData[key];
-            config.formDataAppender(formData, key, val);
-          }
-        } else {
-          for (var key in origData) {
-            var val = origData[key];
-            if (typeof origTransformRequest == 'function') {
-              val = origTransformRequest(val, headerGetter);
-            } else {
-              for (var i = 0; i < origTransformRequest.length; i++) {
-                var transformFn = origTransformRequest[i];
-                if (typeof transformFn == 'function') {
-                  val = transformFn(val, headerGetter);
-                }
-              }
-            }
-            formData.append(key, val);
-          }
-        }
-      }
-
-      if (config.file != null) {
-        var fileFormName = config.fileFormDataName || 'file';
-
-        if (Object.prototype.toString.call(config.file) === '[object Array]') {
-          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
-          for (var i = 0; i < config.file.length; i++) {
-            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
-          }
-        } else {
-          formData.append(fileFormName, config.file, config.file.name);
-        }
-      }
-      return formData;
-    };
-
-    config.data = formData;
-
-    return sendHttp(config);
-  };
-
-  this.http = function(config) {
-    return sendHttp(config);
-  }
-}]);
-
-angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    var fn = $parse(attr['ngFileSelect']);
-    elem.bind('change', function(evt) {
-      var files = [], fileList, i;
-      fileList = evt.target.files;
-      if (fileList != null) {
-        for (i = 0; i < fileList.length; i++) {
-          files.push(fileList.item(i));
-        }
-      }
-      $timeout(function() {
-        fn(scope, {
-          $files : files,
-          $event : evt
-        });
-      });
-    });
-    // removed this since it was confusing if the user click on browse and then cancel #181
-//    elem.bind('click', function(){
-//      this.value = null;
-//    });
-    
-    // touch screens
-    if (('ontouchstart' in window) ||
-        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
-      elem.bind('touchend', function(e) {
-        e.preventDefault();
-        e.target.click();
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    if ('draggable' in document.createElement('span')) {
-      var fn = $parse(attr['ngFileDropAvailable']);
-      $timeout(function() {
-        fn(scope);
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {    
-    if ('draggable' in document.createElement('span')) {
-      var cancel = null;
-      var fn = $parse(attr['ngFileDrop']);
-      elem[0].addEventListener("dragover", function(evt) {
-        $timeout.cancel(cancel);
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
-      }, false);
-      elem[0].addEventListener("dragleave", function(evt) {
-        cancel = $timeout(function() {
-          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        });
-      }, false);
-      
-      var processing = 0;
-      function traverseFileTree(files, item) {
-        if (item.isDirectory) {
-          var dirReader = item.createReader();
-          processing++;
-          dirReader.readEntries(function(entries) {
-            for (var i = 0; i < entries.length; i++) {
-              traverseFileTree(files, entries[i]);
-            }
-            processing--;
-          });
-        } else {
-          processing++;
-              item.file(function(file) {
-                processing--;
-                files.push(file);
-              });
-          }
-      }
-      
-      elem[0].addEventListener("drop", function(evt) {
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        var files = [], items = evt.dataTransfer.items;
-        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
-          for (var i = 0; i < items.length; i++) {
-            traverseFileTree(files, items[i].webkitGetAsEntry());
-          }
-        } else {
-          var fileList = evt.dataTransfer.files;
-          if (fileList != null) {
-            for (var i = 0; i < fileList.length; i++) {
-              files.push(fileList.item(i));
-            }
-          }
-        }
-        (function callback(delay) {
-          $timeout(function() {
-            if (!processing) {
-              fn(scope, {
-                $files : files,
-                $event : evt
-              });
-            } else {
-              callback(10);
-            }
-          }, delay || 0)
-        })();
-      }, false);
-    }
-  };
-} ]);
-
-})();
-
-angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', function( halClient, $q) {
-    data = {};
-
-    jsonData = function(data) {
-        return data && JSON.parse(data);
-    }
-
-    storage = function()
-    {
-      return sessionStorage
-    } 
-    localSave = function(key, item){
-      storage().setItem(key, item.$toStore())   
-    } 
-    localLoad = function(key){
-      res =  jsonData(storage().getItem(key))
-      if (res)
-      {  
-        r = halClient.createResource(res)
-        def = $q.defer()
-        def.resolve(r)
-        return def.promise
-      }
-      return null
-    } 
-    localDelete = function(key) {
-      storage().removeItem(key)
-    }
-
-    return {
-
-      set: function(key, val)
-      {
-        data[key] = val
-        val.then(function(item){
-          localSave(key, item)
-        })
-        return val
-      },
-      get: function(key)
-      {
-        localLoad(key)
-        if (!data[key])
-          data[key] = localLoad(key)
-        return data[key]
-      },
-      del: function(key)
-      {
-        localDelete(key)
-        delete data[key]
-      },
-      has: function(key)
-      {
-        if (!data[key])
-        { 
-          res = localLoad(key)
-          if (res)
-            data[key] = res
-        }
-        return (key in data)
-      }      
-    }
-
-}]).
- factory('$localData', ['$http', '$rootScope', function($http, $rootScope) {
-    function LocalDataFactory(name) {
-      function LocalData(value){
-        this.setStore(value);
-      }
-
-      LocalData.prototype.jsonData = function(data) {
-          return data && JSON.parse(data);
-      }
-
-      LocalData.prototype.storage = function()
-      {
-        return sessionStorage
-      }  
-
-      LocalData.prototype.localSave = function(item)
-      {
-        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
-      }
-
-
-      LocalData.prototype.localSaveIndex = function(ids)
-      {
-        this.storage().setItem(this.store_name, ids.join(","))
-        this.ids = ids;
-      }
-
-      LocalData.prototype.localLoadIndex = function()
-      {
-        store = this.storage().getItem(this.store_name)
-        records = (store && store.split(",")) || [];
-        return records
-      }
-
-      LocalData.prototype.localLoad = function( id)
-      {
-        return this.jsonData(this.storage().getItem(this.store_name + id))
-      }
-
-      LocalData.prototype.count = function()
-      {
-        return this.ids.length
-      }
-
-      LocalData.prototype.setStore = function(name)
-      {
-        this.store_name = name;
-        this.data_store = []
-        this.ids = this.localLoadIndex();
-        for (a = 0; a < this.ids.length; a++){
-          this.data_store.push(this.localLoad(this.ids[a]));
-        }
-    //    var channel = pusher.subscribe(name);
-    //    var ds = this;
-
-     //   channel.bind('add', function(data) {
-     //     ds.data_store.push(data);
-     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
-     //   });
-
-      }
-
-      LocalData.prototype.update = function(data)
-      {
-        ids = []
-        for (x in data){
-          if (data[x].id){
-           ids.push(data[x].id)
-           this.localSave(data[x])
-         }
-        }
-        this.localSaveIndex(ids)
-      }
-
-      return new LocalData(name)
-
-    };
-
-
-    
-    return LocalDataFactory
-}]);
-
-
-/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
-
-getControllerScope = function(controller, fn){
-  $(document).ready(function(){
-    var $element = $('div[data-ng-controller="' + controller + '"]');
-    var scope = angular.element($element).scope();
-    fn(scope); 
-  });
-}
-
-
-function getURIparam( name ){
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
-(function() {
-  window.Collection = (function() {
-    function Collection() {}
-
-    return Collection;
-
-  })();
-
-  window.Collection.Base = (function() {
-    function Base(res, items, params) {
-      var clean_params, key, m, n, val;
-      this.res = res;
-      this.items = items;
-      this.params = params;
-      this.callbacks = [];
-      clean_params = {};
-      for (key in params) {
-        val = params[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      this.jparams = JSON.stringify(clean_params);
-      if (res) {
-        for (n in res) {
-          m = res[n];
-          this[n] = m;
-        }
-      }
-    }
-
-    Base.prototype.checkItem = function(item) {
-      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
-      if (!this.matchesParams(item)) {
-        this.deleteItem(item);
-        return true;
-      } else {
-        ref = this.items;
-        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
-          existingItem = ref[index];
-          if (item.self === existingItem.self) {
-            this.items[index] = item;
-            ref1 = this.callbacks;
-            for (j = 0, len2 = ref1.length; j < len2; j++) {
-              call = ref1[j];
-              call[1](item, "update");
-            }
-            return true;
-          }
-        }
-      }
-      this.items.push(item);
-      ref2 = this.callbacks;
-      results = [];
-      for (k = 0, len3 = ref2.length; k < len3; k++) {
-        call = ref2[k];
-        results.push(call[1](item, "add"));
-      }
-      return results;
-    };
-
-    Base.prototype.deleteItem = function(item) {
-      var call, i, len, len1, ref, results;
-      len = this.items.length;
-      this.items = this.items.filter(function(x) {
-        return x.self !== item.self;
-      });
-      if (this.items.length !== len) {
-        ref = this.callbacks;
-        results = [];
-        for (i = 0, len1 = ref.length; i < len1; i++) {
-          call = ref[i];
-          results.push(call[1](item, "delete"));
-        }
-        return results;
-      }
-    };
-
-    Base.prototype.getItems = function() {
-      return this.items;
-    };
-
-    Base.prototype.addCallback = function(obj, fn) {
-      var call, i, len1, ref;
-      ref = this.callbacks;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        call = ref[i];
-        if (call[0] === obj) {
-          return;
-        }
-      }
-      return this.callbacks.push([obj, fn]);
-    };
-
-    Base.prototype.matchesParams = function(item) {
-      return true;
-    };
-
-    return Base;
-
-  })();
-
-  window.BaseCollections = (function() {
-    function BaseCollections() {
-      this.collections = [];
-    }
-
-    BaseCollections.prototype.count = function() {
-      return this.collections.length;
-    };
-
-    BaseCollections.prototype.add = function(col) {
-      return this.collections.push(col);
-    };
-
-    BaseCollections.prototype.checkItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.checkItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.deleteItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.deleteItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.find = function(prms) {
-      var clean_params, col, i, jprms, key, len1, ref, val;
-      clean_params = {};
-      for (key in prms) {
-        val = prms[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      jprms = JSON.stringify(clean_params);
-      ref = this.collections;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        if (jprms === col.jparams) {
-          return col;
-        }
-      }
-    };
-
-    return BaseCollections;
-
-  })();
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Day = (function(superClass) {
-    extend(Day, superClass);
-
-    function Day() {
-      return Day.__super__.constructor.apply(this, arguments);
-    }
-
-    Day.prototype.checkItem = function(item) {
-      return Day.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Day;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("DayCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Space = (function(superClass) {
-    extend(Space, superClass);
-
-    function Space() {
-      return Space.__super__.constructor.apply(this, arguments);
-    }
-
-    Space.prototype.checkItem = function(item) {
-      return Space.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Space;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("SpaceCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
 
 (function() {
   'use strict';
@@ -5421,7 +5350,7 @@ function getURIparam( name ){
     })(this);
     setupDefaults = (function(_this) {
       return function(company_id) {
-        var category, def, event, event_group, k, person, ref, resource, service, v;
+        var category, clinic, def, event, event_group, k, person, ref, resource, service, v;
         def = $q.defer();
         if (first_call || ($scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id)) {
           $scope.bb.orginal_company_id = company_id;
@@ -5489,6 +5418,13 @@ function getURIparam( name ){
               return $scope.bb.item_defaults.category = new BBModel.Category(res);
             });
           }
+          if ($scope.bb.item_defaults.clinic) {
+            clinic = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/clinics/' + $scope.bb.item_defaults.clinic);
+            $scope.bb.default_setup_promises.push(clinic);
+            clinic.then(function(res) {
+              return $scope.bb.item_defaults.clinic = new BBModel.Clinic(res);
+            });
+          }
           if ($scope.bb.item_defaults.duration) {
             $scope.bb.item_defaults.duration = parseInt($scope.bb.item_defaults.duration);
           }
@@ -5533,44 +5469,8 @@ function getURIparam( name ){
         if ($scope.isLoadingPage()) {
           return;
         }
-<<<<<<< HEAD
-      });
-    });
-    initialise = function() {
-      var promises;
-      if (!$scope.items || !$scope.company) {
-        return;
-      }
-      $scope.initialised = true;
-      promises = [];
-      promises.push(CategoryService.query($scope.bb.company));
-      if ($scope.company.$has('company_questions')) {
-        promises.push($scope.company.getCompanyQuestionsPromise());
-      }
-      return $q.all(promises).then(function(result) {
-        var item, j, k, len, len1, ref, ref1, stacked_item;
-        $scope.company_questions = result[1];
-        initialiseCategories(result[0]);
-        if ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0) {
-          ref = $scope.bb.stacked_items;
-          for (j = 0, len = ref.length; j < len; j++) {
-            stacked_item = ref[j];
-            ref1 = $scope.items;
-            for (k = 0, len1 = ref1.length; k < len1; k++) {
-              item = ref1[k];
-              if (item.self === stacked_item.service.self) {
-                stacked_item.service = item;
-                stacked_item.service.selected = true;
-                break;
-              }
-            }
-          }
-        } else {
-          checkItemDefaults();
-=======
         if ($window._gaq) {
           $window._gaq.push(['_trackPageview', route]);
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
         }
         $scope.setLoadingPage(true);
         if ($scope.bb.current_page === route) {
@@ -5588,13 +5488,6 @@ function getURIparam( name ){
           $scope.notLoaded($scope);
           $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
         }
-<<<<<<< HEAD
-        $scope.$broadcast("multi_service_select:loaded");
-        return $scope.setLoaded($scope);
-      }, function(err) {
-        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-      });
-=======
         return $rootScope.$broadcast("page:loaded");
       };
     })(this);
@@ -5607,7 +5500,6 @@ function getURIparam( name ){
     })(this);
     $scope.clearPage = function() {
       return $scope.bb_main = "";
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
     };
     $scope.getPartial = function(file) {
       return $scope.bb.pageURL(file);
@@ -5695,31 +5587,12 @@ function getURIparam( name ){
         if ($scope.setPageRoute($rootScope.Route.Time)) {
           return;
         }
-<<<<<<< HEAD
-        iitem.setGroup(item.group);
-        $scope.bb.stackItem(iitem);
-        $rootScope.$broadcast("multi_service_select:item_added");
-        if ($scope.options.raise_alerts) {
-          return AlertService.info({
-            msg: item.name + " added to your treatment selection",
-            persist: false
-          });
-        }
-      } else {
-        ref = $scope.items;
-        results = [];
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          i.popover = "Sorry, you can only book a maximum of " + $scope.options.max_services + " treatments";
-          results.push(i.popoverText = i.popover);
-=======
         return $scope.showPage('time');
       } else if ($scope.bb.moving_booking && (!$scope.bb.current_item.ready || !$scope.bb.current_item.move_done)) {
         return $scope.showPage('check_move');
       } else if (!$scope.client.valid()) {
         if ($scope.setPageRoute($rootScope.Route.Client)) {
           return;
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
         }
         if ($scope.bb.isAdmin) {
           return $scope.showPage('client_admin');
@@ -5923,7 +5796,7 @@ function getURIparam( name ){
       $scope.basket = basket;
       $scope.bb.basket.company_id = $scope.bb.company_id;
       if ($scope.bb.stacked_items) {
-        return $scope.bb.setStackedItems(basket.items);
+        return $scope.bb.setStackedItems(basket.timeItems());
       }
     };
     $scope.logout = function(route) {
@@ -6102,27 +5975,10 @@ function getURIparam( name ){
         return $scope.setStepTitle(title);
       }
     };
-<<<<<<< HEAD
-    $scope.confirm = function(route, options) {
-      var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
-      if (options == null) {
-        options = {};
-      }
-      ref = $scope.bb.stacked_items;
-      for (i = 0, len = ref.length; i < len; i++) {
-        item = ref[i];
-        if (!item.time) {
-          AlertService.add("danger", {
-            msg: "Select a time to continue your booking"
-          });
-          return false;
-        }
-=======
     $scope.loadStep = function(step) {
       var j, len, prev_step, ref, st;
       if (step === $scope.bb.current_step) {
         return;
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       }
       $scope.bb.calculatePercentageComplete(step);
       st = $scope.bb.steps[step];
@@ -6130,70 +5986,6 @@ function getURIparam( name ){
       if (st && !prev_step) {
         prev_step = st;
       }
-<<<<<<< HEAD
-      $scope.bb.basket.clear();
-      $scope.bb.pushStackToBasket();
-      if ($scope.bb.moving_booking) {
-        $scope.notLoaded($scope);
-        prom = PurchaseService.update({
-          purchase: $scope.bb.moving_booking,
-          bookings: $scope.bb.basket.items
-        });
-        prom.then(function(purchase) {
-          purchase.getBookingsPromise().then(function(bookings) {
-            var _i, len3, m, oldb, results;
-            results = [];
-            for (m = 0, len3 = bookings.length; m < len3; m++) {
-              booking = bookings[m];
-              if ($scope.bookings) {
-                results.push((function() {
-                  var len4, n, ref3, results1;
-                  ref3 = $scope.bookings;
-                  results1 = [];
-                  for (_i = n = 0, len4 = ref3.length; n < len4; _i = ++n) {
-                    oldb = ref3[_i];
-                    if (oldb.id === booking.id) {
-                      results1.push($scope.bookings[_i] = booking);
-                    } else {
-                      results1.push(void 0);
-                    }
-                  }
-                  return results1;
-                })());
-              } else {
-                results.push(void 0);
-              }
-            }
-            return results;
-          });
-          $scope.setLoaded($scope);
-          $scope.bb.current_item.move_done = true;
-          return $scope.decideNextPage();
-        }, function(err) {
-          $scope.setLoaded($scope);
-          return AlertService.add("danger", {
-            msg: "Failed to move booking"
-          });
-        });
-        return;
-      }
-      $scope.notLoaded($scope);
-      if (options.do_not_route) {
-        return $scope.updateBasket();
-      } else {
-        return $scope.updateBasket().then(function() {
-          $scope.setLoaded($scope);
-          return $scope.decideNextPage(route);
-        }, function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      }
-    };
-    return $scope.setReady = function() {
-      return $scope.confirm('', {
-        do_not_route: true
-      });
-=======
       if (!st) {
         st = prev_step;
       }
@@ -6217,7 +6009,6 @@ function getURIparam( name ){
           return $scope.bb.allSteps[$scope.bb.current_step - 1].active = true;
         }
       }
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
     };
     $scope.loadPreviousStep = function() {
       var previousStep;
@@ -8123,38 +7914,10 @@ function getURIparam( name ){
         return $scope.fully_booked = true;
       }
     };
-<<<<<<< HEAD
-  });
-
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, ErrorService) {
-    var checkRequestedTime, currentPostcode, isSubtractValid, setTimeRange;
-    $scope.controller = "public.controllers.TimeRangeList";
-    currentPostcode = $scope.bb.postcode;
-    FormDataStoreService.init('TimeRangeList', $scope, ['selected_slot', 'postcode', 'original_start_date', 'start_at_week_start']);
-    if (currentPostcode !== $scope.postcode) {
-      $scope.selected_slot = null;
-      $scope.selected_date = null;
-    }
-    $scope.postcode = $scope.bb.postcode;
-    $scope.notLoaded($scope);
-    if (!$scope.data_source) {
-      $scope.data_source = $scope.bb.current_item;
-    }
-    $rootScope.connection_started.then(function() {
-      var diff, selected_day, start_date;
-      $scope.options = $scope.$eval($attrs.bbTimeRanges) || {};
-      if ($attrs.bbTimeRangeLength != null) {
-        $scope.time_range_length = $scope.$eval($attrs.bbTimeRangeLength);
-      } else if ($scope.options && $scope.options.time_range_length) {
-        $scope.time_range_length = $scope.options.time_range_length;
-      } else {
-        $scope.time_range_length = 7;
-=======
     $scope.showDay = function(day) {
       var date, new_date;
       if (!day || (day && !day.data)) {
         return;
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       }
       if ($scope.selected_day) {
         $scope.selected_day.selected = false;
@@ -8173,47 +7936,23 @@ function getURIparam( name ){
           new_date = date;
         }
       }
-<<<<<<< HEAD
-      return $scope.loadData();
-    }, function(err) {
-      return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-    });
-    setTimeRange = function(selected_date, start_date) {
-      if (start_date) {
-        $scope.start_date = start_date;
-      } else if ($scope.day_of_week) {
-        $scope.start_date = selected_date.clone().day($scope.day_of_week);
-      } else if ($scope.start_at_week_start) {
-        $scope.start_date = selected_date.clone().startOf('week');
-=======
       if (new_date) {
         $scope.selected_date = new_date;
         $scope.filters.date = new_date.toDate();
         $scope.selected_day = day;
         $scope.selected_day.selected = true;
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       } else {
         delete $scope.selected_date;
         delete $scope.filters.date;
       }
       return $scope.filterChanged();
     };
-<<<<<<< HEAD
-    $scope.init = function(options) {
-      if (options == null) {
-        options = {};
-      }
-      if (options.selected_day != null) {
-        if (!options.selected_day._isAMomementObject) {
-          return $scope.selected_day = moment(options.selected_day);
-=======
     $scope.$watch('pick.date', (function(_this) {
       return function(new_val, old_val) {
         if (new_val) {
           $scope.start_date = moment(new_val);
           $scope.end_date = moment(new_val);
           return $scope.loadEventData();
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
         }
       };
     })(this));
@@ -8480,13 +8219,6 @@ function getURIparam( name ){
           if ($scope.item.defaults[n]) {
             return item.answer = $scope.item.defaults[n];
           }
-<<<<<<< HEAD
-        }
-        if (!found_time) {
-          current_item.requestedTimeUnavailable();
-          return AlertService.raise(ErrorService.getAlert('REQ_TIME_NOT_AVAIL'));
-        }
-=======
         });
       }
       if ($scope.hasOwnProperty('item_details')) {
@@ -8500,7 +8232,6 @@ function getURIparam( name ){
             return item.answer = search.answer;
           }
         });
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       }
       return $scope.item_details = details;
     };
@@ -8510,23 +8241,6 @@ function getURIparam( name ){
       bprice = $scope.item.base_price;
       return $scope.item.setPrice(qprice + bprice);
     };
-<<<<<<< HEAD
-    $scope.setReady = function() {
-      if (!$scope.bb.current_item.time) {
-        AlertService.raise(ErrorService.getAlert('TIME_SLOT_NOT_SELECTED'));
-        return false;
-      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime)) {
-        AlertService.raise(ErrorService.getAlert('APPT_AT_SAME_TIME'));
-        return false;
-      } else if ($scope.bb.moving_booking) {
-        if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource) {
-          $scope.bb.current_item.resource = true;
-        }
-        if ($scope.bb.company.$has('people') && !$scope.bb.current_item.person) {
-          $scope.bb.current_item.person = true;
-        }
-        return true;
-=======
     $scope.confirm = function(form, route) {
       if (!ValidatorService.validateForm(form)) {
         return;
@@ -8543,7 +8257,6 @@ function getURIparam( name ){
         }, function(err) {
           return $scope.setLoaded($scope);
         });
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       } else {
         return $scope.decideNextPage(route);
       }
@@ -8785,173 +8498,7 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-<<<<<<< HEAD
-  angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      templateUrl: function(element, attrs) {
-        if (_.has(attrs, 'mini')) {
-          return PathSvc.directivePartial("_basket_mini");
-        } else {
-          return PathSvc.directivePartial("basket");
-        }
-      },
-      controllerAs: 'BasketCtrl',
-      controller: function($scope, $modal, BasketService) {
-        var BasketInstanceCtrl;
-        $scope.setUsingBasket(true);
-        this.empty = function() {
-          return $scope.$eval('emptyBasket()');
-        };
-        this.view = function() {
-          return $scope.$eval('viewBasket()');
-        };
-        $scope.showBasketDetails = function() {
-          var modalInstance;
-          if (($scope.bb.current_page === "basket") || ($scope.bb.current_page === "checkout")) {
-            return false;
-          } else {
-            return modalInstance = $modal.open({
-              templateUrl: $scope.getPartial("_basket_details"),
-              scope: $scope,
-              controller: BasketInstanceCtrl,
-              resolve: {
-                basket: function() {
-                  return $scope.bb.basket;
-                }
-              }
-            });
-          }
-        };
-        BasketInstanceCtrl = function($scope, $rootScope, $modalInstance, basket) {
-          $scope.basket = basket;
-          return $scope.cancel = function() {
-            return $modalInstance.dismiss("cancel");
-          };
-        };
-        $scope.$watch(function() {
-          var len;
-          $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
-          if (!len) {
-            $scope.basketStatus = "empty";
-          } else {
-            if (len === 1) {
-              $scope.basketStatus = "1 item in your basket";
-            } else {
-              $scope.basketStatus = len + " items in your basket";
-            }
-          }
-        });
-      },
-      link: function(scope, element, attrs) {
-        return element.bind('click', function(e) {
-          return e.preventDefault();
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbMinSpend', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      controller: function($scope, $element, $attrs, AlertService, $filter) {
-        var checkMinSpend, options;
-        options = $scope.$eval($attrs.bbMinSpend || {});
-        $scope.min_spend = options.min_spend || 0;
-        $scope.setReady = function() {
-          return checkMinSpend();
-        };
-        return checkMinSpend = function() {
-          var i, item, len1, price, ref;
-          price = 0;
-          ref = $scope.bb.stacked_items;
-          for (i = 0, len1 = ref.length; i < len1; i++) {
-            item = ref[i];
-            price += item.service.price;
-          }
-          if (price >= $scope.min_spend) {
-            AlertService.clear();
-            return true;
-          } else {
-            AlertService.clear();
-            price = $filter('ipretty_price')($scope.min_spend);
-            AlertService.add("warning", {
-              msg: "You need to spend at least " + price + " to make a booking."
-            });
-            return false;
-          }
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      controller: 'Breadcrumbs',
-      templateUrl: function(element, attrs) {
-        if (_.has(attrs, 'complex')) {
-          return PathSvc.directivePartial("_breadcrumb_complex");
-        } else {
-          return PathSvc.directivePartial("_breadcrumb");
-        }
-      },
-      link: function(scope) {}
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Breadcrumbs', function($scope) {
-    var atDisablePoint, currentStep, lastStep, loadStep;
-    loadStep = $scope.loadStep;
-    $scope.steps = $scope.bb.steps;
-    $scope.allSteps = $scope.bb.allSteps;
-    $scope.loadStep = function(number) {
-      if (!lastStep() && !currentStep(number) && !atDisablePoint()) {
-        return loadStep(number);
-      }
-    };
-    lastStep = function() {
-      return $scope.bb.current_step === $scope.bb.allSteps.length;
-    };
-    currentStep = function(step) {
-      return step === $scope.bb.current_step;
-    };
-    atDisablePoint = function() {
-      if (!angular.isDefined($scope.bb.disableGoingBackAtStep)) {
-        return false;
-      }
-      return $scope.bb.current_step >= $scope.bb.disableGoingBackAtStep;
-    };
-    return $scope.isDisabledStep = function(step) {
-      if (lastStep() || currentStep(step.number) || !step.passed || atDisablePoint()) {
-        return true;
-      } else {
-        return false;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbContentNew', function(PathSvc) {
-=======
   angular.module('BB.Directives').directive('bbMap', function() {
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
     return {
       restrict: 'AE',
       replace: true,
@@ -9400,24 +8947,17 @@ function getURIparam( name ){
         var item, j, k, len, len1, ref, ref1, stacked_item;
         $scope.company_questions = result[1];
         initialiseCategories(result[0]);
-        if (($scope.bb.basket && $scope.bb.basket.items.length > 0) || ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0)) {
-          if ($scope.bb.basket && $scope.bb.basket.items.length > 0 && $scope.bb.basket.items[0].service) {
-            if (!$scope.bb.stacked_items || $scope.bb.stacked_items.length === 0) {
-              $scope.bb.setStackedItems($scope.bb.basket.items);
-            }
-          }
-          if ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0) {
-            ref = $scope.bb.stacked_items;
-            for (j = 0, len = ref.length; j < len; j++) {
-              stacked_item = ref[j];
-              ref1 = $scope.items;
-              for (k = 0, len1 = ref1.length; k < len1; k++) {
-                item = ref1[k];
-                if (item.self === stacked_item.service.self) {
-                  stacked_item.service = item;
-                  stacked_item.service.selected = true;
-                  break;
-                }
+        if ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0) {
+          ref = $scope.bb.stacked_items;
+          for (j = 0, len = ref.length; j < len; j++) {
+            stacked_item = ref[j];
+            ref1 = $scope.items;
+            for (k = 0, len1 = ref1.length; k < len1; k++) {
+              item = ref1[k];
+              if (item.self === stacked_item.service.self) {
+                stacked_item.service = item;
+                stacked_item.service.selected = true;
+                break;
               }
             }
           }
@@ -9427,6 +8967,7 @@ function getURIparam( name ){
         if ($scope.bb.moving_booking) {
           $scope.nextStep();
         }
+        $scope.$broadcast("multi_service_select:loaded");
         return $scope.setLoaded($scope);
       }, function(err) {
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
@@ -9547,7 +9088,13 @@ function getURIparam( name ){
         }
         iitem.setGroup(item.group);
         $scope.bb.stackItem(iitem);
-        return $rootScope.$broadcast("multi_service_select:item_added");
+        $rootScope.$broadcast("multi_service_select:item_added");
+        if ($scope.options.raise_alerts) {
+          return AlertService.info({
+            msg: item.name + " added to your treatment selection",
+            persist: false
+          });
+        }
       } else {
         ref = $scope.items;
         results = [];
@@ -9992,8 +9539,11 @@ function getURIparam( name ){
         return $scope.start_date.format(month_year_format);
       }
     };
-    return $scope.confirm = function(route) {
-      var booking, different, found, i, item, j, l, len, len1, len2, len3, m, prom, ref, ref1, ref2, ref3;
+    $scope.confirm = function(route, options) {
+      var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
+      if (options == null) {
+        options = {};
+      }
       ref = $scope.bb.stacked_items;
       for (i = 0, len = ref.length; i < len; i++) {
         item = ref[i];
@@ -10030,11 +9580,7 @@ function getURIparam( name ){
         }
       }
       $scope.bb.basket.clear();
-      ref3 = $scope.bb.stacked_items;
-      for (m = 0, len3 = ref3.length; m < len3; m++) {
-        item = ref3[m];
-        $scope.bb.basket.addItem(item);
-      }
+      $scope.bb.pushStackToBasket();
       if ($scope.bb.moving_booking) {
         $scope.notLoaded($scope);
         prom = PurchaseService.update({
@@ -10043,17 +9589,17 @@ function getURIparam( name ){
         });
         prom.then(function(purchase) {
           purchase.getBookingsPromise().then(function(bookings) {
-            var _i, len4, n, oldb, results;
+            var _i, len3, m, oldb, results;
             results = [];
-            for (n = 0, len4 = bookings.length; n < len4; n++) {
-              booking = bookings[n];
+            for (m = 0, len3 = bookings.length; m < len3; m++) {
+              booking = bookings[m];
               if ($scope.bookings) {
                 results.push((function() {
-                  var len5, o, ref4, results1;
-                  ref4 = $scope.bookings;
+                  var len4, n, ref3, results1;
+                  ref3 = $scope.bookings;
                   results1 = [];
-                  for (_i = o = 0, len5 = ref4.length; o < len5; _i = ++o) {
-                    oldb = ref4[_i];
+                  for (_i = n = 0, len4 = ref3.length; n < len4; _i = ++n) {
+                    oldb = ref3[_i];
                     if (oldb.id === booking.id) {
                       results1.push($scope.bookings[_i] = booking);
                     } else {
@@ -10080,11 +9626,20 @@ function getURIparam( name ){
         return;
       }
       $scope.notLoaded($scope);
-      return $scope.updateBasket().then(function() {
-        $scope.setLoaded($scope);
-        return $scope.decideNextPage(route);
-      }, function(err) {
-        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+      if (options.do_not_route) {
+        return $scope.updateBasket();
+      } else {
+        return $scope.updateBasket().then(function() {
+          $scope.setLoaded($scope);
+          return $scope.decideNextPage(route);
+        }, function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      }
+    };
+    return $scope.setReady = function() {
+      return $scope.confirm('', {
+        do_not_route: true
       });
     };
   });
@@ -10584,17 +10139,6 @@ function getURIparam( name ){
           } else if (!event.data.match(/iFrameSizer/)) {
             data = JSON.parse(event.data);
           }
-<<<<<<< HEAD
-          current_step = BreadcrumbService.getCurrentStep();
-          if (scroll_to_element) {
-            if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!scroll_to_element.is(':visible') && scroll_to_element.offset().top !== 0)) {
-              if ('parentIFrame' in $window) {
-                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
-              } else {
-                return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
-                }, bb_transition_time);
-=======
           return scope.$apply(function() {
             if (data) {
               switch (data.type) {
@@ -10606,7 +10150,6 @@ function getURIparam( name ){
                 case "payment_complete":
                   scope.callSetLoaded();
                   return scope.paymentDone();
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
               }
             }
           });
@@ -10617,52 +10160,8 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-<<<<<<< HEAD
-      link: function(scope, element, attrs) {
-        var i, len, slot, slots;
-        slots = scope.$eval(attrs.slots);
-        if (!slots) {
-          return;
-        }
-        scope.grouped_slots = [];
-        for (i = 0, len = slots.length; i < len; i++) {
-          slot = slots[i];
-          if (slot.time >= scope.$eval(attrs.startTime) && slot.time < scope.$eval(attrs.endTime)) {
-            scope.grouped_slots.push(slot);
-          }
-        }
-        return scope.has_slots = scope.grouped_slots.length > 0;
-      }
-    };
-  });
-
-  app.directive('bbForm', function($bbug, $window, SettingsService) {
-    return {
-      restrict: 'A',
-      require: '^form',
-      link: function(scope, elem, attrs, ctrls) {
-        return elem.on("submit", function() {
-          var invalid_form_group, invalid_input;
-          invalid_form_group = elem.find('.has-error:first');
-          if (invalid_form_group && invalid_form_group.length > 0) {
-            if ('parentIFrame' in $window) {
-              parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
-            } else {
-              $bbug("html, body").animate({
-                scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
-              }, 1000);
-            }
-            invalid_input = invalid_form_group.find('.ng-invalid');
-            invalid_input.focus();
-            return false;
-          }
-          return true;
-        });
-      }
-=======
       controller: 'Payment',
       link: linker
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
     };
   });
 
@@ -11288,7 +10787,7 @@ function getURIparam( name ){
                 _this.skipped = true;
               }
             } else {
-              setServiceItem(services);
+              setServiceItem(items);
             }
             return $scope.setLoaded($scope);
           };
@@ -12164,7 +11663,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, ErrorService) {
     var checkRequestedTime, currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -12222,7 +11721,6 @@ function getURIparam( name ){
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
     setTimeRange = function(selected_date, start_date) {
-      console.log("set range", selected_date, start_date);
       if (start_date) {
         $scope.start_date = start_date;
       } else if ($scope.day_of_week) {
@@ -12240,7 +11738,6 @@ function getURIparam( name ){
       if (options == null) {
         options = {};
       }
-      console.log("init", options);
       if (options.selected_day != null) {
         if (!options.selected_day._isAMomementObject) {
           return $scope.selected_day = moment(options.selected_day);
@@ -12348,86 +11845,6 @@ function getURIparam( name ){
         } else {
           return $scope.decideNextPage(route);
         }
-<<<<<<< HEAD
-        return defer.promise;
-      };
-
-      return Answer;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Models').service("BBModel", function($q, $injector) {
-    var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
-    funcs = {};
-    fn = (function(_this) {
-      return function(model) {
-        return funcs[model] = function(p1, p2) {
-          return new ($injector.get(model + "Model"))(p1, p2);
-        };
-      };
-    })(this);
-    for (i = 0, len = models.length; i < len; i++) {
-      model = models[i];
-      fn(model);
-    }
-    purchase_models = ['Booking', 'Total', 'CourseBooking'];
-    pfuncs = {};
-    fn1 = (function(_this) {
-      return function(model) {
-        return pfuncs[model] = function(init) {
-          return new ($injector.get("Purchase." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (j = 0, len1 = purchase_models.length; j < len1; j++) {
-      model = purchase_models[j];
-      fn1(model);
-    }
-    funcs['Purchase'] = pfuncs;
-    member_models = ['Member', 'Booking', 'PrePaidBooking'];
-    mfuncs = {};
-    fn2 = (function(_this) {
-      return function(model) {
-        return mfuncs[model] = function(init) {
-          return new ($injector.get("Member." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (k = 0, len2 = member_models.length; k < len2; k++) {
-      model = member_models[k];
-      fn2(model);
-    }
-    funcs['Member'] = mfuncs;
-    admin_models = ['Booking', 'Slot', 'User', 'Administrator', 'Schedule', 'Address', 'Resource', 'Person', 'Service', 'Login', 'EventChain', 'EventGroup', 'Event', 'Queuer', 'ClientQueue', 'Clinic'];
-    afuncs = {};
-    fn3 = (function(_this) {
-      return function(model) {
-        return afuncs[model] = function(init) {
-          return new ($injector.get("Admin." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (l = 0, len3 = admin_models.length; l < len3; l++) {
-      model = admin_models[l];
-      fn3(model);
-    }
-    funcs['Admin'] = afuncs;
-    return funcs;
-  });
-
-  angular.module('BB.Models').service("BaseModel", function($q, $injector, $rootScope, $timeout) {
-    var Base;
-    return Base = (function() {
-      function Base(data) {
-        this.deleted = false;
-        this.updateModel(data);
-=======
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
       }
     };
     $scope.highlightSlot = function(day, slot) {
@@ -12571,9 +11988,7 @@ function getURIparam( name ){
         }
         if (!found_time) {
           current_item.requestedTimeUnavailable();
-          return AlertService.add("danger", {
-            msg: "The requested time slot is not available. Please choose a different time."
-          });
+          return AlertService.raise(ErrorService.getAlert('REQ_TIME_NOT_AVAIL'));
         }
       }
     };
@@ -12582,14 +11997,10 @@ function getURIparam( name ){
     };
     $scope.setReady = function() {
       if (!$scope.bb.current_item.time) {
-        AlertService.add("danger", {
-          msg: "You need to select a time slot"
-        });
+        AlertService.raise(ErrorService.getAlert('TIME_SLOT_NOT_SELECTED'));
         return false;
       } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime)) {
-        AlertService.add("danger", {
-          msg: "Your appointment is already booked for this time."
-        });
+        AlertService.raise(ErrorService.getAlert('APPT_AT_SAME_TIME'));
         return false;
       } else if ($scope.bb.moving_booking) {
         if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource) {
@@ -12699,6 +12110,4343 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("AddressModel", function($q, BBModel, BaseModel) {
+    var Address;
+    return Address = (function(superClass) {
+      extend(Address, superClass);
+
+      function Address() {
+        return Address.__super__.constructor.apply(this, arguments);
+      }
+
+      Address.prototype.addressSingleLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += ", ";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+      Address.prototype.hasAddress = function() {
+        return this.address1 || this.address2 || this.postcode;
+      };
+
+      Address.prototype.addressCsvLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        str += ", ";
+        if (this.address2) {
+          str += this.address2;
+        }
+        str += ", ";
+        if (this.address3) {
+          str += this.address3;
+        }
+        str += ", ";
+        if (this.address4) {
+          str += this.address4;
+        }
+        str += ", ";
+        if (this.address5) {
+          str += this.address5;
+        }
+        str += ", ";
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        str += ", ";
+        if (this.country) {
+          str += this.country;
+        }
+        return str;
+      };
+
+      Address.prototype.addressMultiLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+      return Address;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("AffiliateModel", function($q, BBModel, BaseModel) {
+    var Affiliate;
+    return Affiliate = (function(superClass) {
+      extend(Affiliate, superClass);
+
+      function Affiliate(data) {
+        Affiliate.__super__.constructor.call(this, data);
+        this.test = 1;
+      }
+
+      Affiliate.prototype.getCompanyByRef = function(ref) {
+        var defer;
+        defer = $q.defer();
+        this.$get('companies', {
+          reference: ref
+        }).then(function(company) {
+          if (company) {
+            return defer.resolve(new BBModel.Company(company));
+          } else {
+            return defer.reject('No company for ref ' + ref);
+          }
+        }, function(err) {
+          console.log('err ', err);
+          return defer.reject(err);
+        });
+        return defer.promise;
+      };
+
+      return Affiliate;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("AnswerModel", function($q, BBModel, BaseModel, $bbug) {
+    var Answer;
+    return Answer = (function(superClass) {
+      extend(Answer, superClass);
+
+      function Answer(data) {
+        Answer.__super__.constructor.call(this, data);
+      }
+
+      Answer.prototype.getQuestion = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.question) {
+          defer.resolve(this.question);
+        }
+        if (this._data.$has('question')) {
+          this._data.$get('question').then((function(_this) {
+            return function(question) {
+              _this.question = question;
+              return defer.resolve(_this.question);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      return Answer;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Models').service("BBModel", function($q, $injector) {
+    var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
+    funcs = {};
+    fn = (function(_this) {
+      return function(model) {
+        return funcs[model] = function(p1, p2) {
+          return new ($injector.get(model + "Model"))(p1, p2);
+        };
+      };
+    })(this);
+    for (i = 0, len = models.length; i < len; i++) {
+      model = models[i];
+      fn(model);
+    }
+    purchase_models = ['Booking', 'Total', 'CourseBooking'];
+    pfuncs = {};
+    fn1 = (function(_this) {
+      return function(model) {
+        return pfuncs[model] = function(init) {
+          return new ($injector.get("Purchase." + model + "Model"))(init);
+        };
+      };
+    })(this);
+    for (j = 0, len1 = purchase_models.length; j < len1; j++) {
+      model = purchase_models[j];
+      fn1(model);
+    }
+    funcs['Purchase'] = pfuncs;
+    member_models = ['Member', 'Booking', 'PrePaidBooking'];
+    mfuncs = {};
+    fn2 = (function(_this) {
+      return function(model) {
+        return mfuncs[model] = function(init) {
+          return new ($injector.get("Member." + model + "Model"))(init);
+        };
+      };
+    })(this);
+    for (k = 0, len2 = member_models.length; k < len2; k++) {
+      model = member_models[k];
+      fn2(model);
+    }
+    funcs['Member'] = mfuncs;
+    admin_models = ['Booking', 'Slot', 'User', 'Administrator', 'Schedule', 'Address', 'Resource', 'Person', 'Service', 'Login', 'EventChain', 'EventGroup', 'Event', 'Queuer', 'ClientQueue', 'Clinic'];
+    afuncs = {};
+    fn3 = (function(_this) {
+      return function(model) {
+        return afuncs[model] = function(init) {
+          return new ($injector.get("Admin." + model + "Model"))(init);
+        };
+      };
+    })(this);
+    for (l = 0, len3 = admin_models.length; l < len3; l++) {
+      model = admin_models[l];
+      fn3(model);
+    }
+    funcs['Admin'] = afuncs;
+    return funcs;
+  });
+
+  angular.module('BB.Models').service("BaseModel", function($q, $injector, $rootScope, $timeout) {
+    var Base;
+    return Base = (function() {
+      function Base(data) {
+        this.deleted = false;
+        this.updateModel(data);
+      }
+
+      Base.prototype.updateModel = function(data) {
+        var link, links, m, n, name, obj, results;
+        if (data) {
+          this._data = data;
+        }
+        if (data) {
+          for (n in data) {
+            m = data[n];
+            this[n] = m;
+          }
+        }
+        if (this._data && this._data.$href) {
+          this.self = this._data.$href("self");
+          links = this.$links();
+          this.__linkedData = {};
+          this.__linkedPromises = {};
+          results = [];
+          for (link in links) {
+            obj = links[link];
+            name = this._snakeToCamel("get_" + link);
+            results.push((function(_this) {
+              return function(link, obj, name) {
+                if (!_this[name]) {
+                  _this[name] = function() {
+                    return this.$buildOject(link);
+                  };
+                }
+                if (!_this[name + "Promise"]) {
+                  return _this[name + "Promise"] = function() {
+                    return this.$buildOjectPromise(link);
+                  };
+                }
+              };
+            })(this)(link, obj, name));
+          }
+          return results;
+        }
+      };
+
+      Base.prototype._snakeToCamel = function(s) {
+        return s.replace(/(\_\w)/g, function(m) {
+          return m[1].toUpperCase();
+        });
+      };
+
+      Base.prototype.$buildOject = function(link) {
+        if (this.__linkedData[link]) {
+          return this.__linkedData[link];
+        }
+        this.$buildOjectPromise(link).then((function(_this) {
+          return function(ans) {
+            _this.__linkedData[link] = ans;
+            return $timeout(function() {
+              return _this.__linkedData[link] = ans;
+            });
+          };
+        })(this));
+        return null;
+      };
+
+      Base.prototype.$buildOjectPromise = function(link) {
+        var prom;
+        if (this.__linkedPromises[link]) {
+          return this.__linkedPromises[link];
+        }
+        prom = $q.defer();
+        this.__linkedPromises[link] = prom.promise;
+        this.$get(link).then((function(_this) {
+          return function(res) {
+            var inj;
+            inj = $injector.get('BB.Service.' + link);
+            if (inj) {
+              if (inj.promise) {
+                return inj.unwrap(res).then(function(ans) {
+                  return prom.resolve(ans);
+                }, function(err) {
+                  return prom.reject(err);
+                });
+              } else {
+                return prom.resolve(inj.unwrap(res));
+              }
+            } else {
+              return prom.resolve(res);
+            }
+          };
+        })(this), function(err) {
+          return prom.reject(err);
+        });
+        return this.__linkedPromises[link];
+      };
+
+      Base.prototype.get = function(ikey) {
+        if (!this._data) {
+          return null;
+        }
+        return this._data[ikey];
+      };
+
+      Base.prototype.set = function(ikey, value) {
+        if (!this._data) {
+          return null;
+        }
+        return this._data[ikey] = value;
+      };
+
+      Base.prototype.$href = function(rel, params) {
+        if (this._data) {
+          return this._data.$href(rel, params);
+        }
+      };
+
+      Base.prototype.$has = function(rel) {
+        if (this._data) {
+          return this._data.$has(rel);
+        }
+      };
+
+      Base.prototype.$flush = function(rel, params) {
+        if (this._data) {
+          return this._data.$href(rel, params);
+        }
+      };
+
+      Base.prototype.$get = function(rel, params) {
+        if (this._data) {
+          return this._data.$get(rel, params);
+        }
+      };
+
+      Base.prototype.$post = function(rel, params, dat) {
+        if (this._data) {
+          return this._data.$post(rel, params, dat);
+        }
+      };
+
+      Base.prototype.$put = function(rel, params, dat) {
+        if (this._data) {
+          return this._data.$put(rel, params, dat);
+        }
+      };
+
+      Base.prototype.$patch = function(rel, params, dat) {
+        if (this._data) {
+          return this._data.$patch(rel, params, dat);
+        }
+      };
+
+      Base.prototype.$del = function(rel, params) {
+        if (this._data) {
+          return this._data.$del(rel, params);
+        }
+      };
+
+      Base.prototype.$links = function() {
+        if (this._data) {
+          return this._data.$links();
+        }
+      };
+
+      Base.prototype.$toStore = function() {
+        if (this._data) {
+          return this._data.$toStore();
+        }
+      };
+
+      return Base;
+
+    })();
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BasketModel", function($q, BBModel, BaseModel) {
+    var Basket;
+    return Basket = (function(superClass) {
+      extend(Basket, superClass);
+
+      function Basket(data, scope) {
+        if (scope && scope.isAdmin) {
+          this.is_admin = scope.isAdmin;
+        } else {
+          this.is_admin = false;
+        }
+        if ((scope != null) && scope.parent_client) {
+          this.parent_client_id = scope.parent_client.id;
+        }
+        this.items = [];
+        Basket.__super__.constructor.call(this, data);
+      }
+
+      Basket.prototype.addItem = function(item) {
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i === item) {
+            return;
+          }
+          if (i.id && item.id && i.id === item.id) {
+            return;
+          }
+        }
+        return this.items.push(item);
+      };
+
+      Basket.prototype.clear = function() {
+        return this.items = [];
+      };
+
+      Basket.prototype.clearItem = function(item) {
+        return this.items = this.items.filter(function(i) {
+          return i !== item;
+        });
+      };
+
+      Basket.prototype.readyToCheckout = function() {
+        if (this.items.length > 0) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+      Basket.prototype.timeItems = function() {
+        var i, j, len, ref, titems;
+        titems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (!i.is_coupon) {
+            titems.push(i);
+          }
+        }
+        return titems;
+      };
+
+      Basket.prototype.couponItems = function() {
+        var citems, i, j, len, ref;
+        citems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i.is_coupon) {
+            citems.push(i);
+          }
+        }
+        return citems;
+      };
+
+      Basket.prototype.removeCoupons = function() {
+        return this.items = _.reject(this.items, function(x) {
+          return x.is_coupon;
+        });
+      };
+
+      Basket.prototype.setSettings = function(set) {
+        if (!set) {
+          return;
+        }
+        this.settings || (this.settings = {});
+        return $.extend(this.settings, set);
+      };
+
+      Basket.prototype.setClient = function(client) {
+        return this.client = client;
+      };
+
+      Basket.prototype.setClientDetails = function(client_details) {
+        return this.client_details = new BBModel.PurchaseItem(client_details);
+      };
+
+      Basket.prototype.getPostData = function() {
+        var item, j, len, post, ref;
+        post = {
+          client: this.client.getPostData(),
+          settings: this.settings,
+          reference: this.reference
+        };
+        post.is_admin = this.is_admin;
+        post.parent_client_id = this.parent_client_id;
+        post.items = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          post.items.push(item.getPostData());
+        }
+        return post;
+      };
+
+      Basket.prototype.dueTotal = function() {
+        var item, j, len, ref, total;
+        total = this.totalPrice();
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isWaitlist()) {
+            total -= item.price;
+          }
+        }
+        if (total < 0) {
+          total = 0;
+        }
+        return total;
+      };
+
+      Basket.prototype.length = function() {
+        return this.items.length;
+      };
+
+      Basket.prototype.questionPrice = function(options) {
+        var item, j, len, price, ref, unready;
+        unready = options && options.unready;
+        price = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if ((!item.ready && unready) || !unready) {
+            price += item.questionPrice();
+          }
+        }
+        return price;
+      };
+
+      Basket.prototype.totalPrice = function(options) {
+        var item, j, len, price, ref, unready;
+        unready = options && options.unready;
+        price = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if ((!item.ready && unready) || !unready) {
+            price += item.totalPrice();
+          }
+        }
+        return price;
+      };
+
+      Basket.prototype.updateTotalPrice = function(options) {
+        return this.total_price = this.totalPrice(options);
+      };
+
+      Basket.prototype.fullPrice = function() {
+        var item, j, len, price, ref;
+        price = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          price += item.fullPrice();
+        }
+        return price;
+      };
+
+      Basket.prototype.hasCoupon = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.is_coupon) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      Basket.prototype.totalCoupons = function() {
+        return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
+      };
+
+      Basket.prototype.totalDuration = function() {
+        var duration, item, j, len, ref;
+        duration = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.service && item.service.listed_duration) {
+            duration += item.service.listed_duration;
+          }
+        }
+        return duration;
+      };
+
+      Basket.prototype.containsDeal = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.deal_id) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      Basket.prototype.hasDeal = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.deal_codes && item.deal_codes.length > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      Basket.prototype.getDealCodes = function() {
+        this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
+        return this.deals;
+      };
+
+      Basket.prototype.totalDeals = function() {
+        var deal, j, len, ref, value;
+        value = 0;
+        ref = this.getDealCodes();
+        for (j = 0, len = ref.length; j < len; j++) {
+          deal = ref[j];
+          value += deal.value;
+        }
+        return value;
+      };
+
+      Basket.prototype.totalDealPaid = function() {
+        var item, j, len, ref, total_cert_paid;
+        total_cert_paid = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.certificate_paid) {
+            total_cert_paid += item.certificate_paid;
+          }
+        }
+        return total_cert_paid;
+      };
+
+      Basket.prototype.remainingDealBalance = function() {
+        return this.totalDeals() - this.totalDealPaid();
+      };
+
+      Basket.prototype.hasWaitlistItem = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isWaitlist()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      return Basket;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug) {
+    var BasketItem;
+    return BasketItem = (function(superClass) {
+      extend(BasketItem, superClass);
+
+      function BasketItem(data, bb) {
+        this.fullPrice = bind(this.fullPrice, this);
+        this.totalPrice = bind(this.totalPrice, this);
+        this.getQty = bind(this.getQty, this);
+        this.questionPrice = bind(this.questionPrice, this);
+        var chain, comp, per, res, serv, t;
+        BasketItem.__super__.constructor.call(this, data);
+        this.ready = false;
+        this.days_link = null;
+        this.book_link = null;
+        this.parts_links = {};
+        this.settings || (this.settings = {});
+        this.has_questions = false;
+        if (bb) {
+          this.reserve_without_questions = bb.reserve_without_questions;
+        }
+        if (this.time) {
+          this.time = new BBModel.TimeSlot({
+            time: this.time,
+            event_id: this.event_id,
+            selected: true,
+            avail: 1,
+            price: this.price
+          });
+        }
+        if (this.date) {
+          this.date = new BBModel.Day({
+            date: this.date,
+            spaces: 1
+          });
+        }
+        if (this.datetime) {
+          this.date = new BBModel.Day({
+            date: this.datetime.toISODate(),
+            spaces: 1
+          });
+          t = this.datetime.hour() * 60 + this.datetime.minute();
+          this.time = new BBModel.TimeSlot({
+            time: t,
+            event_id: this.event_id,
+            selected: true,
+            avail: 1,
+            price: this.price
+          });
+        }
+        if (this.id) {
+          this.reserve_ready = true;
+          this.held = {
+            time: this.time,
+            date: this.date,
+            event_id: this.event_id
+          };
+        }
+        this.promises = [];
+        if (data) {
+          if (data.$has("answers")) {
+            data.$get("answers").then((function(_this) {
+              return function(answers) {
+                var a, i, len, results;
+                data.questions = [];
+                results = [];
+                for (i = 0, len = answers.length; i < len; i++) {
+                  a = answers[i];
+                  results.push(data.questions.push({
+                    id: a.question_id,
+                    answer: a.value
+                  }));
+                }
+                return results;
+              };
+            })(this));
+          }
+          if (data.$has('company')) {
+            comp = data.$get('company');
+            this.promises.push(comp);
+            comp.then((function(_this) {
+              return function(comp) {
+                var c;
+                c = new BBModel.Company(comp);
+                _this.promises.push(c.getSettings());
+                return _this.setCompany(c);
+              };
+            })(this));
+          }
+          if (data.$has('service')) {
+            serv = data.$get('service');
+            this.promises.push(serv);
+            serv.then((function(_this) {
+              return function(serv) {
+                var prom;
+                if (serv.$has('category')) {
+                  prom = serv.$get('category');
+                  _this.promises.push(prom);
+                  prom.then(function(cat) {
+                    return _this.setCategory(new BBModel.Category(cat));
+                  });
+                }
+                _this.setService(new BBModel.Service(serv), data.questions);
+                if (_this.duration) {
+                  _this.setDuration(_this.duration);
+                }
+                _this.checkReady();
+                if (_this.time) {
+                  return _this.time.service = _this.service;
+                }
+              };
+            })(this));
+          }
+          if (data.$has('event_group')) {
+            serv = data.$get('event_group');
+            this.promises.push(serv);
+            serv.then((function(_this) {
+              return function(serv) {
+                var prom;
+                if (serv.$has('category')) {
+                  prom = serv.$get('category');
+                  _this.promises.push(prom);
+                  prom.then(function(cat) {
+                    return _this.setCategory(new BBModel.Category(cat));
+                  });
+                }
+                _this.setEventGroup(new BBModel.EventGroup(serv));
+                if (_this.time) {
+                  return _this.time.service = _this.event_group;
+                }
+              };
+            })(this));
+          }
+          if (data.$has('event_chain')) {
+            chain = data.$get('event_chain');
+            this.promises.push(chain);
+            chain.then((function(_this) {
+              return function(serv) {
+                return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
+              };
+            })(this));
+          }
+          if (data.$has('resource')) {
+            res = data.$get('resource');
+            this.promises.push(res);
+            res.then((function(_this) {
+              return function(res) {
+                return _this.setResource(new BBModel.Resource(res), false);
+              };
+            })(this));
+          }
+          if (data.$has('person')) {
+            per = data.$get('person');
+            this.promises.push(per);
+            per.then((function(_this) {
+              return function(per) {
+                return _this.setPerson(new BBModel.Person(per), false);
+              };
+            })(this));
+          }
+          if (data.$has('event')) {
+            data.$get('event').then((function(_this) {
+              return function(event) {
+                return _this.setEvent(new BBModel.Event(event));
+              };
+            })(this));
+          }
+          if (data.settings) {
+            this.settings = $bbug.extend(true, {}, data.settings);
+          }
+          if (data.attachment_id) {
+            this.attachment_id = data.attachment_id;
+          }
+          if (data.$has('product')) {
+            data.$get('product').then((function(_this) {
+              return function(product) {
+                return _this.setProduct(product);
+              };
+            })(this));
+          }
+          if (data.$has('deal')) {
+            data.$get('deal').then((function(_this) {
+              return function(deal) {
+                return _this.setDeal(new BBModel.Deal(deal));
+              };
+            })(this));
+          }
+        }
+      }
+
+      BasketItem.prototype.setDefaults = function(defaults) {
+        if (defaults.settings) {
+          this.settings = defaults.settings;
+        }
+        if (defaults.company) {
+          this.setCompany(defaults.company);
+        }
+        if (defaults.merge_resources) {
+          this.setResource(null);
+        }
+        if (defaults.merge_people) {
+          this.setPerson(null);
+        }
+        if (defaults.resource) {
+          this.setResource(defaults.resource);
+        }
+        if (defaults.person) {
+          this.setPerson(defaults.person);
+        }
+        if (defaults.service) {
+          this.setService(defaults.service);
+        }
+        if (defaults.category) {
+          this.setCategory(defaults.category);
+        }
+        if (defaults.time) {
+          this.requested_time = parseInt(defaults.time);
+        }
+        if (defaults.date) {
+          this.requested_date = moment(defaults.date);
+        }
+        if (defaults.service_ref) {
+          this.service_ref = defaults.service_ref;
+        }
+        if (defaults.group) {
+          this.group = defaults.group;
+        }
+        if (defaults.clinic) {
+          this.clinic = defaults.clinic;
+        }
+        if (defaults.private_note) {
+          this.private_note = defaults.private_note;
+        }
+        if (defaults.event_group) {
+          this.setEventGroup(defaults.event_group);
+        }
+        if (defaults.event) {
+          this.setEvent(defaults.event);
+        }
+        return this.defaults = defaults;
+      };
+
+      BasketItem.prototype.storeDefaults = function(defaults) {
+        return this.defaults = defaults;
+      };
+
+      BasketItem.prototype.defaultService = function() {
+        if (!this.defaults) {
+          return null;
+        }
+        return this.defaults.service;
+      };
+
+      BasketItem.prototype.requestedTimeUnavailable = function() {
+        delete this.requested_time;
+        return delete this.requested_date;
+      };
+
+      BasketItem.prototype.setSlot = function(slot) {
+        var t;
+        this.date = new BBModel.Day({
+          date: slot.datetime.toISODate(),
+          spaces: 1
+        });
+        t = slot.datetime.hour() * 60 + slot.datetime.minute();
+        this.time = new BBModel.TimeSlot({
+          time: t,
+          avail: 1,
+          price: this.price
+        });
+        return this.available_slot = slot.id;
+      };
+
+      BasketItem.prototype.setCompany = function(company) {
+        this.company = company;
+        this.parts_links.company = this.company.$href('self');
+        if (this.item_details) {
+          return this.item_details.currency_code = this.company.currency_code;
+        }
+      };
+
+      BasketItem.prototype.clearExistingItem = function() {
+        var prom;
+        if (this.$has('self') && this.event_id) {
+          prom = this.$del('self');
+          this.promises.push(prom);
+          prom.then(function() {});
+        }
+        delete this.earliest_time;
+        return delete this.event_id;
+      };
+
+      BasketItem.prototype.setItem = function(item) {
+        if (!item) {
+          return;
+        }
+        if (item.type === "person") {
+          return this.setPerson(item);
+        } else if (item.type === "service") {
+          return this.setService(item);
+        } else if (item.type === "resource") {
+          return this.setResource(item);
+        }
+      };
+
+      BasketItem.prototype.setService = function(serv, default_questions) {
+        var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
+        if (this.service) {
+          if (this.service.self && serv.self && this.service.self === serv.self) {
+            if (this.service.$has('book')) {
+              this.book_link = this.service;
+            }
+            if (serv.$has('days')) {
+              this.days_link = serv;
+            }
+            if (serv.$has('book')) {
+              this.book_link = serv;
+            }
+            return;
+          }
+          this.item_details = null;
+          this.clearExistingItem();
+        }
+        if (this.service && serv && this.service.self && serv.self) {
+          if ((this.service.self !== serv.self) && serv.durations && serv.durations.length > 1) {
+            this.duration = null;
+            this.listed_duration = null;
+          }
+        }
+        this.service = serv;
+        if (serv && (serv instanceof BookableItemModel)) {
+          this.service = serv.item;
+        }
+        this.parts_links.service = this.service.$href('self');
+        if (this.service.$has('book')) {
+          this.book_link = this.service;
+        }
+        if (serv.$has('days')) {
+          this.days_link = serv;
+        }
+        if (serv.$has('book')) {
+          this.book_link = serv;
+        }
+        if (this.service.$has('questions')) {
+          this.has_questions = true;
+          prom = this.service.$get('questions');
+          this.promises.push(prom);
+          prom.then((function(_this) {
+            return function(details) {
+              if (_this.company) {
+                details.currency_code = _this.company.currency_code;
+              }
+              _this.item_details = new BBModel.ItemDetails(details);
+              _this.has_questions = _this.item_details.hasQuestions;
+              if (default_questions) {
+                _this.item_details.setAnswers(default_questions);
+                return _this.setAskedQuestions();
+              }
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return _this.has_questions = false;
+            };
+          })(this));
+        } else {
+          this.has_questions = false;
+        }
+        if (this.service && this.service.durations && this.service.durations.length === 1) {
+          this.setDuration(this.service.durations[0]);
+          this.listed_duration = this.service.durations[0];
+        }
+        if (this.service && this.service.listed_durations && this.service.listed_durations.length === 1) {
+          this.listed_duration = this.service.listed_durations[0];
+        }
+        if (this.service.$has('category')) {
+          prom = this.service.getCategoryPromise();
+          if (prom) {
+            return this.promises.push(prom);
+          }
+        }
+      };
+
+      BasketItem.prototype.setEventGroup = function(event_group) {
+        var prom;
+        if (this.event_group) {
+          if (this.event_group.self && event_group.self && this.event_group.self === event_group.self) {
+            return;
+          }
+        }
+        this.event_group = event_group;
+        this.parts_links.event_group = this.event_group.$href('self').replace('event_group', 'service');
+        if (this.event_group.$has('category')) {
+          prom = this.event_group.getCategoryPromise();
+          if (prom) {
+            return this.promises.push(prom);
+          }
+        }
+      };
+
+      BasketItem.prototype.setEventChain = function(event_chain, default_questions) {
+        var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
+        if (this.event_chain) {
+          if (this.event_chain.self && event_chain.self && this.event_chain.self === event_chain.self) {
+            return;
+          }
+        }
+        this.event_chain = event_chain;
+        this.base_price = parseFloat(event_chain.price);
+        if (this.price !== this.base_price) {
+          this.setPrice(this.price);
+        } else {
+          this.setPrice(this.base_price);
+        }
+        if (this.event_chain.isSingleBooking()) {
+          this.tickets = {
+            name: "Admittance",
+            max: 1,
+            type: "normal",
+            price: this.base_price
+          };
+          this.tickets.pre_paid_booking_id = this.pre_paid_booking_id;
+          if (this.num_book) {
+            this.tickets.qty = this.num_book;
+          }
+        }
+        if (this.event_chain.$has('questions')) {
+          this.has_questions = true;
+          prom = this.event_chain.$get('questions');
+          this.promises.push(prom);
+          return prom.then((function(_this) {
+            return function(details) {
+              _this.item_details = new BBModel.ItemDetails(details);
+              _this.has_questions = _this.item_details.hasQuestions;
+              if (default_questions) {
+                _this.item_details.setAnswers(default_questions);
+                return _this.setAskedQuestions();
+              }
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return _this.has_questions = false;
+            };
+          })(this));
+        } else {
+          return this.has_questions = false;
+        }
+      };
+
+      BasketItem.prototype.setEvent = function(event) {
+        var prom;
+        if (this.event) {
+          this.event.unselect();
+        }
+        this.event = event;
+        this.event.select();
+        this.event_chain_id = event.event_chain_id;
+        this.setDate({
+          date: event.date
+        });
+        this.setTime(event.time);
+        this.setDuration(event.duration);
+        if (event.$has('book')) {
+          this.book_link = event;
+        }
+        prom = this.event.getChain();
+        this.promises.push(prom);
+        prom.then((function(_this) {
+          return function(chain) {
+            return _this.setEventChain(chain);
+          };
+        })(this));
+        prom = this.event.getGroup();
+        this.promises.push(prom);
+        prom.then((function(_this) {
+          return function(group) {
+            return _this.setEventGroup(group);
+          };
+        })(this));
+        this.num_book = event.qty;
+        if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
+          if (this.company.getSettings().has_waitlists) {
+            return this.status = 8;
+          }
+        } else if (this.event.getSpacesLeft() <= 0 && this.company.settings && this.company.settings.has_waitlists) {
+          return this.status = 8;
+        }
+      };
+
+      BasketItem.prototype.setCategory = function(cat) {
+        return this.category = cat;
+      };
+
+      BasketItem.prototype.setPerson = function(per, set_selected) {
+        if (set_selected == null) {
+          set_selected = true;
+        }
+        if (set_selected && this.earliest_time) {
+          delete this.earliest_time;
+        }
+        if (!per) {
+          this.person = true;
+          if (set_selected) {
+            this.settings.person = -1;
+          }
+          this.parts_links.person = null;
+          if (this.service) {
+            this.setService(this.service);
+          }
+          if (this.resource && !this.anyResource()) {
+            this.setResource(this.resource, false);
+          }
+          if (this.event_id) {
+            delete this.event_id;
+            if (this.resource && this.defaults && this.defaults.merge_resources) {
+              return this.setResource(null);
+            }
+          }
+        } else {
+          this.person = per;
+          if (set_selected) {
+            this.settings.person = this.person.id;
+          }
+          this.parts_links.person = this.person.$href('self');
+          if (per.$has('days')) {
+            this.days_link = per;
+          }
+          if (per.$has('book')) {
+            this.book_link = per;
+          }
+          if (this.event_id && this.$has('person') && this.$href('person') !== this.person.self) {
+            delete this.event_id;
+            if (this.resource && this.defaults && this.defaults.merge_resources) {
+              return this.setResource(null);
+            }
+          }
+        }
+      };
+
+      BasketItem.prototype.setResource = function(res, set_selected) {
+        if (set_selected == null) {
+          set_selected = true;
+        }
+        if (set_selected && this.earliest_time) {
+          delete this.earliest_time;
+        }
+        if (!res) {
+          this.resource = true;
+          if (set_selected) {
+            this.settings.resource = -1;
+          }
+          this.parts_links.resource = null;
+          if (this.service) {
+            this.setService(this.service);
+          }
+          if (this.person && !this.anyPerson()) {
+            this.setPerson(this.person, false);
+          }
+          if (this.event_id) {
+            delete this.event_id;
+            if (this.person && this.defaults && this.defaults.merge_people) {
+              return this.setPerson(null);
+            }
+          }
+        } else {
+          this.resource = res;
+          if (set_selected) {
+            this.settings.resource = this.resource.id;
+          }
+          this.parts_links.resource = this.resource.$href('self');
+          if (res.$has('days')) {
+            this.days_link = res;
+          }
+          if (res.$has('book')) {
+            this.book_link = res;
+          }
+          if (this.event_id && this.$has('resource') && this.$href('resource') !== this.resource.self) {
+            delete this.event_id;
+            if (this.person && this.defaults && this.defaults.merge_people) {
+              return this.setPerson(null);
+            }
+          }
+        }
+      };
+
+      BasketItem.prototype.setDuration = function(dur) {
+        this.duration = dur;
+        if (this.service) {
+          this.base_price = this.service.getPriceByDuration(dur);
+        }
+        if (this.time && this.time.price) {
+          this.base_price = this.time.price;
+        }
+        if (this.price && (this.price !== this.base_price)) {
+          return this.setPrice(this.price);
+        } else {
+          return this.setPrice(this.base_price);
+        }
+      };
+
+      BasketItem.prototype.print_time = function() {
+        if (this.time) {
+          return this.time.print_time();
+        }
+      };
+
+      BasketItem.prototype.print_end_time = function() {
+        if (this.time) {
+          return this.time.print_end_time(this.duration);
+        }
+      };
+
+      BasketItem.prototype.print_time12 = function(show_suffix) {
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        if (this.time) {
+          return this.time.print_time12(show_suffix);
+        }
+      };
+
+      BasketItem.prototype.print_end_time12 = function(show_suffix) {
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        if (this.time) {
+          return this.time.print_end_time12(show_suffix, this.duration);
+        }
+      };
+
+      BasketItem.prototype.setTime = function(time) {
+        var hours, mins, val;
+        if (this.time) {
+          this.time.unselect();
+        }
+        this.time = time;
+        if (this.time) {
+          this.time.select();
+          if (this.datetime) {
+            val = parseInt(time.time);
+            hours = parseInt(val / 60);
+            mins = val % 60;
+            this.datetime.hour(hours);
+            this.datetime.minutes(mins);
+          }
+          if (this.price && this.time.price && (this.price !== this.time.price)) {
+            this.setPrice(this.price);
+          } else if (this.price && !this.time.price) {
+            this.setPrice(this.price);
+          } else if (this.time.price && !this.price) {
+            this.setPrice(this.time.price);
+          } else {
+            this.setPrice(null);
+          }
+        }
+        return this.checkReady();
+      };
+
+      BasketItem.prototype.setDate = function(date) {
+        this.date = date;
+        if (this.date) {
+          this.date.date = moment(this.date.date);
+          if (this.datetime) {
+            this.datetime.date(this.date.date.date());
+            this.datetime.month(this.date.date.month());
+            this.datetime.year(this.date.date.year());
+          }
+        }
+        return this.checkReady();
+      };
+
+      BasketItem.prototype.clearDateTime = function() {
+        delete this.date;
+        delete this.time;
+        delete this.datetime;
+        this.ready = false;
+        return this.reserve_ready = false;
+      };
+
+      BasketItem.prototype.clearTime = function() {
+        delete this.time;
+        this.ready = false;
+        return this.reserve_ready = false;
+      };
+
+      BasketItem.prototype.setGroup = function(group) {
+        return this.group = group;
+      };
+
+      BasketItem.prototype.setAskedQuestions = function() {
+        this.asked_questions = true;
+        return this.checkReady();
+      };
+
+      BasketItem.prototype.checkReady = function() {
+        if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
+          this.ready = true;
+        }
+        if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions || this.reserve_without_questions)) {
+          return this.reserve_ready = true;
+        }
+      };
+
+      BasketItem.prototype.getPostData = function() {
+        var data, i, j, len, len1, m_question, o_question, ref, ref1;
+        if (this.cloneAnswersItem) {
+          ref = this.cloneAnswersItem.item_details.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            o_question = ref[i];
+            ref1 = this.item_details.questions;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              m_question = ref1[j];
+              if (m_question.id === o_question.id) {
+                m_question.answer = o_question.answer;
+                this.setAskedQuestions();
+              }
+            }
+          }
+        }
+        data = {};
+        if (this.date) {
+          data.date = this.date.date.toISODate();
+        }
+        if (this.time) {
+          data.time = this.time.time;
+          if (this.time.event_id) {
+            data.event_id = this.time.event_id;
+          } else if (this.time.event_ids) {
+            data.event_ids = this.time.event_ids;
+          }
+        } else if (this.date && this.date.event_id) {
+          data.event_id = this.date.event_id;
+        }
+        data.price = this.price;
+        data.paid = this.paid;
+        if (this.book_link) {
+          data.book = this.book_link.$href('book');
+        }
+        data.id = this.id;
+        data.duration = this.duration;
+        data.settings = this.settings;
+        data.settings || (data.settings = {});
+        if (this.earliest_time) {
+          data.settings.earliest_time = this.earliest_time;
+        }
+        if (this.item_details && this.asked_questions) {
+          data.questions = this.item_details.getPostData();
+        }
+        if (this.move_item_id) {
+          data.move_item_id = this.move_item_id;
+        }
+        if (this.srcBooking) {
+          data.move_item_id = this.srcBooking.id;
+        }
+        if (this.service) {
+          data.service_id = this.service.id;
+        }
+        if (this.resource) {
+          data.resource_id = this.resource.id;
+        }
+        if (this.person) {
+          data.person_id = this.person.id;
+        }
+        data.length = this.length;
+        if (this.event) {
+          data.event_id = this.event.id;
+          if (this.event.pre_paid_booking_id != null) {
+            data.pre_paid_booking_id = this.event.pre_paid_booking_id;
+          } else if (this.tickets && (this.tickets.pre_paid_booking_id != null)) {
+            data.pre_paid_booking_id = this.tickets.pre_paid_booking_id;
+          }
+          data.tickets = this.tickets;
+        }
+        if (this.pre_paid_booking_id != null) {
+          data.pre_paid_booking_id = this.pre_paid_booking_id;
+        }
+        data.event_chain_id = this.event_chain_id;
+        data.event_group_id = this.event_group_id;
+        data.qty = this.qty;
+        if (this.status) {
+          data.status = this.status;
+        }
+        if (this.num_resources != null) {
+          data.num_resources = parseInt(this.num_resources);
+        }
+        data.product = this.product;
+        data.external_purchase = this.external_purchase;
+        if (this.deal) {
+          data.deal = this.deal;
+        }
+        if (this.deal && this.recipient) {
+          data.recipient = this.recipient;
+        }
+        if (this.deal && this.recipient && this.recipient_mail) {
+          data.recipient_mail = this.recipient_mail;
+        }
+        data.coupon_id = this.coupon_id;
+        data.is_coupon = this.is_coupon;
+        if (this.attachment_id) {
+          data.attachment_id = this.attachment_id;
+        }
+        if (this.deal_codes) {
+          data.vouchers = this.deal_codes;
+        }
+        if (this.email) {
+          data.email = this.email;
+        }
+        if (this.first_name) {
+          data.first_name = this.first_name;
+        }
+        if (this.last_name) {
+          data.last_name = this.last_name;
+        }
+        if (this.email != null) {
+          data.email = this.email;
+        }
+        if (this.email_admin != null) {
+          data.email_admin = this.email_admin;
+        }
+        if (this.private_note) {
+          data.private_note = this.private_note;
+        }
+        if (this.available_slot) {
+          data.available_slot = this.available_slot;
+        }
+        return data;
+      };
+
+      BasketItem.prototype.setPrice = function(nprice) {
+        var printed_price;
+        if (nprice != null) {
+          this.price = parseFloat(nprice);
+          printed_price = this.price / 100;
+          this.printed_price = printed_price % 1 === 0 ? "£" + parseInt(printed_price) : $window.sprintf("£%.2f", printed_price);
+          if (this.company && this.company.settings) {
+            this.printed_vat_cal = this.company.settings.payment_tax;
+          }
+          if (this.printed_vat_cal) {
+            this.printed_vat = this.printed_vat_cal / 100 * printed_price;
+          }
+          if (this.printed_vat_cal) {
+            return this.printed_vat_inc = this.printed_vat_cal / 100 * printed_price + printed_price;
+          }
+        } else {
+          this.price = null;
+          this.printed_price = null;
+          this.printed_vat_cal = null;
+          this.printed_vat = null;
+          return this.printed_vat_inc = null;
+        }
+      };
+
+      BasketItem.prototype.getStep = function() {
+        var temp;
+        temp = {};
+        temp.service = this.service;
+        temp.category = this.category;
+        temp.person = this.person;
+        temp.resource = this.resource;
+        temp.duration = this.duration;
+        temp.event = this.event;
+        temp.event_group = this.event_group;
+        temp.event_chain = this.event_chain;
+        temp.time = this.time;
+        temp.date = this.date;
+        temp.days_link = this.days_link;
+        temp.book_link = this.book_link;
+        temp.ready = this.ready;
+        return temp;
+      };
+
+      BasketItem.prototype.loadStep = function(step) {
+        if (this.id) {
+          return;
+        }
+        this.service = step.service;
+        this.category = step.category;
+        this.person = step.person;
+        this.resource = step.resource;
+        this.duration = step.duration;
+        this.event = step.event;
+        this.event_chain = step.event_chain;
+        this.event_group = step.event_group;
+        this.time = step.time;
+        this.date = step.date;
+        this.days_link = step.days_link;
+        this.book_link = step.book_link;
+        return this.ready = step.ready;
+      };
+
+      BasketItem.prototype.describe = function() {
+        var title;
+        title = "-";
+        if (this.service) {
+          title = this.service.name;
+        }
+        if (this.event_group && this.event && title === "-") {
+          title = this.event_group.name + " - " + this.event.description;
+        }
+        if (this.product) {
+          title = this.product.name;
+        }
+        if (this.external_purchase) {
+          title = this.external_purchase.name;
+        }
+        if (this.deal) {
+          title = this.deal.name;
+        }
+        return title;
+      };
+
+      BasketItem.prototype.booking_date = function(format) {
+        if (!this.date || !this.date.date) {
+          return null;
+        }
+        return this.date.date.format(format);
+      };
+
+      BasketItem.prototype.booking_time = function(seperator) {
+        var duration;
+        if (seperator == null) {
+          seperator = '-';
+        }
+        if (!this.time) {
+          return null;
+        }
+        duration = this.listed_duration ? this.listed_duration : this.duration;
+        return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
+      };
+
+      BasketItem.prototype.duePrice = function() {
+        if (this.isWaitlist()) {
+          return 0;
+        }
+        return this.price;
+      };
+
+      BasketItem.prototype.isWaitlist = function() {
+        return this.status && this.status === 8;
+      };
+
+      BasketItem.prototype.start_datetime = function() {
+        var start_datetime;
+        if (!this.date || !this.time) {
+          return null;
+        }
+        start_datetime = moment(this.date.date.toISODate());
+        start_datetime.minutes(this.time.time);
+        return start_datetime;
+      };
+
+      BasketItem.prototype.end_datetime = function() {
+        var duration, end_datetime;
+        if (!this.date || !this.time || (!this.listed_duration && !this.duration)) {
+          return null;
+        }
+        duration = this.listed_duration ? this.listed_duration : this.duration;
+        end_datetime = moment(this.date.date.toISODate());
+        end_datetime.minutes(this.time.time + duration);
+        return end_datetime;
+      };
+
+      BasketItem.prototype.setSrcBooking = function(booking) {
+        this.srcBooking = booking;
+        return this.duration = booking.duration / 60;
+      };
+
+      BasketItem.prototype.anyPerson = function() {
+        return this.person && (typeof this.person === 'boolean');
+      };
+
+      BasketItem.prototype.anyResource = function() {
+        return this.resource && (typeof this.resource === 'boolean');
+      };
+
+      BasketItem.prototype.isMovingBooking = function() {
+        return this.srcBooking || this.move_item_id;
+      };
+
+      BasketItem.prototype.setCloneAnswers = function(otherItem) {
+        return this.cloneAnswersItem = otherItem;
+      };
+
+      BasketItem.prototype.questionPrice = function() {
+        if (!this.item_details) {
+          return 0;
+        }
+        return this.item_details.questionPrice(this.getQty());
+      };
+
+      BasketItem.prototype.getQty = function() {
+        if (this.qty) {
+          return this.qty;
+        }
+        if (this.tickets) {
+          return this.tickets.qty;
+        }
+        return 1;
+      };
+
+      BasketItem.prototype.totalPrice = function() {
+        var pr;
+        if (this.tickets && this.tickets.pre_paid_booking_id) {
+          return 0;
+        }
+        if (this.discount_price != null) {
+          return this.discount_price + this.questionPrice();
+        }
+        pr = this.total_price;
+        if (!angular.isNumber(pr)) {
+          pr = this.price;
+        }
+        if (!angular.isNumber(pr)) {
+          pr = 0;
+        }
+        return pr + this.questionPrice();
+      };
+
+      BasketItem.prototype.fullPrice = function() {
+        var pr;
+        pr = this.base_price;
+        pr || (pr = this.total_price);
+        pr || (pr = this.price);
+        pr || (pr = 0);
+        return pr + this.questionPrice();
+      };
+
+      BasketItem.prototype.setProduct = function(product) {
+        this.product = product;
+        if (this.product.$has('book')) {
+          this.book_link = this.product;
+        }
+        if (product.price) {
+          return this.setPrice(product.price);
+        }
+      };
+
+      BasketItem.prototype.setExternalPurchase = function(external_purchase) {
+        this.external_purchase = external_purchase;
+        this.book_link = this.company;
+        if (external_purchase.price) {
+          return this.setPrice(external_purchase.price);
+        }
+      };
+
+      BasketItem.prototype.setDeal = function(deal) {
+        this.deal = deal;
+        if (this.deal.$has('book')) {
+          this.book_link = this.deal;
+        }
+        if (deal.price) {
+          return this.setPrice(deal.price);
+        }
+      };
+
+      BasketItem.prototype.hasPrice = function() {
+        if (this.price) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+      BasketItem.prototype.getAttachment = function() {
+        if (this.attachment) {
+          return this.attachment;
+        }
+        if (this.$has('attachment') && this.attachment_id) {
+          return this._data.$get('attachment').then((function(_this) {
+            return function(att) {
+              _this.attachment = att;
+              return _this.attachment;
+            };
+          })(this));
+        }
+      };
+
+      return BasketItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BookableItemModel", function($q, BBModel, BaseModel) {
+    var BookableItem;
+    return BookableItem = (function(superClass) {
+      extend(BookableItem, superClass);
+
+      BookableItem.prototype.item = null;
+
+      BookableItem.prototype.promise = null;
+
+      function BookableItem(data) {
+        BookableItem.__super__.constructor.apply(this, arguments);
+        this.name = "-Waiting-";
+        this.ready = $q.defer();
+        this.promise = this._data.$get('item');
+        this.promise.then((function(_this) {
+          return function(val) {
+            var m, n, ref, ref1, ref2;
+            if (val.type === "person") {
+              _this.item = new BBModel.Person(val);
+              if (_this.item) {
+                ref = _this.item._data;
+                for (n in ref) {
+                  m = ref[n];
+                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
+                    _this[n] = m;
+                  }
+                }
+                return _this.ready.resolve();
+              } else {
+                return _this.ready.resolve();
+              }
+            } else if (val.type === "resource") {
+              _this.item = new BBModel.Resource(val);
+              if (_this.item) {
+                ref1 = _this.item._data;
+                for (n in ref1) {
+                  m = ref1[n];
+                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
+                    _this[n] = m;
+                  }
+                }
+                return _this.ready.resolve();
+              } else {
+                return _this.ready.resolve();
+              }
+            } else if (val.type === "service") {
+              _this.item = new BBModel.Service(val);
+              if (_this.item) {
+                ref2 = _this.item._data;
+                for (n in ref2) {
+                  m = ref2[n];
+                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
+                    _this[n] = m;
+                  }
+                }
+                return _this.ready.resolve();
+              } else {
+                return _this.ready.resolve();
+              }
+            }
+          };
+        })(this));
+      }
+
+      return BookableItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BusinessQuestionModel", function($q, $filter, BBModel, BaseModel) {
+    var BusinessQuestion;
+    return BusinessQuestion = (function(superClass) {
+      extend(BusinessQuestion, superClass);
+
+      function BusinessQuestion(data) {
+        BusinessQuestion.__super__.constructor.call(this, data);
+      }
+
+      return BusinessQuestion;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("CategoryModel", function($q, BBModel, BaseModel) {
+    var Category;
+    return Category = (function(superClass) {
+      extend(Category, superClass);
+
+      function Category() {
+        return Category.__super__.constructor.apply(this, arguments);
+      }
+
+      return Category;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
+    var Client;
+    return Client = (function(superClass) {
+      extend(Client, superClass);
+
+      function Client(data) {
+        Client.__super__.constructor.apply(this, arguments);
+        this.name = this.getName();
+        if (data) {
+          if (data.answers && data.$has('questions')) {
+            this.waitingQuestions = $q.defer();
+            this.gotQuestions = this.waitingQuestions.promise;
+            data.$get('questions').then((function(_this) {
+              return function(details) {
+                _this.client_details = new BBModel.ClientDetails(details);
+                _this.client_details.setAnswers(data.answers);
+                _this.questions = _this.client_details.questions;
+                _this.setAskedQuestions();
+                return _this.waitingQuestions.resolve();
+              };
+            })(this));
+          }
+          this.raw_mobile = this.mobile;
+          if (this.mobile && this.mobile[0] !== "0") {
+            this.mobile = "0" + this.mobile;
+          }
+          if (this.phone && this.phone[0] !== "0") {
+            this.phone = "0" + this.phone;
+          }
+        }
+      }
+
+      Client.prototype.setClientDetails = function(details) {
+        this.client_details = details;
+        return this.questions = this.client_details.questions;
+      };
+
+      Client.prototype.setDefaults = function(values) {
+        if (values.name) {
+          this.name = values.name;
+        }
+        if (values.first_name) {
+          this.first_name = values.first_name;
+        }
+        if (values.last_name) {
+          this.last_name = values.last_name;
+        }
+        if (values.phone) {
+          this.phone = values.phone;
+        }
+        if (values.mobile) {
+          this.mobile = values.mobile;
+        }
+        if (values.email) {
+          this.email = values.email;
+        }
+        if (values.id) {
+          this.id = values.id;
+        }
+        if (values.ref) {
+          this.comp_ref = values.ref;
+        }
+        if (values.comp_ref) {
+          this.comp_ref = values.comp_ref;
+        }
+        if (values.address1) {
+          this.address1 = values.address1;
+        }
+        if (values.address2) {
+          this.address2 = values.address2;
+        }
+        if (values.address3) {
+          this.address3 = values.address3;
+        }
+        if (values.address4) {
+          this.address4 = values.address4;
+        }
+        if (values.address5) {
+          this.address5 = values.address5;
+        }
+        if (values.postcode) {
+          this.postcode = values.postcode;
+        }
+        if (values.country) {
+          this.country = values.country;
+        }
+        if (values.answers) {
+          return this.default_answers = values.answers;
+        }
+      };
+
+      Client.prototype.pre_fill_answers = function(details) {
+        var i, len, q, ref, results;
+        if (!this.default_answers) {
+          return;
+        }
+        ref = details.questions;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
+          if (this.default_answers[q.name]) {
+            results.push(q.answer = this.default_answers[q.name]);
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+
+      Client.prototype.getName = function() {
+        var str;
+        str = "";
+        if (this.first_name) {
+          str += this.first_name;
+        }
+        if (str.length > 0 && this.last_name) {
+          str += " ";
+        }
+        if (this.last_name) {
+          str += this.last_name;
+        }
+        return str;
+      };
+
+      Client.prototype.addressSingleLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += ", ";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+      Client.prototype.hasAddress = function() {
+        return this.address1 || this.address2 || this.postcode;
+      };
+
+      Client.prototype.addressCsvLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        str += ", ";
+        if (this.address2) {
+          str += this.address2;
+        }
+        str += ", ";
+        if (this.address3) {
+          str += this.address3;
+        }
+        str += ", ";
+        if (this.address4) {
+          str += this.address4;
+        }
+        str += ", ";
+        if (this.address5) {
+          str += this.address5;
+        }
+        str += ", ";
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        str += ", ";
+        if (this.country) {
+          str += this.country;
+        }
+        return str;
+      };
+
+      Client.prototype.addressMultiLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+      Client.prototype.getPostData = function() {
+        var i, len, q, ref, x;
+        x = {};
+        x.first_name = this.first_name;
+        x.last_name = this.last_name;
+        if (this.house_number) {
+          x.address1 = this.house_number + " " + this.address1;
+        } else {
+          x.address1 = this.address1;
+        }
+        x.address2 = this.address2;
+        x.address3 = this.address3;
+        x.address4 = this.address4;
+        x.address5 = this.address5;
+        x.postcode = this.postcode;
+        x.country = this.country;
+        x.phone = this.phone;
+        x.email = this.email;
+        x.id = this.id;
+        x.comp_ref = this.comp_ref;
+        x.parent_client_id = this.parent_client_id;
+        x.password = this.password;
+        x.notifications = this.notifications;
+        if (this.mobile) {
+          this.remove_prefix();
+          x.mobile = this.mobile;
+          x.mobile_prefix = this.mobile_prefix;
+        }
+        if (this.questions) {
+          x.questions = [];
+          ref = this.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            x.questions.push(q.getPostData());
+          }
+        }
+        return x;
+      };
+
+      Client.prototype.valid = function() {
+        if (this.isValid) {
+          return this.isValid;
+        }
+        if (this.email || this.hasServerId()) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+      Client.prototype.setValid = function(val) {
+        return this.isValid = val;
+      };
+
+      Client.prototype.hasServerId = function() {
+        return this.id;
+      };
+
+      Client.prototype.setAskedQuestions = function() {
+        return this.asked_questions = true;
+      };
+
+      Client.prototype.fullMobile = function() {
+        if (!this.mobile) {
+          return;
+        }
+        if (!this.mobile_prefix) {
+          return this.mobile;
+        }
+        return "+" + this.mobile_prefix + this.mobile;
+      };
+
+      Client.prototype.remove_prefix = function() {
+        var pref_arr;
+        pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
+        if (pref_arr) {
+          this.mobile.replace(pref_arr[0], "");
+          return this.mobile_prefix = pref_arr[0];
+        }
+      };
+
+      Client.prototype.getPrePaidBookingsPromise = function(params) {
+        var defer;
+        defer = $q.defer();
+        if (this.$has('pre_paid_bookings')) {
+          this.$get('pre_paid_bookings', params).then(function(collection) {
+            return collection.$get('pre_paid_bookings').then(function(prepaids) {
+              var prepaid;
+              return defer.resolve((function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = prepaids.length; i < len; i++) {
+                  prepaid = prepaids[i];
+                  results.push(new BBModel.PrePaidBooking(prepaid));
+                }
+                return results;
+              })());
+            }, function(err) {
+              return defer.reject(err);
+            });
+          }, function(err) {
+            return defer.reject(err);
+          });
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      return Client;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClientDetailsModel", function($q, BBModel, BaseModel) {
+    var ClientDetails;
+    return ClientDetails = (function(superClass) {
+      extend(ClientDetails, superClass);
+
+      function ClientDetails(data) {
+        var i, len, q, ref;
+        ClientDetails.__super__.constructor.apply(this, arguments);
+        this.questions = [];
+        if (this._data) {
+          ref = data.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            this.questions.push(new BBModel.Question(q));
+          }
+        }
+        this.hasQuestions = this.questions.length > 0;
+      }
+
+      ClientDetails.prototype.getPostData = function(questions) {
+        var data, i, len, q;
+        data = [];
+        for (i = 0, len = questions.length; i < len; i++) {
+          q = questions[i];
+          data.push({
+            answer: q.answer,
+            id: q.id,
+            price: q.price
+          });
+        }
+        return data;
+      };
+
+      ClientDetails.prototype.setAnswers = function(answers) {
+        var a, ahash, i, j, len, len1, q, ref, results;
+        ahash = {};
+        for (i = 0, len = answers.length; i < len; i++) {
+          a = answers[i];
+          ahash[a.question_id] = a;
+        }
+        ref = this.questions;
+        results = [];
+        for (j = 0, len1 = ref.length; j < len1; j++) {
+          q = ref[j];
+          if (ahash[q.id]) {
+            results.push(q.answer = ahash[q.id].answer);
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+
+      return ClientDetails;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
+    var Clinic;
+    return Clinic = (function(superClass) {
+      extend(Clinic, superClass);
+
+      function Clinic(data) {
+        Clinic.__super__.constructor.call(this, data);
+        this.setTimes();
+        this.setResourcesAndPeople();
+        this.settings || (this.settings = {});
+      }
+
+      Clinic.prototype.setResourcesAndPeople = function() {
+        this.resources = _.reduce(this.resource_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.people = _.reduce(this.person_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.services = _.reduce(this.service_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.uncovered = !this.person_ids || this.person_ids.length === 0;
+        if (this.uncovered) {
+          return this.className = "clinic_uncovered";
+        } else {
+          return this.className = "clinic_covered";
+        }
+      };
+
+      Clinic.prototype.setTimes = function() {
+        if (this.start_time) {
+          this.start_time = moment(this.start_time);
+          this.start = this.start_time;
+        }
+        if (this.end_time) {
+          this.end_time = moment(this.end_time);
+          this.end = this.end_time;
+        }
+        return this.title = this.name;
+      };
+
+      return Clinic;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("CompanyModel", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
+    var Company;
+    return Company = (function(superClass) {
+      extend(Company, superClass);
+
+      function Company(data) {
+        this.pusherSubscribe = bind(this.pusherSubscribe, this);
+        Company.__super__.constructor.call(this, data);
+        if (this.companies) {
+          this.companies = _.map(this.companies, function(c) {
+            return new BBModel.Company(halClient.$parse(c));
+          });
+        }
+      }
+
+      Company.prototype.getCompanyByRef = function(ref) {
+        var defer;
+        defer = $q.defer();
+        this.$get('companies').then(function(companies) {
+          var company;
+          company = _.find(companies, function(c) {
+            return c.reference === ref;
+          });
+          if (company) {
+            return defer.resolve(company);
+          } else {
+            return defer.reject('No company for ref ' + ref);
+          }
+        }, function(err) {
+          console.log('err ', err);
+          return defer.reject(err);
+        });
+        return defer.promise;
+      };
+
+      Company.prototype.findChildCompany = function(id) {
+        var c, cname, i, j, len, len1, name, ref1, ref2;
+        if (!this.companies) {
+          return null;
+        }
+        ref1 = this.companies;
+        for (i = 0, len = ref1.length; i < len; i++) {
+          c = ref1[i];
+          if (c.id === parseInt(id)) {
+            return c;
+          }
+          if (c.ref && c.ref === String(id)) {
+            return c;
+          }
+        }
+        if (typeof id === "string") {
+          name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
+          ref2 = this.companies;
+          for (j = 0, len1 = ref2.length; j < len1; j++) {
+            c = ref2[j];
+            cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
+            if (name === cname) {
+              return c;
+            }
+          }
+        }
+        return null;
+      };
+
+      Company.prototype.getSettings = function() {
+        var def;
+        def = $q.defer();
+        if (this.settings) {
+          def.resolve(this.settings);
+        } else {
+          if (this.$has('settings')) {
+            this.$get('settings').then((function(_this) {
+              return function(set) {
+                _this.settings = new BBModel.CompanySettings(set);
+                return def.resolve(_this.settings);
+              };
+            })(this));
+          } else {
+            def.reject("Company has no settings");
+          }
+        }
+        return def.promise;
+      };
+
+      Company.prototype.pusherSubscribe = function(callback) {
+        var channelName;
+        if ((typeof Pusher !== "undefined" && Pusher !== null) && (this.pusher == null)) {
+          this.pusher = new Pusher('c8d8cea659cc46060608', {
+            authEndpoint: this.$link('pusher').href,
+            auth: {
+              headers: {
+                'App-Id': AppConfig.appId,
+                'App-Key': AppConfig.appKey,
+                'Auth-Token': $sessionStorage.getItem('auth_token')
+              }
+            }
+          });
+          channelName = "private-c" + this.id + "-w" + this.numeric_widget_id;
+          if (this.pusher.channel(channelName) == null) {
+            this.pusher_channel = this.pusher.subscribe(channelName);
+            this.pusher_channel.bind('booking', callback);
+            this.pusher_channel.bind('cancellation', callback);
+            return this.pusher_channel.bind('updating', callback);
+          }
+        }
+      };
+
+      return Company;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("CompanySettingsModel", function($q, BBModel, BaseModel) {
+    var CompanySettings;
+    return CompanySettings = (function(superClass) {
+      extend(CompanySettings, superClass);
+
+      function CompanySettings() {
+        return CompanySettings.__super__.constructor.apply(this, arguments);
+      }
+
+      return CompanySettings;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("DayModel", function($q, BBModel, BaseModel) {
+    var Day;
+    return Day = (function(superClass) {
+      extend(Day, superClass);
+
+      function Day(data) {
+        Day.__super__.constructor.apply(this, arguments);
+        this.string_date = this.date;
+        this.date = moment(this.date);
+      }
+
+      Day.prototype.day = function() {
+        return this.date.date();
+      };
+
+      Day.prototype.off = function(month) {
+        return this.date.month() !== month;
+      };
+
+      Day.prototype["class"] = function(month) {
+        var str;
+        str = "";
+        if (this.date.month() < month) {
+          str += "off off-prev";
+        }
+        if (this.date.month() > month) {
+          str += "off off-next";
+        }
+        if (this.spaces === 0) {
+          str += " not-avail";
+        }
+        return str;
+      };
+
+      return Day;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("DealModel", function($q, BBModel, BaseModel) {
+    var Deal;
+    return Deal = (function(superClass) {
+      extend(Deal, superClass);
+
+      function Deal() {
+        return Deal.__super__.constructor.apply(this, arguments);
+      }
+
+      return Deal;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUlititiesService) {
+    var Event;
+    return Event = (function(superClass) {
+      extend(Event, superClass);
+
+      function Event(data) {
+        Event.__super__.constructor.call(this, data);
+        this.getDate();
+        this.time = new BBModel.TimeSlot({
+          time: DateTimeUlititiesService.convertMomentToTime(this.date)
+        });
+        if (this.duration) {
+          this.end_datetime = this.date.clone().add(this.duration, 'minutes');
+        }
+      }
+
+      Event.prototype.getGroup = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.group) {
+          defer.resolve(this.group);
+        } else if (this.$has('event_groups')) {
+          this.$get('event_groups').then((function(_this) {
+            return function(group) {
+              _this.group = new BBModel.EventGroup(group);
+              return defer.resolve(_this.group);
+            };
+          })(this), function(err) {
+            return defer.reject(err);
+          });
+        } else {
+          defer.reject("No event group");
+        }
+        return defer.promise;
+      };
+
+      Event.prototype.getChain = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.chain) {
+          defer.resolve(this.chain);
+        } else {
+          if (this.$has('event_chains')) {
+            this.$get('event_chains').then((function(_this) {
+              return function(chain) {
+                _this.chain = new BBModel.EventChain(chain);
+                return defer.resolve(_this.chain);
+              };
+            })(this));
+          } else {
+            defer.reject("No event chain");
+          }
+        }
+        return defer.promise;
+      };
+
+      Event.prototype.getDate = function() {
+        if (this.date) {
+          return this.date;
+        }
+        this.date = moment(this._data.datetime);
+        return this.date;
+      };
+
+      Event.prototype.dateString = function(str) {
+        var date;
+        date = this.date();
+        if (date) {
+          return date.format(str);
+        }
+      };
+
+      Event.prototype.getDuration = function() {
+        var defer;
+        defer = new $q.defer();
+        if (this.duration) {
+          defer.resolve(this.duration);
+        } else {
+          this.getChain().then((function(_this) {
+            return function(chain) {
+              _this.duration = chain.duration;
+              return defer.resolve(_this.duration);
+            };
+          })(this));
+        }
+        return defer.promise;
+      };
+
+      Event.prototype.printDuration = function() {
+        var h, m;
+        if (this.duration < 60) {
+          return this.duration + " mins";
+        } else {
+          h = Math.round(this.duration / 60);
+          m = this.duration % 60;
+          if (m === 0) {
+            return h + " hours";
+          } else {
+            return h + " hours " + m + " mins";
+          }
+        }
+      };
+
+      Event.prototype.getDescription = function() {
+        return this.getChain().description;
+      };
+
+      Event.prototype.getColour = function() {
+        if (this.getGroup()) {
+          return this.getGroup().colour;
+        } else {
+          return "#FFFFFF";
+        }
+      };
+
+      Event.prototype.getPerson = function() {
+        return this.getChain().person_name;
+      };
+
+      Event.prototype.getPounds = function() {
+        if (this.chain) {
+          return Math.floor(this.getPrice()).toFixed(0);
+        }
+      };
+
+      Event.prototype.getPrice = function() {
+        return 0;
+      };
+
+      Event.prototype.getPence = function() {
+        if (this.chain) {
+          return (this.getPrice() % 1).toFixed(2).slice(-2);
+        }
+      };
+
+      Event.prototype.getNumBooked = function() {
+        return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
+      };
+
+      Event.prototype.getSpacesLeft = function(pool) {
+        if (pool == null) {
+          pool = null;
+        }
+        if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
+          return this.ticket_spaces[pool].left;
+        }
+        return this.num_spaces - this.getNumBooked();
+      };
+
+      Event.prototype.hasSpace = function() {
+        return this.getSpacesLeft() > 0;
+      };
+
+      Event.prototype.hasWaitlistSpace = function() {
+        return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
+      };
+
+      Event.prototype.getRemainingDescription = function() {
+        var left;
+        left = this.getSpacesLeft();
+        if (left > 0 && left < 3) {
+          return "Only " + left + " " + (left > 1 ? "spaces" : "space") + " left";
+        }
+        if (this.hasWaitlistSpace()) {
+          return "Join Waitlist";
+        }
+        return "";
+      };
+
+      Event.prototype.select = function() {
+        return this.selected = true;
+      };
+
+      Event.prototype.unselect = function() {
+        if (this.selected) {
+          return delete this.selected;
+        }
+      };
+
+      Event.prototype.prepEvent = function() {
+        var def;
+        def = $q.defer();
+        this.getChain().then((function(_this) {
+          return function() {
+            if (_this.chain.$has('address')) {
+              _this.chain.getAddressPromise().then(function(address) {
+                return _this.chain.address = address;
+              });
+            }
+            return _this.chain.getTickets().then(function(tickets) {
+              var i, len, ref, ticket;
+              _this.tickets = tickets;
+              _this.price_range = {};
+              if (tickets && tickets.length > 0) {
+                ref = _this.tickets;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  ticket = ref[i];
+                  if (!_this.price_range.from || (_this.price_range.from && ticket.price < _this.price_range.from)) {
+                    _this.price_range.from = ticket.price;
+                  }
+                  if (!_this.price_range.to || (_this.price_range.to && ticket.price > _this.price_range.to)) {
+                    _this.price_range.to = ticket.price;
+                  }
+                  ticket.old_price = ticket.price;
+                }
+              } else {
+                _this.price_range.from = _this.price;
+                _this.price_range.to = _this.price;
+              }
+              return def.resolve();
+            });
+          };
+        })(this));
+        return def.promise;
+      };
+
+      Event.prototype.updatePrice = function() {
+        var i, len, ref, results, ticket;
+        ref = this.tickets;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
+          if (ticket.pre_paid_booking_id) {
+            results.push(ticket.price = 0);
+          } else {
+            results.push(ticket.price = ticket.old_price);
+          }
+        }
+        return results;
+      };
+
+      return Event;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel) {
+    var EventChain;
+    return EventChain = (function(superClass) {
+      extend(EventChain, superClass);
+
+      function EventChain() {
+        return EventChain.__super__.constructor.apply(this, arguments);
+      }
+
+      EventChain.prototype.name = function() {
+        return this._data.name;
+      };
+
+      EventChain.prototype.isSingleBooking = function() {
+        return this.max_num_bookings === 1 && !this.$has('ticket_sets');
+      };
+
+      EventChain.prototype.hasTickets = function() {
+        return this.$has('ticket_sets');
+      };
+
+      EventChain.prototype.getTickets = function() {
+        var def;
+        def = $q.defer();
+        if (this.tickets) {
+          def.resolve(this.tickets);
+        } else {
+          if (this.$has('ticket_sets')) {
+            this.$get('ticket_sets').then((function(_this) {
+              return function(tickets) {
+                var i, len, ticket;
+                _this.tickets = [];
+                for (i = 0, len = tickets.length; i < len; i++) {
+                  ticket = tickets[i];
+                  _this.tickets.push(new BBModel.EventTicket(ticket));
+                }
+                _this.adjustTicketsForRemaining();
+                return def.resolve(_this.tickets);
+              };
+            })(this));
+          } else {
+            this.tickets = [
+              new BBModel.EventTicket({
+                name: "Admittance",
+                min_num_bookings: 1,
+                max_num_bookings: this.max_num_bookings,
+                type: "normal",
+                price: this.price
+              })
+            ];
+            this.adjustTicketsForRemaining();
+            def.resolve(this.tickets);
+          }
+        }
+        return def.promise;
+      };
+
+      EventChain.prototype.adjustTicketsForRemaining = function() {
+        var i, len, ref, results;
+        if (this.tickets) {
+          ref = this.tickets;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            this.ticket = ref[i];
+            results.push(this.ticket.max_spaces = this.spaces);
+          }
+          return results;
+        }
+      };
+
+      return EventChain;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventGroupModel", function($q, BBModel, BaseModel) {
+    var EventGroup;
+    return EventGroup = (function(superClass) {
+      extend(EventGroup, superClass);
+
+      function EventGroup() {
+        return EventGroup.__super__.constructor.apply(this, arguments);
+      }
+
+      EventGroup.prototype.name = function() {
+        return this._data.name;
+      };
+
+      EventGroup.prototype.colour = function() {
+        return this._data.colour;
+      };
+
+      return EventGroup;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventSequenceModel", function($q, BBModel, BaseModel) {
+    var EventSequence;
+    return EventSequence = (function(superClass) {
+      extend(EventSequence, superClass);
+
+      function EventSequence() {
+        return EventSequence.__super__.constructor.apply(this, arguments);
+      }
+
+      EventSequence.prototype.name = function() {
+        return this._data.name;
+      };
+
+      return EventSequence;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventTicketModel", function($q, BBModel, BaseModel) {
+    var EventTicket;
+    return EventTicket = (function(superClass) {
+      extend(EventTicket, superClass);
+
+      function EventTicket(data) {
+        var ms;
+        EventTicket.__super__.constructor.call(this, data);
+        this.max = this.max_num_bookings;
+        if (this.max_spaces) {
+          ms = this.max_spaces;
+          if (this.counts_as) {
+            ms = this.max_spaces / this.counts_as;
+          }
+          if (ms < max) {
+            this.max = ms;
+          }
+        }
+      }
+
+      EventTicket.prototype.fullName = function() {
+        if (this.pool_name) {
+          return this.pool_name + " - " + this.name;
+        }
+        return this.name;
+      };
+
+      EventTicket.prototype.getRange = function(cap) {
+        var c, i, ref, ref1, results;
+        if (cap) {
+          c = cap;
+          if (this.counts_as) {
+            c = cap / this.counts_as;
+          }
+          if (c + this.min_num_bookings < this.max) {
+            this.max = c + this.min_num_bookings;
+          }
+        }
+        return [0].concat((function() {
+          results = [];
+          for (var i = ref = this.min_num_bookings, ref1 = this.max; ref <= ref1 ? i <= ref1 : i >= ref1; ref <= ref1 ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this));
+      };
+
+      EventTicket.prototype.totalQty = function() {
+        if (!this.qty) {
+          return 0;
+        }
+        if (!this.counts_as) {
+          return this.qty;
+        }
+        return this.qty * this.counts_as;
+      };
+
+      EventTicket.prototype.getMax = function(cap, ev) {
+        var c, i, len, live_max, ref, ticket, used;
+        if (ev == null) {
+          ev = null;
+        }
+        live_max = this.max;
+        if (ev) {
+          used = 0;
+          ref = ev.tickets;
+          for (i = 0, len = ref.length; i < len; i++) {
+            ticket = ref[i];
+            used += ticket.totalQty();
+          }
+          if (this.qty) {
+            used = used - this.totalQty();
+          }
+          if (this.counts_as) {
+            used = Math.ceil(used / this.counts_as);
+          }
+          live_max = live_max - used;
+          if (live_max < 0) {
+            live_max = 0;
+          }
+        }
+        if (cap) {
+          c = cap;
+          if (this.counts_as) {
+            c = cap / this.counts_as;
+          }
+          if (c + this.min_num_bookings < live_max) {
+            return c + this.min_num_bookings;
+          }
+        }
+        return live_max;
+      };
+
+      EventTicket.prototype.add = function(value) {
+        if (!this.qty) {
+          this.qty = 0;
+        }
+        this.qty = parseInt(this.qty);
+        if (angular.isNumber(this.qty) && (this.qty >= this.max && value > 0) || (this.qty === 0 && value < 0)) {
+          return;
+        }
+        return this.qty += value;
+      };
+
+      EventTicket.prototype.subtract = function(value) {
+        return this.add(-value);
+      };
+
+      return EventTicket;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ImageModel", function($q, $filter, BBModel, BaseModel) {
+    var Image;
+    return Image = (function(superClass) {
+      extend(Image, superClass);
+
+      function Image(data) {
+        Image.__super__.constructor.call(this, data);
+      }
+
+      return Image;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ItemDetailsModel", function($q, BBModel, BaseModel, $bbug, QuestionService) {
+    var ItemDetails;
+    return ItemDetails = (function(superClass) {
+      extend(ItemDetails, superClass);
+
+      function ItemDetails(data) {
+        var i, len, q, ref;
+        this._data = data;
+        if (this._data) {
+          this.self = this._data.$href("self");
+        }
+        this.questions = [];
+        this.survey_questions = [];
+        if (data) {
+          ref = data.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            if (q.outcome === false) {
+              if (data.currency_code) {
+                q.currency_code = data.currency_code;
+              }
+              this.questions.push(new BBModel.Question(q));
+            } else {
+              this.survey_questions.push(new BBModel.SurveyQuestion(q));
+            }
+          }
+        }
+        this.hasQuestions = this.questions.length > 0;
+        this.hasSurveyQuestions = this.survey_questions.length > 0;
+      }
+
+      ItemDetails.prototype.questionPrice = function(qty) {
+        var i, len, price, q, ref;
+        qty || (qty = 1);
+        this.checkConditionalQuestions();
+        price = 0;
+        ref = this.questions;
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
+          price += q.selectedPriceQty(qty);
+        }
+        return price;
+      };
+
+      ItemDetails.prototype.checkConditionalQuestions = function() {
+        return QuestionService.checkConditionalQuestions(this.questions);
+      };
+
+      ItemDetails.prototype.getPostData = function() {
+        var data, i, len, q, ref;
+        data = [];
+        ref = this.questions;
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
+          if (q.currentlyShown) {
+            data.push(q.getPostData());
+          }
+        }
+        return data;
+      };
+
+      ItemDetails.prototype.setAnswers = function(answers) {
+        var a, ahash, i, j, len, len1, q, ref;
+        ahash = {};
+        for (i = 0, len = answers.length; i < len; i++) {
+          a = answers[i];
+          ahash[a.id] = a;
+        }
+        ref = this.questions;
+        for (j = 0, len1 = ref.length; j < len1; j++) {
+          q = ref[j];
+          if (ahash[q.id]) {
+            q.answer = ahash[q.id].answer;
+          }
+        }
+        return this.checkConditionalQuestions();
+      };
+
+      ItemDetails.prototype.getQuestion = function(id) {
+        return _.findWhere(this.questions, {
+          id: id
+        });
+      };
+
+      return ItemDetails;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
+    var Person;
+    return Person = (function(superClass) {
+      extend(Person, superClass);
+
+      function Person() {
+        return Person.__super__.constructor.apply(this, arguments);
+      }
+
+      return Person;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PrePaidBookingModel", function($q, BBModel, BaseModel) {
+    var PrePaidBooking;
+    return PrePaidBooking = (function(superClass) {
+      extend(PrePaidBooking, superClass);
+
+      function PrePaidBooking() {
+        return PrePaidBooking.__super__.constructor.apply(this, arguments);
+      }
+
+      return PrePaidBooking;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PurchaseItemModel", function($q, BBModel, BaseModel) {
+    var PurchaseItem;
+    return PurchaseItem = (function(superClass) {
+      extend(PurchaseItem, superClass);
+
+      function PurchaseItem(data) {
+        PurchaseItem.__super__.constructor.call(this, data);
+        this.parts_links = {};
+        if (data) {
+          if (data.$has('service')) {
+            this.parts_links.service = data.$href('service');
+          }
+          if (data.$has('resource')) {
+            this.parts_links.resource = data.$href('resource');
+          }
+          if (data.$has('person')) {
+            this.parts_links.person = data.$href('person');
+          }
+          if (data.$has('company')) {
+            this.parts_links.company = data.$href('company');
+          }
+        }
+      }
+
+      PurchaseItem.prototype.describe = function() {
+        return this.get('describe');
+      };
+
+      PurchaseItem.prototype.full_describe = function() {
+        return this.get('full_describe');
+      };
+
+      PurchaseItem.prototype.hasPrice = function() {
+        return this.price && this.price > 0;
+      };
+
+      return PurchaseItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PurchaseTotalModel", function($q, BBModel, BaseModel) {
+    var PurchaseTotal;
+    return PurchaseTotal = (function(superClass) {
+      extend(PurchaseTotal, superClass);
+
+      function PurchaseTotal(data) {
+        var cprom;
+        PurchaseTotal.__super__.constructor.call(this, data);
+        this.promise = this._data.$get('purchase_items');
+        this.items = [];
+        this.promise.then((function(_this) {
+          return function(items) {
+            var i, item, len, results;
+            results = [];
+            for (i = 0, len = items.length; i < len; i++) {
+              item = items[i];
+              results.push(_this.items.push(new BBModel.PurchaseItem(item)));
+            }
+            return results;
+          };
+        })(this));
+        if (this._data.$has('client')) {
+          cprom = data.$get('client');
+          cprom.then((function(_this) {
+            return function(client) {
+              return _this.client = new BBModel.Client(client);
+            };
+          })(this));
+        }
+      }
+
+      PurchaseTotal.prototype.icalLink = function() {
+        return this._data.$href('ical');
+      };
+
+      PurchaseTotal.prototype.webcalLink = function() {
+        return this._data.$href('ical');
+      };
+
+      PurchaseTotal.prototype.gcalLink = function() {
+        return this._data.$href('gcal');
+      };
+
+      PurchaseTotal.prototype.id = function() {
+        return this.get('id');
+      };
+
+      return PurchaseTotal;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("QuestionModel", function($q, $filter, BBModel, BaseModel) {
+    var Question;
+    return Question = (function(superClass) {
+      extend(Question, superClass);
+
+      function Question(data) {
+        var currency, i, len, option, ref;
+        Question.__super__.constructor.call(this, data);
+        if (this.price) {
+          this.price = parseFloat(this.price);
+        }
+        if (this._data["default"]) {
+          this.answer = this._data["default"];
+        }
+        if (this._data.options) {
+          ref = this._data.options;
+          for (i = 0, len = ref.length; i < len; i++) {
+            option = ref[i];
+            if (option.is_default) {
+              this.answer = option.name;
+            }
+            if (this.hasPrice()) {
+              option.price = parseFloat(option.price);
+              currency = data.currency_code ? data.currency_code : 'GBP';
+              option.display_name = option.name + " (" + ($filter('currency')(option.price, currency)) + ")";
+            } else {
+              option.display_name = option.name;
+            }
+          }
+        }
+        if (this._data.detail_type === "check" || this._data.detail_type === "check-price") {
+          this.answer = this._data["default"] && this._data["default"] === "1";
+        }
+        this.currentlyShown = true;
+      }
+
+      Question.prototype.hasPrice = function() {
+        return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
+      };
+
+      Question.prototype.selectedPrice = function() {
+        var i, len, option, ref;
+        if (!this.hasPrice()) {
+          return 0;
+        }
+        if (this.detail_type === "check-price") {
+          return (this.answer ? this.price : 0);
+        }
+        ref = this._data.options;
+        for (i = 0, len = ref.length; i < len; i++) {
+          option = ref[i];
+          if (this.answer === option.name) {
+            return option.price;
+          }
+        }
+        return 0;
+      };
+
+      Question.prototype.selectedPriceQty = function(qty) {
+        var p;
+        qty || (qty = 1);
+        p = this.selectedPrice();
+        if (this.price_per_booking) {
+          p = p * qty;
+        }
+        return p;
+      };
+
+      Question.prototype.getAnswerId = function() {
+        var i, len, o, ref;
+        if (!this.answer || !this.options || this.options.length === 0) {
+          return null;
+        }
+        ref = this.options;
+        for (i = 0, len = ref.length; i < len; i++) {
+          o = ref[i];
+          if (this.answer === o.name) {
+            return o.id;
+          }
+        }
+        return null;
+      };
+
+      Question.prototype.showElement = function() {
+        return this.currentlyShown = true;
+      };
+
+      Question.prototype.hideElement = function() {
+        return this.currentlyShown = false;
+      };
+
+      Question.prototype.getPostData = function() {
+        var p, x;
+        x = {};
+        x.id = this.id;
+        x.answer = this.answer;
+        if (this.detail_type === "date" && this.answer) {
+          x.answer = moment(this.answer).toISODate();
+        }
+        p = this.selectedPrice();
+        if (p) {
+          x.price = p;
+        }
+        return x;
+      };
+
+      return Question;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ResourceModel", function($q, BBModel, BaseModel) {
+    var Resource;
+    return Resource = (function(superClass) {
+      extend(Resource, superClass);
+
+      function Resource() {
+        return Resource.__super__.constructor.apply(this, arguments);
+      }
+
+      return Resource;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ServiceModel", function($q, BBModel, BaseModel) {
+    var Service;
+    return Service = (function(superClass) {
+      extend(Service, superClass);
+
+      function Service(data) {
+        this.days_array = bind(this.days_array, this);
+        this.getCategoryPromise = bind(this.getCategoryPromise, this);
+        Service.__super__.constructor.apply(this, arguments);
+        if (this.prices && this.prices.length > 0) {
+          this.price = this.prices[0];
+        }
+        if (this.durations && this.durations.length > 0) {
+          this.duration = this.durations[0];
+        }
+        if (!this.listed_durations) {
+          this.listed_durations = this.durations;
+        }
+        if (this.listed_durations && this.listed_durations.length > 0) {
+          this.listed_duration = this.listed_durations[0];
+        }
+        this.min_advance_datetime = moment().add(this.min_advance_period, 'seconds');
+        this.max_advance_datetime = moment().add(this.max_advance_period, 'seconds');
+      }
+
+      Service.prototype.getPriceByDuration = function(dur) {
+        var d, i, j, len, ref;
+        ref = this.durations;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          d = ref[i];
+          if (d === dur) {
+            return this.prices[i];
+          }
+        }
+      };
+
+      Service.prototype.getCategoryPromise = function() {
+        var prom;
+        if (!this.$has('category')) {
+          return null;
+        }
+        prom = this.$get('category');
+        prom.then((function(_this) {
+          return function(cat) {
+            return _this.category = new BBModel.Category(cat);
+          };
+        })(this));
+        return prom;
+      };
+
+      Service.prototype.days_array = function() {
+        var arr, j, ref, ref1, str, x;
+        arr = [];
+        for (x = j = ref = this.min_bookings, ref1 = this.max_bookings; ref <= ref1 ? j <= ref1 : j >= ref1; x = ref <= ref1 ? ++j : --j) {
+          str = "" + x + " day";
+          if (x > 1) {
+            str += "s";
+          }
+          arr.push({
+            name: str,
+            val: x
+          });
+        }
+        return arr;
+      };
+
+      return Service;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("SlotModel", function($q, BBModel, BaseModel) {
+    var Slot;
+    return Slot = (function(superClass) {
+      extend(Slot, superClass);
+
+      function Slot(data) {
+        Slot.__super__.constructor.call(this, data);
+        this.datetime = moment(data.datetime);
+      }
+
+      return Slot;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("SpaceModel", function($q, BBModel, BaseModel) {
+    var Space;
+    return Space = (function(superClass) {
+      extend(Space, superClass);
+
+      function Space() {
+        return Space.__super__.constructor.apply(this, arguments);
+      }
+
+      return Space;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("SurveyQuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
+    var SurveyQuestion;
+    return SurveyQuestion = (function(superClass) {
+      extend(SurveyQuestion, superClass);
+
+      function SurveyQuestion() {
+        return SurveyQuestion.__super__.constructor.apply(this, arguments);
+      }
+
+      return SurveyQuestion;
+
+    })(QuestionModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel) {
+    var TimeSlot;
+    return TimeSlot = (function(superClass) {
+      extend(TimeSlot, superClass);
+
+      function TimeSlot(data, service) {
+        TimeSlot.__super__.constructor.call(this, data);
+        this.service = service;
+        this.time_12 = this.print_time12();
+        this.time_24 = this.print_time();
+      }
+
+      TimeSlot.prototype.print_time = function() {
+        var min, t;
+        if (this.start) {
+          return this.start.format("h:mm");
+        } else {
+          t = this.get('time');
+          if (t % 60 < 10) {
+            min = "0" + t % 60;
+          } else {
+            min = t % 60;
+          }
+          return "" + Math.floor(t / 60) + ":" + min;
+        }
+      };
+
+      TimeSlot.prototype.print_end_time = function(dur) {
+        var min, t;
+        if (this.end) {
+          return this.end.format("h:mm");
+        } else {
+          if (!dur) {
+            dur = this.service.listed_durations[0];
+          }
+          t = this.get('time') + dur;
+          if (t % 60 < 10) {
+            min = "0" + t % 60;
+          } else {
+            min = t % 60;
+          }
+          return "" + Math.floor(t / 60) + ":" + min;
+        }
+      };
+
+      TimeSlot.prototype.print_time12 = function(show_suffix) {
+        var h, m, suffix, t, time;
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        t = this.get('time');
+        h = Math.floor(t / 60);
+        m = t % 60;
+        suffix = 'am';
+        if (h >= 12) {
+          suffix = 'pm';
+        }
+        if (h > 12) {
+          h -= 12;
+        }
+        time = $window.sprintf("%d.%02d", h, m);
+        if (show_suffix) {
+          time += suffix;
+        }
+        return time;
+      };
+
+      TimeSlot.prototype.print_end_time12 = function(show_suffix, dur) {
+        var end_time, h, m, suffix, t;
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        dur = null;
+        if (!dur) {
+          if (this.service.listed_duration != null) {
+            dur = this.service.listed_duration;
+          } else {
+            dur = this.service.listed_durations[0];
+          }
+        }
+        t = this.get('time') + dur;
+        h = Math.floor(t / 60);
+        m = t % 60;
+        suffix = 'am';
+        if (h >= 12) {
+          suffix = 'pm';
+        }
+        if (h > 12) {
+          h -= 12;
+        }
+        end_time = $window.sprintf("%d.%02d", h, m);
+        if (show_suffix) {
+          end_time += suffix;
+        }
+        return end_time;
+      };
+
+      TimeSlot.prototype.availability = function() {
+        return this.avail;
+      };
+
+      TimeSlot.prototype.select = function() {
+        return this.selected = true;
+      };
+
+      TimeSlot.prototype.unselect = function() {
+        if (this.selected) {
+          return delete this.selected;
+        }
+      };
+
+      TimeSlot.prototype.disable = function(reason) {
+        this.disabled = true;
+        return this.disabled_reason = reason;
+      };
+
+      TimeSlot.prototype.enable = function() {
+        if (this.disabled) {
+          delete this.disabled;
+        }
+        if (this.disabled_reason) {
+          return delete this.disabled_reason;
+        }
+      };
+
+      TimeSlot.prototype.status = function() {
+        if (this.selected) {
+          return "selected";
+        }
+        if (this.disabled) {
+          return "disabled";
+        }
+        if (this.availability() > 0) {
+          return "enabled";
+        }
+        return "disabled";
+      };
+
+      return TimeSlot;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
   angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
     return {
       query: function(prms) {
@@ -12741,7 +16489,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService) {
+  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
     var alertService, titleLookup;
     $rootScope.alerts = [];
     titleLookup = function(type, title) {
@@ -12760,60 +16508,26 @@ function getURIparam( name ){
     };
     return alertService = {
       add: function(type, arg) {
-        var msg, title;
-        title = arg.title, msg = arg.msg;
+        var alert, msg, persist, title;
+        title = arg.title, msg = arg.msg, persist = arg.persist;
+        if (persist == null) {
+          persist = true;
+        }
         $rootScope.alerts = [];
-        $rootScope.alerts.push({
+        alert = {
           type: type,
           title: titleLookup(type, title),
           msg: msg,
           close: function() {
             return alertService.closeAlert(this);
           }
-        });
-<<<<<<< HEAD
-      };
-
-      Basket.prototype.readyToCheckout = function() {
-        if (this.items.length > 0) {
-          return true;
-        } else {
-          return false;
+        };
+        $rootScope.alerts.push(alert);
+        if (!persist) {
+          $timeout(function() {
+            return $rootScope.alerts.splice($rootScope.alerts.indexOf(alert), 1);
+          }, 3000);
         }
-      };
-
-      Basket.prototype.timeItems = function() {
-        var i, j, len, ref, titems;
-        titems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (!i.is_coupon) {
-            titems.push(i);
-          }
-        }
-        return titems;
-      };
-
-      Basket.prototype.couponItems = function() {
-        var citems, i, j, len, ref;
-        citems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i.is_coupon) {
-            citems.push(i);
-          }
-        }
-        return citems;
-      };
-
-      Basket.prototype.removeCoupons = function() {
-        return this.items = _.reject(this.items, function(x) {
-          return x.is_coupon;
-        });
-      };
-=======
         return $rootScope.$broadcast("alert:raised");
       },
       closeAlert: function(alert) {
@@ -12826,34 +16540,59 @@ function getURIparam( name ){
         return $rootScope.alerts = [];
       },
       error: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('error', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       danger: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('danger', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       info: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('info', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
         });
       },
       warning: function(alert) {
+        if (!alert) {
+          return;
+        }
         return this.add('warning', {
           title: alert.title,
-          msg: alert.msg
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+      raise: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add(alert.type, {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
         });
       }
     };
   });
 
 }).call(this);
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
 
 (function() {
   angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
@@ -13380,6 +17119,53 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Services').factory('ClinicService', function($q, BBModel, $window) {
+    return {
+      query: function(params) {
+        var company, defer, existing;
+        company = params.company;
+        defer = $q.defer();
+        if (params.id) {
+          company.$get('clinics', params).then(function(clinic) {
+            clinic = new BBModel.Clinic(clinic);
+            return defer.resolve(clinic);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        } else {
+          existing = ClinicCollections.find(params);
+          if (existing) {
+            defer.resolve(existing);
+          } else {
+            company.$get('clinics', params).then(function(collection) {
+              return collection.$get('clinics').then(function(clinics) {
+                var s;
+                clinics = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = clinics.length; i < len; i++) {
+                    s = clinics[i];
+                    results.push(new BBModel.Clinic(s));
+                  }
+                  return results;
+                })();
+                return defer.resolve(clinics);
+              }, function(err) {
+                return defer.reject(err);
+              });
+            }, function(err) {
+              return defer.reject(err);
+            });
+          }
+        }
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
     return {
       query: function(company_id, options) {
@@ -13557,53 +17343,6 @@ function getURIparam( name ){
     };
   });
 
-<<<<<<< HEAD
-      BasketItem.prototype.setDefaults = function(defaults) {
-        if (defaults.settings) {
-          this.settings = defaults.settings;
-        }
-        if (defaults.company) {
-          this.setCompany(defaults.company);
-        }
-        if (defaults.merge_resources) {
-          this.setResource(null);
-        }
-        if (defaults.merge_people) {
-          this.setPerson(null);
-        }
-        if (defaults.resource) {
-          this.setResource(defaults.resource);
-        }
-        if (defaults.person) {
-          this.setPerson(defaults.person);
-        }
-        if (defaults.service) {
-          this.setService(defaults.service);
-        }
-        if (defaults.category) {
-          this.setCategory(defaults.category);
-        }
-        if (defaults.time) {
-          this.requested_time = parseInt(defaults.time);
-        }
-        if (defaults.date) {
-          this.requested_date = moment(defaults.date);
-        }
-        if (defaults.service_ref) {
-          this.service_ref = defaults.service_ref;
-        }
-        if (defaults.group) {
-          this.group = defaults.group;
-        }
-        if (defaults.clinic) {
-          this.clinic = defaults.clinic;
-        }
-        if (defaults.private_note) {
-          this.private_note = defaults.private_note;
-        }
-        if (defaults.event_group) {
-          this.setEventGroup(defaults.event_group);
-=======
 }).call(this);
 
 (function() {
@@ -13636,7 +17375,6 @@ function getURIparam( name ){
               return deferred.reject(err);
             };
           })(this));
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
         }
         return deferred.promise;
       }
@@ -13792,70 +17530,99 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var errors;
-    errors = [
+    var alerts;
+    alerts = [
       {
-        id: 1,
-        type: 'GENERIC',
+        key: 'GENERIC',
+        type: 'error',
         title: '',
+        persist: true,
         msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
       }, {
-        id: 2,
-        type: 'LOCATION_NOT_FOUND',
+        key: 'LOCATION_NOT_FOUND',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: "Sorry, we don't recognise that location"
       }, {
-        id: 3,
-        type: 'MISSING_LOCATION',
+        key: 'MISSING_LOCATION',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter your location'
       }, {
-        id: 4,
-        type: 'MISSING_POSTCODE',
+        key: 'MISSING_POSTCODE',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter a postcode'
       }, {
-        id: 5,
-        type: 'INVALID_POSTCODE',
+        key: 'INVALID_POSTCODE',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please enter a valid postcode'
       }, {
-        id: 6,
-        type: 'ITEM_NO_LONGER_AVAILABLE',
+        key: 'ITEM_NO_LONGER_AVAILABLE',
+        type: 'error',
         title: '',
+        persist: true,
         msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
       }, {
-        id: 7,
-        type: 'FORM_INVALID',
+        key: 'FORM_INVALID',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Please complete all required fields'
       }, {
-        id: 8,
-        type: 'GEOLOCATION_ERROR',
+        key: 'GEOLOCATION_ERROR',
+        type: 'error',
         title: '',
+        persist: true,
         msg: 'Sorry, we could not determine your location. Please try searching instead.'
       }, {
-        id: 9,
-        type: 'EMPTY_BASKET_FOR_CHECKOUT',
+        key: 'EMPTY_BASKET_FOR_CHECKOUT',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'There are no items in the basket to proceed to checkout.'
       }, {
-        id: 10,
-        type: 'MAXIMUM_TICKETS',
+        key: 'MAXIMUM_TICKETS',
+        type: 'warning',
         title: '',
+        persist: true,
         msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
+      }, {
+        key: 'TIME_SLOT_NOT_SELECTED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You need to select a time slot'
+      }, {
+        key: 'APPT_AT_SAME_TIME',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Your appointment is already booked for this time'
+      }, {
+        key: 'REQ_TIME_NOT_AVAIL',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'The requested time slot is not available. Please choose a different time.'
       }
     ];
     return {
-      getError: function(type) {
+      getError: function(key) {
         var error, translate;
-        error = _.findWhere(errors, {
-          type: type
+        error = _.findWhere(alerts, {
+          key: key
         });
+        error.persist = true;
         translate = SettingsService.isInternationalizatonEnabled();
         if (error && translate) {
           return {
-            msg: "ERROR." + type
+            msg: "ERROR." + key
           };
         } else if (error && !translate) {
           return error;
@@ -13864,7 +17631,23 @@ function getURIparam( name ){
             msg: 'GENERIC'
           };
         } else {
-          return errors[0];
+          return alerts[0];
+        }
+      },
+      getAlert: function(key) {
+        var alert, translate;
+        alert = _.findWhere(alerts, {
+          key: key
+        });
+        translate = SettingsService.isInternationalizatonEnabled();
+        if (alert && translate) {
+          return {
+            msg: "ALERT." + key
+          };
+        } else if (alert && !translate) {
+          return alert;
+        } else {
+          return null;
         }
       }
     };
@@ -15887,70 +19670,6 @@ function getURIparam( name ){
     };
   });
 
-<<<<<<< HEAD
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
-    var Clinic;
-    return Clinic = (function(superClass) {
-      extend(Clinic, superClass);
-
-      function Clinic(data) {
-        Clinic.__super__.constructor.call(this, data);
-        this.setTimes();
-        this.setResourcesAndPeople();
-        this.settings || (this.settings = {});
-      }
-
-      Clinic.prototype.setResourcesAndPeople = function() {
-        this.resources = _.reduce(this.resource_ids, function(h, id) {
-          h[id] = true;
-          return h;
-        }, {});
-        this.people = _.reduce(this.person_ids, function(h, id) {
-          h[id] = true;
-          return h;
-        }, {});
-        this.services = _.reduce(this.service_ids, function(h, id) {
-          h[id] = true;
-          return h;
-        }, {});
-        this.uncovered = !this.person_ids || this.person_ids.length === 0;
-        if (this.uncovered) {
-          return this.className = "clinic_uncovered";
-        } else {
-          return this.className = "clinic_covered";
-        }
-      };
-
-      Clinic.prototype.setTimes = function() {
-        if (this.start_time) {
-          this.start_time = moment(this.start_time);
-          this.start = this.start_time;
-        }
-        if (this.end_time) {
-          this.end_time = moment(this.end_time);
-          this.end = this.end_time;
-        }
-        return this.title = this.name;
-      };
-
-      return Clinic;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-=======
   angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel) {
     return {
       promise: true,
@@ -15978,7 +19697,6 @@ function getURIparam( name ){
       }
     };
   });
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
 
   angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel) {
     return {
@@ -16789,4585 +20507,495 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  var app;
+  var ModalDelete, ModalDeleteAll;
 
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("AddressModel", function($q, BBModel, BaseModel) {
-    var Address;
-    return Address = (function(superClass) {
-      extend(Address, superClass);
-
-      function Address() {
-        return Address.__super__.constructor.apply(this, arguments);
-      }
-
-      Address.prototype.addressSingleLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += ", ";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-      Address.prototype.hasAddress = function() {
-        return this.address1 || this.address2 || this.postcode;
-      };
-
-      Address.prototype.addressCsvLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        str += ", ";
-        if (this.address2) {
-          str += this.address2;
-        }
-        str += ", ";
-        if (this.address3) {
-          str += this.address3;
-        }
-        str += ", ";
-        if (this.address4) {
-          str += this.address4;
-        }
-        str += ", ";
-        if (this.address5) {
-          str += this.address5;
-        }
-        str += ", ";
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        str += ", ";
-        if (this.country) {
-          str += this.country;
-        }
-        return str;
-      };
-
-      Address.prototype.addressMultiLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-      return Address;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("AffiliateModel", function($q, BBModel, BaseModel) {
-    var Affiliate;
-    return Affiliate = (function(superClass) {
-      extend(Affiliate, superClass);
-
-      function Affiliate(data) {
-        Affiliate.__super__.constructor.call(this, data);
-        this.test = 1;
-      }
-
-      Affiliate.prototype.getCompanyByRef = function(ref) {
-        var defer;
-        defer = $q.defer();
-        this.$get('companies', {
-          reference: ref
-        }).then(function(company) {
-          if (company) {
-            return defer.resolve(new BBModel.Company(company));
-          } else {
-            return defer.reject('No company for ref ' + ref);
-          }
-        }, function(err) {
-          console.log('err ', err);
-          return defer.reject(err);
-        });
-        return defer.promise;
-      };
-
-      return Affiliate;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("AnswerModel", function($q, BBModel, BaseModel, $bbug) {
-    var Answer;
-    return Answer = (function(superClass) {
-      extend(Answer, superClass);
-
-      function Answer(data) {
-        Answer.__super__.constructor.call(this, data);
-      }
-
-      Answer.prototype.getQuestion = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.question) {
-          defer.resolve(this.question);
-        }
-        if (this._data.$has('question')) {
-          this._data.$get('question').then((function(_this) {
-            return function(question) {
-              _this.question = question;
-              return defer.resolve(_this.question);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      return Answer;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Models').service("BBModel", function($q, $injector) {
-    var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
-    funcs = {};
-    fn = (function(_this) {
-      return function(model) {
-        return funcs[model] = function(p1, p2) {
-          return new ($injector.get(model + "Model"))(p1, p2);
-        };
-      };
-    })(this);
-    for (i = 0, len = models.length; i < len; i++) {
-      model = models[i];
-      fn(model);
-    }
-    purchase_models = ['Booking', 'Total', 'CourseBooking'];
-    pfuncs = {};
-    fn1 = (function(_this) {
-      return function(model) {
-        return pfuncs[model] = function(init) {
-          return new ($injector.get("Purchase." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (j = 0, len1 = purchase_models.length; j < len1; j++) {
-      model = purchase_models[j];
-      fn1(model);
-    }
-    funcs['Purchase'] = pfuncs;
-    member_models = ['Member', 'Booking', 'PrePaidBooking'];
-    mfuncs = {};
-    fn2 = (function(_this) {
-      return function(model) {
-        return mfuncs[model] = function(init) {
-          return new ($injector.get("Member." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (k = 0, len2 = member_models.length; k < len2; k++) {
-      model = member_models[k];
-      fn2(model);
-    }
-    funcs['Member'] = mfuncs;
-    admin_models = ['Booking', 'Slot', 'User', 'Administrator', 'Schedule', 'Address', 'Resource', 'Person', 'Service', 'Login', 'EventChain', 'EventGroup', 'Event', 'Queuer', 'ClientQueue', 'Clinic'];
-    afuncs = {};
-    fn3 = (function(_this) {
-      return function(model) {
-        return afuncs[model] = function(init) {
-          return new ($injector.get("Admin." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (l = 0, len3 = admin_models.length; l < len3; l++) {
-      model = admin_models[l];
-      fn3(model);
-    }
-    funcs['Admin'] = afuncs;
-    return funcs;
-  });
-
-  angular.module('BB.Models').service("BaseModel", function($q, $injector, $rootScope, $timeout) {
-    var Base;
-    return Base = (function() {
-      function Base(data) {
-        this.deleted = false;
-        this.updateModel(data);
-      }
-
-      Base.prototype.updateModel = function(data) {
-        var link, links, m, n, name, obj, results;
-        if (data) {
-          this._data = data;
-        }
-        if (data) {
-          for (n in data) {
-            m = data[n];
-            this[n] = m;
-          }
-        }
-        if (this._data && this._data.$href) {
-          this.self = this._data.$href("self");
-          links = this.$links();
-          this.__linkedData = {};
-          this.__linkedPromises = {};
-          results = [];
-          for (link in links) {
-            obj = links[link];
-            name = this._snakeToCamel("get_" + link);
-            results.push((function(_this) {
-              return function(link, obj, name) {
-                if (!_this[name]) {
-                  _this[name] = function() {
-                    return this.$buildOject(link);
-                  };
-                }
-                if (!_this[name + "Promise"]) {
-                  return _this[name + "Promise"] = function() {
-                    return this.$buildOjectPromise(link);
-                  };
-                }
-              };
-            })(this)(link, obj, name));
-          }
-          return results;
-        }
-      };
-
-      Base.prototype._snakeToCamel = function(s) {
-        return s.replace(/(\_\w)/g, function(m) {
-          return m[1].toUpperCase();
-        });
-      };
-
-      Base.prototype.$buildOject = function(link) {
-        if (this.__linkedData[link]) {
-          return this.__linkedData[link];
-        }
-        this.$buildOjectPromise(link).then((function(_this) {
-          return function(ans) {
-            _this.__linkedData[link] = ans;
-            return $timeout(function() {
-              return _this.__linkedData[link] = ans;
-            });
-          };
-        })(this));
-        return null;
-      };
-
-      Base.prototype.$buildOjectPromise = function(link) {
-        var prom;
-        if (this.__linkedPromises[link]) {
-          return this.__linkedPromises[link];
-        }
-        prom = $q.defer();
-        this.__linkedPromises[link] = prom.promise;
-        this.$get(link).then((function(_this) {
-          return function(res) {
-            var inj;
-            inj = $injector.get('BB.Service.' + link);
-            if (inj) {
-              if (inj.promise) {
-                return inj.unwrap(res).then(function(ans) {
-                  return prom.resolve(ans);
-                }, function(err) {
-                  return prom.reject(err);
-                });
-              } else {
-                return prom.resolve(inj.unwrap(res));
-              }
-            } else {
-              return prom.resolve(res);
-            }
-          };
-        })(this), function(err) {
-          return prom.reject(err);
-        });
-        return this.__linkedPromises[link];
-      };
-
-      Base.prototype.get = function(ikey) {
-        if (!this._data) {
-          return null;
-        }
-        return this._data[ikey];
-      };
-
-      Base.prototype.set = function(ikey, value) {
-        if (!this._data) {
-          return null;
-        }
-        return this._data[ikey] = value;
-      };
-
-      Base.prototype.$href = function(rel, params) {
-        if (this._data) {
-          return this._data.$href(rel, params);
-        }
-      };
-
-      Base.prototype.$has = function(rel) {
-        if (this._data) {
-          return this._data.$has(rel);
-        }
-      };
-
-      Base.prototype.$flush = function(rel, params) {
-        if (this._data) {
-          return this._data.$href(rel, params);
-        }
-      };
-
-      Base.prototype.$get = function(rel, params) {
-        if (this._data) {
-          return this._data.$get(rel, params);
-        }
-      };
-
-      Base.prototype.$post = function(rel, params, dat) {
-        if (this._data) {
-          return this._data.$post(rel, params, dat);
-        }
-      };
-
-      Base.prototype.$put = function(rel, params, dat) {
-        if (this._data) {
-          return this._data.$put(rel, params, dat);
-        }
-      };
-
-      Base.prototype.$patch = function(rel, params, dat) {
-        if (this._data) {
-          return this._data.$patch(rel, params, dat);
-        }
-      };
-
-      Base.prototype.$del = function(rel, params) {
-        if (this._data) {
-          return this._data.$del(rel, params);
-        }
-      };
-
-      Base.prototype.$links = function() {
-        if (this._data) {
-          return this._data.$links();
-        }
-      };
-
-      Base.prototype.$toStore = function() {
-        if (this._data) {
-          return this._data.$toStore();
-        }
-      };
-
-      return Base;
-
-    })();
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BasketModel", function($q, BBModel, BaseModel) {
-    var Basket;
-    return Basket = (function(superClass) {
-      extend(Basket, superClass);
-
-      function Basket(data, scope) {
-        if (scope && scope.isAdmin) {
-          this.is_admin = scope.isAdmin;
-        } else {
-          this.is_admin = false;
-        }
-        if ((scope != null) && scope.parent_client) {
-          this.parent_client_id = scope.parent_client.id;
-        }
-        this.items = [];
-        Basket.__super__.constructor.call(this, data);
-      }
-
-      Basket.prototype.addItem = function(item) {
-        var i, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i === item) {
-            return;
-          }
-          if (i.id && item.id && i.id === item.id) {
-            return;
-          }
-        }
-        return this.items.push(item);
-      };
-
-      Basket.prototype.clear = function() {
-        return this.items = [];
-      };
-
-      Basket.prototype.clearItem = function(item) {
-        return this.items = this.items.filter(function(i) {
-          return i !== item;
-        });
-      };
-
-      Basket.prototype.readyToCheckout = function() {
-        if (this.items.length > 0) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-
-      Basket.prototype.timeItems = function() {
-        var i, j, len, ref, titems;
-        titems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (!i.is_coupon && !i.ready) {
-            titems.push(i);
-          }
-        }
-        return titems;
-      };
-
-      Basket.prototype.couponItems = function() {
-        var citems, i, j, len, ref;
-        citems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i.is_coupon) {
-            citems.push(i);
-          }
-        }
-        return citems;
-      };
-
-      Basket.prototype.removeCoupons = function() {
-        var i, item, j, len, ref;
-        ref = this.items;
-        for (i = j = 0, len = ref.length; j < len; i = ++j) {
-          item = ref[i];
-          if (item.is_coupon) {
-            this.items.splice(i, 1);
-          }
-        }
-        return this.items;
-      };
-
-      Basket.prototype.setSettings = function(set) {
-        if (!set) {
-          return;
-        }
-        this.settings || (this.settings = {});
-        return $.extend(this.settings, set);
-      };
-
-      Basket.prototype.setClient = function(client) {
-        return this.client = client;
-      };
-
-      Basket.prototype.setClientDetails = function(client_details) {
-        return this.client_details = new BBModel.PurchaseItem(client_details);
-      };
-
-      Basket.prototype.getPostData = function() {
-        var item, j, len, post, ref;
-        post = {
-          client: this.client.getPostData(),
-          settings: this.settings,
-          reference: this.reference
-        };
-        post.is_admin = this.is_admin;
-        post.parent_client_id = this.parent_client_id;
-        post.items = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          post.items.push(item.getPostData());
-        }
-        return post;
-      };
-
-      Basket.prototype.dueTotal = function() {
-        var item, j, len, ref, total;
-        total = this.totalPrice();
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.isWaitlist()) {
-            total -= item.price;
-          }
-        }
-        if (total < 0) {
-          total = 0;
-        }
-        return total;
-      };
-
-      Basket.prototype.length = function() {
-        return this.items.length;
-      };
-
-      Basket.prototype.questionPrice = function(options) {
-        var item, j, len, price, ref, unready;
-        unready = options && options.unready;
-        price = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if ((!item.ready && unready) || !unready) {
-            price += item.questionPrice();
-          }
-        }
-        return price;
-      };
-
-      Basket.prototype.totalPrice = function(options) {
-        var item, j, len, price, ref, unready;
-        unready = options && options.unready;
-        price = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if ((!item.ready && unready) || !unready) {
-            price += item.totalPrice();
-          }
-        }
-        return price;
-      };
-
-      Basket.prototype.updateTotalPrice = function(options) {
-        return this.total_price = this.totalPrice(options);
-      };
-
-      Basket.prototype.fullPrice = function() {
-        var item, j, len, price, ref;
-        price = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          price += item.fullPrice();
-        }
-        return price;
-      };
-
-      Basket.prototype.hasCoupon = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.is_coupon) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      Basket.prototype.totalCoupons = function() {
-        return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
-      };
-
-      Basket.prototype.totalDuration = function() {
-        var duration, item, j, len, ref;
-        duration = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.service && item.service.listed_duration) {
-            duration += item.service.listed_duration;
-          }
-        }
-        return duration;
-      };
-
-      Basket.prototype.containsDeal = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.deal_id) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      Basket.prototype.hasDeal = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.deal_codes && item.deal_codes.length > 0) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      Basket.prototype.getDealCodes = function() {
-        this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
-        return this.deals;
-      };
-
-      Basket.prototype.totalDeals = function() {
-        var deal, j, len, ref, value;
-        value = 0;
-        ref = this.getDealCodes();
-        for (j = 0, len = ref.length; j < len; j++) {
-          deal = ref[j];
-          value += deal.value;
-        }
-        return value;
-      };
-
-      Basket.prototype.totalDealPaid = function() {
-        var item, j, len, ref, total_cert_paid;
-        total_cert_paid = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.certificate_paid) {
-            total_cert_paid += item.certificate_paid;
-          }
-        }
-        return total_cert_paid;
-      };
-
-      Basket.prototype.remainingDealBalance = function() {
-        return this.totalDeals() - this.totalDealPaid();
-      };
-
-<<<<<<< HEAD
-(function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
-    var alertService, titleLookup;
-    $rootScope.alerts = [];
-    titleLookup = function(type, title) {
-      if (title) {
-        return title;
-      }
-      switch (type) {
-        case "error":
-        case "danger":
-          title = "Error";
-          break;
-        default:
-          title = null;
-      }
-      return title;
-    };
-    return alertService = {
-      add: function(type, arg) {
-        var alert, msg, persist, title;
-        title = arg.title, msg = arg.msg, persist = arg.persist;
-        if (persist == null) {
-          persist = true;
-        }
-        $rootScope.alerts = [];
-        alert = {
-          type: type,
-          title: titleLookup(type, title),
-          msg: msg,
-          close: function() {
-            return alertService.closeAlert(this);
-          }
-        };
-        $rootScope.alerts.push(alert);
-        if (!persist) {
-          $timeout(function() {
-            return $rootScope.alerts.splice($rootScope.alerts.indexOf(alert), 1);
-          }, 3000);
-        }
-        return $rootScope.$broadcast("alert:raised");
-      },
-      closeAlert: function(alert) {
-        return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
-      },
-      closeAlertIdx: function(index) {
-        return $rootScope.alerts.splice(index, 1);
-      },
-      clear: function() {
-        return $rootScope.alerts = [];
-      },
-      error: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('error', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-      danger: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('danger', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-      info: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('info', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-      warning: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('warning', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-      raise: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add(alert.type, {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      }
-    };
-=======
-      Basket.prototype.hasWaitlistItem = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.isWaitlist()) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      return Basket;
-
-    })(BaseModel);
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug) {
-    var BasketItem;
-    return BasketItem = (function(superClass) {
-      extend(BasketItem, superClass);
-
-      function BasketItem(data, bb) {
-        this.fullPrice = bind(this.fullPrice, this);
-        this.totalPrice = bind(this.totalPrice, this);
-        this.getQty = bind(this.getQty, this);
-        this.questionPrice = bind(this.questionPrice, this);
-        var chain, comp, per, res, serv, t;
-        BasketItem.__super__.constructor.call(this, data);
-        this.ready = false;
-        this.days_link = null;
-        this.book_link = null;
-        this.parts_links = {};
-        this.settings || (this.settings = {});
-        this.has_questions = false;
-        if (bb) {
-          this.reserve_without_questions = bb.reserve_without_questions;
-        }
-        if (this.time) {
-          this.time = new BBModel.TimeSlot({
-            time: this.time,
-            event_id: this.event_id,
-            selected: true,
-            avail: 1,
-            price: this.price
-          });
-        }
-        if (this.date) {
-          this.date = new BBModel.Day({
-            date: this.date,
-            spaces: 1
-          });
-        }
-        if (this.datetime) {
-          this.date = new BBModel.Day({
-            date: this.datetime.toISODate(),
-            spaces: 1
-          });
-          t = this.datetime.hour() * 60 + this.datetime.minute();
-          this.time = new BBModel.TimeSlot({
-            time: t,
-            event_id: this.event_id,
-            selected: true,
-            avail: 1,
-            price: this.price
-          });
-        }
-        if (this.id) {
-          this.reserve_ready = true;
-          this.held = {
-            time: this.time,
-            date: this.date,
-            event_id: this.event_id
-          };
-        }
-        this.promises = [];
-        if (data) {
-          if (data.$has("answers")) {
-            data.$get("answers").then((function(_this) {
-              return function(answers) {
-                var a, i, len, results;
-                data.questions = [];
-                results = [];
-                for (i = 0, len = answers.length; i < len; i++) {
-                  a = answers[i];
-                  results.push(data.questions.push({
-                    id: a.question_id,
-                    answer: a.value
-                  }));
-                }
-                return results;
-              };
-            })(this));
-          }
-          if (data.$has('company')) {
-            comp = data.$get('company');
-            this.promises.push(comp);
-            comp.then((function(_this) {
-              return function(comp) {
-                var c;
-                c = new BBModel.Company(comp);
-                _this.promises.push(c.getSettings());
-                return _this.setCompany(c);
-              };
-            })(this));
-          }
-          if (data.$has('service')) {
-            serv = data.$get('service');
-            this.promises.push(serv);
-            serv.then((function(_this) {
-              return function(serv) {
-                var prom;
-                if (serv.$has('category')) {
-                  prom = serv.$get('category');
-                  _this.promises.push(prom);
-                  prom.then(function(cat) {
-                    return _this.setCategory(new BBModel.Category(cat));
-                  });
-                }
-                _this.setService(new BBModel.Service(serv), data.questions);
-                if (_this.duration) {
-                  _this.setDuration(_this.duration);
-                }
-                _this.checkReady();
-                if (_this.time) {
-                  return _this.time.service = _this.service;
-                }
-              };
-            })(this));
-          }
-          if (data.$has('event_group')) {
-            serv = data.$get('event_group');
-            this.promises.push(serv);
-            serv.then((function(_this) {
-              return function(serv) {
-                var prom;
-                if (serv.$has('category')) {
-                  prom = serv.$get('category');
-                  _this.promises.push(prom);
-                  prom.then(function(cat) {
-                    return _this.setCategory(new BBModel.Category(cat));
-                  });
-                }
-                _this.setEventGroup(new BBModel.EventGroup(serv));
-                if (_this.time) {
-                  return _this.time.service = _this.event_group;
-                }
-              };
-            })(this));
-          }
-          if (data.$has('event_chain')) {
-            chain = data.$get('event_chain');
-            this.promises.push(chain);
-            chain.then((function(_this) {
-              return function(serv) {
-                return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
-              };
-            })(this));
-          }
-          if (data.$has('resource')) {
-            res = data.$get('resource');
-            this.promises.push(res);
-            res.then((function(_this) {
-              return function(res) {
-                return _this.setResource(new BBModel.Resource(res), false);
-              };
-            })(this));
-          }
-          if (data.$has('person')) {
-            per = data.$get('person');
-            this.promises.push(per);
-            per.then((function(_this) {
-              return function(per) {
-                return _this.setPerson(new BBModel.Person(per), false);
-              };
-            })(this));
-          }
-          if (data.$has('event')) {
-            data.$get('event').then((function(_this) {
-              return function(event) {
-                return _this.setEvent(new BBModel.Event(event));
-              };
-            })(this));
-          }
-          if (data.settings) {
-            this.settings = $bbug.extend(true, {}, data.settings);
-          }
-          if (data.attachment_id) {
-            this.attachment_id = data.attachment_id;
-          }
-          if (data.$has('product')) {
-            data.$get('product').then((function(_this) {
-              return function(product) {
-                return _this.setProduct(product);
-              };
-            })(this));
-          }
-          if (data.$has('deal')) {
-            data.$get('deal').then((function(_this) {
-              return function(deal) {
-                return _this.setDeal(new BBModel.Deal(deal));
-              };
-            })(this));
-          }
-        }
-      }
-
-      BasketItem.prototype.setDefaults = function(defaults) {
-        if (defaults.settings) {
-          this.settings = defaults.settings;
-        }
-        if (defaults.company) {
-          this.setCompany(defaults.company);
-        }
-        if (defaults.merge_resources) {
-          this.setResource(null);
-        }
-        if (defaults.merge_people) {
-          this.setPerson(null);
-        }
-        if (defaults.resource) {
-          this.setResource(defaults.resource);
-        }
-        if (defaults.person) {
-          this.setPerson(defaults.person);
-        }
-        if (defaults.service) {
-          this.setService(defaults.service);
-        }
-        if (defaults.category) {
-          this.setCategory(defaults.category);
-        }
-        if (defaults.time) {
-          this.requested_time = parseInt(defaults.time);
-        }
-        if (defaults.date) {
-          this.requested_date = moment(defaults.date);
-        }
-        if (defaults.service_ref) {
-          this.service_ref = defaults.service_ref;
-        }
-        if (defaults.group) {
-          this.group = defaults.group;
-        }
-        if (defaults.private_note) {
-          this.private_note = defaults.private_note;
-        }
-        if (defaults.event_group) {
-          this.setEventGroup(defaults.event_group);
-        }
-        if (defaults.event) {
-          this.setEvent(defaults.event);
-        }
-        return this.defaults = defaults;
-      };
-
-      BasketItem.prototype.storeDefaults = function(defaults) {
-        return this.defaults = defaults;
-      };
-
-      BasketItem.prototype.defaultService = function() {
-        if (!this.defaults) {
-          return null;
-        }
-        return this.defaults.service;
-      };
-
-      BasketItem.prototype.requestedTimeUnavailable = function() {
-        delete this.requested_time;
-        return delete this.requested_date;
-      };
-
-      BasketItem.prototype.setSlot = function(slot) {
-        var t;
-        this.date = new BBModel.Day({
-          date: slot.datetime.toISODate(),
-          spaces: 1
-        });
-        t = slot.datetime.hour() * 60 + slot.datetime.minute();
-        this.time = new BBModel.TimeSlot({
-          time: t,
-          avail: 1,
-          price: this.price
-        });
-        return this.available_slot = slot.id;
-      };
-
-      BasketItem.prototype.setCompany = function(company) {
-        this.company = company;
-        this.parts_links.company = this.company.$href('self');
-        if (this.item_details) {
-          return this.item_details.currency_code = this.company.currency_code;
-        }
-      };
-
-      BasketItem.prototype.clearExistingItem = function() {
-        var prom;
-        if (this.$has('self') && this.event_id) {
-          prom = this.$del('self');
-          this.promises.push(prom);
-          prom.then(function() {});
-        }
-        delete this.earliest_time;
-        return delete this.event_id;
-      };
-
-      BasketItem.prototype.setItem = function(item) {
-        if (!item) {
-          return;
-        }
-        if (item.type === "person") {
-          return this.setPerson(item);
-        } else if (item.type === "service") {
-          return this.setService(item);
-        } else if (item.type === "resource") {
-          return this.setResource(item);
-        }
-      };
-
-      BasketItem.prototype.setService = function(serv, default_questions) {
-        var prom;
-        if (default_questions == null) {
-          default_questions = null;
-        }
-        if (this.service) {
-          if (this.service.self && serv.self && this.service.self === serv.self) {
-            if (this.service.$has('book')) {
-              this.book_link = this.service;
-            }
-            if (serv.$has('days')) {
-              this.days_link = serv;
-            }
-            if (serv.$has('book')) {
-              this.book_link = serv;
-            }
-            return;
-          }
-          this.item_details = null;
-          this.clearExistingItem();
-        }
-        if (this.service && serv && this.service.self && serv.self) {
-          if ((this.service.self !== serv.self) && serv.durations && serv.durations.length > 1) {
-            this.duration = null;
-            this.listed_duration = null;
-          }
-        }
-        this.service = serv;
-        if (serv && (serv instanceof BookableItemModel)) {
-          this.service = serv.item;
-        }
-        this.parts_links.service = this.service.$href('self');
-        if (this.service.$has('book')) {
-          this.book_link = this.service;
-        }
-        if (serv.$has('days')) {
-          this.days_link = serv;
-        }
-        if (serv.$has('book')) {
-          this.book_link = serv;
-        }
-        if (this.service.$has('questions')) {
-          this.has_questions = true;
-          prom = this.service.$get('questions');
-          this.promises.push(prom);
-          prom.then((function(_this) {
-            return function(details) {
-              if (_this.company) {
-                details.currency_code = _this.company.currency_code;
-              }
-              _this.item_details = new BBModel.ItemDetails(details);
-              _this.has_questions = _this.item_details.hasQuestions;
-              if (default_questions) {
-                _this.item_details.setAnswers(default_questions);
-                return _this.setAskedQuestions();
-              }
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return _this.has_questions = false;
-            };
-          })(this));
-        } else {
-          this.has_questions = false;
-        }
-        if (this.service && this.service.durations && this.service.durations.length === 1) {
-          this.setDuration(this.service.durations[0]);
-          this.listed_duration = this.service.durations[0];
-        }
-        if (this.service && this.service.listed_durations && this.service.listed_durations.length === 1) {
-          this.listed_duration = this.service.listed_durations[0];
-        }
-        if (this.service.$has('category')) {
-          prom = this.service.getCategoryPromise();
-          if (prom) {
-            return this.promises.push(prom);
-          }
-        }
-      };
-
-      BasketItem.prototype.setEventGroup = function(event_group) {
-        var prom;
-        if (this.event_group) {
-          if (this.event_group.self && event_group.self && this.event_group.self === event_group.self) {
-            return;
-          }
-        }
-        this.event_group = event_group;
-        this.parts_links.event_group = this.event_group.$href('self').replace('event_group', 'service');
-        if (this.event_group.$has('category')) {
-          prom = this.event_group.getCategoryPromise();
-          if (prom) {
-            return this.promises.push(prom);
-          }
-        }
-      };
-
-      BasketItem.prototype.setEventChain = function(event_chain, default_questions) {
-        var prom;
-        if (default_questions == null) {
-          default_questions = null;
-        }
-        if (this.event_chain) {
-          if (this.event_chain.self && event_chain.self && this.event_chain.self === event_chain.self) {
-            return;
-          }
-        }
-        this.event_chain = event_chain;
-        this.base_price = parseFloat(event_chain.price);
-        if (this.price !== this.base_price) {
-          this.setPrice(this.price);
-        } else {
-          this.setPrice(this.base_price);
-        }
-<<<<<<< HEAD
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ClinicService', function($q, BBModel, $window) {
+  angular.module('BB.Directives').directive('bbPurchase', function() {
     return {
-      query: function(params) {
-        var company, defer, existing;
-        company = params.company;
-        defer = $q.defer();
-        if (params.id) {
-          company.$get('clinics', params).then(function(clinic) {
-            clinic = new BBModel.Clinic(clinic);
-            return defer.resolve(clinic);
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Purchase',
+      link: function(scope, element, attrs) {
+        scope.init(scope.$eval(attrs.bbPurchase));
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
+    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
+    $scope.controller = "Purchase";
+    $scope.is_waitlist = false;
+    $scope.make_payment = false;
+    setPurchaseCompany = function(company) {
+      $scope.bb.company_id = company.id;
+      $scope.bb.company = new BBModel.Company(company);
+      $scope.company = $scope.bb.company;
+      $scope.bb.item_defaults.company = $scope.bb.company;
+      if (company.settings) {
+        if (company.settings.merge_resources) {
+          $scope.bb.item_defaults.merge_resources = true;
+        }
+        if (company.settings.merge_people) {
+          return $scope.bb.item_defaults.merge_people = true;
+        }
+      }
+    };
+    failMsg = function() {
+      if ($scope.fail_msg) {
+        return AlertService.danger({
+          msg: $scope.fail_msg
+        });
+      } else {
+        return AlertService.danger({
+          msg: "Sorry, something went wrong"
+        });
+      }
+    };
+    $scope.init = function(options) {
+      if (!options) {
+        options = {};
+      }
+      $scope.notLoaded($scope);
+      if (options.move_route) {
+        $scope.move_route = options.move_route;
+      }
+      if (options.move_all) {
+        $scope.move_all = options.move_all;
+      }
+      if (options.login_redirect) {
+        $scope.requireLogin({
+          redirect: options.login_redirect
+        });
+      }
+      if (options.fail_msg) {
+        $scope.fail_msg = options.fail_msg;
+      }
+      if ($scope.bb.total) {
+        return $scope.load($scope.bb.total.long_id);
+      } else if ($scope.bb.purchase) {
+        $scope.purchase = $scope.bb.purchase;
+        $scope.bookings = $scope.bb.purchase.bookings;
+        if ($scope.purchase.confirm_messages) {
+          $scope.messages = $scope.purchase.confirm_messages;
+        }
+        return $scope.setLoaded($scope);
+      } else {
+        if (options.member_sso) {
+          return SSOService.memberLogin(options).then(function(login) {
+            return $scope.load();
           }, function(err) {
-            return defer.reject(err);
+            $scope.setLoaded($scope);
+            return failMsg();
           });
         } else {
-          existing = ClinicCollections.find(params);
-          if (existing) {
-            defer.resolve(existing);
-          } else {
-            company.$get('clinics', params).then(function(collection) {
-              return collection.$get('clinics').then(function(clinics) {
-                var s;
-                clinics = (function() {
-                  var i, len, results;
+          return $scope.load();
+        }
+      }
+    };
+    $scope.load = function(id) {
+      $scope.notLoaded($scope);
+      id = getPurchaseID();
+      if (!($scope.loaded || !id)) {
+        $rootScope.widget_started.then((function(_this) {
+          return function() {
+            return $scope.waiting_for_conn_started.then(function() {
+              var auth_token, company_id, params;
+              company_id = getCompanyID();
+              if (company_id) {
+                CompanyService.query(company_id, {}).then(function(company) {
+                  return setPurchaseCompany(company);
+                });
+              }
+              params = {
+                purchase_id: id,
+                url_root: $scope.bb.api_url
+              };
+              auth_token = $sessionStorage.getItem('auth_token');
+              if (auth_token) {
+                params.auth_token = auth_token;
+              }
+              return PurchaseService.query(params).then(function(purchase) {
+                if ($scope.bb.company == null) {
+                  purchase.$get('company').then((function(_this) {
+                    return function(company) {
+                      return setPurchaseCompany(company);
+                    };
+                  })(this));
+                }
+                $scope.purchase = purchase;
+                $scope.bb.purchase = purchase;
+                $scope.price = !($scope.purchase.price === 0);
+                $scope.purchase.getBookingsPromise().then(function(bookings) {
+                  var booking, i, len, ref, results;
+                  $scope.bookings = bookings;
+                  $scope.setLoaded($scope);
+                  checkIfMoveBooking(bookings);
+                  checkIfWaitlistBookings(bookings);
+                  ref = $scope.bookings;
                   results = [];
-                  for (i = 0, len = clinics.length; i < len; i++) {
-                    s = clinics[i];
-                    results.push(new BBModel.Clinic(s));
+                  for (i = 0, len = ref.length; i < len; i++) {
+                    booking = ref[i];
+                    results.push(booking.getAnswersPromise().then(function(answers) {
+                      return booking.answers = answers;
+                    }));
                   }
                   return results;
-                })();
-                return defer.resolve(clinics);
+                }, function(err) {
+                  $scope.setLoaded($scope);
+                  return failMsg();
+                });
+                if (purchase.$has('client')) {
+                  purchase.$get('client').then((function(_this) {
+                    return function(client) {
+                      return $scope.setClient(new BBModel.Client(client));
+                    };
+                  })(this));
+                }
+                return $scope.purchase.getConfirmMessages().then(function(messages) {
+                  $scope.purchase.confirm_messages = messages;
+                  return $scope.messages = messages;
+                });
               }, function(err) {
-                return defer.reject(err);
+                $scope.setLoaded($scope);
+                if (err && err.status === 401 && $scope.login_action) {
+                  if (LoginService.isLoggedIn()) {
+                    return failMsg();
+                  } else {
+                    return loginRequired();
+                  }
+                } else {
+                  return failMsg();
+                }
               });
             }, function(err) {
-              return defer.reject(err);
+              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
             });
+          };
+        })(this), function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      }
+      return $scope.loaded = true;
+    };
+    checkIfMoveBooking = function(bookings) {
+      var b, id, matches, move_booking;
+      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        id = parseInt(matches[1]);
+      }
+      if (id) {
+        move_booking = (function() {
+          var i, len, results;
+          results = [];
+          for (i = 0, len = bookings.length; i < len; i++) {
+            b = bookings[i];
+            if (b.id === id) {
+              results.push(b);
+            }
+          }
+          return results;
+        })();
+        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
+          return $scope.move(move_booking[0]);
+        }
+      }
+    };
+    checkIfWaitlistBookings = function(bookings) {
+      var booking;
+      return $scope.waitlist_bookings = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = bookings.length; i < len; i++) {
+          booking = bookings[i];
+          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+            results.push(booking);
           }
         }
-        return defer.promise;
+        return results;
+      })();
+    };
+    $scope.requireLogin = (function(_this) {
+      return function(action) {
+        var div;
+        if (_.isString(action.redirect)) {
+          if (action.redirect.indexOf('?') === -1) {
+            div = '?';
+          } else {
+            div = '&';
+          }
+          action.redirect += div + 'ref=' + encodeURIComponent(QueryStringService('ref'));
+        }
+        return $scope.login_action = action;
+      };
+    })(this);
+    loginRequired = (function(_this) {
+      return function() {
+        if ($scope.login_action.redirect) {
+          return window.location = $scope.login_action.redirect;
+        }
+      };
+    })(this);
+    getCompanyID = function() {
+      var company_id, matches;
+      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        company_id = matches[1];
       }
+      return company_id;
+    };
+    getPurchaseID = function() {
+      var id, matches;
+      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (!matches) {
+        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (!matches) {
+        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (matches) {
+        id = matches[1];
+      } else {
+        if (QueryStringService('ref')) {
+          id = QueryStringService('ref');
+        }
+      }
+      if (QueryStringService('booking_id')) {
+        id = QueryStringService('booking_id');
+      }
+      return id;
+    };
+    $scope.move = function(booking, route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      if ($scope.move_all) {
+        return $scope.moveAll(route, options);
+      }
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: booking.company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var new_item, proms;
+            proms = [];
+            $scope.bb.moving_booking = booking;
+            $scope.quickEmptybasket();
+            new_item = new BBModel.BasketItem(booking, $scope.bb);
+            new_item.setSrcBooking(booking, $scope.bb);
+            new_item.ready = false;
+            Array.prototype.push.apply(proms, new_item.promises);
+            $scope.bb.basket.addItem(new_item);
+            $scope.setBasketItem(new_item);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              $rootScope.$broadcast("booking:move");
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.moveAll = function(route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: $scope.bookings[0].company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var booking, i, len, new_item, proms, ref;
+            proms = [];
+            if ($scope.bookings.length === 1) {
+              $scope.bb.moving_booking = $scope.bookings[0];
+            } else {
+              $scope.bb.moving_booking = $scope.purchase;
+            }
+            $scope.quickEmptybasket();
+            ref = $scope.bookings;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              new_item = new BBModel.BasketItem(booking, $scope.bb);
+              new_item.setSrcBooking(booking);
+              new_item.ready = false;
+              new_item.move_done = false;
+              Array.prototype.push.apply(proms, new_item.promises);
+              $scope.bb.basket.addItem(new_item);
+            }
+            $scope.bb.sortStackedItems();
+            $scope.setBasketItem($scope.bb.basket.items[0]);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.bookWaitlistItem = function(booking) {
+      var params;
+      $scope.notLoaded($scope);
+      params = {
+        purchase: $scope.purchase,
+        booking: booking
+      };
+      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
+        $scope.purchase = purchase;
+        $scope.total = $scope.purchase;
+        $scope.bb.purchase = purchase;
+        return $scope.purchase.getBookingsPromise().then(function(bookings) {
+          $scope.bookings = bookings;
+          $scope.waitlist_bookings = (function() {
+            var i, len, ref, results;
+            ref = $scope.bookings;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+                results.push(booking);
+              }
+            }
+            return results;
+          })();
+          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
+            $scope.make_payment = true;
+          }
+          return $scope.setLoaded($scope);
+        }, function(err) {
+          $scope.setLoaded($scope);
+          return failMsg();
+        });
+      }, (function(_this) {
+        return function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        };
+      })(this));
+    };
+    $scope["delete"] = function(booking) {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDelete,
+        resolve: {
+          booking: function() {
+            return booking;
+          }
+        }
+      });
+      return modalInstance.result.then(function(booking) {
+        return booking.$del('self').then((function(_this) {
+          return function(service) {
+            $scope.bookings = _.without($scope.bookings, booking);
+            return $rootScope.$broadcast("booking:cancelled");
+          };
+        })(this));
+      });
+    };
+    $scope.delete_all = function() {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDeleteAll,
+        resolve: {
+          purchase: function() {
+            return $scope.purchase;
+          }
+        }
+      });
+      return modalInstance.result.then(function(purchase) {
+        return PurchaseService.delete_all(purchase).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.bookings = [];
+          return $rootScope.$broadcast("booking:cancelled");
+        });
+      });
+    };
+    $scope.isMovable = function(booking) {
+      if (booking.min_cancellation_time) {
+        return moment().isBefore(booking.min_cancellation_time);
+      }
+      return booking.datetime.isAfter(moment());
+    };
+    $scope.onFileSelect = function(booking, $file, existing) {
+      var att_id, file, method;
+      $scope.upload_progress = 0;
+      file = $file;
+      att_id = null;
+      if (existing) {
+        att_id = existing.id;
+      }
+      method = "POST";
+      if (att_id) {
+        method = "PUT";
+      }
+      return $scope.upload = $upload.upload({
+        url: booking.$href('attachments'),
+        method: method,
+        data: {
+          att_id: att_id
+        },
+        file: file
+      }).progress(function(evt) {
+        if ($scope.upload_progress < 100) {
+          return $scope.upload_progress = parseInt(99.0 * evt.loaded / evt.total);
+        }
+      }).success(function(data, status, headers, config) {
+        $scope.upload_progress = 100;
+        if (data && data.attachments && booking) {
+          return booking.attachments = data.attachments;
+        }
+      });
+    };
+    $scope.createBasketItem = function(booking) {
+      var item;
+      item = new BBModel.BasketItem(booking, $scope.bb);
+      item.setSrcBooking(booking);
+      return item;
+    };
+    return $scope.checkAnswer = function(answer) {
+      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
     };
   });
 
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
-    return {
-      query: function(company_id, options) {
-        var deferred, url;
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/company/" + company_id;
-        deferred = $q.defer();
-        halClient.$get(url, options).then((function(_this) {
-          return function(company) {
-            return deferred.resolve(company);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-=======
-        if (this.event_chain.isSingleBooking()) {
-          this.tickets = {
-            name: "Admittance",
-            max: 1,
-            type: "normal",
-            price: this.base_price
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
-          };
-          this.tickets.pre_paid_booking_id = this.pre_paid_booking_id;
-          if (this.num_book) {
-            this.tickets.qty = this.num_book;
-          }
-        }
-        if (this.event_chain.$has('questions')) {
-          this.has_questions = true;
-          prom = this.event_chain.$get('questions');
-          this.promises.push(prom);
-          return prom.then((function(_this) {
-            return function(details) {
-              _this.item_details = new BBModel.ItemDetails(details);
-              _this.has_questions = _this.item_details.hasQuestions;
-              if (default_questions) {
-                _this.item_details.setAnswers(default_questions);
-                return _this.setAskedQuestions();
-              }
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return _this.has_questions = false;
-            };
-          })(this));
-        } else {
-          return this.has_questions = false;
-        }
-      };
-
-      BasketItem.prototype.setEvent = function(event) {
-        var prom;
-        if (this.event) {
-          this.event.unselect();
-        }
-        this.event = event;
-        this.event.select();
-        this.event_chain_id = event.event_chain_id;
-        this.setDate({
-          date: event.date
-        });
-        this.setTime(event.time);
-        this.setDuration(event.duration);
-        if (event.$has('book')) {
-          this.book_link = event;
-        }
-        prom = this.event.getChain();
-        this.promises.push(prom);
-        prom.then((function(_this) {
-          return function(chain) {
-            return _this.setEventChain(chain);
-          };
-        })(this));
-        prom = this.event.getGroup();
-        this.promises.push(prom);
-        prom.then((function(_this) {
-          return function(group) {
-            return _this.setEventGroup(group);
-          };
-        })(this));
-        this.num_book = event.qty;
-        if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
-          if (this.company.getSettings().has_waitlists) {
-            return this.status = 8;
-          }
-        } else if (this.event.getSpacesLeft() <= 0 && this.company.settings && this.company.settings.has_waitlists) {
-          return this.status = 8;
-        }
-      };
-
-      BasketItem.prototype.setCategory = function(cat) {
-        return this.category = cat;
-      };
-
-      BasketItem.prototype.setPerson = function(per, set_selected) {
-        if (set_selected == null) {
-          set_selected = true;
-        }
-        if (set_selected && this.earliest_time) {
-          delete this.earliest_time;
-        }
-        if (!per) {
-          this.person = true;
-          if (set_selected) {
-            this.settings.person = -1;
-          }
-          this.parts_links.person = null;
-          if (this.service) {
-            this.setService(this.service);
-          }
-          if (this.resource && !this.anyResource()) {
-            this.setResource(this.resource, false);
-          }
-          if (this.event_id) {
-            delete this.event_id;
-            if (this.resource && this.defaults && this.defaults.merge_resources) {
-              return this.setResource(null);
-            }
-          }
-        } else {
-          this.person = per;
-          if (set_selected) {
-            this.settings.person = this.person.id;
-          }
-          this.parts_links.person = this.person.$href('self');
-          if (per.$has('days')) {
-            this.days_link = per;
-          }
-          if (per.$has('book')) {
-            this.book_link = per;
-          }
-          if (this.event_id && this.$has('person') && this.$href('person') !== this.person.self) {
-            delete this.event_id;
-            if (this.resource && this.defaults && this.defaults.merge_resources) {
-              return this.setResource(null);
-            }
-          }
-        }
-      };
-
-      BasketItem.prototype.setResource = function(res, set_selected) {
-        if (set_selected == null) {
-          set_selected = true;
-        }
-        if (set_selected && this.earliest_time) {
-          delete this.earliest_time;
-        }
-        if (!res) {
-          this.resource = true;
-          if (set_selected) {
-            this.settings.resource = -1;
-          }
-          this.parts_links.resource = null;
-          if (this.service) {
-            this.setService(this.service);
-          }
-          if (this.person && !this.anyPerson()) {
-            this.setPerson(this.person, false);
-          }
-          if (this.event_id) {
-            delete this.event_id;
-            if (this.person && this.defaults && this.defaults.merge_people) {
-              return this.setPerson(null);
-            }
-          }
-        } else {
-          this.resource = res;
-          if (set_selected) {
-            this.settings.resource = this.resource.id;
-          }
-          this.parts_links.resource = this.resource.$href('self');
-          if (res.$has('days')) {
-            this.days_link = res;
-          }
-          if (res.$has('book')) {
-            this.book_link = res;
-          }
-          if (this.event_id && this.$has('resource') && this.$href('resource') !== this.resource.self) {
-            delete this.event_id;
-            if (this.person && this.defaults && this.defaults.merge_people) {
-              return this.setPerson(null);
-            }
-          }
-        }
-      };
-
-      BasketItem.prototype.setDuration = function(dur) {
-        this.duration = dur;
-        if (this.service) {
-          this.base_price = this.service.getPriceByDuration(dur);
-        }
-        if (this.time && this.time.price) {
-          this.base_price = this.time.price;
-        }
-        if (this.price && (this.price !== this.base_price)) {
-          return this.setPrice(this.price);
-        } else {
-          return this.setPrice(this.base_price);
-        }
-      };
-
-      BasketItem.prototype.print_time = function() {
-        if (this.time) {
-          return this.time.print_time();
-        }
-      };
-
-      BasketItem.prototype.print_end_time = function() {
-        if (this.time) {
-          return this.time.print_end_time(this.duration);
-        }
-      };
-
-      BasketItem.prototype.print_time12 = function(show_suffix) {
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        if (this.time) {
-          return this.time.print_time12(show_suffix);
-        }
-      };
-
-      BasketItem.prototype.print_end_time12 = function(show_suffix) {
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        if (this.time) {
-          return this.time.print_end_time12(show_suffix, this.duration);
-        }
-      };
-
-      BasketItem.prototype.setTime = function(time) {
-        var hours, mins, val;
-        if (this.time) {
-          this.time.unselect();
-        }
-        this.time = time;
-        if (this.time) {
-          this.time.select();
-          if (this.datetime) {
-            val = parseInt(time.time);
-            hours = parseInt(val / 60);
-            mins = val % 60;
-            this.datetime.hour(hours);
-            this.datetime.minutes(mins);
-          }
-          if (this.price && this.time.price && (this.price !== this.time.price)) {
-            this.setPrice(this.price);
-          } else if (this.price && !this.time.price) {
-            this.setPrice(this.price);
-          } else if (this.time.price && !this.price) {
-            this.setPrice(this.time.price);
-          } else {
-            this.setPrice(null);
-          }
-        }
-        return this.checkReady();
-      };
-
-      BasketItem.prototype.setDate = function(date) {
-        this.date = date;
-        if (this.date) {
-          this.date.date = moment(this.date.date);
-          if (this.datetime) {
-            this.datetime.date(this.date.date.date());
-            this.datetime.month(this.date.date.month());
-            this.datetime.year(this.date.date.year());
-          }
-        }
-        return this.checkReady();
-      };
-
-      BasketItem.prototype.clearDateTime = function() {
-        delete this.date;
-        delete this.time;
-        delete this.datetime;
-        this.ready = false;
-        return this.reserve_ready = false;
-      };
-
-      BasketItem.prototype.clearTime = function() {
-        delete this.time;
-        this.ready = false;
-        return this.reserve_ready = false;
-      };
-
-      BasketItem.prototype.setGroup = function(group) {
-        return this.group = group;
-      };
-
-      BasketItem.prototype.setAskedQuestions = function() {
-        this.asked_questions = true;
-        return this.checkReady();
-      };
-
-<<<<<<< HEAD
-(function() {
-  angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var alerts;
-    alerts = [
-      {
-        key: 'GENERIC',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
-      }, {
-        key: 'LOCATION_NOT_FOUND',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Sorry, we don't recognise that location"
-      }, {
-        key: 'MISSING_LOCATION',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter your location'
-      }, {
-        key: 'MISSING_POSTCODE',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a postcode'
-      }, {
-        key: 'INVALID_POSTCODE',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a valid postcode'
-      }, {
-        key: 'ITEM_NO_LONGER_AVAILABLE',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
-      }, {
-        key: 'FORM_INVALID',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please complete all required fields'
-      }, {
-        key: 'GEOLOCATION_ERROR',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we could not determine your location. Please try searching instead.'
-      }, {
-        key: 'EMPTY_BASKET_FOR_CHECKOUT',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'There are no items in the basket to proceed to checkout.'
-      }, {
-        key: 'MAXIMUM_TICKETS',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
-      }, {
-        key: 'TIME_SLOT_NOT_SELECTED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to select a time slot'
-      }, {
-        key: 'APPT_AT_SAME_TIME',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your appointment is already booked for this time'
-      }, {
-        key: 'REQ_TIME_NOT_AVAIL',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'The requested time slot is not available. Please choose a different time.'
-      }
-    ];
-    return {
-      getError: function(key) {
-        var error, translate;
-        error = _.findWhere(alerts, {
-          key: key
-        });
-        error.persist = true;
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (error && translate) {
-          return {
-            msg: "ERROR." + key
-          };
-        } else if (error && !translate) {
-          return error;
-        } else if (translate) {
-          return {
-            msg: 'GENERIC'
-          };
-        } else {
-          return alerts[0];
-        }
-      },
-      getAlert: function(key) {
-        var alert, translate;
-        alert = _.findWhere(alerts, {
-          key: key
-        });
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (alert && translate) {
-          return {
-            msg: "ALERT." + key
-          };
-        } else if (alert && !translate) {
-          return alert;
-        } else {
-          return null;
-=======
-      BasketItem.prototype.checkReady = function() {
-        if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
-          this.ready = true;
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
-        }
-        if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions || this.reserve_without_questions)) {
-          return this.reserve_ready = true;
-        }
-      };
-
-      BasketItem.prototype.getPostData = function() {
-        var data, i, j, len, len1, m_question, o_question, ref, ref1;
-        if (this.cloneAnswersItem) {
-          ref = this.cloneAnswersItem.item_details.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            o_question = ref[i];
-            ref1 = this.item_details.questions;
-            for (j = 0, len1 = ref1.length; j < len1; j++) {
-              m_question = ref1[j];
-              if (m_question.id === o_question.id) {
-                m_question.answer = o_question.answer;
-                this.setAskedQuestions();
-              }
-            }
-          }
-        }
-        data = {};
-        if (this.date) {
-          data.date = this.date.date.toISODate();
-        }
-        if (this.time) {
-          data.time = this.time.time;
-          if (this.time.event_id) {
-            data.event_id = this.time.event_id;
-          } else if (this.time.event_ids) {
-            data.event_ids = this.time.event_ids;
-          }
-        } else if (this.date && this.date.event_id) {
-          data.event_id = this.date.event_id;
-        }
-        data.price = this.price;
-        data.paid = this.paid;
-        if (this.book_link) {
-          data.book = this.book_link.$href('book');
-        }
-        data.id = this.id;
-        data.duration = this.duration;
-        data.settings = this.settings;
-        data.settings || (data.settings = {});
-        if (this.earliest_time) {
-          data.settings.earliest_time = this.earliest_time;
-        }
-        if (this.item_details && this.asked_questions) {
-          data.questions = this.item_details.getPostData();
-        }
-        if (this.move_item_id) {
-          data.move_item_id = this.move_item_id;
-        }
-        if (this.srcBooking) {
-          data.move_item_id = this.srcBooking.id;
-        }
-        if (this.service) {
-          data.service_id = this.service.id;
-        }
-        if (this.resource) {
-          data.resource_id = this.resource.id;
-        }
-        if (this.person) {
-          data.person_id = this.person.id;
-        }
-        data.length = this.length;
-        if (this.event) {
-          data.event_id = this.event.id;
-          if (this.event.pre_paid_booking_id != null) {
-            data.pre_paid_booking_id = this.event.pre_paid_booking_id;
-          } else if (this.tickets && (this.tickets.pre_paid_booking_id != null)) {
-            data.pre_paid_booking_id = this.tickets.pre_paid_booking_id;
-          }
-          data.tickets = this.tickets;
-        }
-        if (this.pre_paid_booking_id != null) {
-          data.pre_paid_booking_id = this.pre_paid_booking_id;
-        }
-        data.event_chain_id = this.event_chain_id;
-        data.event_group_id = this.event_group_id;
-        data.qty = this.qty;
-        if (this.status) {
-          data.status = this.status;
-        }
-        if (this.num_resources != null) {
-          data.num_resources = parseInt(this.num_resources);
-        }
-        data.product = this.product;
-        data.external_purchase = this.external_purchase;
-        if (this.deal) {
-          data.deal = this.deal;
-        }
-        if (this.deal && this.recipient) {
-          data.recipient = this.recipient;
-        }
-        if (this.deal && this.recipient && this.recipient_mail) {
-          data.recipient_mail = this.recipient_mail;
-        }
-        data.coupon_id = this.coupon_id;
-        data.is_coupon = this.is_coupon;
-        if (this.attachment_id) {
-          data.attachment_id = this.attachment_id;
-        }
-        if (this.deal_codes) {
-          data.vouchers = this.deal_codes;
-        }
-        if (this.email) {
-          data.email = this.email;
-        }
-        if (this.first_name) {
-          data.first_name = this.first_name;
-        }
-        if (this.last_name) {
-          data.last_name = this.last_name;
-        }
-        if (this.email != null) {
-          data.email = this.email;
-        }
-        if (this.email_admin != null) {
-          data.email_admin = this.email_admin;
-        }
-        if (this.private_note) {
-          data.private_note = this.private_note;
-        }
-        if (this.available_slot) {
-          data.available_slot = this.available_slot;
-        }
-        return data;
-      };
-
-      BasketItem.prototype.setPrice = function(nprice) {
-        var printed_price;
-        if (nprice != null) {
-          this.price = parseFloat(nprice);
-          printed_price = this.price / 100;
-          this.printed_price = printed_price % 1 === 0 ? "£" + parseInt(printed_price) : $window.sprintf("£%.2f", printed_price);
-          if (this.company && this.company.settings) {
-            this.printed_vat_cal = this.company.settings.payment_tax;
-          }
-          if (this.printed_vat_cal) {
-            this.printed_vat = this.printed_vat_cal / 100 * printed_price;
-          }
-          if (this.printed_vat_cal) {
-            return this.printed_vat_inc = this.printed_vat_cal / 100 * printed_price + printed_price;
-          }
-        } else {
-          this.price = null;
-          this.printed_price = null;
-          this.printed_vat_cal = null;
-          this.printed_vat = null;
-          return this.printed_vat_inc = null;
-        }
-      };
-
-      BasketItem.prototype.getStep = function() {
-        var temp;
-        temp = {};
-        temp.service = this.service;
-        temp.category = this.category;
-        temp.person = this.person;
-        temp.resource = this.resource;
-        temp.duration = this.duration;
-        temp.event = this.event;
-        temp.event_group = this.event_group;
-        temp.event_chain = this.event_chain;
-        temp.time = this.time;
-        temp.date = this.date;
-        temp.days_link = this.days_link;
-        temp.book_link = this.book_link;
-        temp.ready = this.ready;
-        return temp;
-      };
-
-      BasketItem.prototype.loadStep = function(step) {
-        if (this.id) {
-          return;
-        }
-        this.service = step.service;
-        this.category = step.category;
-        this.person = step.person;
-        this.resource = step.resource;
-        this.duration = step.duration;
-        this.event = step.event;
-        this.event_chain = step.event_chain;
-        this.event_group = step.event_group;
-        this.time = step.time;
-        this.date = step.date;
-        this.days_link = step.days_link;
-        this.book_link = step.book_link;
-        return this.ready = step.ready;
-      };
-
-      BasketItem.prototype.describe = function() {
-        var title;
-        title = "-";
-        if (this.service) {
-          title = this.service.name;
-        }
-        if (this.event_group && this.event && title === "-") {
-          title = this.event_group.name + " - " + this.event.description;
-        }
-        if (this.product) {
-          title = this.product.name;
-        }
-        if (this.external_purchase) {
-          title = this.external_purchase.name;
-        }
-        if (this.deal) {
-          title = this.deal.name;
-        }
-        return title;
-      };
-
-      BasketItem.prototype.booking_date = function(format) {
-        if (!this.date || !this.date.date) {
-          return null;
-        }
-        return this.date.date.format(format);
-      };
-
-      BasketItem.prototype.booking_time = function(seperator) {
-        var duration;
-        if (seperator == null) {
-          seperator = '-';
-        }
-        if (!this.time) {
-          return null;
-        }
-        duration = this.listed_duration ? this.listed_duration : this.duration;
-        return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
-      };
-
-      BasketItem.prototype.duePrice = function() {
-        if (this.isWaitlist()) {
-          return 0;
-        }
-        return this.price;
-      };
-
-      BasketItem.prototype.isWaitlist = function() {
-        return this.status && this.status === 8;
-      };
-
-      BasketItem.prototype.start_datetime = function() {
-        var start_datetime;
-        if (!this.date || !this.time) {
-          return null;
-        }
-        start_datetime = moment(this.date.date.toISODate());
-        start_datetime.minutes(this.time.time);
-        return start_datetime;
-      };
-
-      BasketItem.prototype.end_datetime = function() {
-        var duration, end_datetime;
-        if (!this.date || !this.time || (!this.listed_duration && !this.duration)) {
-          return null;
-        }
-        duration = this.listed_duration ? this.listed_duration : this.duration;
-        end_datetime = moment(this.date.date.toISODate());
-        end_datetime.minutes(this.time.time + duration);
-        return end_datetime;
-      };
-
-      BasketItem.prototype.setSrcBooking = function(booking) {
-        this.srcBooking = booking;
-        return this.duration = booking.duration / 60;
-      };
-
-      BasketItem.prototype.anyPerson = function() {
-        return this.person && (typeof this.person === 'boolean');
-      };
-
-      BasketItem.prototype.anyResource = function() {
-        return this.resource && (typeof this.resource === 'boolean');
-      };
-
-      BasketItem.prototype.isMovingBooking = function() {
-        return this.srcBooking || this.move_item_id;
-      };
-
-      BasketItem.prototype.setCloneAnswers = function(otherItem) {
-        return this.cloneAnswersItem = otherItem;
-      };
-
-      BasketItem.prototype.questionPrice = function() {
-        if (!this.item_details) {
-          return 0;
-        }
-        return this.item_details.questionPrice(this.getQty());
-      };
-
-      BasketItem.prototype.getQty = function() {
-        if (this.qty) {
-          return this.qty;
-        }
-        if (this.tickets) {
-          return this.tickets.qty;
-        }
-        return 1;
-      };
-
-      BasketItem.prototype.totalPrice = function() {
-        var pr;
-        if (this.tickets && this.tickets.pre_paid_booking_id) {
-          return 0;
-        }
-        if (this.discount_price != null) {
-          return this.discount_price + this.questionPrice();
-        }
-        pr = this.total_price;
-        if (!angular.isNumber(pr)) {
-          pr = this.price;
-        }
-        if (!angular.isNumber(pr)) {
-          pr = 0;
-        }
-        return pr + this.questionPrice();
-      };
-
-      BasketItem.prototype.fullPrice = function() {
-        var pr;
-        pr = this.base_price;
-        pr || (pr = this.total_price);
-        pr || (pr = this.price);
-        pr || (pr = 0);
-        return pr + this.questionPrice();
-      };
-
-      BasketItem.prototype.setProduct = function(product) {
-        this.product = product;
-        if (this.product.$has('book')) {
-          this.book_link = this.product;
-        }
-        if (product.price) {
-          return this.setPrice(product.price);
-        }
-      };
-
-      BasketItem.prototype.setExternalPurchase = function(external_purchase) {
-        this.external_purchase = external_purchase;
-        this.book_link = this.company;
-        if (external_purchase.price) {
-          return this.setPrice(external_purchase.price);
-        }
-      };
-
-      BasketItem.prototype.setDeal = function(deal) {
-        this.deal = deal;
-        if (this.deal.$has('book')) {
-          this.book_link = this.deal;
-        }
-        if (deal.price) {
-          return this.setPrice(deal.price);
-        }
-      };
-
-      BasketItem.prototype.hasPrice = function() {
-        if (this.price) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-
-      BasketItem.prototype.getAttachment = function() {
-        if (this.attachment) {
-          return this.attachment;
-        }
-        if (this.$has('attachment') && this.attachment_id) {
-          return this._data.$get('attachment').then((function(_this) {
-            return function(att) {
-              _this.attachment = att;
-              return _this.attachment;
-            };
-          })(this));
-        }
-      };
-
-      return BasketItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BookableItemModel", function($q, BBModel, BaseModel) {
-    var BookableItem;
-    return BookableItem = (function(superClass) {
-      extend(BookableItem, superClass);
-
-      BookableItem.prototype.item = null;
-
-      BookableItem.prototype.promise = null;
-
-      function BookableItem(data) {
-        BookableItem.__super__.constructor.apply(this, arguments);
-        this.name = "-Waiting-";
-        this.ready = $q.defer();
-        this.promise = this._data.$get('item');
-        this.promise.then((function(_this) {
-          return function(val) {
-            var m, n, ref, ref1, ref2;
-            if (val.type === "person") {
-              _this.item = new BBModel.Person(val);
-              if (_this.item) {
-                ref = _this.item._data;
-                for (n in ref) {
-                  m = ref[n];
-                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
-                    _this[n] = m;
-                  }
-                }
-                return _this.ready.resolve();
-              } else {
-                return _this.ready.resolve();
-              }
-            } else if (val.type === "resource") {
-              _this.item = new BBModel.Resource(val);
-              if (_this.item) {
-                ref1 = _this.item._data;
-                for (n in ref1) {
-                  m = ref1[n];
-                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
-                    _this[n] = m;
-                  }
-                }
-                return _this.ready.resolve();
-              } else {
-                return _this.ready.resolve();
-              }
-            } else if (val.type === "service") {
-              _this.item = new BBModel.Service(val);
-              if (_this.item) {
-                ref2 = _this.item._data;
-                for (n in ref2) {
-                  m = ref2[n];
-                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
-                    _this[n] = m;
-                  }
-                }
-                return _this.ready.resolve();
-              } else {
-                return _this.ready.resolve();
-              }
-            }
-          };
-        })(this));
-      }
-
-      return BookableItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BusinessQuestionModel", function($q, $filter, BBModel, BaseModel) {
-    var BusinessQuestion;
-    return BusinessQuestion = (function(superClass) {
-      extend(BusinessQuestion, superClass);
-
-      function BusinessQuestion(data) {
-        BusinessQuestion.__super__.constructor.call(this, data);
-      }
-
-      return BusinessQuestion;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("CategoryModel", function($q, BBModel, BaseModel) {
-    var Category;
-    return Category = (function(superClass) {
-      extend(Category, superClass);
-
-      function Category() {
-        return Category.__super__.constructor.apply(this, arguments);
-      }
-
-      return Category;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
-    var Client;
-    return Client = (function(superClass) {
-      extend(Client, superClass);
-
-      function Client(data) {
-        Client.__super__.constructor.apply(this, arguments);
-        this.name = this.getName();
-        if (data) {
-          if (data.answers && data.$has('questions')) {
-            this.waitingQuestions = $q.defer();
-            this.gotQuestions = this.waitingQuestions.promise;
-            data.$get('questions').then((function(_this) {
-              return function(details) {
-                _this.client_details = new BBModel.ClientDetails(details);
-                _this.client_details.setAnswers(data.answers);
-                _this.questions = _this.client_details.questions;
-                _this.setAskedQuestions();
-                return _this.waitingQuestions.resolve();
-              };
-            })(this));
-          }
-          this.raw_mobile = this.mobile;
-          if (this.mobile && this.mobile[0] !== "0") {
-            this.mobile = "0" + this.mobile;
-          }
-          if (this.phone && this.phone[0] !== "0") {
-            this.phone = "0" + this.phone;
-          }
-        }
-      }
-
-      Client.prototype.setClientDetails = function(details) {
-        this.client_details = details;
-        return this.questions = this.client_details.questions;
-      };
-
-      Client.prototype.setDefaults = function(values) {
-        if (values.name) {
-          this.name = values.name;
-        }
-        if (values.first_name) {
-          this.first_name = values.first_name;
-        }
-        if (values.last_name) {
-          this.last_name = values.last_name;
-        }
-        if (values.phone) {
-          this.phone = values.phone;
-        }
-        if (values.mobile) {
-          this.mobile = values.mobile;
-        }
-        if (values.email) {
-          this.email = values.email;
-        }
-        if (values.id) {
-          this.id = values.id;
-        }
-        if (values.ref) {
-          this.comp_ref = values.ref;
-        }
-        if (values.comp_ref) {
-          this.comp_ref = values.comp_ref;
-        }
-        if (values.address1) {
-          this.address1 = values.address1;
-        }
-        if (values.address2) {
-          this.address2 = values.address2;
-        }
-        if (values.address3) {
-          this.address3 = values.address3;
-        }
-        if (values.address4) {
-          this.address4 = values.address4;
-        }
-        if (values.address5) {
-          this.address5 = values.address5;
-        }
-        if (values.postcode) {
-          this.postcode = values.postcode;
-        }
-        if (values.country) {
-          this.country = values.country;
-        }
-        if (values.answers) {
-          return this.default_answers = values.answers;
-        }
-      };
-
-      Client.prototype.pre_fill_answers = function(details) {
-        var i, len, q, ref, results;
-        if (!this.default_answers) {
-          return;
-        }
-        ref = details.questions;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          q = ref[i];
-          if (this.default_answers[q.name]) {
-            results.push(q.answer = this.default_answers[q.name]);
-          } else {
-            results.push(void 0);
-          }
-        }
-        return results;
-      };
-
-      Client.prototype.getName = function() {
-        var str;
-        str = "";
-        if (this.first_name) {
-          str += this.first_name;
-        }
-        if (str.length > 0 && this.last_name) {
-          str += " ";
-        }
-        if (this.last_name) {
-          str += this.last_name;
-        }
-        return str;
-      };
-
-      Client.prototype.addressSingleLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += ", ";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-      Client.prototype.hasAddress = function() {
-        return this.address1 || this.address2 || this.postcode;
-      };
-
-      Client.prototype.addressCsvLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        str += ", ";
-        if (this.address2) {
-          str += this.address2;
-        }
-        str += ", ";
-        if (this.address3) {
-          str += this.address3;
-        }
-        str += ", ";
-        if (this.address4) {
-          str += this.address4;
-        }
-        str += ", ";
-        if (this.address5) {
-          str += this.address5;
-        }
-        str += ", ";
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        str += ", ";
-        if (this.country) {
-          str += this.country;
-        }
-        return str;
-      };
-
-      Client.prototype.addressMultiLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-      Client.prototype.getPostData = function() {
-        var i, len, q, ref, x;
-        x = {};
-        x.first_name = this.first_name;
-        x.last_name = this.last_name;
-        if (this.house_number) {
-          x.address1 = this.house_number + " " + this.address1;
-        } else {
-          x.address1 = this.address1;
-        }
-        x.address2 = this.address2;
-        x.address3 = this.address3;
-        x.address4 = this.address4;
-        x.address5 = this.address5;
-        x.postcode = this.postcode;
-        x.country = this.country;
-        x.phone = this.phone;
-        x.email = this.email;
-        x.id = this.id;
-        x.comp_ref = this.comp_ref;
-        x.parent_client_id = this.parent_client_id;
-        x.password = this.password;
-        x.notifications = this.notifications;
-        if (this.mobile) {
-          this.remove_prefix();
-          x.mobile = this.mobile;
-          x.mobile_prefix = this.mobile_prefix;
-        }
-        if (this.questions) {
-          x.questions = [];
-          ref = this.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            x.questions.push(q.getPostData());
-          }
-        }
-        return x;
-      };
-
-      Client.prototype.valid = function() {
-        if (this.isValid) {
-          return this.isValid;
-        }
-        if (this.email || this.hasServerId()) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-
-      Client.prototype.setValid = function(val) {
-        return this.isValid = val;
-      };
-
-      Client.prototype.hasServerId = function() {
-        return this.id;
-      };
-
-      Client.prototype.setAskedQuestions = function() {
-        return this.asked_questions = true;
-      };
-
-      Client.prototype.fullMobile = function() {
-        if (!this.mobile) {
-          return;
-        }
-        if (!this.mobile_prefix) {
-          return this.mobile;
-        }
-        return "+" + this.mobile_prefix + this.mobile;
-      };
-
-      Client.prototype.remove_prefix = function() {
-        var pref_arr;
-        pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
-        if (pref_arr) {
-          this.mobile.replace(pref_arr[0], "");
-          return this.mobile_prefix = pref_arr[0];
-        }
-      };
-
-      Client.prototype.getPrePaidBookingsPromise = function(params) {
-        var defer;
-        defer = $q.defer();
-        if (this.$has('pre_paid_bookings')) {
-          this.$get('pre_paid_bookings', params).then(function(collection) {
-            return collection.$get('pre_paid_bookings').then(function(prepaids) {
-              var prepaid;
-              return defer.resolve((function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = prepaids.length; i < len; i++) {
-                  prepaid = prepaids[i];
-                  results.push(new BBModel.PrePaidBooking(prepaid));
-                }
-                return results;
-              })());
-            }, function(err) {
-              return defer.reject(err);
-            });
-          }, function(err) {
-            return defer.reject(err);
-          });
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      return Client;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ClientDetailsModel", function($q, BBModel, BaseModel) {
-    var ClientDetails;
-    return ClientDetails = (function(superClass) {
-      extend(ClientDetails, superClass);
-
-      function ClientDetails(data) {
-        var i, len, q, ref;
-        ClientDetails.__super__.constructor.apply(this, arguments);
-        this.questions = [];
-        if (this._data) {
-          ref = data.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            this.questions.push(new BBModel.Question(q));
-          }
-        }
-        this.hasQuestions = this.questions.length > 0;
-      }
-
-      ClientDetails.prototype.getPostData = function(questions) {
-        var data, i, len, q;
-        data = [];
-        for (i = 0, len = questions.length; i < len; i++) {
-          q = questions[i];
-          data.push({
-            answer: q.answer,
-            id: q.id,
-            price: q.price
-          });
-        }
-        return data;
-      };
-
-      ClientDetails.prototype.setAnswers = function(answers) {
-        var a, ahash, i, j, len, len1, q, ref, results;
-        ahash = {};
-        for (i = 0, len = answers.length; i < len; i++) {
-          a = answers[i];
-          ahash[a.question_id] = a;
-        }
-        ref = this.questions;
-        results = [];
-        for (j = 0, len1 = ref.length; j < len1; j++) {
-          q = ref[j];
-          if (ahash[q.id]) {
-            results.push(q.answer = ahash[q.id].answer);
-          } else {
-            results.push(void 0);
-          }
-        }
-        return results;
-      };
-
-      return ClientDetails;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("CompanyModel", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
-    var Company;
-    return Company = (function(superClass) {
-      extend(Company, superClass);
-
-      function Company(data) {
-        this.pusherSubscribe = bind(this.pusherSubscribe, this);
-        Company.__super__.constructor.call(this, data);
-        if (this.companies) {
-          this.companies = _.map(this.companies, function(c) {
-            return new BBModel.Company(halClient.$parse(c));
-          });
-        }
-      }
-
-      Company.prototype.getCompanyByRef = function(ref) {
-        var defer;
-        defer = $q.defer();
-        this.$get('companies').then(function(companies) {
-          var company;
-          company = _.find(companies, function(c) {
-            return c.reference === ref;
-          });
-          if (company) {
-            return defer.resolve(company);
-          } else {
-            return defer.reject('No company for ref ' + ref);
-          }
-        }, function(err) {
-          console.log('err ', err);
-          return defer.reject(err);
-        });
-        return defer.promise;
-      };
-
-      Company.prototype.findChildCompany = function(id) {
-        var c, cname, i, j, len, len1, name, ref1, ref2;
-        if (!this.companies) {
-          return null;
-        }
-        ref1 = this.companies;
-        for (i = 0, len = ref1.length; i < len; i++) {
-          c = ref1[i];
-          if (c.id === parseInt(id)) {
-            return c;
-          }
-          if (c.ref && c.ref === String(id)) {
-            return c;
-          }
-        }
-        if (typeof id === "string") {
-          name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-          ref2 = this.companies;
-          for (j = 0, len1 = ref2.length; j < len1; j++) {
-            c = ref2[j];
-            cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-            if (name === cname) {
-              return c;
-            }
-          }
-        }
-        return null;
-      };
-
-      Company.prototype.getSettings = function() {
-        var def;
-        def = $q.defer();
-        if (this.settings) {
-          def.resolve(this.settings);
-        } else {
-          if (this.$has('settings')) {
-            this.$get('settings').then((function(_this) {
-              return function(set) {
-                _this.settings = new BBModel.CompanySettings(set);
-                return def.resolve(_this.settings);
-              };
-            })(this));
-          } else {
-            def.reject("Company has no settings");
-          }
-        }
-        return def.promise;
-      };
-
-      Company.prototype.pusherSubscribe = function(callback) {
-        var channelName;
-        if ((typeof Pusher !== "undefined" && Pusher !== null) && (this.pusher == null)) {
-          this.pusher = new Pusher('c8d8cea659cc46060608', {
-            authEndpoint: this.$link('pusher').href,
-            auth: {
-              headers: {
-                'App-Id': AppConfig.appId,
-                'App-Key': AppConfig.appKey,
-                'Auth-Token': $sessionStorage.getItem('auth_token')
-              }
-            }
-          });
-          channelName = "private-c" + this.id + "-w" + this.numeric_widget_id;
-          if (this.pusher.channel(channelName) == null) {
-            this.pusher_channel = this.pusher.subscribe(channelName);
-            this.pusher_channel.bind('booking', callback);
-            this.pusher_channel.bind('cancellation', callback);
-            return this.pusher_channel.bind('updating', callback);
-          }
-        }
-      };
-
-      return Company;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("CompanySettingsModel", function($q, BBModel, BaseModel) {
-    var CompanySettings;
-    return CompanySettings = (function(superClass) {
-      extend(CompanySettings, superClass);
-
-      function CompanySettings() {
-        return CompanySettings.__super__.constructor.apply(this, arguments);
-      }
-
-      return CompanySettings;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("DayModel", function($q, BBModel, BaseModel) {
-    var Day;
-    return Day = (function(superClass) {
-      extend(Day, superClass);
-
-      function Day(data) {
-        Day.__super__.constructor.apply(this, arguments);
-        this.string_date = this.date;
-        this.date = moment(this.date);
-      }
-
-      Day.prototype.day = function() {
-        return this.date.date();
-      };
-
-      Day.prototype.off = function(month) {
-        return this.date.month() !== month;
-      };
-
-      Day.prototype["class"] = function(month) {
-        var str;
-        str = "";
-        if (this.date.month() < month) {
-          str += "off off-prev";
-        }
-        if (this.date.month() > month) {
-          str += "off off-next";
-        }
-        if (this.spaces === 0) {
-          str += " not-avail";
-        }
-        return str;
-      };
-
-      return Day;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("DealModel", function($q, BBModel, BaseModel) {
-    var Deal;
-    return Deal = (function(superClass) {
-      extend(Deal, superClass);
-
-      function Deal() {
-        return Deal.__super__.constructor.apply(this, arguments);
-      }
-
-      return Deal;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUlititiesService) {
-    var Event;
-    return Event = (function(superClass) {
-      extend(Event, superClass);
-
-      function Event(data) {
-        Event.__super__.constructor.call(this, data);
-        this.getDate();
-        this.time = new BBModel.TimeSlot({
-          time: DateTimeUlititiesService.convertMomentToTime(this.date)
-        });
-        if (this.duration) {
-          this.end_datetime = this.date.clone().add(this.duration, 'minutes');
-        }
-      }
-
-      Event.prototype.getGroup = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.group) {
-          defer.resolve(this.group);
-        } else if (this.$has('event_groups')) {
-          this.$get('event_groups').then((function(_this) {
-            return function(group) {
-              _this.group = new BBModel.EventGroup(group);
-              return defer.resolve(_this.group);
-            };
-          })(this), function(err) {
-            return defer.reject(err);
-          });
-        } else {
-          defer.reject("No event group");
-        }
-        return defer.promise;
-      };
-
-      Event.prototype.getChain = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.chain) {
-          defer.resolve(this.chain);
-        } else {
-          if (this.$has('event_chains')) {
-            this.$get('event_chains').then((function(_this) {
-              return function(chain) {
-                _this.chain = new BBModel.EventChain(chain);
-                return defer.resolve(_this.chain);
-              };
-            })(this));
-          } else {
-            defer.reject("No event chain");
-          }
-        }
-        return defer.promise;
-      };
-
-      Event.prototype.getDate = function() {
-        if (this.date) {
-          return this.date;
-        }
-        this.date = moment(this._data.datetime);
-        return this.date;
-      };
-
-      Event.prototype.dateString = function(str) {
-        var date;
-        date = this.date();
-        if (date) {
-          return date.format(str);
-        }
-      };
-
-      Event.prototype.getDuration = function() {
-        var defer;
-        defer = new $q.defer();
-        if (this.duration) {
-          defer.resolve(this.duration);
-        } else {
-          this.getChain().then((function(_this) {
-            return function(chain) {
-              _this.duration = chain.duration;
-              return defer.resolve(_this.duration);
-            };
-          })(this));
-        }
-        return defer.promise;
-      };
-
-      Event.prototype.printDuration = function() {
-        var h, m;
-        if (this.duration < 60) {
-          return this.duration + " mins";
-        } else {
-          h = Math.round(this.duration / 60);
-          m = this.duration % 60;
-          if (m === 0) {
-            return h + " hours";
-          } else {
-            return h + " hours " + m + " mins";
-          }
-        }
-      };
-
-      Event.prototype.getDescription = function() {
-        return this.getChain().description;
-      };
-
-      Event.prototype.getColour = function() {
-        if (this.getGroup()) {
-          return this.getGroup().colour;
-        } else {
-          return "#FFFFFF";
-        }
-      };
-
-      Event.prototype.getPerson = function() {
-        return this.getChain().person_name;
-      };
-
-      Event.prototype.getPounds = function() {
-        if (this.chain) {
-          return Math.floor(this.getPrice()).toFixed(0);
-        }
-      };
-
-      Event.prototype.getPrice = function() {
-        return 0;
-      };
-
-      Event.prototype.getPence = function() {
-        if (this.chain) {
-          return (this.getPrice() % 1).toFixed(2).slice(-2);
-        }
-      };
-
-      Event.prototype.getNumBooked = function() {
-        return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
-      };
-
-      Event.prototype.getSpacesLeft = function(pool) {
-        if (pool == null) {
-          pool = null;
-        }
-        if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
-          return this.ticket_spaces[pool].left;
-        }
-        return this.num_spaces - this.getNumBooked();
-      };
-
-      Event.prototype.hasSpace = function() {
-        return this.getSpacesLeft() > 0;
-      };
-
-      Event.prototype.hasWaitlistSpace = function() {
-        return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
-      };
-
-      Event.prototype.getRemainingDescription = function() {
-        var left;
-        left = this.getSpacesLeft();
-        if (left > 0 && left < 3) {
-          return "Only " + left + " " + (left > 1 ? "spaces" : "space") + " left";
-        }
-        if (this.hasWaitlistSpace()) {
-          return "Join Waitlist";
-        }
-        return "";
-      };
-
-      Event.prototype.select = function() {
-        return this.selected = true;
-      };
-
-      Event.prototype.unselect = function() {
-        if (this.selected) {
-          return delete this.selected;
-        }
-      };
-
-      Event.prototype.prepEvent = function() {
-        var def;
-        def = $q.defer();
-        this.getChain().then((function(_this) {
-          return function() {
-            if (_this.chain.$has('address')) {
-              _this.chain.getAddressPromise().then(function(address) {
-                return _this.chain.address = address;
-              });
-            }
-            return _this.chain.getTickets().then(function(tickets) {
-              var i, len, ref, ticket;
-              _this.tickets = tickets;
-              _this.price_range = {};
-              if (tickets && tickets.length > 0) {
-                ref = _this.tickets;
-                for (i = 0, len = ref.length; i < len; i++) {
-                  ticket = ref[i];
-                  if (!_this.price_range.from || (_this.price_range.from && ticket.price < _this.price_range.from)) {
-                    _this.price_range.from = ticket.price;
-                  }
-                  if (!_this.price_range.to || (_this.price_range.to && ticket.price > _this.price_range.to)) {
-                    _this.price_range.to = ticket.price;
-                  }
-                  ticket.old_price = ticket.price;
-                }
-              } else {
-                _this.price_range.from = _this.price;
-                _this.price_range.to = _this.price;
-              }
-              return def.resolve();
-            });
-          };
-        })(this));
-        return def.promise;
-      };
-
-      Event.prototype.updatePrice = function() {
-        var i, len, ref, results, ticket;
-        ref = this.tickets;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          ticket = ref[i];
-          if (ticket.pre_paid_booking_id) {
-            results.push(ticket.price = 0);
-          } else {
-            results.push(ticket.price = ticket.old_price);
-          }
-        }
-        return results;
-      };
-
-      return Event;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel) {
-    var EventChain;
-    return EventChain = (function(superClass) {
-      extend(EventChain, superClass);
-
-      function EventChain() {
-        return EventChain.__super__.constructor.apply(this, arguments);
-      }
-
-      EventChain.prototype.name = function() {
-        return this._data.name;
-      };
-
-      EventChain.prototype.isSingleBooking = function() {
-        return this.max_num_bookings === 1 && !this.$has('ticket_sets');
-      };
-
-      EventChain.prototype.hasTickets = function() {
-        return this.$has('ticket_sets');
-      };
-
-      EventChain.prototype.getTickets = function() {
-        var def;
-        def = $q.defer();
-        if (this.tickets) {
-          def.resolve(this.tickets);
-        } else {
-          if (this.$has('ticket_sets')) {
-            this.$get('ticket_sets').then((function(_this) {
-              return function(tickets) {
-                var i, len, ticket;
-                _this.tickets = [];
-                for (i = 0, len = tickets.length; i < len; i++) {
-                  ticket = tickets[i];
-                  _this.tickets.push(new BBModel.EventTicket(ticket));
-                }
-                _this.adjustTicketsForRemaining();
-                return def.resolve(_this.tickets);
-              };
-            })(this));
-          } else {
-            this.tickets = [
-              new BBModel.EventTicket({
-                name: "Admittance",
-                min_num_bookings: 1,
-                max_num_bookings: this.max_num_bookings,
-                type: "normal",
-                price: this.price
-              })
-            ];
-            this.adjustTicketsForRemaining();
-            def.resolve(this.tickets);
-          }
-        }
-        return def.promise;
-      };
-
-      EventChain.prototype.adjustTicketsForRemaining = function() {
-        var i, len, ref, results;
-        if (this.tickets) {
-          ref = this.tickets;
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            this.ticket = ref[i];
-            results.push(this.ticket.max_spaces = this.spaces);
-          }
-          return results;
-        }
-      };
-
-      return EventChain;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventGroupModel", function($q, BBModel, BaseModel) {
-    var EventGroup;
-    return EventGroup = (function(superClass) {
-      extend(EventGroup, superClass);
-
-      function EventGroup() {
-        return EventGroup.__super__.constructor.apply(this, arguments);
-      }
-
-      EventGroup.prototype.name = function() {
-        return this._data.name;
-      };
-
-      EventGroup.prototype.colour = function() {
-        return this._data.colour;
-      };
-
-      return EventGroup;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventSequenceModel", function($q, BBModel, BaseModel) {
-    var EventSequence;
-    return EventSequence = (function(superClass) {
-      extend(EventSequence, superClass);
-
-      function EventSequence() {
-        return EventSequence.__super__.constructor.apply(this, arguments);
-      }
-
-      EventSequence.prototype.name = function() {
-        return this._data.name;
-      };
-
-      return EventSequence;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventTicketModel", function($q, BBModel, BaseModel) {
-    var EventTicket;
-    return EventTicket = (function(superClass) {
-      extend(EventTicket, superClass);
-
-      function EventTicket(data) {
-        var ms;
-        EventTicket.__super__.constructor.call(this, data);
-        this.max = this.max_num_bookings;
-        if (this.max_spaces) {
-          ms = this.max_spaces;
-          if (this.counts_as) {
-            ms = this.max_spaces / this.counts_as;
-          }
-          if (ms < max) {
-            this.max = ms;
-          }
-        }
-      }
-
-      EventTicket.prototype.fullName = function() {
-        if (this.pool_name) {
-          return this.pool_name + " - " + this.name;
-        }
-        return this.name;
-      };
-
-      EventTicket.prototype.getRange = function(cap) {
-        var c, i, ref, ref1, results;
-        if (cap) {
-          c = cap;
-          if (this.counts_as) {
-            c = cap / this.counts_as;
-          }
-          if (c + this.min_num_bookings < this.max) {
-            this.max = c + this.min_num_bookings;
-          }
-        }
-        return [0].concat((function() {
-          results = [];
-          for (var i = ref = this.min_num_bookings, ref1 = this.max; ref <= ref1 ? i <= ref1 : i >= ref1; ref <= ref1 ? i++ : i--){ results.push(i); }
-          return results;
-        }).apply(this));
-      };
-
-      EventTicket.prototype.totalQty = function() {
-        if (!this.qty) {
-          return 0;
-        }
-        if (!this.counts_as) {
-          return this.qty;
-        }
-        return this.qty * this.counts_as;
-      };
-
-      EventTicket.prototype.getMax = function(cap, ev) {
-        var c, i, len, live_max, ref, ticket, used;
-        if (ev == null) {
-          ev = null;
-        }
-        live_max = this.max;
-        if (ev) {
-          used = 0;
-          ref = ev.tickets;
-          for (i = 0, len = ref.length; i < len; i++) {
-            ticket = ref[i];
-            used += ticket.totalQty();
-          }
-          if (this.qty) {
-            used = used - this.totalQty();
-          }
-          if (this.counts_as) {
-            used = Math.ceil(used / this.counts_as);
-          }
-          live_max = live_max - used;
-          if (live_max < 0) {
-            live_max = 0;
-          }
-        }
-        if (cap) {
-          c = cap;
-          if (this.counts_as) {
-            c = cap / this.counts_as;
-          }
-          if (c + this.min_num_bookings < live_max) {
-            return c + this.min_num_bookings;
-          }
-        }
-        return live_max;
-      };
-
-      EventTicket.prototype.add = function(value) {
-        if (!this.qty) {
-          this.qty = 0;
-        }
-        this.qty = parseInt(this.qty);
-        if (angular.isNumber(this.qty) && (this.qty >= this.max && value > 0) || (this.qty === 0 && value < 0)) {
-          return;
-        }
-        return this.qty += value;
-      };
-
-      EventTicket.prototype.subtract = function(value) {
-        return this.add(-value);
-      };
-
-      return EventTicket;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ImageModel", function($q, $filter, BBModel, BaseModel) {
-    var Image;
-    return Image = (function(superClass) {
-      extend(Image, superClass);
-
-      function Image(data) {
-        Image.__super__.constructor.call(this, data);
-      }
-
-      return Image;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ItemDetailsModel", function($q, BBModel, BaseModel, $bbug, QuestionService) {
-    var ItemDetails;
-    return ItemDetails = (function(superClass) {
-      extend(ItemDetails, superClass);
-
-      function ItemDetails(data) {
-        var i, len, q, ref;
-        this._data = data;
-        if (this._data) {
-          this.self = this._data.$href("self");
-        }
-        this.questions = [];
-        this.survey_questions = [];
-        if (data) {
-          ref = data.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            if (q.outcome === false) {
-              if (data.currency_code) {
-                q.currency_code = data.currency_code;
-              }
-              this.questions.push(new BBModel.Question(q));
-            } else {
-              this.survey_questions.push(new BBModel.SurveyQuestion(q));
-            }
-          }
-        }
-        this.hasQuestions = this.questions.length > 0;
-        this.hasSurveyQuestions = this.survey_questions.length > 0;
-      }
-
-      ItemDetails.prototype.questionPrice = function(qty) {
-        var i, len, price, q, ref;
-        qty || (qty = 1);
-        this.checkConditionalQuestions();
-        price = 0;
-        ref = this.questions;
-        for (i = 0, len = ref.length; i < len; i++) {
-          q = ref[i];
-          price += q.selectedPriceQty(qty);
-        }
-        return price;
-      };
-
-      ItemDetails.prototype.checkConditionalQuestions = function() {
-        return QuestionService.checkConditionalQuestions(this.questions);
-      };
-
-      ItemDetails.prototype.getPostData = function() {
-        var data, i, len, q, ref;
-        data = [];
-        ref = this.questions;
-        for (i = 0, len = ref.length; i < len; i++) {
-          q = ref[i];
-          if (q.currentlyShown) {
-            data.push(q.getPostData());
-          }
-        }
-        return data;
-      };
-
-      ItemDetails.prototype.setAnswers = function(answers) {
-        var a, ahash, i, j, len, len1, q, ref;
-        ahash = {};
-        for (i = 0, len = answers.length; i < len; i++) {
-          a = answers[i];
-          ahash[a.id] = a;
-        }
-        ref = this.questions;
-        for (j = 0, len1 = ref.length; j < len1; j++) {
-          q = ref[j];
-          if (ahash[q.id]) {
-            q.answer = ahash[q.id].answer;
-          }
-        }
-        return this.checkConditionalQuestions();
-      };
-
-      ItemDetails.prototype.getQuestion = function(id) {
-        return _.findWhere(this.questions, {
-          id: id
-        });
-      };
-
-      return ItemDetails;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
-    var Person;
-    return Person = (function(superClass) {
-      extend(Person, superClass);
-
-      function Person() {
-        return Person.__super__.constructor.apply(this, arguments);
-      }
-
-      return Person;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PrePaidBookingModel", function($q, BBModel, BaseModel) {
-    var PrePaidBooking;
-    return PrePaidBooking = (function(superClass) {
-      extend(PrePaidBooking, superClass);
-
-      function PrePaidBooking() {
-        return PrePaidBooking.__super__.constructor.apply(this, arguments);
-      }
-
-      return PrePaidBooking;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PurchaseItemModel", function($q, BBModel, BaseModel) {
-    var PurchaseItem;
-    return PurchaseItem = (function(superClass) {
-      extend(PurchaseItem, superClass);
-
-      function PurchaseItem(data) {
-        PurchaseItem.__super__.constructor.call(this, data);
-        this.parts_links = {};
-        if (data) {
-          if (data.$has('service')) {
-            this.parts_links.service = data.$href('service');
-          }
-          if (data.$has('resource')) {
-            this.parts_links.resource = data.$href('resource');
-          }
-          if (data.$has('person')) {
-            this.parts_links.person = data.$href('person');
-          }
-          if (data.$has('company')) {
-            this.parts_links.company = data.$href('company');
-          }
-        }
-      }
-
-      PurchaseItem.prototype.describe = function() {
-        return this.get('describe');
-      };
-
-      PurchaseItem.prototype.full_describe = function() {
-        return this.get('full_describe');
-      };
-
-      PurchaseItem.prototype.hasPrice = function() {
-        return this.price && this.price > 0;
-      };
-
-      return PurchaseItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PurchaseTotalModel", function($q, BBModel, BaseModel) {
-    var PurchaseTotal;
-    return PurchaseTotal = (function(superClass) {
-      extend(PurchaseTotal, superClass);
-
-      function PurchaseTotal(data) {
-        var cprom;
-        PurchaseTotal.__super__.constructor.call(this, data);
-        this.promise = this._data.$get('purchase_items');
-        this.items = [];
-        this.promise.then((function(_this) {
-          return function(items) {
-            var i, item, len, results;
-            results = [];
-            for (i = 0, len = items.length; i < len; i++) {
-              item = items[i];
-              results.push(_this.items.push(new BBModel.PurchaseItem(item)));
-            }
-            return results;
-          };
-        })(this));
-        if (this._data.$has('client')) {
-          cprom = data.$get('client');
-          cprom.then((function(_this) {
-            return function(client) {
-              return _this.client = new BBModel.Client(client);
-            };
-          })(this));
-        }
-      }
-
-      PurchaseTotal.prototype.icalLink = function() {
-        return this._data.$href('ical');
-      };
-
-      PurchaseTotal.prototype.webcalLink = function() {
-        return this._data.$href('ical');
-      };
-
-      PurchaseTotal.prototype.gcalLink = function() {
-        return this._data.$href('gcal');
-      };
-
-      PurchaseTotal.prototype.id = function() {
-        return this.get('id');
-      };
-
-      return PurchaseTotal;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("QuestionModel", function($q, $filter, BBModel, BaseModel) {
-    var Question;
-    return Question = (function(superClass) {
-      extend(Question, superClass);
-
-      function Question(data) {
-        var currency, i, len, option, ref;
-        Question.__super__.constructor.call(this, data);
-        if (this.price) {
-          this.price = parseFloat(this.price);
-        }
-        if (this._data["default"]) {
-          this.answer = this._data["default"];
-        }
-        if (this._data.options) {
-          ref = this._data.options;
-          for (i = 0, len = ref.length; i < len; i++) {
-            option = ref[i];
-            if (option.is_default) {
-              this.answer = option.name;
-            }
-            if (this.hasPrice()) {
-              option.price = parseFloat(option.price);
-              currency = data.currency_code ? data.currency_code : 'GBP';
-              option.display_name = option.name + " (" + ($filter('currency')(option.price, currency)) + ")";
-            } else {
-              option.display_name = option.name;
-            }
-          }
-        }
-        if (this._data.detail_type === "check" || this._data.detail_type === "check-price") {
-          this.answer = this._data["default"] && this._data["default"] === "1";
-        }
-        this.currentlyShown = true;
-      }
-
-      Question.prototype.hasPrice = function() {
-        return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
-      };
-
-      Question.prototype.selectedPrice = function() {
-        var i, len, option, ref;
-        if (!this.hasPrice()) {
-          return 0;
-        }
-        if (this.detail_type === "check-price") {
-          return (this.answer ? this.price : 0);
-        }
-        ref = this._data.options;
-        for (i = 0, len = ref.length; i < len; i++) {
-          option = ref[i];
-          if (this.answer === option.name) {
-            return option.price;
-          }
-        }
-        return 0;
-      };
-
-      Question.prototype.selectedPriceQty = function(qty) {
-        var p;
-        qty || (qty = 1);
-        p = this.selectedPrice();
-        if (this.price_per_booking) {
-          p = p * qty;
-        }
-        return p;
-      };
-
-      Question.prototype.getAnswerId = function() {
-        var i, len, o, ref;
-        if (!this.answer || !this.options || this.options.length === 0) {
-          return null;
-        }
-        ref = this.options;
-        for (i = 0, len = ref.length; i < len; i++) {
-          o = ref[i];
-          if (this.answer === o.name) {
-            return o.id;
-          }
-        }
-        return null;
-      };
-
-      Question.prototype.showElement = function() {
-        return this.currentlyShown = true;
-      };
-
-      Question.prototype.hideElement = function() {
-        return this.currentlyShown = false;
-      };
-
-      Question.prototype.getPostData = function() {
-        var p, x;
-        x = {};
-        x.id = this.id;
-        x.answer = this.answer;
-        if (this.detail_type === "date" && this.answer) {
-          x.answer = moment(this.answer).toISODate();
-        }
-        p = this.selectedPrice();
-        if (p) {
-          x.price = p;
-        }
-        return x;
-      };
-
-      return Question;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ResourceModel", function($q, BBModel, BaseModel) {
-    var Resource;
-    return Resource = (function(superClass) {
-      extend(Resource, superClass);
-
-      function Resource() {
-        return Resource.__super__.constructor.apply(this, arguments);
-      }
-
-      return Resource;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ServiceModel", function($q, BBModel, BaseModel) {
-    var Service;
-    return Service = (function(superClass) {
-      extend(Service, superClass);
-
-      function Service(data) {
-        this.days_array = bind(this.days_array, this);
-        this.getCategoryPromise = bind(this.getCategoryPromise, this);
-        Service.__super__.constructor.apply(this, arguments);
-        if (this.prices && this.prices.length > 0) {
-          this.price = this.prices[0];
-        }
-        if (this.durations && this.durations.length > 0) {
-          this.duration = this.durations[0];
-        }
-        if (!this.listed_durations) {
-          this.listed_durations = this.durations;
-        }
-        if (this.listed_durations && this.listed_durations.length > 0) {
-          this.listed_duration = this.listed_durations[0];
-        }
-        this.min_advance_datetime = moment().add(this.min_advance_period, 'seconds');
-        this.max_advance_datetime = moment().add(this.max_advance_period, 'seconds');
-      }
-
-      Service.prototype.getPriceByDuration = function(dur) {
-        var d, i, j, len, ref;
-        ref = this.durations;
-        for (i = j = 0, len = ref.length; j < len; i = ++j) {
-          d = ref[i];
-          if (d === dur) {
-            return this.prices[i];
-          }
-        }
-      };
-
-      Service.prototype.getCategoryPromise = function() {
-        var prom;
-        if (!this.$has('category')) {
-          return null;
-        }
-        prom = this.$get('category');
-        prom.then((function(_this) {
-          return function(cat) {
-            return _this.category = new BBModel.Category(cat);
-          };
-        })(this));
-        return prom;
-      };
-
-      Service.prototype.days_array = function() {
-        var arr, j, ref, ref1, str, x;
-        arr = [];
-        for (x = j = ref = this.min_bookings, ref1 = this.max_bookings; ref <= ref1 ? j <= ref1 : j >= ref1; x = ref <= ref1 ? ++j : --j) {
-          str = "" + x + " day";
-          if (x > 1) {
-            str += "s";
-          }
-          arr.push({
-            name: str,
-            val: x
-          });
-        }
-        return arr;
-      };
-
-      return Service;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("SlotModel", function($q, BBModel, BaseModel) {
-    var Slot;
-    return Slot = (function(superClass) {
-      extend(Slot, superClass);
-
-      function Slot(data) {
-        Slot.__super__.constructor.call(this, data);
-        this.datetime = moment(data.datetime);
-      }
-
-      return Slot;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("SpaceModel", function($q, BBModel, BaseModel) {
-    var Space;
-    return Space = (function(superClass) {
-      extend(Space, superClass);
-
-      function Space() {
-        return Space.__super__.constructor.apply(this, arguments);
-      }
-
-      return Space;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("SurveyQuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
-    var SurveyQuestion;
-    return SurveyQuestion = (function(superClass) {
-      extend(SurveyQuestion, superClass);
-
-      function SurveyQuestion() {
-        return SurveyQuestion.__super__.constructor.apply(this, arguments);
-      }
-
-      return SurveyQuestion;
-
-    })(QuestionModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel) {
-    var TimeSlot;
-    return TimeSlot = (function(superClass) {
-      extend(TimeSlot, superClass);
-
-      function TimeSlot(data, service) {
-        TimeSlot.__super__.constructor.call(this, data);
-        this.service = service;
-        this.time_12 = this.print_time12();
-        this.time_24 = this.print_time();
-      }
-
-      TimeSlot.prototype.print_time = function() {
-        var min, t;
-        if (this.start) {
-          return this.start.format("h:mm");
-        } else {
-          t = this.get('time');
-          if (t % 60 < 10) {
-            min = "0" + t % 60;
-          } else {
-            min = t % 60;
-          }
-          return "" + Math.floor(t / 60) + ":" + min;
-        }
-      };
-
-      TimeSlot.prototype.print_end_time = function(dur) {
-        var min, t;
-        if (this.end) {
-          return this.end.format("h:mm");
-        } else {
-          if (!dur) {
-            dur = this.service.listed_durations[0];
-          }
-          t = this.get('time') + dur;
-          if (t % 60 < 10) {
-            min = "0" + t % 60;
-          } else {
-            min = t % 60;
-          }
-          return "" + Math.floor(t / 60) + ":" + min;
-        }
-      };
-
-      TimeSlot.prototype.print_time12 = function(show_suffix) {
-        var h, m, suffix, t, time;
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        t = this.get('time');
-        h = Math.floor(t / 60);
-        m = t % 60;
-        suffix = 'am';
-        if (h >= 12) {
-          suffix = 'pm';
-        }
-        if (h > 12) {
-          h -= 12;
-        }
-        time = $window.sprintf("%d.%02d", h, m);
-        if (show_suffix) {
-          time += suffix;
-        }
-        return time;
-      };
-
-      TimeSlot.prototype.print_end_time12 = function(show_suffix, dur) {
-        var end_time, h, m, suffix, t;
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        dur = null;
-        if (!dur) {
-          if (this.service.listed_duration != null) {
-            dur = this.service.listed_duration;
-          } else {
-            dur = this.service.listed_durations[0];
-          }
-        }
-        t = this.get('time') + dur;
-        h = Math.floor(t / 60);
-        m = t % 60;
-        suffix = 'am';
-        if (h >= 12) {
-          suffix = 'pm';
-        }
-        if (h > 12) {
-          h -= 12;
-        }
-        end_time = $window.sprintf("%d.%02d", h, m);
-        if (show_suffix) {
-          end_time += suffix;
-        }
-        return end_time;
-      };
-
-      TimeSlot.prototype.availability = function() {
-        return this.avail;
-      };
-
-      TimeSlot.prototype.select = function() {
-        return this.selected = true;
-      };
-
-      TimeSlot.prototype.unselect = function() {
-        if (this.selected) {
-          return delete this.selected;
-        }
-      };
-
-      TimeSlot.prototype.disable = function(reason) {
-        this.disabled = true;
-        return this.disabled_reason = reason;
-      };
-
-      TimeSlot.prototype.enable = function() {
-        if (this.disabled) {
-          delete this.disabled;
-        }
-        if (this.disabled_reason) {
-          return delete this.disabled_reason;
-        }
-      };
-
-      TimeSlot.prototype.status = function() {
-        if (this.selected) {
-          return "selected";
-        }
-        if (this.disabled) {
-          return "disabled";
-        }
-        if (this.availability() > 0) {
-          return "enabled";
-        }
-        return "disabled";
-      };
-
-      return TimeSlot;
-
-    })(BaseModel);
-  });
+  ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
+    $scope.controller = "ModalDelete";
+    $scope.booking = booking;
+    $scope.confirm_delete = function() {
+      return $modalInstance.close(booking);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
+
+  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
+    $scope.controller = "ModalDeleteAll";
+    $scope.purchase = purchase;
+    $scope.confirm_delete = function() {
+      return $modalInstance.close(purchase);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
 
 }).call(this);
 
@@ -21990,499 +21618,6 @@ function getURIparam( name ){
 
     })(BaseModel);
   });
-
-}).call(this);
-
-(function() {
-  var ModalDelete, ModalDeleteAll;
-
-  angular.module('BB.Directives').directive('bbPurchase', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Purchase',
-      link: function(scope, element, attrs) {
-        scope.init(scope.$eval(attrs.bbPurchase));
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
-    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
-    $scope.controller = "Purchase";
-    $scope.is_waitlist = false;
-    $scope.make_payment = false;
-    setPurchaseCompany = function(company) {
-      $scope.bb.company_id = company.id;
-      $scope.bb.company = new BBModel.Company(company);
-      $scope.company = $scope.bb.company;
-      $scope.bb.item_defaults.company = $scope.bb.company;
-      if (company.settings) {
-        if (company.settings.merge_resources) {
-          $scope.bb.item_defaults.merge_resources = true;
-        }
-        if (company.settings.merge_people) {
-          return $scope.bb.item_defaults.merge_people = true;
-        }
-      }
-    };
-    failMsg = function() {
-      if ($scope.fail_msg) {
-        return AlertService.danger({
-          msg: $scope.fail_msg
-        });
-      } else {
-        return AlertService.danger({
-          msg: "Sorry, something went wrong"
-        });
-      }
-    };
-    $scope.init = function(options) {
-      if (!options) {
-        options = {};
-      }
-      $scope.notLoaded($scope);
-      if (options.move_route) {
-        $scope.move_route = options.move_route;
-      }
-      if (options.move_all) {
-        $scope.move_all = options.move_all;
-      }
-      if (options.login_redirect) {
-        $scope.requireLogin({
-          redirect: options.login_redirect
-        });
-      }
-      if (options.fail_msg) {
-        $scope.fail_msg = options.fail_msg;
-      }
-      if ($scope.bb.total) {
-        return $scope.load($scope.bb.total.long_id);
-      } else if ($scope.bb.purchase) {
-        $scope.purchase = $scope.bb.purchase;
-        $scope.bookings = $scope.bb.purchase.bookings;
-        if ($scope.purchase.confirm_messages) {
-          $scope.messages = $scope.purchase.confirm_messages;
-        }
-        return $scope.setLoaded($scope);
-      } else {
-        if (options.member_sso) {
-          return SSOService.memberLogin(options).then(function(login) {
-            return $scope.load();
-          }, function(err) {
-            $scope.setLoaded($scope);
-            return failMsg();
-          });
-        } else {
-          return $scope.load();
-        }
-      }
-    };
-    $scope.load = function(id) {
-      $scope.notLoaded($scope);
-      id = getPurchaseID();
-      if (!($scope.loaded || !id)) {
-        $rootScope.widget_started.then((function(_this) {
-          return function() {
-            return $scope.waiting_for_conn_started.then(function() {
-              var auth_token, company_id, params;
-              company_id = getCompanyID();
-              if (company_id) {
-                CompanyService.query(company_id, {}).then(function(company) {
-                  return setPurchaseCompany(company);
-                });
-              }
-              params = {
-                purchase_id: id,
-                url_root: $scope.bb.api_url
-              };
-              auth_token = $sessionStorage.getItem('auth_token');
-              if (auth_token) {
-                params.auth_token = auth_token;
-              }
-              return PurchaseService.query(params).then(function(purchase) {
-                if ($scope.bb.company == null) {
-                  purchase.$get('company').then((function(_this) {
-                    return function(company) {
-                      return setPurchaseCompany(company);
-                    };
-                  })(this));
-                }
-                $scope.purchase = purchase;
-                $scope.bb.purchase = purchase;
-                $scope.price = !($scope.purchase.price === 0);
-                $scope.purchase.getBookingsPromise().then(function(bookings) {
-                  var booking, i, len, ref, results;
-                  $scope.bookings = bookings;
-                  $scope.setLoaded($scope);
-                  checkIfMoveBooking(bookings);
-                  checkIfWaitlistBookings(bookings);
-                  ref = $scope.bookings;
-                  results = [];
-                  for (i = 0, len = ref.length; i < len; i++) {
-                    booking = ref[i];
-                    results.push(booking.getAnswersPromise().then(function(answers) {
-                      return booking.answers = answers;
-                    }));
-                  }
-                  return results;
-                }, function(err) {
-                  $scope.setLoaded($scope);
-                  return failMsg();
-                });
-                if (purchase.$has('client')) {
-                  purchase.$get('client').then((function(_this) {
-                    return function(client) {
-                      return $scope.setClient(new BBModel.Client(client));
-                    };
-                  })(this));
-                }
-                return $scope.purchase.getConfirmMessages().then(function(messages) {
-                  $scope.purchase.confirm_messages = messages;
-                  return $scope.messages = messages;
-                });
-              }, function(err) {
-                $scope.setLoaded($scope);
-                if (err && err.status === 401 && $scope.login_action) {
-                  if (LoginService.isLoggedIn()) {
-                    return failMsg();
-                  } else {
-                    return loginRequired();
-                  }
-                } else {
-                  return failMsg();
-                }
-              });
-            }, function(err) {
-              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-            });
-          };
-        })(this), function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      }
-      return $scope.loaded = true;
-    };
-    checkIfMoveBooking = function(bookings) {
-      var b, id, matches, move_booking;
-      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        id = parseInt(matches[1]);
-      }
-      if (id) {
-        move_booking = (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = bookings.length; i < len; i++) {
-            b = bookings[i];
-            if (b.id === id) {
-              results.push(b);
-            }
-          }
-          return results;
-        })();
-        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
-          return $scope.move(move_booking[0]);
-        }
-      }
-    };
-    checkIfWaitlistBookings = function(bookings) {
-      var booking;
-      return $scope.waitlist_bookings = (function() {
-        var i, len, results;
-        results = [];
-        for (i = 0, len = bookings.length; i < len; i++) {
-          booking = bookings[i];
-          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-            results.push(booking);
-          }
-        }
-        return results;
-      })();
-    };
-    $scope.requireLogin = (function(_this) {
-      return function(action) {
-        var div;
-        if (_.isString(action.redirect)) {
-          if (action.redirect.indexOf('?') === -1) {
-            div = '?';
-          } else {
-            div = '&';
-          }
-          action.redirect += div + 'ref=' + encodeURIComponent(QueryStringService('ref'));
-        }
-        return $scope.login_action = action;
-      };
-    })(this);
-    loginRequired = (function(_this) {
-      return function() {
-        if ($scope.login_action.redirect) {
-          return window.location = $scope.login_action.redirect;
-        }
-      };
-    })(this);
-    getCompanyID = function() {
-      var company_id, matches;
-      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        company_id = matches[1];
-      }
-      return company_id;
-    };
-    getPurchaseID = function() {
-      var id, matches;
-      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (!matches) {
-        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (!matches) {
-        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (matches) {
-        id = matches[1];
-      } else {
-        if (QueryStringService('ref')) {
-          id = QueryStringService('ref');
-        }
-      }
-      if (QueryStringService('booking_id')) {
-        id = QueryStringService('booking_id');
-      }
-      return id;
-    };
-    $scope.move = function(booking, route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      if ($scope.move_all) {
-        return $scope.moveAll(route, options);
-      }
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: booking.company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var new_item, proms;
-            proms = [];
-            $scope.bb.moving_booking = booking;
-            $scope.quickEmptybasket();
-            new_item = new BBModel.BasketItem(booking, $scope.bb);
-            new_item.setSrcBooking(booking, $scope.bb);
-            new_item.ready = false;
-            Array.prototype.push.apply(proms, new_item.promises);
-            $scope.bb.basket.addItem(new_item);
-            $scope.setBasketItem(new_item);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              $rootScope.$broadcast("booking:move");
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.moveAll = function(route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: $scope.bookings[0].company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var booking, i, len, new_item, proms, ref;
-            proms = [];
-            if ($scope.bookings.length === 1) {
-              $scope.bb.moving_booking = $scope.bookings[0];
-            } else {
-              $scope.bb.moving_booking = $scope.purchase;
-            }
-            $scope.quickEmptybasket();
-            ref = $scope.bookings;
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              new_item = new BBModel.BasketItem(booking, $scope.bb);
-              new_item.setSrcBooking(booking);
-              new_item.ready = false;
-              new_item.move_done = false;
-              Array.prototype.push.apply(proms, new_item.promises);
-              $scope.bb.basket.addItem(new_item);
-            }
-            $scope.bb.sortStackedItems();
-            $scope.setBasketItem($scope.bb.basket.items[0]);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.bookWaitlistItem = function(booking) {
-      var params;
-      $scope.notLoaded($scope);
-      params = {
-        purchase: $scope.purchase,
-        booking: booking
-      };
-      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
-        $scope.purchase = purchase;
-        $scope.total = $scope.purchase;
-        $scope.bb.purchase = purchase;
-        return $scope.purchase.getBookingsPromise().then(function(bookings) {
-          $scope.bookings = bookings;
-          $scope.waitlist_bookings = (function() {
-            var i, len, ref, results;
-            ref = $scope.bookings;
-            results = [];
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-                results.push(booking);
-              }
-            }
-            return results;
-          })();
-          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
-            $scope.make_payment = true;
-          }
-          return $scope.setLoaded($scope);
-        }, function(err) {
-          $scope.setLoaded($scope);
-          return failMsg();
-        });
-      }, (function(_this) {
-        return function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        };
-      })(this));
-    };
-    $scope["delete"] = function(booking) {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDelete,
-        resolve: {
-          booking: function() {
-            return booking;
-          }
-        }
-      });
-      return modalInstance.result.then(function(booking) {
-        return booking.$del('self').then((function(_this) {
-          return function(service) {
-            $scope.bookings = _.without($scope.bookings, booking);
-            return $rootScope.$broadcast("booking:cancelled");
-          };
-        })(this));
-      });
-    };
-    $scope.delete_all = function() {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDeleteAll,
-        resolve: {
-          purchase: function() {
-            return $scope.purchase;
-          }
-        }
-      });
-      return modalInstance.result.then(function(purchase) {
-        return PurchaseService.delete_all(purchase).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.bookings = [];
-          return $rootScope.$broadcast("booking:cancelled");
-        });
-      });
-    };
-    $scope.isMovable = function(booking) {
-      if (booking.min_cancellation_time) {
-        return moment().isBefore(booking.min_cancellation_time);
-      }
-      return booking.datetime.isAfter(moment());
-    };
-    $scope.onFileSelect = function(booking, $file, existing) {
-      var att_id, file, method;
-      $scope.upload_progress = 0;
-      file = $file;
-      att_id = null;
-      if (existing) {
-        att_id = existing.id;
-      }
-      method = "POST";
-      if (att_id) {
-        method = "PUT";
-      }
-      return $scope.upload = $upload.upload({
-        url: booking.$href('attachments'),
-        method: method,
-        data: {
-          att_id: att_id
-        },
-        file: file
-      }).progress(function(evt) {
-        if ($scope.upload_progress < 100) {
-          return $scope.upload_progress = parseInt(99.0 * evt.loaded / evt.total);
-        }
-      }).success(function(data, status, headers, config) {
-        $scope.upload_progress = 100;
-        if (data && data.attachments && booking) {
-          return booking.attachments = data.attachments;
-        }
-      });
-    };
-    $scope.createBasketItem = function(booking) {
-      var item;
-      item = new BBModel.BasketItem(booking, $scope.bb);
-      item.setSrcBooking(booking);
-      return item;
-    };
-    return $scope.checkAnswer = function(answer) {
-      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
-    };
-  });
-
-  ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
-    $scope.controller = "ModalDelete";
-    $scope.booking = booking;
-    $scope.confirm_delete = function() {
-      return $modalInstance.close(booking);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
-
-  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
-    $scope.controller = "ModalDeleteAll";
-    $scope.purchase = purchase;
-    $scope.confirm_delete = function() {
-      return $modalInstance.close(purchase);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
 
 }).call(this);
 

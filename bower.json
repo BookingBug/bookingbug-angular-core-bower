@@ -1,10 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-<<<<<<< HEAD
   "version": "0.0.98",
-=======
-  "version": "0.0.94",
->>>>>>> 54d4ecf27304d5db382885b0d0b4713d8a230e73
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
