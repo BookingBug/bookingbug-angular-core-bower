@@ -1339,9 +1339,13 @@ angular
         }));
 
         var linkHref = hrefLink(link, params);
-
         if(method === 'GET') {
-          if(embedded.has(linkHref)) return embedded.get(linkHref);
+          if (params) {
+            if (params.hasOwnProperty('no_cache')) {
+              options['no_cache'] = params['no_cache'];
+            }
+          }
+          if(embedded.has(linkHref) && (!options || !options.no_cache)) return embedded.get(linkHref);
           
           return embedded.set(linkHref, callService(method, linkHref, options, data));
         }
@@ -3817,10 +3821,11 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('BasketList', function($scope, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
     $scope.items = $scope.bb.basket.items;
+    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id;
     $scope.$watch('basket', (function(_this) {
       return function(newVal, oldVal) {
         return $scope.items = _.filter($scope.bb.basket.items, function(item) {
@@ -3946,6 +3951,9 @@ function getURIparam( name ){
         });
       };
     })(this);
+    $scope.topUpWallet = function() {
+      return $scope.decideNextPage("basket_wallet");
+    };
     return $scope.setReady = function() {
       if ($scope.bb.basket.items.length > 0) {
         return $scope.setReadyToCheckout(true);
@@ -5867,7 +5875,7 @@ function getURIparam( name ){
           $scope.decideNextPage(route);
           if (SettingsService.isInternationalizatonEnabled()) {
             return $translate('MOVE_BOOKINGS_MSG', {
-              datetime: b.datetime.format('dddd Do MMMM [at] h.mma')
+              datetime: b.datetime.format('dddd Do MMMM[,] h.mma')
             }).then(function(translated_text) {
               return AlertService.add("info", {
                 msg: translated_text
@@ -5875,7 +5883,7 @@ function getURIparam( name ){
             });
           } else {
             return AlertService.add("info", {
-              msg: "Your booking has been moved to " + (b.datetime.format('dddd Do MMMM [at] h.mma'))
+              msg: "Your booking has been moved to " + (b.datetime.format('dddd Do MMMM[,] h.mma'))
             });
           }
         }, (function(_this) {
@@ -7706,7 +7714,9 @@ function getURIparam( name ){
       element.find('iframe').bind('load', (function(_this) {
         return function(event) {
           var origin, url;
-          url = scope.bb.total.$href('new_payment');
+          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+            url = scope.bb.total.$href('new_payment');
+          }
           origin = getHost(url);
           sendLoadEvent(element, origin, scope);
           return scope.$apply(function() {
@@ -7759,7 +7769,9 @@ function getURIparam( name ){
         if ($scope.total) {
           $scope.bb.total = $scope.total;
         }
-        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+        }
       };
     })(this));
     $scope.callNotLoaded = (function(_this) {
@@ -12913,7 +12925,7 @@ function getURIparam( name ){
       fn1(model);
     }
     funcs['Purchase'] = pfuncs;
-    member_models = ['Member', 'Booking', 'PrePaidBooking'];
+    member_models = ['Member', 'Booking', 'PrePaidBooking', 'Wallet', 'WalletLog'];
     mfuncs = {};
     fn2 = (function(_this) {
       return function(model) {
@@ -14076,6 +14088,8 @@ function getURIparam( name ){
             this.setPrice(this.price);
           } else if (this.time.price && !this.price) {
             this.setPrice(this.time.price);
+          } else if (this.price && this.time.price) {
+            this.setPrice(this.price);
           } else {
             this.setPrice(null);
           }
@@ -15551,6 +15565,7 @@ function getURIparam( name ){
                 _this.price_range.from = _this.price;
                 _this.price_range.to = _this.price;
               }
+              _this.ticket_prices = _.indexBy(tickets, 'name');
               return def.resolve();
             });
           };
@@ -18498,7 +18513,7 @@ function getURIparam( name ){
       },
       isLoggedIn: function() {
         this.checkLogin();
-        if ($rootScope.member && !$rootScope.user) {
+        if ($rootScope.member && (!$rootScope.user || $rootScope.user === void 0)) {
           return true;
         } else {
           return false;
