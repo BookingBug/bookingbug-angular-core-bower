@@ -5878,7 +5878,7 @@ function getURIparam( name ){
           $scope.decideNextPage(route);
           if (SettingsService.isInternationalizatonEnabled()) {
             return $translate('MOVE_BOOKINGS_MSG', {
-              datetime: b.datetime.format('dddd Do MMMM[,] h.mma')
+              datetime: b.datetime.format('dddd Do MMMM [at] h.mma')
             }).then(function(translated_text) {
               return AlertService.add("info", {
                 msg: translated_text
@@ -5886,7 +5886,7 @@ function getURIparam( name ){
             });
           } else {
             return AlertService.add("info", {
-              msg: "Your booking has been moved to " + (b.datetime.format('dddd Do MMMM[,] h.mma'))
+              msg: "Your booking has been moved to " + (b.datetime.format('dddd Do MMMM [at] h.mma'))
             });
           }
         }, (function(_this) {
@@ -6160,16 +6160,12 @@ function getURIparam( name ){
           latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
           $scope.mapBounds.extend(latlong);
         }
-        $scope.mapOptions = {
-          center: $scope.mapBounds.getCenter(),
-          zoom: 6,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
-          }
-        };
       }
+      $scope.mapOptions = {
+        center: $scope.mapBounds.getCenter(),
+        zoom: 6,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      };
       if (options && options.map_options) {
         ref1 = options.map_options;
         for (key in ref1) {
