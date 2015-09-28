@@ -2686,6 +2686,11 @@ function getURIparam( name ){
           prms.clear_member || (prms.clear_member = true);
         }
         $scope.bb.client_defaults = prms.client || {};
+        if (prms.client_defaults) {
+          if (prms.client_defaults.membership_ref) {
+            $scope.bb.client_defaults.membership_ref = prms.client_defaults.membership_ref;
+          }
+        }
         if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
           match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
           if (match) {
@@ -7876,6 +7881,7 @@ function getURIparam( name ){
     })(this);
     $scope.paymentDone = function() {
       $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
       return $scope.decideNextPage();
     };
     return $scope.error = function(message) {
@@ -11593,7 +11599,7 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService) {
-    var controller, link;
+    var controller, link, redirectTo;
     controller = function($scope) {
       $scope.login_form = {};
       $scope.redirectTo = function(destination) {
@@ -11633,6 +11639,9 @@ function getURIparam( name ){
           });
         });
       };
+    };
+    redirectTo = function(destination) {
+      return $window.location.href = destination;
     };
     link = function(scope, element, attrs) {
       var session_member;
@@ -14387,6 +14396,9 @@ function getURIparam( name ){
         if (this.deal_codes) {
           data.vouchers = this.deal_codes;
         }
+        if (this.product_id) {
+          data.product_id = this.product_id;
+        }
         if (this.email) {
           data.email = this.email;
         }
@@ -15053,7 +15065,10 @@ function getURIparam( name ){
         x.password = this.password;
         x.notifications = this.notifications;
         if (this.member_level_id) {
-          x.membership_level_id = this.member_level_id;
+          x.member_level_id = this.member_level_id;
+        }
+        if (this.send_welcome_email) {
+          x.send_welcome_email = this.send_welcome_email;
         }
         if (this.mobile) {
           this.remove_prefix();
@@ -19113,6 +19128,31 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate) {
+    return {
+      getProduct: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = prms.api_url + "/api/v1/{company_id}/products/{id}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company_id,
+          id: prms.product_id
+        });
+        halClient.$get(uri, {}).then(function(product) {
+          return deferred.resolve(product);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   angular.module('BB.Services').factory("PurchaseTotalService", function($q, BBModel) {
     return {
       query: function(prms) {
@@ -21652,6 +21692,7 @@ function getURIparam( name ){
 
       function Purchase_Total(data) {
         this.getConfirmMessages = bind(this.getConfirmMessages, this);
+        this.getMember = bind(this.getMember, this);
         this.getClient = bind(this.getClient, this);
         this.getMessages = bind(this.getMessages, this);
         this.getDeals = bind(this.getDeals, this);
@@ -21669,6 +21710,11 @@ function getURIparam( name ){
         this.getClient().then((function(_this) {
           return function(client) {
             return _this.client = client;
+          };
+        })(this));
+        this.getMember().then((function(_this) {
+          return function(member) {
+            return _this.member = member;
           };
         })(this));
       }
@@ -21872,6 +21918,22 @@ function getURIparam( name ){
             return function(client) {
               _this.client = new BBModel.Client(client);
               return defer.resolve(_this.client);
+            };
+          })(this));
+        } else {
+          defer.reject('No client');
+        }
+        return defer.promise;
+      };
+
+      Purchase_Total.prototype.getMember = function() {
+        var defer;
+        defer = $q.defer();
+        if (this._data.$has('member')) {
+          this._data.$get('member').then((function(_this) {
+            return function(member) {
+              _this.member = new BBModel.Member.Member(member);
+              return defer.resolve(_this.member);
             };
           })(this));
         } else {
