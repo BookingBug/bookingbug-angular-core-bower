@@ -4276,25 +4276,11 @@ function getURIparam( name ){
     $scope.useClient = function(client) {
       return $scope.setClient(client);
     };
-    $scope.recalc_question = function() {
+    return $scope.recalc_question = function() {
       if ($scope.client_details.questions) {
         return QuestionService.checkConditionalQuestions($scope.client_details.questions);
       }
     };
-    return $scope.updateClient = (function(_this) {
-      return function() {
-        $scope.notLoaded($scope);
-        $scope.existing_member = false;
-        return ClientService.create_or_update($scope.bb.company, $scope.client).then(function(client) {
-          $scope.setLoaded($scope);
-          $scope.setClient(client);
-          return AlertService.raise(ErrorService.getAlert('UPDATE_SUCCESS'));
-        }, function(err) {
-          AlertService.raise(ErrorService.getAlert('UPDATE_FAILED'));
-          return $scope.setLoaded($scope);
-        });
-      };
-    })(this);
   });
 
 }).call(this);
@@ -6547,8 +6533,7 @@ function getURIparam( name ){
           $scope.notLoaded($scope);
           return MembershipLevelsService.getMembershipLevels($scope.bb.company).then(function(member_levels) {
             $scope.setLoaded($scope);
-            $scope.membership_levels = member_levels;
-            return checkClientDefaults();
+            return $scope.membership_levels = member_levels;
           }, function(err) {
             return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
           });
@@ -6557,10 +6542,14 @@ function getURIparam( name ){
       $scope.selectMemberLevel = function(level) {
         if (level && $scope.client) {
           $scope.client.member_level_id = level.id;
-          return $scope.decideNextPage();
+          if ($scope.$parent.$has_page_control) {
+
+          } else {
+            return $scope.decideNextPage();
+          }
         }
       };
-      return checkClientDefaults = function() {
+      checkClientDefaults = function() {
         var i, len, membership_level, ref, results;
         if (!$scope.bb.client_defaults.membership_ref) {
           return;
@@ -6576,6 +6565,17 @@ function getURIparam( name ){
           }
         }
         return results;
+      };
+      $scope.setReady = function() {
+        if (!$scope.client.member_level_id) {
+          return false;
+        }
+        return true;
+      };
+      return $scope.getMembershipLevel = function(member_level_id) {
+        return _.find($scope.membership_levels, function(level) {
+          return level.id === member_level_id;
+        });
       };
     };
   });
@@ -7806,6 +7806,7 @@ function getURIparam( name ){
     };
     linker = function(scope, element, attributes) {
       scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = !scope.payment_options.route_to_next_page ? false : true;
       element.find('iframe').bind('load', (function(_this) {
         return function(event) {
           var origin, url;
@@ -7882,7 +7883,9 @@ function getURIparam( name ){
     $scope.paymentDone = function() {
       $scope.bb.payment_status = "complete";
       $scope.$emit('payment:complete');
-      return $scope.decideNextPage();
+      if (scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
     };
     return $scope.error = function(message) {
       return $log.warn("Payment Failure: " + message);
@@ -11598,81 +11601,74 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService) {
-    var controller, link, redirectTo;
-    controller = function($scope) {
-      $scope.login_form = {};
-      $scope.redirectTo = function(destination) {
-        return $window.location.href = destination;
-      };
-      return $scope.submit = function(form) {
-        form['role'] = 'member';
-        return $scope.company.$post('login', {}, form).then(function(login) {
-          if (login.$has('members')) {
-            return login.$get('members').then(function(members) {
-              var auth_token;
-              $rootScope.member = new BBModel.Member.Member(members[0]);
-              auth_token = $rootScope.member.getOption('auth_token');
-              $sessionStorage.setItem("login", $rootScope.member.$toStore());
-              $sessionStorage.setItem("auth_token", auth_token);
-              $scope.setClient($rootScope.member);
-              if ($scope.bb.destination) {
-                return $scope.redirectTo($scope.bb.destination);
-              } else {
-                return $scope.decideNextPage();
-              }
-            });
-          } else if (login.$has('member')) {
-            return login.$get('member').then(function(member) {
-              var auth_token;
-              $rootScope.member = new BBModel.Member.Member(member);
-              auth_token = $rootScope.member.getOption('auth_token');
-              $sessionStorage.setItem("login", $rootScope.member.$toStore());
-              $sessionStorage.setItem("auth_token", auth_token);
-              $scope.setClient($rootScope.member);
-              return $scope.decideNextPage();
-            });
-          }
-        }, function(err) {
-          return AlertService.danger({
-            msg: "Sorry, your email or password was not recognised. Please try again."
-          });
-        });
-      };
-    };
-    redirectTo = function(destination) {
-      return $window.location.href = destination;
-    };
-    link = function(scope, element, attrs) {
-      var session_member;
-      if ($sessionStorage.getItem("login")) {
-        session_member = $sessionStorage.getItem("login");
-        session_member = halClient.createResource(session_member);
-        $rootScope.member = new BBModel.Member.Member(session_member);
-        scope.setClient($rootScope.member);
-        if (scope.bb.destination) {
-          return scope.redirectTo(scope.bb.destination);
-        } else {
-          return scope.decideNextPage();
-        }
-      } else {
-        return halClient.$get(scope.bb.api_url + "/api/v1").then(function(root) {
-          return root.$get("new_login").then(function(new_login) {
-            scope.form = new_login.form;
-            return scope.schema = new_login.schema;
-          }, function(err) {
-            return console.log('err ', err);
-          });
-        }, function(err) {
-          return console.log('err ', err);
-        });
-      }
-    };
+  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, ErrorService) {
     return {
       restrict: 'A',
-      link: link,
-      template: "<form name=\"login_form\" ng-submit=\"submit(login_form)\" sf-schema=\"schema\"\n  sf-form=\"form\" sf-model=\"login_form\" sf-options=\"{feedback: false}\"\n  ng-if=\"schema && form\"></form>",
-      controller: controller
+      template: "<form name=\"login_form\" ng-submit=\"submit(login_form)\" sf-schema=\"schema\"\nsf-form=\"form\" sf-model=\"login_form\" sf-options=\"{feedback: false}\"\nng-if=\"schema && form\"></form>",
+      controller: function($scope, $element, $attrs) {
+        $scope.login_form = {};
+        $rootScope.connection_started.then(function() {
+          var session_member;
+          if ($sessionStorage.getItem("login")) {
+            session_member = $sessionStorage.getItem("login");
+            session_member = halClient.createResource(session_member);
+            $rootScope.member = new BBModel.Member.Member(session_member);
+            $scope.setClient($rootScope.member);
+            if ($scope.bb.destination) {
+              return $scope.redirectTo($scope.bb.destination);
+            } else {
+              $scope.setLoaded($scope);
+              return $scope.decideNextPage();
+            }
+          } else {
+            return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
+              return root.$get("new_login").then(function(new_login) {
+                $scope.form = new_login.form;
+                return $scope.schema = new_login.schema;
+              }, function(err) {
+                return console.log('err ', err);
+              });
+            }, function(err) {
+              return console.log('err ', err);
+            });
+          }
+        });
+        $scope.redirectTo = function(destination) {
+          return $window.location.href = destination;
+        };
+        return $scope.submit = function(form) {
+          form['role'] = 'member';
+          return $scope.company.$post('login', {}, form).then(function(login) {
+            if (login.$has('members')) {
+              return login.$get('members').then(function(members) {
+                var auth_token;
+                $rootScope.member = new BBModel.Member.Member(members[0]);
+                auth_token = $rootScope.member.getOption('auth_token');
+                $sessionStorage.setItem("login", $rootScope.member.$toStore());
+                $sessionStorage.setItem("auth_token", auth_token);
+                $scope.setClient($rootScope.member);
+                if ($scope.bb.destination) {
+                  return $scope.redirectTo($scope.bb.destination);
+                } else {
+                  return $scope.decideNextPage();
+                }
+              });
+            } else if (login.$has('member')) {
+              return login.$get('member').then(function(member) {
+                var auth_token;
+                $rootScope.member = new BBModel.Member.Member(member);
+                auth_token = $rootScope.member.getOption('auth_token');
+                $sessionStorage.setItem("login", $rootScope.member.$toStore());
+                $sessionStorage.setItem("auth_token", auth_token);
+                $scope.setClient($rootScope.member);
+                return $scope.decideNextPage();
+              });
+            }
+          }, function(err) {
+            return AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+          });
+        };
+      }
     };
   });
 
@@ -17671,7 +17667,7 @@ function getURIparam( name ){
     return $logProvider.debugEnabled(true);
   });
 
-  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel) {
+  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel, $bbug) {
     var logObjectKeys, showScopeChain;
     logObjectKeys = function(obj, showValue) {
       var key, value;
@@ -17715,7 +17711,7 @@ function getURIparam( name ){
             }
             scope = scope.$$childHead;
           }
-          $($window).on('dblclick', function(e) {
+          $bbug($window).on('dblclick', function(e) {
             var controller, controllerName, pscope;
             scope = angular.element(e.target).scope();
             controller = scope.hasOwnProperty('controller');
@@ -17898,7 +17894,7 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Sorry, your topup failed.'
+        msg: 'Sorry, your topup failed. Please try again.'
       }, {
         key: 'UPDATE_SUCCESS',
         type: 'success',
@@ -17910,7 +17906,19 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Update failed, please try again'
+        msg: 'Update failed. Please try again'
+      }, {
+        key: 'ALREADY_REGISTERED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You have already registered with this email address. Please login or reset your password.'
+      }, {
+        key: 'LOGIN_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, your email or password was not recognised. Please try again.'
       }
     ];
     return {
