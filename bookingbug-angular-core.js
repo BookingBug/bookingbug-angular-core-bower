@@ -6183,16 +6183,16 @@ function getURIparam( name ){
           latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
           $scope.mapBounds.extend(latlong);
         }
-        $scope.mapOptions = {
-          center: $scope.mapBounds.getCenter(),
-          zoom: 6,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
-          }
-        };
       }
+      $scope.mapOptions = {
+        center: $scope.mapBounds.getCenter(),
+        zoom: 6,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+          style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
+        }
+      };
       if (options && options.map_options) {
         ref1 = options.map_options;
         for (key in ref1) {
@@ -10850,10 +10850,21 @@ function getURIparam( name ){
               date_format_2 = 'MM/dd/yyyy';
             }
             return scope.$watch(attrs.bbQuestion, function(question) {
-              var e, html, i, index, itemx, j, lastName, len1, len2, name, ref1, ref2;
+              var e, html, i, index, itemx, j, lastName, len1, len2, name, placeholder, ref1, ref2;
               if (question) {
                 html = '';
                 lastName = '';
+                placeholder = '';
+                if (attrs.defaultPlaceholder != null) {
+                  if (question.detail_type === "text_area" | question.detail_type === "text_field") {
+                    if (question["default"]) {
+                      placeholder = question["default"];
+                    }
+                    if (question.answer === question["default"]) {
+                      question.answer = "";
+                    }
+                  }
+                }
                 scope.recalc = (function(_this) {
                   return function() {
                     if (angular.isDefined(scope.recalc_price)) {
@@ -10878,7 +10889,7 @@ function getURIparam( name ){
                   }
                   html += "</select>";
                 } else if (question.detail_type === "text_area") {
-                  html = "<textarea ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
+                  html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
                 } else if (question.detail_type === "radio") {
                   html = '<div class="radio-group">';
                   ref2 = question.options;
@@ -10899,7 +10910,7 @@ function getURIparam( name ){
                 } else if (question.detail_type === "date") {
                   html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
                 } else {
-                  html = "<input type='text' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
+                  html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
                 }
                 if (html) {
                   return e = $compile(html)(scope, (function(_this) {
@@ -11131,7 +11142,7 @@ function getURIparam( name ){
       });
     };
     return {
-      restrict: "C",
+      restrict: "AC",
       link: linker,
       scope: {
         'cardType': '='
@@ -20405,7 +20416,7 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, ErrorService, BBModel, $q, $bbug) {
-    var alphanumeric, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
+    var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
     uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
     uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
     number_only_regex = /^\d+$/;
@@ -20414,11 +20425,15 @@ function getURIparam( name ){
     uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
     uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
     international_number = /^(\+)([\d \(\)]{9,19})$/;
+    email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
     alphanumeric = /^[a-zA-Z0-9]*$/;
     geocode_result = null;
     return {
       alpha: /^[a-zA-Z\s]*$/,
       us_phone_number: /(^[\d \(\)-]{9,16})$/,
+      getEmailPattern: function() {
+        return email_regex;
+      },
       getUKPostcodePattern: function() {
         return uk_postcode_regex_lenient;
       },
