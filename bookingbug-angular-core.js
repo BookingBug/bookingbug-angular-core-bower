@@ -6088,6 +6088,7 @@ function getURIparam( name ){
       })(this));
     };
     return $scope.updatePassword = function(new_password, confirm_new_password) {
+      AlertService.clear();
       $scope.password_error = false;
       $scope.error = false;
       if ($rootScope.member && new_password && confirm_new_password && (new_password === confirm_new_password)) {
@@ -11306,7 +11307,8 @@ function getURIparam( name ){
           return compare(ctrl.$viewValue);
         });
         compare = function(value) {
-          return ctrl.$setValidity('match', scope.val_1 === value);
+          ctrl.$setValidity('match', scope.val_1 === value);
+          return value;
         };
         return ctrl.$parsers.push(compare);
       }
