@@ -19190,6 +19190,9 @@ function getURIparam( name ){
         options || (options = {});
         options['root'] || (options['root'] = "");
         url = options['root'] + "/api/v1/logout";
+        $sessionStorage.removeItem("login");
+        $sessionStorage.removeItem('auth_token');
+        $sessionStorage.clear();
         halClient.$del(url, options, {}).then((function(_this) {
           return function(logout) {
             $sessionStorage.removeItem("login");
