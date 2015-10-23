@@ -2686,6 +2686,11 @@ function getURIparam( name ){
           prms.clear_member || (prms.clear_member = true);
         }
         $scope.bb.client_defaults = prms.client || {};
+        if (prms.client_defaults) {
+          if (prms.client_defaults.membership_ref) {
+            $scope.bb.client_defaults.membership_ref = prms.client_defaults.membership_ref;
+          }
+        }
         if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
           match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
           if (match) {
@@ -2738,6 +2743,9 @@ function getURIparam( name ){
           }
           if (prms.extra_setup.return_url) {
             $scope.bb.return_url = prms.extra_setup.return_url;
+          }
+          if (prms.extra_setup.destination) {
+            $scope.bb.destination = prms.extra_setup.destination;
           }
         }
         if (prms.template) {
@@ -3201,7 +3209,7 @@ function getURIparam( name ){
         return $scope.showPage('basket');
       } else if ($scope.bb.moving_booking && $scope.bb.basket.readyToCheckout()) {
         return $scope.showPage('purchase');
-      } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null) {
+      } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null && !$scope.bb.basket.waiting_for_checkout) {
         if ($scope.setPageRoute($rootScope.Route.Checkout)) {
           return;
         }
@@ -3449,7 +3457,7 @@ function getURIparam( name ){
                 return res.$get('baskets').then(function(baskets) {
                   var basket;
                   basket = _.find(baskets, function(b) {
-                    return b.company_id === $scope.bb.company_id;
+                    return parseInt(b.company_id) === $scope.bb.company_id;
                   });
                   if (basket) {
                     basket = new BBModel.Basket(basket, $scope.bb);
@@ -3838,18 +3846,40 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
+  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
-    $scope.items = $scope.bb.basket.items;
-    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id;
-    $scope.$watch('basket', (function(_this) {
-      return function(newVal, oldVal) {
-        return $scope.items = _.filter($scope.bb.basket.items, function(item) {
-          return !item.is_coupon;
+    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
+    $scope.basket_options = $scope.$eval($attrs.bbBasketList) || {};
+    $rootScope.connection_started.then(function() {
+      var basket_item, i, len, params, promises, ref;
+      if ($scope.client.$has('pre_paid_bookings')) {
+        $scope.notLoaded($scope);
+        promises = [];
+        ref = $scope.bb.basket.timeItems();
+        for (i = 0, len = ref.length; i < len; i++) {
+          basket_item = ref[i];
+          params = {
+            event_id: basket_item.getEventId()
+          };
+          promises.push($scope.client.getPrePaidBookingsPromise(params));
+        }
+        return $q.all(promises).then(function(result) {
+          var index, j, len1, prepaid_bookings, ref1;
+          ref1 = $scope.bb.basket.timeItems();
+          for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
+            basket_item = ref1[index];
+            prepaid_bookings = result[index];
+            if ($scope.basket_options.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
+              basket_item.setPrepaidBooking(prepaid_bookings[0]);
+            }
+          }
+          return $scope.setLoaded($scope);
+        }, function(err) {
+          return $scope.setLoaded($scope);
         });
-      };
-    })(this));
+      }
+    });
     $scope.addAnother = (function(_this) {
       return function(route) {
         $scope.clearBasketItem();
@@ -3862,7 +3892,11 @@ function getURIparam( name ){
       return function(route) {
         $scope.setReadyToCheckout(true);
         if ($scope.bb.basket.items.length > 0) {
-          return $scope.decideNextPage(route);
+          if ($scope.$parent.$has_page_control) {
+            return true;
+          } else {
+            return $scope.decideNextPage(route);
+          }
         } else {
           AlertService.clear();
           AlertService.add('info', ErrorService.getError('EMPTY_BASKET_FOR_CHECKOUT'));
@@ -3870,6 +3904,9 @@ function getURIparam( name ){
         }
       };
     })(this);
+    $scope.setReady = function() {
+      return $scope.checkout();
+    };
     $scope.applyCoupon = (function(_this) {
       return function(coupon) {
         var params;
@@ -5562,6 +5599,7 @@ function getURIparam( name ){
     })(this));
     $scope.selectItem = (function(_this) {
       return function(item, route) {
+        var i, j, len, ref;
         if (!((item.getSpacesLeft() <= 0 && $scope.bb.company.settings.has_waitlists) || item.hasSpace())) {
           return false;
         }
@@ -5575,6 +5613,13 @@ function getURIparam( name ){
           $scope.setLoaded($scope);
           return false;
         } else {
+          if ($scope.bb.moving_purchase) {
+            ref = $scope.bb.basket.items;
+            for (j = 0, len = ref.length; j < len; j++) {
+              i = ref[j];
+              i.setEvent(item);
+            }
+          }
           $scope.bb.current_item.setEvent(item);
           $scope.bb.current_item.ready = false;
           $q.all($scope.bb.current_item.promises).then(function() {
@@ -5760,7 +5805,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, ItemDetailsService, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, QuestionService, $modal, $location, $upload, $translate, SettingsService) {
+  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, ItemDetailsService, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, QuestionService, $modal, $location, $upload, $translate, SettingsService, PurchaseService) {
     var confirming, setItemDetails;
     $scope.controller = "public.controllers.ItemDetails";
     $scope.suppress_basket_update = $attrs.bbSuppressBasketUpdate != null;
@@ -5863,6 +5908,9 @@ function getURIparam( name ){
       if ($scope.bb.moving_booking) {
         return $scope.confirm_move(form, route);
       }
+      if (!$scope.has_page_control) {
+        return true;
+      }
       $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
@@ -5887,48 +5935,63 @@ function getURIparam( name ){
       };
     })(this);
     $scope.confirm_move = function(route) {
+      var params;
       confirming = true;
       $scope.item || ($scope.item = $scope.bb.current_item);
       $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
-        return PurchaseBookingService.update($scope.item).then(function(booking) {
-          var _i, b, i, len, oldb, ref;
-          b = new BBModel.Purchase.Booking(booking);
-          if ($scope.bb.purchase) {
-            ref = $scope.bb.purchase.bookings;
-            for (_i = i = 0, len = ref.length; i < len; _i = ++i) {
-              oldb = ref[_i];
-              if (oldb.id === b.id) {
-                $scope.bb.purchase.bookings[_i] = b;
+        if ($scope.bb.moving_purchase) {
+          params = {
+            purchase: $scope.bb.moving_purchase,
+            bookings: $scope.bb.basket.items
+          };
+          return PurchaseService.update(params).then(function(purchase) {
+            $scope.purchase = purchase;
+            $scope.setLoaded($scope);
+            $scope.item.move_done = true;
+            $rootScope.$broadcast("booking:moved");
+            return $scope.decideNextPage(route);
+          });
+        } else {
+          return PurchaseBookingService.update($scope.item).then(function(booking) {
+            var _i, b, i, len, oldb, ref;
+            b = new BBModel.Purchase.Booking(booking);
+            if ($scope.bb.purchase) {
+              ref = $scope.bb.purchase.bookings;
+              for (_i = i = 0, len = ref.length; i < len; _i = ++i) {
+                oldb = ref[_i];
+                if (oldb.id === b.id) {
+                  $scope.bb.purchase.bookings[_i] = b;
+                }
               }
             }
-          }
-          $scope.setLoaded($scope);
-          $scope.item.move_done = true;
-          $rootScope.$broadcast("booking:moved");
-          $scope.decideNextPage(route);
-          if (SettingsService.isInternationalizatonEnabled()) {
-            return $translate('MOVE_BOOKINGS_MSG', {
-              datetime: b.datetime.format('LLLL')
-            }).then(function(translated_text) {
-              return AlertService.add("info", {
-                msg: translated_text
-              });
-            });
-          } else {
-            return AlertService.add("info", {
-              msg: "Your booking has been moved to " + (b.datetime.format('LLLL'))
-            });
-          }
-        }, (function(_this) {
-          return function(err) {
             $scope.setLoaded($scope);
-            return AlertService.add("danger", {
-              msg: "Failed to move booking. Please try again."
-            });
-          };
-        })(this));
+            $scope.item.move_done = true;
+            $rootScope.$broadcast("booking:moved");
+            $scope.decideNextPage(route);
+            if (SettingsService.isInternationalizatonEnabled()) {
+              return $translate('MOVE_BOOKINGS_MSG', {
+                datetime: b.datetime.format('LLLL')
+              }).then(function(translated_text) {
+                return AlertService.add("info", {
+                  msg: translated_text
+                });
+              });
+            } else {
+              return AlertService.add("info", {
+                msg: "Your booking has been moved to " + (b.datetime.format('LLLL'))
+              });
+            }
+          }, (function(_this) {
+            return function(err) {
+              $scope.setLoaded($scope);
+              return AlertService.add("danger", {
+                msg: "Failed to move booking. Please try again."
+              });
+            };
+          })(this));
+        }
       } else {
         return $scope.decideNextPage(route);
       }
@@ -6355,9 +6418,10 @@ function getURIparam( name ){
       return $rootScope.$broadcast("map:search_success");
     };
     searchFailed = function() {
-      $scope.search_failed = true;
-      AlertService.danger(ErrorService.getError('LOCATION_NOT_FOUND'));
-      return $rootScope.$apply();
+      return $timeout(function() {
+        $scope.search_failed = true;
+        return AlertService.danger(ErrorService.getError('LOCATION_NOT_FOUND'));
+      });
     };
     $scope.validateAddress = function(form) {
       if (!form) {
@@ -6529,6 +6593,73 @@ function getURIparam( name ){
       $scope.reverse_geocode_address = null;
       return $scope.address = null;
     });
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbMembershipLevels', function($rootScope, MembershipLevelsService) {
+    var controller;
+    ({
+      restrict: 'AE',
+      replace: true,
+      scope: true
+    });
+    return controller = function($scope, $element, $attrs) {
+      var checkClientDefaults;
+      $rootScope.connection_started.then(function() {
+        return $scope.initialise();
+      });
+      $scope.initialise = function() {
+        if ($scope.bb.company && $scope.bb.company.$has('member_levels')) {
+          $scope.notLoaded($scope);
+          return MembershipLevelsService.getMembershipLevels($scope.bb.company).then(function(member_levels) {
+            $scope.setLoaded($scope);
+            return $scope.membership_levels = member_levels;
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        }
+      };
+      $scope.selectMemberLevel = function(level) {
+        if (level && $scope.client) {
+          $scope.client.member_level_id = level.id;
+          if ($scope.$parent.$has_page_control) {
+
+          } else {
+            return $scope.decideNextPage();
+          }
+        }
+      };
+      checkClientDefaults = function() {
+        var i, len, membership_level, ref, results;
+        if (!$scope.bb.client_defaults.membership_ref) {
+          return;
+        }
+        ref = $scope.membership_levels;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          membership_level = ref[i];
+          if (membership_level.name === $scope.bb.client_defaults.membership_ref) {
+            results.push($scope.selectMemberLevel(membership_level));
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+      $scope.setReady = function() {
+        if (!$scope.client.member_level_id) {
+          return false;
+        }
+        return true;
+      };
+      return $scope.getMembershipLevel = function(member_level_id) {
+        return _.find($scope.membership_levels, function(level) {
+          return level.id === member_level_id;
+        });
+      };
+    };
   });
 
 }).call(this);
@@ -7610,6 +7741,7 @@ function getURIparam( name ){
     };
     linker = function(scope, element, attributes) {
       scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? false : true;
       element.find('iframe').bind('load', (function(_this) {
         return function(event) {
           var origin, url;
@@ -7685,7 +7817,10 @@ function getURIparam( name ){
     })(this);
     $scope.paymentDone = function() {
       $scope.bb.payment_status = "complete";
-      return $scope.decideNextPage();
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
     };
     return $scope.error = function(message) {
       return $log.warn("Payment Failure: " + message);
@@ -9818,8 +9953,8 @@ function getURIparam( name ){
       return function() {
         var id;
         $scope.bb.payment_status = null;
-        id = $scope.bb.total ? $scope.bb.total.long_id : QueryStringService('purchase_id');
-        if (id) {
+        id = QueryStringService('purchase_id');
+        if (id && !$scope.bb.total) {
           return PurchaseService.query({
             url_root: $scope.bb.api_url,
             purchase_id: id
@@ -9830,6 +9965,12 @@ function getURIparam( name ){
               return $scope.$emit("checkout:success", total);
             }
           });
+        } else {
+          $scope.total = $scope.bb.total;
+          $scope.setLoaded($scope);
+          if ($scope.total.paid === $scope.total.total_price) {
+            return $scope.$emit("checkout:success", $scope.total);
+          }
         }
       };
     })(this), function(err) {
@@ -13184,7 +13325,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -13705,6 +13846,18 @@ function getURIparam( name ){
         return false;
       };
 
+      Basket.prototype.hasExternalPurchase = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isExternalPurchase()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
       return Basket;
 
     })(BaseModel);
@@ -13854,11 +14007,13 @@ function getURIparam( name ){
           if (data.$has('event_chain')) {
             chain = data.$get('event_chain');
             this.promises.push(chain);
-            chain.then((function(_this) {
-              return function(serv) {
-                return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
-              };
-            })(this));
+            if (!data.$has('event')) {
+              chain.then((function(_this) {
+                return function(serv) {
+                  return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
+                };
+              })(this));
+            }
           }
           if (data.$has('resource')) {
             res = data.$get('resource');
@@ -14172,8 +14327,11 @@ function getURIparam( name ){
         }
       };
 
-      BasketItem.prototype.setEvent = function(event) {
+      BasketItem.prototype.setEvent = function(event, default_questions) {
         var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
         if (this.event) {
           this.event.unselect();
         }
@@ -14188,11 +14346,14 @@ function getURIparam( name ){
         if (event.$has('book')) {
           this.book_link = event;
         }
+        if (event.qty) {
+          this.num_book = event.qty;
+        }
         prom = this.event.getChain();
         this.promises.push(prom);
         prom.then((function(_this) {
           return function(chain) {
-            return _this.setEventChain(chain);
+            return _this.setEventChain(chain, default_questions);
           };
         })(this));
         prom = this.event.getGroup();
@@ -14202,7 +14363,6 @@ function getURIparam( name ){
             return _this.setEventGroup(group);
           };
         })(this));
-        this.num_book = event.qty;
         if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
           if (this.company.getSettings().has_waitlists) {
             return this.status = 8;
@@ -14529,6 +14689,9 @@ function getURIparam( name ){
         if (this.deal_codes) {
           data.vouchers = this.deal_codes;
         }
+        if (this.product_id) {
+          data.product_id = this.product_id;
+        }
         if (this.email) {
           data.email = this.email;
         }
@@ -14730,6 +14893,9 @@ function getURIparam( name ){
         if (this.tickets && this.tickets.pre_paid_booking_id) {
           return 0;
         }
+        if (this.pre_paid_booking_id) {
+          return 0;
+        }
         if (this.discount_price != null) {
           return this.discount_price + this.questionPrice();
         }
@@ -14781,11 +14947,7 @@ function getURIparam( name ){
       };
 
       BasketItem.prototype.hasPrice = function() {
-        if (this.price) {
-          return true;
-        } else {
-          return false;
-        }
+        return this.price != null;
       };
 
       BasketItem.prototype.getAttachment = function() {
@@ -14800,6 +14962,29 @@ function getURIparam( name ){
             };
           })(this));
         }
+      };
+
+      BasketItem.prototype.setPrepaidBooking = function(prepaid_booking) {
+        this.prepaid_booking = prepaid_booking;
+        return this.pre_paid_booking_id = prepaid_booking.id;
+      };
+
+      BasketItem.prototype.hasPrepaidBooking = function() {
+        return this.pre_paid_booking_id != null;
+      };
+
+      BasketItem.prototype.getEventId = function() {
+        if (this.time && this.time.event_id) {
+          return this.time.event_id;
+        } else if (this.date && this.date.event_id) {
+          return this.date.event_id;
+        } else if (this.event) {
+          return this.event.id;
+        }
+      };
+
+      BasketItem.prototype.isExternalPurchase = function() {
+        return this.external_purchase != null;
       };
 
       return BasketItem;
@@ -15194,6 +15379,12 @@ function getURIparam( name ){
         x.parent_client_id = this.parent_client_id;
         x.password = this.password;
         x.notifications = this.notifications;
+        if (this.member_level_id) {
+          x.member_level_id = this.member_level_id;
+        }
+        if (this.send_welcome_email) {
+          x.send_welcome_email = this.send_welcome_email;
+        }
         if (this.mobile) {
           this.remove_prefix();
           x.mobile = this.mobile;
@@ -15781,21 +15972,6 @@ function getURIparam( name ){
         return defer.promise;
       };
 
-      Event.prototype.printDuration = function() {
-        var h, m;
-        if (this.duration < 60) {
-          return this.duration + " mins";
-        } else {
-          h = Math.round(this.duration / 60);
-          m = this.duration % 60;
-          if (m === 0) {
-            return h + " hours";
-          } else {
-            return h + " hours " + m + " mins";
-          }
-        }
-      };
-
       Event.prototype.getDescription = function() {
         return this.getChain().description;
       };
@@ -15806,10 +15982,6 @@ function getURIparam( name ){
         } else {
           return "#FFFFFF";
         }
-      };
-
-      Event.prototype.getPerson = function() {
-        return this.getChain().person_name;
       };
 
       Event.prototype.getPounds = function() {
@@ -15903,7 +16075,7 @@ function getURIparam( name ){
                 _this.price_range.to = _this.price;
               }
               _this.ticket_prices = _.indexBy(tickets, 'name');
-              return def.resolve();
+              return def.resolve(_this);
             });
           };
         })(this));
@@ -16008,6 +16180,27 @@ function getURIparam( name ){
       };
 
       return EventChain;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventCollectionModel", function($q, BBModel, BaseModel) {
+    var EventCollection;
+    return EventCollection = (function(superClass) {
+      extend(EventCollection, superClass);
+
+      function EventCollection() {
+        return EventCollection.__super__.constructor.apply(this, arguments);
+      }
+
+      return EventCollection;
 
     })(BaseModel);
   });
@@ -16326,6 +16519,27 @@ function getURIparam( name ){
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
+  angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
+    var MembershipLevel;
+    return MembershipLevel = (function(superClass) {
+      extend(MembershipLevel, superClass);
+
+      function MembershipLevel() {
+        return MembershipLevel.__super__.constructor.apply(this, arguments);
+      }
+
+      return MembershipLevel;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
   angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
     var Person;
     return Person = (function(superClass) {
@@ -16351,11 +16565,44 @@ function getURIparam( name ){
     return PrePaidBooking = (function(superClass) {
       extend(PrePaidBooking, superClass);
 
-      function PrePaidBooking() {
-        return PrePaidBooking.__super__.constructor.apply(this, arguments);
+      function PrePaidBooking(data) {
+        PrePaidBooking.__super__.constructor.call(this, data);
       }
 
+      PrePaidBooking.prototype.checkValidity = function(item) {
+        if (this.service_id && item.service_id && this.service_id !== item.service_id) {
+          return false;
+        } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
+          return false;
+        } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
+          return false;
+        } else {
+          return true;
+        }
+      };
+
       return PrePaidBooking;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
+    var Product;
+    return Product = (function(superClass) {
+      extend(Product, superClass);
+
+      function Product() {
+        return Product.__super__.constructor.apply(this, arguments);
+      }
+
+      return Product;
 
     })(BaseModel);
   });
@@ -17182,13 +17429,14 @@ function getURIparam( name ){
         });
         return deferred.promise;
       },
-      checkPrePaid: function(company, event, pre_paid_bookings) {
+      checkPrePaid: function(item, pre_paid_bookings) {
         var booking, j, len, valid_pre_paid;
         valid_pre_paid = null;
         for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
           booking = pre_paid_bookings[j];
-          if (booking.checkValidity(event)) {
+          if (booking.checkValidity(item)) {
             valid_pre_paid = booking;
+            break;
           }
         }
         return valid_pre_paid;
@@ -17269,6 +17517,7 @@ function getURIparam( name ){
             data.no_notifications = params.bb.no_notifications;
           }
           data.affiliate_id = $rootScope.affiliate_id;
+          basket.waiting_for_checkout = true;
           MutexService.getLock().then(function(mutex) {
             return basket.$post('checkout', params, data).then(function(total) {
               var tot;
@@ -17277,11 +17526,14 @@ function getURIparam( name ){
               tot = new BBModel.Purchase.Total(total);
               $rootScope.$broadcast('newCheckout', tot);
               basket.clear();
+              basket.waiting_for_checkout = false;
               return deferred.resolve(tot);
             }, function(err) {
+              basket.waiting_for_checkout = false;
               return deferred.reject(err);
             });
           }, function(err) {
+            basket.waiting_for_checkout = false;
             MutexService.unlock(mutex);
             return deferred.reject(err);
           });
@@ -18059,7 +18311,7 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'The requested time slot is not available. Please choose a different time.'
+        msg: 'Sorry, the requested time slot is not available. Please choose a different time.'
       }, {
         key: 'TOPUP_FAILED',
         type: 'warning',
@@ -18236,6 +18488,40 @@ function getURIparam( name ){
           company.$get('events', params).then((function(_this) {
             return function(resource) {
               return deferred.resolve(resource.events);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      queryEventCollection: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              var collection;
+              collection = new BBModel.EventCollection(resource);
+              return deferred.resolve(collection);
             };
           })(this), (function(_this) {
             return function(err) {
@@ -18959,6 +19245,9 @@ function getURIparam( name ){
         options || (options = {});
         options['root'] || (options['root'] = "");
         url = options['root'] + "/api/v1/logout";
+        $sessionStorage.removeItem("login");
+        $sessionStorage.removeItem('auth_token');
+        $sessionStorage.clear();
         halClient.$del(url, options, {}).then((function(_this) {
           return function(logout) {
             $sessionStorage.removeItem("login");
@@ -19008,6 +19297,40 @@ function getURIparam( name ){
           })(this));
           return deferred.promise;
         }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("MembershipLevelsService", function($q, BBModel) {
+    return {
+      getMembershipLevels: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get("member_levels").then(function(resource) {
+          return resource.$get('membership_levels').then((function(_this) {
+            return function(membership_levels) {
+              var level, levels;
+              levels = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = membership_levels.length; i < len; i++) {
+                  level = membership_levels[i];
+                  results.push(new BBModel.MembershipLevel(level));
+                }
+                return results;
+              })();
+              return deferred.resolve(levels);
+            };
+          })(this));
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
       }
     };
   });
@@ -19288,6 +19611,57 @@ function getURIparam( name ){
                   people.push(new BBModel.Person(i));
                 }
                 return deferred.resolve(people);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate) {
+    return {
+      getProduct: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = prms.api_url + "/api/v1/{company_id}/products/{id}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company_id,
+          id: prms.product_id
+        });
+        halClient.$get(uri, {}).then(function(product) {
+          return deferred.resolve(product);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('products')) {
+          deferred.reject("No products found");
+        } else {
+          company.$get('products').then((function(_this) {
+            return function(resource) {
+              return resource.$get('products').then(function(items) {
+                var i, j, len, resources;
+                resources = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  resources.push(new BBModel.Product(i));
+                }
+                return deferred.resolve(resources);
               });
             };
           })(this), (function(_this) {
@@ -20470,6 +20844,84 @@ function getURIparam( name ){
     };
   });
 
+  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Member.Wallet(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Product(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('products').then((function(_this) {
+          return function(items) {
+            var cat, i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              cat = new BBModel.Product(i);
+              cat.order || (cat.order = _i);
+              models.push(cat);
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.PrePaidBooking(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('pre_paid_bookings').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.PrePaidBooking(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
 }).call(this);
 
 (function() {
@@ -21025,499 +21477,6 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  var ModalDelete, ModalDeleteAll;
-
-  angular.module('BB.Directives').directive('bbPurchase', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Purchase',
-      link: function(scope, element, attrs) {
-        scope.init(scope.$eval(attrs.bbPurchase));
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
-    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
-    $scope.controller = "Purchase";
-    $scope.is_waitlist = false;
-    $scope.make_payment = false;
-    setPurchaseCompany = function(company) {
-      $scope.bb.company_id = company.id;
-      $scope.bb.company = new BBModel.Company(company);
-      $scope.company = $scope.bb.company;
-      $scope.bb.item_defaults.company = $scope.bb.company;
-      if (company.settings) {
-        if (company.settings.merge_resources) {
-          $scope.bb.item_defaults.merge_resources = true;
-        }
-        if (company.settings.merge_people) {
-          return $scope.bb.item_defaults.merge_people = true;
-        }
-      }
-    };
-    failMsg = function() {
-      if ($scope.fail_msg) {
-        return AlertService.danger({
-          msg: $scope.fail_msg
-        });
-      } else {
-        return AlertService.danger({
-          msg: "Sorry, something went wrong"
-        });
-      }
-    };
-    $scope.init = function(options) {
-      if (!options) {
-        options = {};
-      }
-      $scope.notLoaded($scope);
-      if (options.move_route) {
-        $scope.move_route = options.move_route;
-      }
-      if (options.move_all) {
-        $scope.move_all = options.move_all;
-      }
-      if (options.login_redirect) {
-        $scope.requireLogin({
-          redirect: options.login_redirect
-        });
-      }
-      if (options.fail_msg) {
-        $scope.fail_msg = options.fail_msg;
-      }
-      if ($scope.bb.total) {
-        return $scope.load($scope.bb.total.long_id);
-      } else if ($scope.bb.purchase) {
-        $scope.purchase = $scope.bb.purchase;
-        $scope.bookings = $scope.bb.purchase.bookings;
-        if ($scope.purchase.confirm_messages) {
-          $scope.messages = $scope.purchase.confirm_messages;
-        }
-        return $scope.setLoaded($scope);
-      } else {
-        if (options.member_sso) {
-          return SSOService.memberLogin(options).then(function(login) {
-            return $scope.load();
-          }, function(err) {
-            $scope.setLoaded($scope);
-            return failMsg();
-          });
-        } else {
-          return $scope.load();
-        }
-      }
-    };
-    $scope.load = function(id) {
-      $scope.notLoaded($scope);
-      id = getPurchaseID();
-      if (!($scope.loaded || !id)) {
-        $rootScope.widget_started.then((function(_this) {
-          return function() {
-            return $scope.waiting_for_conn_started.then(function() {
-              var auth_token, company_id, params;
-              company_id = getCompanyID();
-              if (company_id) {
-                CompanyService.query(company_id, {}).then(function(company) {
-                  return setPurchaseCompany(company);
-                });
-              }
-              params = {
-                purchase_id: id,
-                url_root: $scope.bb.api_url
-              };
-              auth_token = $sessionStorage.getItem('auth_token');
-              if (auth_token) {
-                params.auth_token = auth_token;
-              }
-              return PurchaseService.query(params).then(function(purchase) {
-                if ($scope.bb.company == null) {
-                  purchase.$get('company').then((function(_this) {
-                    return function(company) {
-                      return setPurchaseCompany(company);
-                    };
-                  })(this));
-                }
-                $scope.purchase = purchase;
-                $scope.bb.purchase = purchase;
-                $scope.price = !($scope.purchase.price === 0);
-                $scope.purchase.getBookingsPromise().then(function(bookings) {
-                  var booking, i, len, ref, results;
-                  $scope.bookings = bookings;
-                  $scope.setLoaded($scope);
-                  checkIfMoveBooking(bookings);
-                  checkIfWaitlistBookings(bookings);
-                  ref = $scope.bookings;
-                  results = [];
-                  for (i = 0, len = ref.length; i < len; i++) {
-                    booking = ref[i];
-                    results.push(booking.getAnswersPromise().then(function(answers) {
-                      return booking.answers = answers;
-                    }));
-                  }
-                  return results;
-                }, function(err) {
-                  $scope.setLoaded($scope);
-                  return failMsg();
-                });
-                if (purchase.$has('client')) {
-                  purchase.$get('client').then((function(_this) {
-                    return function(client) {
-                      return $scope.setClient(new BBModel.Client(client));
-                    };
-                  })(this));
-                }
-                return $scope.purchase.getConfirmMessages().then(function(messages) {
-                  $scope.purchase.confirm_messages = messages;
-                  return $scope.messages = messages;
-                });
-              }, function(err) {
-                $scope.setLoaded($scope);
-                if (err && err.status === 401 && $scope.login_action) {
-                  if (LoginService.isLoggedIn()) {
-                    return failMsg();
-                  } else {
-                    return loginRequired();
-                  }
-                } else {
-                  return failMsg();
-                }
-              });
-            }, function(err) {
-              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-            });
-          };
-        })(this), function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      }
-      return $scope.loaded = true;
-    };
-    checkIfMoveBooking = function(bookings) {
-      var b, id, matches, move_booking;
-      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        id = parseInt(matches[1]);
-      }
-      if (id) {
-        move_booking = (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = bookings.length; i < len; i++) {
-            b = bookings[i];
-            if (b.id === id) {
-              results.push(b);
-            }
-          }
-          return results;
-        })();
-        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
-          return $scope.move(move_booking[0]);
-        }
-      }
-    };
-    checkIfWaitlistBookings = function(bookings) {
-      var booking;
-      return $scope.waitlist_bookings = (function() {
-        var i, len, results;
-        results = [];
-        for (i = 0, len = bookings.length; i < len; i++) {
-          booking = bookings[i];
-          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-            results.push(booking);
-          }
-        }
-        return results;
-      })();
-    };
-    $scope.requireLogin = (function(_this) {
-      return function(action) {
-        var div;
-        if (_.isString(action.redirect)) {
-          if (action.redirect.indexOf('?') === -1) {
-            div = '?';
-          } else {
-            div = '&';
-          }
-          action.redirect += div + 'ref=' + encodeURIComponent(QueryStringService('ref'));
-        }
-        return $scope.login_action = action;
-      };
-    })(this);
-    loginRequired = (function(_this) {
-      return function() {
-        if ($scope.login_action.redirect) {
-          return window.location = $scope.login_action.redirect;
-        }
-      };
-    })(this);
-    getCompanyID = function() {
-      var company_id, matches;
-      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        company_id = matches[1];
-      }
-      return company_id;
-    };
-    getPurchaseID = function() {
-      var id, matches;
-      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (!matches) {
-        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (!matches) {
-        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (matches) {
-        id = matches[1];
-      } else {
-        if (QueryStringService('ref')) {
-          id = QueryStringService('ref');
-        }
-      }
-      if (QueryStringService('booking_id')) {
-        id = QueryStringService('booking_id');
-      }
-      return id;
-    };
-    $scope.move = function(booking, route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      if ($scope.move_all) {
-        return $scope.moveAll(route, options);
-      }
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: booking.company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var new_item, proms;
-            proms = [];
-            $scope.bb.moving_booking = booking;
-            $scope.quickEmptybasket();
-            new_item = new BBModel.BasketItem(booking, $scope.bb);
-            new_item.setSrcBooking(booking, $scope.bb);
-            new_item.ready = false;
-            Array.prototype.push.apply(proms, new_item.promises);
-            $scope.bb.basket.addItem(new_item);
-            $scope.setBasketItem(new_item);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              $rootScope.$broadcast("booking:move");
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.moveAll = function(route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: $scope.bookings[0].company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var booking, i, len, new_item, proms, ref;
-            proms = [];
-            if ($scope.bookings.length === 1) {
-              $scope.bb.moving_booking = $scope.bookings[0];
-            } else {
-              $scope.bb.moving_booking = $scope.purchase;
-            }
-            $scope.quickEmptybasket();
-            ref = $scope.bookings;
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              new_item = new BBModel.BasketItem(booking, $scope.bb);
-              new_item.setSrcBooking(booking);
-              new_item.ready = false;
-              new_item.move_done = false;
-              Array.prototype.push.apply(proms, new_item.promises);
-              $scope.bb.basket.addItem(new_item);
-            }
-            $scope.bb.sortStackedItems();
-            $scope.setBasketItem($scope.bb.basket.items[0]);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.bookWaitlistItem = function(booking) {
-      var params;
-      $scope.notLoaded($scope);
-      params = {
-        purchase: $scope.purchase,
-        booking: booking
-      };
-      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
-        $scope.purchase = purchase;
-        $scope.total = $scope.purchase;
-        $scope.bb.purchase = purchase;
-        return $scope.purchase.getBookingsPromise().then(function(bookings) {
-          $scope.bookings = bookings;
-          $scope.waitlist_bookings = (function() {
-            var i, len, ref, results;
-            ref = $scope.bookings;
-            results = [];
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-                results.push(booking);
-              }
-            }
-            return results;
-          })();
-          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
-            $scope.make_payment = true;
-          }
-          return $scope.setLoaded($scope);
-        }, function(err) {
-          $scope.setLoaded($scope);
-          return failMsg();
-        });
-      }, (function(_this) {
-        return function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        };
-      })(this));
-    };
-    $scope["delete"] = function(booking) {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDelete,
-        resolve: {
-          booking: function() {
-            return booking;
-          }
-        }
-      });
-      return modalInstance.result.then(function(booking) {
-        return booking.$del('self').then((function(_this) {
-          return function(service) {
-            $scope.bookings = _.without($scope.bookings, booking);
-            return $rootScope.$broadcast("booking:cancelled");
-          };
-        })(this));
-      });
-    };
-    $scope.delete_all = function() {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDeleteAll,
-        resolve: {
-          purchase: function() {
-            return $scope.purchase;
-          }
-        }
-      });
-      return modalInstance.result.then(function(purchase) {
-        return PurchaseService.delete_all(purchase).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.bookings = [];
-          return $rootScope.$broadcast("booking:cancelled");
-        });
-      });
-    };
-    $scope.isMovable = function(booking) {
-      if (booking.min_cancellation_time) {
-        return moment().isBefore(booking.min_cancellation_time);
-      }
-      return booking.datetime.isAfter(moment());
-    };
-    $scope.onFileSelect = function(booking, $file, existing) {
-      var att_id, file, method;
-      $scope.upload_progress = 0;
-      file = $file;
-      att_id = null;
-      if (existing) {
-        att_id = existing.id;
-      }
-      method = "POST";
-      if (att_id) {
-        method = "PUT";
-      }
-      return $scope.upload = $upload.upload({
-        url: booking.$href('attachments'),
-        method: method,
-        data: {
-          att_id: att_id
-        },
-        file: file
-      }).progress(function(evt) {
-        if ($scope.upload_progress < 100) {
-          return $scope.upload_progress = parseInt(99.0 * evt.loaded / evt.total);
-        }
-      }).success(function(data, status, headers, config) {
-        $scope.upload_progress = 100;
-        if (data && data.attachments && booking) {
-          return booking.attachments = data.attachments;
-        }
-      });
-    };
-    $scope.createBasketItem = function(booking) {
-      var item;
-      item = new BBModel.BasketItem(booking, $scope.bb);
-      item.setSrcBooking(booking);
-      return item;
-    };
-    return $scope.checkAnswer = function(answer) {
-      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
-    };
-  });
-
-  ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
-    $scope.controller = "ModalDelete";
-    $scope.booking = booking;
-    $scope.confirm_delete = function() {
-      return $modalInstance.close(booking);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
-
-  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
-    $scope.controller = "ModalDeleteAll";
-    $scope.purchase = purchase;
-    $scope.confirm_delete = function() {
-      return $modalInstance.close(purchase);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
-
-}).call(this);
-
-(function() {
   'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -21843,6 +21802,7 @@ function getURIparam( name ){
 
       function Purchase_Total(data) {
         this.getConfirmMessages = bind(this.getConfirmMessages, this);
+        this.getMember = bind(this.getMember, this);
         this.getClient = bind(this.getClient, this);
         this.getMessages = bind(this.getMessages, this);
         this.getDeals = bind(this.getDeals, this);
@@ -21860,6 +21820,11 @@ function getURIparam( name ){
         this.getClient().then((function(_this) {
           return function(client) {
             return _this.client = client;
+          };
+        })(this));
+        this.getMember().then((function(_this) {
+          return function(member) {
+            return _this.member = member;
           };
         })(this));
       }
@@ -22071,6 +22036,22 @@ function getURIparam( name ){
         return defer.promise;
       };
 
+      Purchase_Total.prototype.getMember = function() {
+        var defer;
+        defer = $q.defer();
+        if (this._data.$has('member')) {
+          this._data.$get('member').then((function(_this) {
+            return function(member) {
+              _this.member = new BBModel.Member.Member(member);
+              return defer.resolve(_this.member);
+            };
+          })(this));
+        } else {
+          defer.reject('No client');
+        }
+        return defer.promise;
+      };
+
       Purchase_Total.prototype.getConfirmMessages = function() {
         var defer;
         defer = $q.defer();
@@ -22111,7 +22092,6 @@ function getURIparam( name ){
             duration += item.duration;
           }
         }
-        duration /= 60;
         return duration;
       };
 
@@ -22136,6 +22116,506 @@ function getURIparam( name ){
 
     })(BaseModel);
   });
+
+}).call(this);
+
+(function() {
+  var ModalDelete, ModalDeleteAll;
+
+  angular.module('BB.Directives').directive('bbPurchase', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Purchase',
+      link: function(scope, element, attrs) {
+        scope.init(scope.$eval(attrs.bbPurchase));
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
+    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
+    $scope.controller = "Purchase";
+    $scope.is_waitlist = false;
+    $scope.make_payment = false;
+    setPurchaseCompany = function(company) {
+      $scope.bb.company_id = company.id;
+      $scope.bb.company = new BBModel.Company(company);
+      $scope.company = $scope.bb.company;
+      $scope.bb.item_defaults.company = $scope.bb.company;
+      if (company.settings) {
+        if (company.settings.merge_resources) {
+          $scope.bb.item_defaults.merge_resources = true;
+        }
+        if (company.settings.merge_people) {
+          return $scope.bb.item_defaults.merge_people = true;
+        }
+      }
+    };
+    failMsg = function() {
+      if ($scope.fail_msg) {
+        return AlertService.danger({
+          msg: $scope.fail_msg
+        });
+      } else {
+        return AlertService.danger({
+          msg: "Sorry, something went wrong"
+        });
+      }
+    };
+    $scope.init = function(options) {
+      if (!options) {
+        options = {};
+      }
+      $scope.notLoaded($scope);
+      if (options.move_route) {
+        $scope.move_route = options.move_route;
+      }
+      if (options.move_all) {
+        $scope.move_all = options.move_all;
+      }
+      if (options.login_redirect) {
+        $scope.requireLogin({
+          redirect: options.login_redirect
+        });
+      }
+      if (options.fail_msg) {
+        $scope.fail_msg = options.fail_msg;
+      }
+      if ($scope.bb.total) {
+        return $scope.load($scope.bb.total.long_id);
+      } else if ($scope.bb.purchase) {
+        $scope.purchase = $scope.bb.purchase;
+        $scope.bookings = $scope.bb.purchase.bookings;
+        if ($scope.purchase.confirm_messages) {
+          $scope.messages = $scope.purchase.confirm_messages;
+        }
+        return $scope.setLoaded($scope);
+      } else {
+        if (options.member_sso) {
+          return SSOService.memberLogin(options).then(function(login) {
+            return $scope.load();
+          }, function(err) {
+            $scope.setLoaded($scope);
+            return failMsg();
+          });
+        } else {
+          return $scope.load();
+        }
+      }
+    };
+    $scope.load = function(id) {
+      $scope.notLoaded($scope);
+      id = getPurchaseID();
+      if (!($scope.loaded || !id)) {
+        $rootScope.widget_started.then((function(_this) {
+          return function() {
+            return $scope.waiting_for_conn_started.then(function() {
+              var auth_token, company_id, params;
+              company_id = getCompanyID();
+              if (company_id) {
+                CompanyService.query(company_id, {}).then(function(company) {
+                  return setPurchaseCompany(company);
+                });
+              }
+              params = {
+                purchase_id: id,
+                url_root: $scope.bb.api_url
+              };
+              auth_token = $sessionStorage.getItem('auth_token');
+              if (auth_token) {
+                params.auth_token = auth_token;
+              }
+              return PurchaseService.query(params).then(function(purchase) {
+                if ($scope.bb.company == null) {
+                  purchase.$get('company').then((function(_this) {
+                    return function(company) {
+                      return setPurchaseCompany(company);
+                    };
+                  })(this));
+                }
+                $scope.purchase = purchase;
+                $scope.bb.purchase = purchase;
+                $scope.price = !($scope.purchase.price === 0);
+                $scope.purchase.getBookingsPromise().then(function(bookings) {
+                  var booking, i, len, ref, results;
+                  $scope.bookings = bookings;
+                  $scope.setLoaded($scope);
+                  checkIfMoveBooking(bookings);
+                  checkIfWaitlistBookings(bookings);
+                  ref = $scope.bookings;
+                  results = [];
+                  for (i = 0, len = ref.length; i < len; i++) {
+                    booking = ref[i];
+                    results.push(booking.getAnswersPromise().then(function(answers) {
+                      return booking.answers = answers;
+                    }));
+                  }
+                  return results;
+                }, function(err) {
+                  $scope.setLoaded($scope);
+                  return failMsg();
+                });
+                if (purchase.$has('client')) {
+                  purchase.$get('client').then((function(_this) {
+                    return function(client) {
+                      return $scope.setClient(new BBModel.Client(client));
+                    };
+                  })(this));
+                }
+                return $scope.purchase.getConfirmMessages().then(function(messages) {
+                  $scope.purchase.confirm_messages = messages;
+                  return $scope.messages = messages;
+                });
+              }, function(err) {
+                $scope.setLoaded($scope);
+                if (err && err.status === 401 && $scope.login_action) {
+                  if (LoginService.isLoggedIn()) {
+                    return failMsg();
+                  } else {
+                    return loginRequired();
+                  }
+                } else {
+                  return failMsg();
+                }
+              });
+            }, function(err) {
+              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+            });
+          };
+        })(this), function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      }
+      return $scope.loaded = true;
+    };
+    checkIfMoveBooking = function(bookings) {
+      var b, id, matches, move_booking;
+      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        id = parseInt(matches[1]);
+      }
+      if (id) {
+        move_booking = (function() {
+          var i, len, results;
+          results = [];
+          for (i = 0, len = bookings.length; i < len; i++) {
+            b = bookings[i];
+            if (b.id === id) {
+              results.push(b);
+            }
+          }
+          return results;
+        })();
+        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
+          return $scope.move(move_booking[0]);
+        }
+      }
+    };
+    checkIfWaitlistBookings = function(bookings) {
+      var booking;
+      return $scope.waitlist_bookings = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = bookings.length; i < len; i++) {
+          booking = bookings[i];
+          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+            results.push(booking);
+          }
+        }
+        return results;
+      })();
+    };
+    $scope.requireLogin = (function(_this) {
+      return function(action) {
+        var div;
+        if (_.isString(action.redirect)) {
+          if (action.redirect.indexOf('?') === -1) {
+            div = '?';
+          } else {
+            div = '&';
+          }
+          action.redirect += div + 'ref=' + encodeURIComponent(QueryStringService('ref'));
+        }
+        return $scope.login_action = action;
+      };
+    })(this);
+    loginRequired = (function(_this) {
+      return function() {
+        if ($scope.login_action.redirect) {
+          return window.location = $scope.login_action.redirect;
+        }
+      };
+    })(this);
+    getCompanyID = function() {
+      var company_id, matches;
+      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        company_id = matches[1];
+      }
+      return company_id;
+    };
+    getPurchaseID = function() {
+      var id, matches;
+      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (!matches) {
+        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (!matches) {
+        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (matches) {
+        id = matches[1];
+      } else {
+        if (QueryStringService('ref')) {
+          id = QueryStringService('ref');
+        }
+      }
+      if (QueryStringService('booking_id')) {
+        id = QueryStringService('booking_id');
+      }
+      return id;
+    };
+    $scope.move = function(booking, route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      if ($scope.move_all) {
+        return $scope.moveAll(route, options);
+      }
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: booking.company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var new_item, proms;
+            proms = [];
+            $scope.bb.moving_booking = booking;
+            $scope.quickEmptybasket();
+            new_item = new BBModel.BasketItem(booking, $scope.bb);
+            new_item.setSrcBooking(booking, $scope.bb);
+            new_item.ready = false;
+            Array.prototype.push.apply(proms, new_item.promises);
+            $scope.bb.basket.addItem(new_item);
+            $scope.setBasketItem(new_item);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              $rootScope.$broadcast("booking:move");
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.moveAll = function(route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: $scope.bookings[0].company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var booking, i, len, new_item, proms, ref;
+            proms = [];
+            if ($scope.bookings.length === 1) {
+              $scope.bb.moving_booking = $scope.bookings[0];
+            } else {
+              $scope.bb.moving_booking = $scope.purchase;
+            }
+            if (_.every(_.map($scope.bookings, function(b) {
+              return b.event_id;
+            }), function(event_id) {
+              return event_id === $scope.bookings[0].event_id;
+            })) {
+              $scope.bb.moving_purchase = $scope.purchase;
+            }
+            $scope.quickEmptybasket();
+            ref = $scope.bookings;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              new_item = new BBModel.BasketItem(booking, $scope.bb);
+              new_item.setSrcBooking(booking);
+              new_item.ready = false;
+              new_item.move_done = false;
+              Array.prototype.push.apply(proms, new_item.promises);
+              $scope.bb.basket.addItem(new_item);
+            }
+            $scope.bb.sortStackedItems();
+            $scope.setBasketItem($scope.bb.basket.items[0]);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.bookWaitlistItem = function(booking) {
+      var params;
+      $scope.notLoaded($scope);
+      params = {
+        purchase: $scope.purchase,
+        booking: booking
+      };
+      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
+        $scope.purchase = purchase;
+        $scope.total = $scope.purchase;
+        $scope.bb.purchase = purchase;
+        return $scope.purchase.getBookingsPromise().then(function(bookings) {
+          $scope.bookings = bookings;
+          $scope.waitlist_bookings = (function() {
+            var i, len, ref, results;
+            ref = $scope.bookings;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+                results.push(booking);
+              }
+            }
+            return results;
+          })();
+          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
+            $scope.make_payment = true;
+          }
+          return $scope.setLoaded($scope);
+        }, function(err) {
+          $scope.setLoaded($scope);
+          return failMsg();
+        });
+      }, (function(_this) {
+        return function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        };
+      })(this));
+    };
+    $scope["delete"] = function(booking) {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDelete,
+        resolve: {
+          booking: function() {
+            return booking;
+          }
+        }
+      });
+      return modalInstance.result.then(function(booking) {
+        return booking.$del('self').then((function(_this) {
+          return function(service) {
+            $scope.bookings = _.without($scope.bookings, booking);
+            return $rootScope.$broadcast("booking:cancelled");
+          };
+        })(this));
+      });
+    };
+    $scope.delete_all = function() {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDeleteAll,
+        resolve: {
+          purchase: function() {
+            return $scope.purchase;
+          }
+        }
+      });
+      return modalInstance.result.then(function(purchase) {
+        return PurchaseService.delete_all(purchase).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.bookings = [];
+          return $rootScope.$broadcast("booking:cancelled");
+        });
+      });
+    };
+    $scope.isMovable = function(booking) {
+      if (booking.min_cancellation_time) {
+        return moment().isBefore(booking.min_cancellation_time);
+      }
+      return booking.datetime.isAfter(moment());
+    };
+    $scope.onFileSelect = function(booking, $file, existing) {
+      var att_id, file, method;
+      $scope.upload_progress = 0;
+      file = $file;
+      att_id = null;
+      if (existing) {
+        att_id = existing.id;
+      }
+      method = "POST";
+      if (att_id) {
+        method = "PUT";
+      }
+      return $scope.upload = $upload.upload({
+        url: booking.$href('attachments'),
+        method: method,
+        data: {
+          att_id: att_id
+        },
+        file: file
+      }).progress(function(evt) {
+        if ($scope.upload_progress < 100) {
+          return $scope.upload_progress = parseInt(99.0 * evt.loaded / evt.total);
+        }
+      }).success(function(data, status, headers, config) {
+        $scope.upload_progress = 100;
+        if (data && data.attachments && booking) {
+          return booking.attachments = data.attachments;
+        }
+      });
+    };
+    $scope.createBasketItem = function(booking) {
+      var item;
+      item = new BBModel.BasketItem(booking, $scope.bb);
+      item.setSrcBooking(booking);
+      return item;
+    };
+    return $scope.checkAnswer = function(answer) {
+      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
+    };
+  });
+
+  ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
+    $scope.controller = "ModalDelete";
+    $scope.booking = booking;
+    $scope.confirm_delete = function() {
+      return $modalInstance.close(booking);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
+
+  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
+    $scope.controller = "ModalDeleteAll";
+    $scope.purchase = purchase;
+    $scope.confirm_delete = function() {
+      return $modalInstance.close(purchase);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
 
 }).call(this);
 
@@ -22273,6 +22753,18 @@ function getURIparam( name ){
             return defer.reject(err);
           };
         })(this));
+        return defer.promise;
+      },
+      delete_item: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
         return defer.promise;
       }
     };
