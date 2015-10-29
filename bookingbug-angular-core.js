@@ -2686,11 +2686,6 @@ function getURIparam( name ){
           prms.clear_member || (prms.clear_member = true);
         }
         $scope.bb.client_defaults = prms.client || {};
-        if (prms.client_defaults) {
-          if (prms.client_defaults.membership_ref) {
-            $scope.bb.client_defaults.membership_ref = prms.client_defaults.membership_ref;
-          }
-        }
         if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
           match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
           if (match) {
@@ -2743,9 +2738,6 @@ function getURIparam( name ){
           }
           if (prms.extra_setup.return_url) {
             $scope.bb.return_url = prms.extra_setup.return_url;
-          }
-          if (prms.extra_setup.destination) {
-            $scope.bb.destination = prms.extra_setup.destination;
           }
         }
         if (prms.template) {
@@ -3457,7 +3449,7 @@ function getURIparam( name ){
                 return res.$get('baskets').then(function(baskets) {
                   var basket;
                   basket = _.find(baskets, function(b) {
-                    return parseInt(b.company_id) === $scope.bb.company_id;
+                    return b.company_id === $scope.bb.company_id;
                   });
                   if (basket) {
                     basket = new BBModel.Basket(basket, $scope.bb);
@@ -3847,40 +3839,18 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
+  angular.module('BB.Controllers').controller('BasketList', function($scope, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
-    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
-    $scope.basket_options = $scope.$eval($attrs.bbBasketList) || {};
-    $rootScope.connection_started.then(function() {
-      var basket_item, i, len, params, promises, ref;
-      if ($scope.client.$has('pre_paid_bookings')) {
-        $scope.notLoaded($scope);
-        promises = [];
-        ref = $scope.bb.basket.timeItems();
-        for (i = 0, len = ref.length; i < len; i++) {
-          basket_item = ref[i];
-          params = {
-            event_id: basket_item.getEventId()
-          };
-          promises.push($scope.client.getPrePaidBookingsPromise(params));
-        }
-        return $q.all(promises).then(function(result) {
-          var index, j, len1, prepaid_bookings, ref1;
-          ref1 = $scope.bb.basket.timeItems();
-          for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
-            basket_item = ref1[index];
-            prepaid_bookings = result[index];
-            if ($scope.basket_options.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
-              basket_item.setPrepaidBooking(prepaid_bookings[0]);
-            }
-          }
-          return $scope.setLoaded($scope);
-        }, function(err) {
-          return $scope.setLoaded($scope);
+    $scope.items = $scope.bb.basket.items;
+    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id;
+    $scope.$watch('basket', (function(_this) {
+      return function(newVal, oldVal) {
+        return $scope.items = _.filter($scope.bb.basket.items, function(item) {
+          return !item.is_coupon;
         });
-      }
-    });
+      };
+    })(this));
     $scope.addAnother = (function(_this) {
       return function(route) {
         $scope.clearBasketItem();
@@ -3893,11 +3863,7 @@ function getURIparam( name ){
       return function(route) {
         $scope.setReadyToCheckout(true);
         if ($scope.bb.basket.items.length > 0) {
-          if ($scope.$parent.$has_page_control) {
-            return true;
-          } else {
-            return $scope.decideNextPage(route);
-          }
+          return $scope.decideNextPage(route);
         } else {
           AlertService.clear();
           AlertService.add('info', ErrorService.getError('EMPTY_BASKET_FOR_CHECKOUT'));
@@ -3905,9 +3871,6 @@ function getURIparam( name ){
         }
       };
     })(this);
-    $scope.setReady = function() {
-      return $scope.checkout();
-    };
     $scope.applyCoupon = (function(_this) {
       return function(coupon) {
         var params;
@@ -6606,73 +6569,6 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbMembershipLevels', function($rootScope, MembershipLevelsService) {
-    var controller;
-    ({
-      restrict: 'AE',
-      replace: true,
-      scope: true
-    });
-    return controller = function($scope, $element, $attrs) {
-      var checkClientDefaults;
-      $rootScope.connection_started.then(function() {
-        return $scope.initialise();
-      });
-      $scope.initialise = function() {
-        if ($scope.bb.company && $scope.bb.company.$has('member_levels')) {
-          $scope.notLoaded($scope);
-          return MembershipLevelsService.getMembershipLevels($scope.bb.company).then(function(member_levels) {
-            $scope.setLoaded($scope);
-            return $scope.membership_levels = member_levels;
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        }
-      };
-      $scope.selectMemberLevel = function(level) {
-        if (level && $scope.client) {
-          $scope.client.member_level_id = level.id;
-          if ($scope.$parent.$has_page_control) {
-
-          } else {
-            return $scope.decideNextPage();
-          }
-        }
-      };
-      checkClientDefaults = function() {
-        var i, len, membership_level, ref, results;
-        if (!$scope.bb.client_defaults.membership_ref) {
-          return;
-        }
-        ref = $scope.membership_levels;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          membership_level = ref[i];
-          if (membership_level.name === $scope.bb.client_defaults.membership_ref) {
-            results.push($scope.selectMemberLevel(membership_level));
-          } else {
-            results.push(void 0);
-          }
-        }
-        return results;
-      };
-      $scope.setReady = function() {
-        if (!$scope.client.member_level_id) {
-          return false;
-        }
-        return true;
-      };
-      return $scope.getMembershipLevel = function(member_level_id) {
-        return _.find($scope.membership_levels, function(level) {
-          return level.id === member_level_id;
-        });
-      };
-    };
-  });
-
-}).call(this);
-
-(function() {
   'use strict';
   var hasProp = {}.hasOwnProperty;
 
@@ -7749,7 +7645,6 @@ function getURIparam( name ){
     };
     linker = function(scope, element, attributes) {
       scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? false : true;
       element.find('iframe').bind('load', (function(_this) {
         return function(event) {
           var origin, url;
@@ -7825,10 +7720,7 @@ function getURIparam( name ){
     })(this);
     $scope.paymentDone = function() {
       $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
+      return $scope.decideNextPage();
     };
     return $scope.error = function(message) {
       return $log.warn("Payment Failure: " + message);
@@ -9961,8 +9853,8 @@ function getURIparam( name ){
       return function() {
         var id;
         $scope.bb.payment_status = null;
-        id = QueryStringService('purchase_id');
-        if (id && !$scope.bb.total) {
+        id = $scope.bb.total ? $scope.bb.total.long_id : QueryStringService('purchase_id');
+        if (id) {
           return PurchaseService.query({
             url_root: $scope.bb.api_url,
             purchase_id: id
@@ -9973,12 +9865,6 @@ function getURIparam( name ){
               return $scope.$emit("checkout:success", total);
             }
           });
-        } else {
-          $scope.total = $scope.bb.total;
-          $scope.setLoaded($scope);
-          if ($scope.total.paid === $scope.total.total_price) {
-            return $scope.$emit("checkout:success", $scope.total);
-          }
         }
       };
     })(this), function(err) {
@@ -11480,15 +11366,22 @@ function getURIparam( name ){
 
   app = angular.module('BB.Directives');
 
-  app.directive("bbIntTelNumber", function() {
+  app.directive("bbIntTelNumber", function($parse) {
     return {
       restrict: "A",
       require: "ngModel",
       link: function(scope, element, attrs, ctrl) {
-        var convertNumber, getPrefix, options;
-        options = scope.$eval(attrs.intTelNumber);
+        var format, isValid, options, parse;
+        options = scope.$eval(attrs.bbIntTelNumber);
         element.intlTelInput(options);
-        convertNumber = function(value) {
+        isValid = function(value) {
+          if (value) {
+            return element.intlTelInput("isValidNumber");
+          } else {
+            return true;
+          }
+        };
+        format = function(value) {
           var str;
           str = "";
           if (scope.$eval(attrs.ngModel + '_prefix') != null) {
@@ -11499,20 +11392,20 @@ function getURIparam( name ){
           }
           if (str[0] === "+") {
             element.intlTelInput("setNumber", "+" + (scope.$eval(attrs.ngModel + '_prefix')) + " " + (scope.$eval(attrs.ngModel)));
-            ctrl.$setValidity("pattern", true);
+            ctrl.$setValidity("phone", isValid(value));
           }
           return str;
         };
-        getPrefix = function() {
-          var prefix;
-          prefix = element.intlTelInput("getExtension");
-          return console.log(prefix);
+        parse = function(value) {
+          var getter, prefix;
+          prefix = element.intlTelInput("getSelectedCountryData").dialCode;
+          getter = $parse(attrs.ngModel + '_prefix');
+          getter.assign(scope, prefix);
+          ctrl.$setValidity("phone", isValid(value));
+          return value;
         };
-        ctrl.$formatters.push(convertNumber);
-        ctrl.$parsers.push(getPrefix);
-        return scope.getPrefix = function() {
-          return getPrefix();
-        };
+        ctrl.$formatters.push(format);
+        return ctrl.$parsers.push(parse);
       }
     };
   });
@@ -13342,7 +13235,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -13712,13 +13605,6 @@ function getURIparam( name ){
             total -= item.price;
           }
         }
-        if (this.client && this.client.$has('wallet')) {
-          if (this.client.has_active_wallet) {
-            if (this.client.wallet_amount >= total) {
-              return 0;
-            }
-          }
-        }
         if (total < 0) {
           total = 0;
         }
@@ -13864,18 +13750,6 @@ function getURIparam( name ){
         for (j = 0, len = ref.length; j < len; j++) {
           item = ref[j];
           if (item.isWaitlist()) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      Basket.prototype.hasExternalPurchase = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.isExternalPurchase()) {
             return true;
           }
         }
@@ -14031,13 +13905,11 @@ function getURIparam( name ){
           if (data.$has('event_chain')) {
             chain = data.$get('event_chain');
             this.promises.push(chain);
-            if (!data.$has('event')) {
-              chain.then((function(_this) {
-                return function(serv) {
-                  return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
-                };
-              })(this));
-            }
+            chain.then((function(_this) {
+              return function(serv) {
+                return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
+              };
+            })(this));
           }
           if (data.$has('resource')) {
             res = data.$get('resource');
@@ -14351,11 +14223,8 @@ function getURIparam( name ){
         }
       };
 
-      BasketItem.prototype.setEvent = function(event, default_questions) {
+      BasketItem.prototype.setEvent = function(event) {
         var prom;
-        if (default_questions == null) {
-          default_questions = null;
-        }
         if (this.event) {
           this.event.unselect();
         }
@@ -14370,14 +14239,11 @@ function getURIparam( name ){
         if (event.$has('book')) {
           this.book_link = event;
         }
-        if (event.qty) {
-          this.num_book = event.qty;
-        }
         prom = this.event.getChain();
         this.promises.push(prom);
         prom.then((function(_this) {
           return function(chain) {
-            return _this.setEventChain(chain, default_questions);
+            return _this.setEventChain(chain);
           };
         })(this));
         prom = this.event.getGroup();
@@ -14387,6 +14253,7 @@ function getURIparam( name ){
             return _this.setEventGroup(group);
           };
         })(this));
+        this.num_book = event.qty;
         if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
           if (this.company.getSettings().has_waitlists) {
             return this.status = 8;
@@ -14713,9 +14580,6 @@ function getURIparam( name ){
         if (this.deal_codes) {
           data.vouchers = this.deal_codes;
         }
-        if (this.product_id) {
-          data.product_id = this.product_id;
-        }
         if (this.email) {
           data.email = this.email;
         }
@@ -14917,9 +14781,6 @@ function getURIparam( name ){
         if (this.tickets && this.tickets.pre_paid_booking_id) {
           return 0;
         }
-        if (this.pre_paid_booking_id) {
-          return 0;
-        }
         if (this.discount_price != null) {
           return this.discount_price + this.questionPrice();
         }
@@ -14971,7 +14832,11 @@ function getURIparam( name ){
       };
 
       BasketItem.prototype.hasPrice = function() {
-        return this.price != null;
+        if (this.price) {
+          return true;
+        } else {
+          return false;
+        }
       };
 
       BasketItem.prototype.getAttachment = function() {
@@ -14986,29 +14851,6 @@ function getURIparam( name ){
             };
           })(this));
         }
-      };
-
-      BasketItem.prototype.setPrepaidBooking = function(prepaid_booking) {
-        this.prepaid_booking = prepaid_booking;
-        return this.pre_paid_booking_id = prepaid_booking.id;
-      };
-
-      BasketItem.prototype.hasPrepaidBooking = function() {
-        return this.pre_paid_booking_id != null;
-      };
-
-      BasketItem.prototype.getEventId = function() {
-        if (this.time && this.time.event_id) {
-          return this.time.event_id;
-        } else if (this.date && this.date.event_id) {
-          return this.date.event_id;
-        } else if (this.event) {
-          return this.event.id;
-        }
-      };
-
-      BasketItem.prototype.isExternalPurchase = function() {
-        return this.external_purchase != null;
       };
 
       return BasketItem;
@@ -15403,15 +15245,6 @@ function getURIparam( name ){
         x.parent_client_id = this.parent_client_id;
         x.password = this.password;
         x.notifications = this.notifications;
-        if (this.member_level_id) {
-          x.member_level_id = this.member_level_id;
-        }
-        if (this.send_welcome_email) {
-          x.send_welcome_email = this.send_welcome_email;
-        }
-        if (this.default_company_id) {
-          x.default_company_id = this.default_company_id;
-        }
         if (this.mobile) {
           this.remove_prefix();
           x.mobile = this.mobile;
@@ -15999,6 +15832,21 @@ function getURIparam( name ){
         return defer.promise;
       };
 
+      Event.prototype.printDuration = function() {
+        var h, m;
+        if (this.duration < 60) {
+          return this.duration + " mins";
+        } else {
+          h = Math.round(this.duration / 60);
+          m = this.duration % 60;
+          if (m === 0) {
+            return h + " hours";
+          } else {
+            return h + " hours " + m + " mins";
+          }
+        }
+      };
+
       Event.prototype.getDescription = function() {
         return this.getChain().description;
       };
@@ -16009,6 +15857,10 @@ function getURIparam( name ){
         } else {
           return "#FFFFFF";
         }
+      };
+
+      Event.prototype.getPerson = function() {
+        return this.getChain().person_name;
       };
 
       Event.prototype.getPounds = function() {
@@ -16102,7 +15954,7 @@ function getURIparam( name ){
                 _this.price_range.to = _this.price;
               }
               _this.ticket_prices = _.indexBy(tickets, 'name');
-              return def.resolve(_this);
+              return def.resolve();
             });
           };
         })(this));
@@ -16207,27 +16059,6 @@ function getURIparam( name ){
       };
 
       return EventChain;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventCollectionModel", function($q, BBModel, BaseModel) {
-    var EventCollection;
-    return EventCollection = (function(superClass) {
-      extend(EventCollection, superClass);
-
-      function EventCollection() {
-        return EventCollection.__super__.constructor.apply(this, arguments);
-      }
-
-      return EventCollection;
 
     })(BaseModel);
   });
@@ -16546,27 +16377,6 @@ function getURIparam( name ){
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
-    var MembershipLevel;
-    return MembershipLevel = (function(superClass) {
-      extend(MembershipLevel, superClass);
-
-      function MembershipLevel() {
-        return MembershipLevel.__super__.constructor.apply(this, arguments);
-      }
-
-      return MembershipLevel;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
   angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
     var Person;
     return Person = (function(superClass) {
@@ -16592,44 +16402,11 @@ function getURIparam( name ){
     return PrePaidBooking = (function(superClass) {
       extend(PrePaidBooking, superClass);
 
-      function PrePaidBooking(data) {
-        PrePaidBooking.__super__.constructor.call(this, data);
+      function PrePaidBooking() {
+        return PrePaidBooking.__super__.constructor.apply(this, arguments);
       }
-
-      PrePaidBooking.prototype.checkValidity = function(item) {
-        if (this.service_id && item.service_id && this.service_id !== item.service_id) {
-          return false;
-        } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
-          return false;
-        } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
-          return false;
-        } else {
-          return true;
-        }
-      };
 
       return PrePaidBooking;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
-    var Product;
-    return Product = (function(superClass) {
-      extend(Product, superClass);
-
-      function Product() {
-        return Product.__super__.constructor.apply(this, arguments);
-      }
-
-      return Product;
 
     })(BaseModel);
   });
@@ -17456,14 +17233,13 @@ function getURIparam( name ){
         });
         return deferred.promise;
       },
-      checkPrePaid: function(item, pre_paid_bookings) {
+      checkPrePaid: function(company, event, pre_paid_bookings) {
         var booking, j, len, valid_pre_paid;
         valid_pre_paid = null;
         for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
           booking = pre_paid_bookings[j];
-          if (booking.checkValidity(item)) {
+          if (booking.checkValidity(event)) {
             valid_pre_paid = booking;
-            break;
           }
         }
         return valid_pre_paid;
@@ -18338,7 +18114,7 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Sorry, the requested time slot is not available. Please choose a different time.'
+        msg: 'The requested time slot is not available. Please choose a different time.'
       }, {
         key: 'TOPUP_FAILED',
         type: 'warning',
@@ -18515,40 +18291,6 @@ function getURIparam( name ){
           company.$get('events', params).then((function(_this) {
             return function(resource) {
               return deferred.resolve(resource.events);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      },
-      queryEventCollection: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('events')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.event_group) {
-              params.event_group_id = params.item.event_group.id;
-            }
-            if (params.item.event_chain) {
-              params.event_chain_id = params.item.event_chain.id;
-            }
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          company.$get('events', params).then((function(_this) {
-            return function(resource) {
-              var collection;
-              collection = new BBModel.EventCollection(resource);
-              return deferred.resolve(collection);
             };
           })(this), (function(_this) {
             return function(err) {
@@ -19272,9 +19014,6 @@ function getURIparam( name ){
         options || (options = {});
         options['root'] || (options['root'] = "");
         url = options['root'] + "/api/v1/logout";
-        $sessionStorage.removeItem("login");
-        $sessionStorage.removeItem('auth_token');
-        $sessionStorage.clear();
         halClient.$del(url, options, {}).then((function(_this) {
           return function(logout) {
             $sessionStorage.removeItem("login");
@@ -19324,40 +19063,6 @@ function getURIparam( name ){
           })(this));
           return deferred.promise;
         }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("MembershipLevelsService", function($q, BBModel) {
-    return {
-      getMembershipLevels: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        company.$get("member_levels").then(function(resource) {
-          return resource.$get('membership_levels').then((function(_this) {
-            return function(membership_levels) {
-              var level, levels;
-              levels = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = membership_levels.length; i < len; i++) {
-                  level = membership_levels[i];
-                  results.push(new BBModel.MembershipLevel(level));
-                }
-                return results;
-              })();
-              return deferred.resolve(levels);
-            };
-          })(this));
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
       }
     };
   });
@@ -19638,57 +19343,6 @@ function getURIparam( name ){
                   people.push(new BBModel.Person(i));
                 }
                 return deferred.resolve(people);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate) {
-    return {
-      getProduct: function(prms) {
-        var deferred, href, uri;
-        deferred = $q.defer();
-        href = prms.api_url + "/api/v1/{company_id}/products/{id}";
-        uri = new UriTemplate(href).fillFromObject({
-          company_id: prms.company_id,
-          id: prms.product_id
-        });
-        halClient.$get(uri, {}).then(function(product) {
-          return deferred.resolve(product);
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('products')) {
-          deferred.reject("No products found");
-        } else {
-          company.$get('products').then((function(_this) {
-            return function(resource) {
-              return resource.$get('products').then(function(items) {
-                var i, j, len, resources;
-                resources = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  resources.push(new BBModel.Product(i));
-                }
-                return deferred.resolve(resources);
               });
             };
           })(this), (function(_this) {
@@ -20858,84 +20512,6 @@ function getURIparam( name ){
             for (j = 0, len = items.length; j < len; j++) {
               i = items[j];
               models.push(new BBModel.Member.Booking(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Member.Wallet(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Product(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('products').then((function(_this) {
-          return function(items) {
-            var cat, i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              cat = new BBModel.Product(i);
-              cat.order || (cat.order = _i);
-              models.push(cat);
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.PrePaidBooking(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('pre_paid_bookings').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.PrePaidBooking(i));
             }
             return deferred.resolve(models);
           };
@@ -22336,7 +21912,6 @@ function getURIparam( name ){
 
       function Purchase_Total(data) {
         this.getConfirmMessages = bind(this.getConfirmMessages, this);
-        this.getMember = bind(this.getMember, this);
         this.getClient = bind(this.getClient, this);
         this.getMessages = bind(this.getMessages, this);
         this.getDeals = bind(this.getDeals, this);
@@ -22354,11 +21929,6 @@ function getURIparam( name ){
         this.getClient().then((function(_this) {
           return function(client) {
             return _this.client = client;
-          };
-        })(this));
-        this.getMember().then((function(_this) {
-          return function(member) {
-            return _this.member = member;
           };
         })(this));
       }
@@ -22570,22 +22140,6 @@ function getURIparam( name ){
         return defer.promise;
       };
 
-      Purchase_Total.prototype.getMember = function() {
-        var defer;
-        defer = $q.defer();
-        if (this._data.$has('member')) {
-          this._data.$get('member').then((function(_this) {
-            return function(member) {
-              _this.member = new BBModel.Member.Member(member);
-              return defer.resolve(_this.member);
-            };
-          })(this));
-        } else {
-          defer.reject('No client');
-        }
-        return defer.promise;
-      };
-
       Purchase_Total.prototype.getConfirmMessages = function() {
         var defer;
         defer = $q.defer();
@@ -22789,18 +22343,6 @@ function getURIparam( name ){
             return defer.reject(err);
           };
         })(this));
-        return defer.promise;
-      },
-      delete_item: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
         return defer.promise;
       }
     };
