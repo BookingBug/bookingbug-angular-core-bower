@@ -2029,6 +2029,507 @@ function getURIparam( name ){
     return results[1];
 }
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -2763,7 +3264,7 @@ function getURIparam( name ){
     })(this);
   });
 
-  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate) {
+  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll) {
     var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
@@ -2910,6 +3411,11 @@ function getURIparam( name ){
           prms.clear_member || (prms.clear_member = true);
         }
         $scope.bb.client_defaults = prms.client || {};
+        if (prms.client_defaults) {
+          if (prms.client_defaults.membership_ref) {
+            $scope.bb.client_defaults.membership_ref = prms.client_defaults.membership_ref;
+          }
+        }
         if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
           match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
           if (match) {
@@ -2962,6 +3468,9 @@ function getURIparam( name ){
           }
           if (prms.extra_setup.return_url) {
             $scope.bb.return_url = prms.extra_setup.return_url;
+          }
+          if (prms.extra_setup.destination) {
+            $scope.bb.destination = prms.extra_setup.destination;
           }
         }
         if (prms.template) {
@@ -3673,7 +4182,7 @@ function getURIparam( name ){
                 return res.$get('baskets').then(function(baskets) {
                   var basket;
                   basket = _.find(baskets, function(b) {
-                    return b.company_id === $scope.bb.company_id;
+                    return parseInt(b.company_id) === $scope.bb.company_id;
                   });
                   if (basket) {
                     basket = new BBModel.Basket(basket, $scope.bb);
@@ -4017,8 +4526,12 @@ function getURIparam( name ){
       }
       return this.trim().replace(/\s/g, seperator).toLowerCase();
     };
-    return $scope.isMemberLoggedIn = function() {
+    $scope.isMemberLoggedIn = function() {
       return LoginService.isLoggedIn();
+    };
+    return $scope.scrollTo = function(id) {
+      $location.hash(id);
+      return $anchorScroll();
     };
   });
 
@@ -4093,18 +4606,45 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
+  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
-    $scope.items = $scope.bb.basket.items;
-    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id;
-    $scope.$watch('basket', (function(_this) {
-      return function(newVal, oldVal) {
-        return $scope.items = _.filter($scope.bb.basket.items, function(item) {
-          return !item.is_coupon;
+    $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
+    $scope.basket_options = $scope.$eval($attrs.bbBasketList) || {};
+    $rootScope.connection_started.then(function() {
+      var basket_item, i, len, params, promises, ref;
+      if ($scope.client) {
+        $scope.bb.basket.setClient($scope.client);
+      }
+      if ($scope.client.$has('pre_paid_bookings') && $scope.bb.basket.timeItems().length > 0) {
+        $scope.notLoaded($scope);
+        promises = [];
+        ref = $scope.bb.basket.timeItems();
+        for (i = 0, len = ref.length; i < len; i++) {
+          basket_item = ref[i];
+          params = {
+            event_id: basket_item.getEventId()
+          };
+          promises.push($scope.client.getPrePaidBookingsPromise(params));
+        }
+        return $q.all(promises).then(function(result) {
+          var index, j, len1, prepaid_bookings, ref1;
+          ref1 = $scope.bb.basket.timeItems();
+          for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
+            basket_item = ref1[index];
+            prepaid_bookings = result[index];
+            if ($scope.basket_options.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
+              basket_item.setPrepaidBooking(prepaid_bookings[0]);
+            }
+          }
+          return $scope.updateBasket().then(function() {
+            return $scope.setLoaded($scope);
+          });
+        }, function(err) {
+          return $scope.setLoaded($scope);
         });
-      };
-    })(this));
+      }
+    });
 
     /***
     * @ngdoc method
@@ -4135,9 +4675,13 @@ function getURIparam( name ){
      */
     $scope.checkout = (function(_this) {
       return function(route) {
-        $scope.setReadyToCheckout(true);
         if ($scope.bb.basket.items.length > 0) {
-          return $scope.decideNextPage(route);
+          $scope.setReadyToCheckout(true);
+          if ($scope.$parent.$has_page_control) {
+            return true;
+          } else {
+            return $scope.decideNextPage(route);
+          }
         } else {
           AlertService.clear();
           AlertService.add('info', ErrorService.getError('EMPTY_BASKET_FOR_CHECKOUT'));
@@ -4145,6 +4689,17 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Set this page section as ready
+     */
+    $scope.setReady = function() {
+      return $scope.checkout();
+    };
 
     /***
     * @ngdoc method
@@ -4273,23 +4828,8 @@ function getURIparam( name ){
         });
       };
     })(this);
-    $scope.topUpWallet = function() {
+    return $scope.topUpWallet = function() {
       return $scope.decideNextPage("basket_wallet");
-    };
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbMiniBasket
-    * @description
-    * Set this page section as ready
-     */
-    return $scope.setReady = function() {
-      if ($scope.bb.basket.items.length > 0) {
-        return $scope.setReadyToCheckout(true);
-      } else {
-        return AlertService.add('info', ErrorService.getError('EMPTY_BASKET_FOR_CHECKOUT'));
-      }
     };
   });
 
@@ -8102,6 +8642,73 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Directives').directive('bbMembershipLevels', function($rootScope, MembershipLevelsService) {
+    var controller;
+    ({
+      restrict: 'AE',
+      replace: true,
+      scope: true
+    });
+    return controller = function($scope, $element, $attrs) {
+      var checkClientDefaults;
+      $rootScope.connection_started.then(function() {
+        return $scope.initialise();
+      });
+      $scope.initialise = function() {
+        if ($scope.bb.company && $scope.bb.company.$has('member_levels')) {
+          $scope.notLoaded($scope);
+          return MembershipLevelsService.getMembershipLevels($scope.bb.company).then(function(member_levels) {
+            $scope.setLoaded($scope);
+            return $scope.membership_levels = member_levels;
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        }
+      };
+      $scope.selectMemberLevel = function(level) {
+        if (level && $scope.client) {
+          $scope.client.member_level_id = level.id;
+          if ($scope.$parent.$has_page_control) {
+
+          } else {
+            return $scope.decideNextPage();
+          }
+        }
+      };
+      checkClientDefaults = function() {
+        var i, len, membership_level, ref, results;
+        if (!$scope.bb.client_defaults.membership_ref) {
+          return;
+        }
+        ref = $scope.membership_levels;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          membership_level = ref[i];
+          if (membership_level.name === $scope.bb.client_defaults.membership_ref) {
+            results.push($scope.selectMemberLevel(membership_level));
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+      $scope.setReady = function() {
+        if (!$scope.client.member_level_id) {
+          return false;
+        }
+        return true;
+      };
+      return $scope.getMembershipLevel = function(member_level_id) {
+        return _.find($scope.membership_levels, function(level) {
+          return level.id === member_level_id;
+        });
+      };
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -9589,6 +10196,7 @@ function getURIparam( name ){
     };
     linker = function(scope, element, attributes) {
       scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? false : true;
       element.find('iframe').bind('load', (function(_this) {
         return function(event) {
           var origin, url;
@@ -9688,7 +10296,10 @@ function getURIparam( name ){
      */
     $scope.paymentDone = function() {
       $scope.bb.payment_status = "complete";
-      return $scope.decideNextPage();
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
     };
     return $scope.error = function(message) {
       return $log.warn("Payment Failure: " + message);
@@ -12741,8 +13352,8 @@ function getURIparam( name ){
       return function() {
         var id;
         $scope.bb.payment_status = null;
-        id = $scope.bb.total ? $scope.bb.total.long_id : QueryStringService('purchase_id');
-        if (id) {
+        id = QueryStringService('purchase_id');
+        if (id && !$scope.bb.total) {
           return PurchaseService.query({
             url_root: $scope.bb.api_url,
             purchase_id: id
@@ -12753,6 +13364,12 @@ function getURIparam( name ){
               return $scope.$emit("checkout:success", total);
             }
           });
+        } else {
+          $scope.total = $scope.bb.total;
+          $scope.setLoaded($scope);
+          if ($scope.total.paid === $scope.total.total_price) {
+            return $scope.$emit("checkout:success", $scope.total);
+          }
         }
       };
     })(this), function(err) {
@@ -13725,24 +14342,6 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('bbCurrencyField', function($filter) {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var convertToCurrency, convertToInteger;
-        convertToCurrency = function(value) {
-          return value / 100;
-        };
-        convertToInteger = function(value) {
-          return value * 100;
-        };
-        ctrl.$formatters.push(convertToCurrency);
-        return ctrl.$parsers.push(convertToInteger);
-      }
-    };
-  });
-
 }).call(this);
 
 (function() {
@@ -13931,6 +14530,24 @@ function getURIparam( name ){
     }
   ]);
 
+  app.directive('bbCurrencyField', function($filter) {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var convertToCurrency, convertToInteger;
+        convertToCurrency = function(value) {
+          return value / 100;
+        };
+        convertToInteger = function(value) {
+          return value * 100;
+        };
+        ctrl.$formatters.push(convertToCurrency);
+        return ctrl.$parsers.push(convertToInteger);
+      }
+    };
+  });
+
   isEmpty = function(value) {
     return angular.isUndefined(value) || value === "" || value === null || value !== value;
   };
@@ -13941,19 +14558,11 @@ function getURIparam( name ){
       require: "ngModel",
       link: function(scope, elem, attr, ctrl) {
         var minValidator;
-        scope.$watch(attr.ngMin, function() {
-          ctrl.$setViewValue(ctrl.$viewValue);
-        });
         minValidator = function(value) {
           var min;
           min = scope.$eval(attr.ngMin) || 0;
-          if (!isEmpty(value) && value < min) {
-            ctrl.$setValidity("ngMin", false);
-            return undefined;
-          } else {
-            ctrl.$setValidity("ngMin", true);
-            return value;
-          }
+          ctrl.$setValidity("ngMin", isEmpty(value) || value >= min);
+          return value;
         };
         ctrl.$parsers.push(minValidator);
         ctrl.$formatters.push(minValidator);
@@ -13967,19 +14576,11 @@ function getURIparam( name ){
       require: "ngModel",
       link: function(scope, elem, attr, ctrl) {
         var maxValidator;
-        scope.$watch(attr.ngMax, function() {
-          ctrl.$setViewValue(ctrl.$viewValue);
-        });
         maxValidator = function(value) {
           var max;
           max = scope.$eval(attr.ngMax);
-          if (!isEmpty(value) && value > max) {
-            ctrl.$setValidity("ngMax", false);
-            return undefined;
-          } else {
-            ctrl.$setValidity("ngMax", true);
-            return value;
-          }
+          ctrl.$setValidity("ngMax", isEmpty(value) || value <= max);
+          return value;
         };
         ctrl.$parsers.push(maxValidator);
         ctrl.$formatters.push(maxValidator);
@@ -15377,499 +15978,6 @@ function getURIparam( name ){
 }(window.angular));
 
 (function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-}).call(this);
-
-(function() {
   'use strict';
 
   /***
@@ -16194,7 +16302,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -16562,11 +16670,37 @@ function getURIparam( name ){
         ref = this.items;
         for (j = 0, len = ref.length; j < len; j++) {
           i = ref[j];
-          if (!i.is_coupon) {
+          if (!i.is_coupon && !i.isExternalPurchase()) {
             titems.push(i);
           }
         }
         return titems;
+      };
+
+      Basket.prototype.basketItems = function() {
+        var bitems, i, j, len, ref;
+        bitems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (!i.is_coupon) {
+            bitems.push(i);
+          }
+        }
+        return bitems;
+      };
+
+      Basket.prototype.externalPurchaseItems = function() {
+        var eitems, i, j, len, ref;
+        eitems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i.isExternalPurchase()) {
+            eitems.push(i);
+          }
+        }
+        return eitems;
       };
 
 
@@ -17025,6 +17159,18 @@ function getURIparam( name ){
         return false;
       };
 
+      Basket.prototype.hasExternalPurchase = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isExternalPurchase()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
       return Basket;
 
     })(BaseModel);
@@ -17191,11 +17337,13 @@ function getURIparam( name ){
           if (data.$has('event_chain')) {
             chain = data.$get('event_chain');
             this.promises.push(chain);
-            chain.then((function(_this) {
-              return function(serv) {
-                return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
-              };
-            })(this));
+            if (!data.$has('event')) {
+              chain.then((function(_this) {
+                return function(serv) {
+                  return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
+                };
+              })(this));
+            }
           }
           if (data.$has('resource')) {
             res = data.$get('resource');
@@ -17635,8 +17783,11 @@ function getURIparam( name ){
       * @param {object} event A hash representing an event object
        */
 
-      BasketItem.prototype.setEvent = function(event) {
+      BasketItem.prototype.setEvent = function(event, default_questions) {
         var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
         if (this.event) {
           this.event.unselect();
         }
@@ -17651,11 +17802,14 @@ function getURIparam( name ){
         if (event.$has('book')) {
           this.book_link = event;
         }
+        if (event.qty) {
+          this.num_book = event.qty;
+        }
         prom = this.event.getChain();
         this.promises.push(prom);
         prom.then((function(_this) {
           return function(chain) {
-            return _this.setEventChain(chain);
+            return _this.setEventChain(chain, default_questions);
           };
         })(this));
         prom = this.event.getGroup();
@@ -17665,7 +17819,6 @@ function getURIparam( name ){
             return _this.setEventGroup(group);
           };
         })(this));
-        this.num_book = event.qty;
         if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
           if (this.company.getSettings().has_waitlists) {
             return this.status = 8;
@@ -18170,6 +18323,9 @@ function getURIparam( name ){
         if (this.deal_codes) {
           data.vouchers = this.deal_codes;
         }
+        if (this.product_id) {
+          data.product_id = this.product_id;
+        }
         if (this.email) {
           data.email = this.email;
         }
@@ -18571,6 +18727,9 @@ function getURIparam( name ){
         if (this.tickets && this.tickets.pre_paid_booking_id) {
           return 0;
         }
+        if (this.pre_paid_booking_id) {
+          return 0;
+        }
         if (this.discount_price != null) {
           return this.discount_price + this.questionPrice();
         }
@@ -18677,11 +18836,7 @@ function getURIparam( name ){
        */
 
       BasketItem.prototype.hasPrice = function() {
-        if (this.price) {
-          return true;
-        } else {
-          return false;
-        }
+        return this.price != null;
       };
 
 
@@ -18707,6 +18862,29 @@ function getURIparam( name ){
             };
           })(this));
         }
+      };
+
+      BasketItem.prototype.setPrepaidBooking = function(prepaid_booking) {
+        this.prepaid_booking = prepaid_booking;
+        return this.pre_paid_booking_id = prepaid_booking.id;
+      };
+
+      BasketItem.prototype.hasPrepaidBooking = function() {
+        return this.pre_paid_booking_id != null;
+      };
+
+      BasketItem.prototype.getEventId = function() {
+        if (this.time && this.time.event_id) {
+          return this.time.event_id;
+        } else if (this.date && this.date.event_id) {
+          return this.date.event_id;
+        } else if (this.event) {
+          return this.event.id;
+        }
+      };
+
+      BasketItem.prototype.isExternalPurchase = function() {
+        return this.external_purchase != null;
       };
 
       return BasketItem;
@@ -19253,6 +19431,15 @@ function getURIparam( name ){
         x.parent_client_id = this.parent_client_id;
         x.password = this.password;
         x.notifications = this.notifications;
+        if (this.member_level_id) {
+          x.member_level_id = this.member_level_id;
+        }
+        if (this.send_welcome_email) {
+          x.send_welcome_email = this.send_welcome_email;
+        }
+        if (this.default_company_id) {
+          x.default_company_id = this.default_company_id;
+        }
         if (this.mobile) {
           this.remove_prefix();
           x.mobile = this.mobile;
@@ -20136,32 +20323,6 @@ function getURIparam( name ){
 
       /***
       * @ngdoc method
-      * @name printDuration
-      * @methodOf BB.Models:Event
-      * @description
-      * Display duration of the event
-      *
-      * @returns {date} The returned printed duration
-       */
-
-      Event.prototype.printDuration = function() {
-        var h, m;
-        if (this.duration < 60) {
-          return this.duration + " mins";
-        } else {
-          h = Math.round(this.duration / 60);
-          m = this.duration % 60;
-          if (m === 0) {
-            return h + " hours";
-          } else {
-            return h + " hours " + m + " mins";
-          }
-        }
-      };
-
-
-      /***
-      * @ngdoc method
       * @name getDescription
       * @methodOf BB.Models:Event
       * @description
@@ -20191,21 +20352,6 @@ function getURIparam( name ){
         } else {
           return "#FFFFFF";
         }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPerson
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the person name
-      *
-      * @returns {object} The returned person
-       */
-
-      Event.prototype.getPerson = function() {
-        return this.getChain().person_name;
       };
 
 
@@ -20420,7 +20566,7 @@ function getURIparam( name ){
                 _this.price_range.to = _this.price;
               }
               _this.ticket_prices = _.indexBy(tickets, 'name');
-              return def.resolve();
+              return def.resolve(_this);
             });
           };
         })(this));
@@ -20598,6 +20744,27 @@ function getURIparam( name ){
       };
 
       return EventChain;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventCollectionModel", function($q, BBModel, BaseModel) {
+    var EventCollection;
+    return EventCollection = (function(superClass) {
+      extend(EventCollection, superClass);
+
+      function EventCollection() {
+        return EventCollection.__super__.constructor.apply(this, arguments);
+      }
+
+      return EventCollection;
 
     })(BaseModel);
   });
@@ -21081,6 +21248,27 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
+    var MembershipLevel;
+    return MembershipLevel = (function(superClass) {
+      extend(MembershipLevel, superClass);
+
+      function MembershipLevel() {
+        return MembershipLevel.__super__.constructor.apply(this, arguments);
+      }
+
+      return MembershipLevel;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
 
   /***
   * @ngdoc service
@@ -21132,11 +21320,44 @@ function getURIparam( name ){
     return PrePaidBooking = (function(superClass) {
       extend(PrePaidBooking, superClass);
 
-      function PrePaidBooking() {
-        return PrePaidBooking.__super__.constructor.apply(this, arguments);
+      function PrePaidBooking(data) {
+        PrePaidBooking.__super__.constructor.call(this, data);
       }
 
+      PrePaidBooking.prototype.checkValidity = function(item) {
+        if (this.service_id && item.service_id && this.service_id !== item.service_id) {
+          return false;
+        } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
+          return false;
+        } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
+          return false;
+        } else {
+          return true;
+        }
+      };
+
       return PrePaidBooking;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
+    var Product;
+    return Product = (function(superClass) {
+      extend(Product, superClass);
+
+      function Product() {
+        return Product.__super__.constructor.apply(this, arguments);
+      }
+
+      return Product;
 
     })(BaseModel);
   });
@@ -22481,13 +22702,14 @@ function getURIparam( name ){
         });
         return deferred.promise;
       },
-      checkPrePaid: function(company, event, pre_paid_bookings) {
+      checkPrePaid: function(item, pre_paid_bookings) {
         var booking, j, len, valid_pre_paid;
         valid_pre_paid = null;
         for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
           booking = pre_paid_bookings[j];
-          if (booking.checkValidity(event)) {
+          if (booking.checkValidity(item)) {
             valid_pre_paid = booking;
+            break;
           }
         }
         return valid_pre_paid;
@@ -23362,7 +23584,7 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'The requested time slot is not available. Please choose a different time.'
+        msg: 'Sorry, the requested time slot is not available. Please choose a different time.'
       }, {
         key: 'TOPUP_FAILED',
         type: 'warning',
@@ -23539,6 +23761,40 @@ function getURIparam( name ){
           company.$get('events', params).then((function(_this) {
             return function(resource) {
               return deferred.resolve(resource.events);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      queryEventCollection: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              var collection;
+              collection = new BBModel.EventCollection(resource);
+              return deferred.resolve(collection);
             };
           })(this), (function(_this) {
             return function(err) {
@@ -24262,6 +24518,9 @@ function getURIparam( name ){
         options || (options = {});
         options['root'] || (options['root'] = "");
         url = options['root'] + "/api/v1/logout";
+        $sessionStorage.removeItem("login");
+        $sessionStorage.removeItem('auth_token');
+        $sessionStorage.clear();
         halClient.$del(url, options, {}).then((function(_this) {
           return function(logout) {
             $sessionStorage.removeItem("login");
@@ -24311,6 +24570,40 @@ function getURIparam( name ){
           })(this));
           return deferred.promise;
         }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("MembershipLevelsService", function($q, BBModel) {
+    return {
+      getMembershipLevels: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get("member_levels").then(function(resource) {
+          return resource.$get('membership_levels').then((function(_this) {
+            return function(membership_levels) {
+              var level, levels;
+              levels = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = membership_levels.length; i < len; i++) {
+                  level = membership_levels[i];
+                  results.push(new BBModel.MembershipLevel(level));
+                }
+                return results;
+              })();
+              return deferred.resolve(levels);
+            };
+          })(this));
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
       }
     };
   });
@@ -24591,6 +24884,57 @@ function getURIparam( name ){
                   people.push(new BBModel.Person(i));
                 }
                 return deferred.resolve(people);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate) {
+    return {
+      getProduct: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = prms.api_url + "/api/v1/{company_id}/products/{id}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company_id,
+          id: prms.product_id
+        });
+        halClient.$get(uri, {}).then(function(product) {
+          return deferred.resolve(product);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('products')) {
+          deferred.reject("No products found");
+        } else {
+          company.$get('products').then((function(_this) {
+            return function(resource) {
+              return resource.$get('products').then(function(items) {
+                var i, j, len, resources;
+                resources = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  resources.push(new BBModel.Product(i));
+                }
+                return deferred.resolve(resources);
               });
             };
           })(this), (function(_this) {
@@ -25760,6 +26104,84 @@ function getURIparam( name ){
             for (j = 0, len = items.length; j < len; j++) {
               i = items[j];
               models.push(new BBModel.Member.Booking(i));
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Member.Wallet(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.Product(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('products').then((function(_this) {
+          return function(items) {
+            var cat, i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              cat = new BBModel.Product(i);
+              cat.order || (cat.order = _i);
+              models.push(cat);
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel) {
+    return {
+      unwrap: function(resource) {
+        return new BBModel.PrePaidBooking(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('pre_paid_bookings').then((function(_this) {
+          return function(items) {
+            var i, j, len, models;
+            models = [];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
+              models.push(new BBModel.PrePaidBooking(i));
             }
             return deferred.resolve(models);
           };
@@ -27251,149 +27673,6 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, len, ref;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.booking) {
-          data.booking = params.booking.getPostData();
-        }
-        data.booking_id = data.booking.id;
-        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_all: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -27725,6 +28004,7 @@ function getURIparam( name ){
 
       function Purchase_Total(data) {
         this.getConfirmMessages = bind(this.getConfirmMessages, this);
+        this.getMember = bind(this.getMember, this);
         this.getClient = bind(this.getClient, this);
         this.getMessages = bind(this.getMessages, this);
         this.getDeals = bind(this.getDeals, this);
@@ -27742,6 +28022,11 @@ function getURIparam( name ){
         this.getClient().then((function(_this) {
           return function(client) {
             return _this.client = client;
+          };
+        })(this));
+        this.getMember().then((function(_this) {
+          return function(member) {
+            return _this.member = member;
           };
         })(this));
       }
@@ -27953,6 +28238,22 @@ function getURIparam( name ){
         return defer.promise;
       };
 
+      Purchase_Total.prototype.getMember = function() {
+        var defer;
+        defer = $q.defer();
+        if (this._data.$has('member')) {
+          this._data.$get('member').then((function(_this) {
+            return function(member) {
+              _this.member = new BBModel.Member.Member(member);
+              return defer.resolve(_this.member);
+            };
+          })(this));
+        } else {
+          defer.reject('No client');
+        }
+        return defer.promise;
+      };
+
       Purchase_Total.prototype.getConfirmMessages = function() {
         var defer;
         defer = $q.defer();
@@ -28016,6 +28317,161 @@ function getURIparam( name ){
       return Purchase_Total;
 
     })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, len, ref;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.booking) {
+          data.booking = params.booking.getPostData();
+        }
+        data.booking_id = data.booking.id;
+        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_all: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_item: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
   });
 
 }).call(this);
