@@ -89,6 +89,12 @@
     }
   };
 
+  moment.locale('en', {
+    longDateFormat: {
+      LLLL: "dddd Do MMMM[,] h.mma"
+    }
+  });
+
 }).call(this);
 
 angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackendProvider() {
@@ -2024,6 +2030,36 @@ function getURIparam( name ){
 }
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbAccordianRangeGroup
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of accordian range group for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash} bbAccordianRangeGroup  A hash of options
+  * @property {boolean} collaspe_when_time_selected Collapse when time is selected
+  * @property {string} setRange Set time range for start and end
+  * @property {string} start_time The start time
+  * @property {string} end_time The end time
+  * @property {array} accordian_slots The accordian slots
+  * @property {boolean} is_open Time is open
+  * @property {boolean} has_availability Group has have availability
+  * @property {boolean} is_selected Group is selected
+  * @property {string} source_slots Source of slots
+  * @property {boolean} selected_slot Range group selected slot
+  * @property {boolean} hideHeading Range group hide heading
+   */
   angular.module('BB.Directives').directive('bbAccordianRangeGroup', function() {
     return {
       restrict: 'AE',
@@ -2047,13 +2083,46 @@ function getURIparam( name ){
         return $scope.init($scope.options.range[0], $scope.options.range[1], $scope.options);
       }
     });
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbAccordianRangeGroup
+    * @description
+    * Set form data store by id
+    *
+    * @param {object} id Id that sets store form data
+     */
     $scope.setFormDataStoreId = function(id) {
       return FormDataStoreService.init('AccordianRangeGroup' + id, $scope, []);
     };
+
+    /***
+    * @ngdoc method
+    * @name init
+    * @methodOf BB.Directives:bbAccordianRangeGroup
+    * @description
+    * Initialization of start time, end time and options
+    *
+    * @param {date} start_time The start time of the range group
+    * @param {date} end_time The end time of the range group
+    * @param {object} options The options of the range group
+     */
     $scope.init = function(start_time, end_time, options) {
       $scope.setRange(start_time, end_time);
       return $scope.collaspe_when_time_selected = options && !options.collaspe_when_time_selected ? false : true;
     };
+
+    /***
+    * @ngdoc method
+    * @name setRange
+    * @methodOf BB.Directives:bbAccordianRangeGroup
+    * @description
+    * Set range of start time and end time
+    *
+    * @param {date} start_time The start time of the range group
+    * @param {date} end_time The end time of the range group
+     */
     $scope.setRange = function(start_time, end_time) {
       if (!$scope.options) {
         $scope.options = $scope.$eval($attrs.bbAccordianRangeGroup) || {};
@@ -2062,6 +2131,14 @@ function getURIparam( name ){
       $scope.end_time = end_time;
       return setData();
     };
+
+    /***
+    * @ngdoc method
+    * @name setData
+    * @methodOf BB.Directives:bbAccordianRangeGroup
+    * @description
+    * Set this data as ready
+     */
     setData = function() {
       var i, key, len, ref, ref1, slot;
       $scope.accordian_slots = [];
@@ -2096,6 +2173,17 @@ function getURIparam( name ){
         return updateAvailability();
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name updateAvailability
+    * @methodOf BB.Directives:bbAccordianRangeGroup
+    * @description
+    * Update availability of the slot
+    *
+    * @param {date} day The day of range group
+    * @param {string} slot The slot of range group
+     */
     updateAvailability = function(day, slot) {
       var i, len, ref;
       $scope.selected_slot = null;
@@ -2129,6 +2217,14 @@ function getURIparam( name ){
         }
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name hasAvailability
+    * @methodOf BB.Directives:bbAccordianRangeGroup
+    * @description
+    * Verify if availability of accordian slots have a slot
+     */
     hasAvailability = function() {
       var i, len, ref, slot;
       if (!$scope.accordian_slots) {
@@ -2156,6 +2252,36 @@ function getURIparam( name ){
   });
 
 }).call(this);
+
+
+/***
+* @ngdoc directive
+* @name BB.Directives:bbAddresses
+* @restrict AE
+* @scope true
+*
+* @description
+*
+* Loads a list of addresses for the currently in scope company
+*
+* <pre>
+* restrict: 'AE'
+* replace: true
+* scope: true
+* </pre>
+*
+* @property {boolean} manual_postcode_entry The manual postcode entry of the address
+* @property {string} address1 The first address of the client
+* @property {string} address2 The second address of the client
+* @property {string} address3 The third address of the client
+* @property {string} address4 The fourth address of the client
+* @property {string} address5 The fifth address of the client
+* @property {boolean} show_complete_address Display complete address of the client
+* @property {boolean} postcode_submitted Postcode of the client has been submitted
+* @property {string} findByPostcode Find address by postcode
+* @property {string} setLoaded Set loaded address list
+* @property {string} notLoaded Address list not loaded
+ */
 
 (function() {
   angular.module('BB.Directives').directive('bbAddresses', function() {
@@ -2193,6 +2319,14 @@ function getURIparam( name ){
     })(this), function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name findByPostcode
+    * @methodOf BB.Directives:bbAddresses
+    * @description
+    * Make a request for a list of addresses. They come as seperate list of objects containing addresses and monikers, which are converted into a single list of objects containing both properties.
+     */
     $scope.findByPostcode = function() {
       $scope.postcode_submitted = true;
       if (!$scope.bb.postcode) {
@@ -2237,6 +2371,14 @@ function getURIparam( name ){
         return $scope.setLoaded($scope);
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name showCompleteAddress
+    * @methodOf BB.Directives:bbAddresses
+    * @description
+    * Show complete address
+     */
     $scope.showCompleteAddress = function() {
       $scope.show_complete_address = true;
       $scope.postcode_submitted = false;
@@ -2343,6 +2485,16 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name setManualPostcodeEntry
+    * @methodOf BB.Directives:bbAddresses
+    * @description
+    * Set manual postcode entry
+    *
+    * @param {string} value The value of postcode
+     */
     $scope.setManualPostcodeEntry = function(value) {
       return $scope.manual_postcode_entry = value;
     };
@@ -2362,7 +2514,44 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbWidget
+  * @restrict A
+  * @scope 
+  *   client: '=?'
+  *   apiUrl: '@?'
+  *   useParent:'='
+  * @description
+  *
+  * Loads a list of widgets for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'A'
+  * scope:
+  *   client: '=?'
+  *   apiUrl: '@?'
+  *   useParent:'='
+  * transclude: true
+  * </pre>
+  *
+  * @param {hash} bbWidget A hash of options
+  * @property {string} pusher The pusher
+  * @property {string} pusher_channel The pusher channel
+  * @property {string} init_params Initialization of basic parameters
+   */
   angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug) {
+
+    /***
+    * @ngdoc method
+    * @name getTemplate
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Get template
+    *
+    * @param {object} template The template
+     */
     var appendCustomPartials, getTemplate, renderTemplate, setupPusher, updatePartials;
     getTemplate = function(template) {
       var fromTemplateCache, partial, src;
@@ -2379,6 +2568,16 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name updatePartials
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Update partials
+    *
+    * @param {object} prms The parameter
+     */
     updatePartials = function(scope, element, prms) {
       var i, j, len, ref;
       ref = element.children();
@@ -2392,6 +2591,16 @@ function getURIparam( name ){
         return scope.$broadcast('refreshPage');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name setupPusher
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Push setup
+    *
+    * @param {object} prms The parameter
+     */
     setupPusher = function(scope, element, prms) {
       return $timeout(function() {
         scope.pusher = new Pusher('c8d8cea659cc46060608');
@@ -2401,6 +2610,16 @@ function getURIparam( name ){
         });
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name appendCustomPartials
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Appent custom partials
+    *
+    * @param {object} prms The parameter
+     */
     appendCustomPartials = function(scope, element, prms) {
       var defer;
       defer = $q.defer();
@@ -2438,6 +2657,17 @@ function getURIparam( name ){
       });
       return defer.promise;
     };
+
+    /***
+    * @ngdoc method
+    * @name renderTemplate
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Render template
+    *
+    * @param {object} design_mode The design mode
+    * @param {object} template The template
+     */
     renderTemplate = function(scope, element, design_mode, template) {
       return $q.when(getTemplate(template)).then(function(template) {
         element.html(template).show();
@@ -2578,7 +2808,8 @@ function getURIparam( name ){
       Basket: 10,
       Checkout: 11,
       Slot: 12,
-      Event: 13
+      Event: 13,
+      Login: 14
     };
     $scope.Route = $rootScope.Route;
     $compile("<span bb-display-mode></span>")($scope, (function(_this) {
@@ -2739,6 +2970,9 @@ function getURIparam( name ){
         }
         if (prms.i18n) {
           SettingsService.enableInternationalizaton();
+        }
+        if (prms.login_required) {
+          $scope.bb.login_required = true;
         }
         if (prms.private_note) {
           $scope.bb.private_note = prms.private_note;
@@ -3103,7 +3337,7 @@ function getURIparam( name ){
           return;
         } else {
           if ($scope.bb.total && $scope.bb.payment_status === 'complete') {
-            $scope.showPage('payment_complete');
+            $scope.showPage('confirmation');
           } else {
             return $scope.showPage(route);
           }
@@ -3121,7 +3355,7 @@ function getURIparam( name ){
         }
         return $scope.showPage('company_list');
       } else if ($scope.bb.total && $scope.bb.payment_status === "complete") {
-        return $scope.showPage('payment_complete');
+        return $scope.showPage('confirmation');
       } else if ($scope.bb.total && $scope.bb.payment_status === "pending") {
         return $scope.showPage('payment');
       } else if (($scope.bb.company.$has('event_groups') && !$scope.bb.current_item.event_group && !$scope.bb.current_item.service && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) || ($scope.bb.company.$has('events') && $scope.bb.current_item.event_group && ($scope.bb.current_item.event == null) && !$scope.bb.current_item.product && !$scope.bb.current_item.deal)) {
@@ -3195,13 +3429,13 @@ function getURIparam( name ){
         return $scope.showPage('basket');
       } else if ($scope.bb.moving_booking && $scope.bb.basket.readyToCheckout()) {
         return $scope.showPage('purchase');
-      } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null) {
+      } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null && !$scope.bb.basket.waiting_for_checkout) {
         if ($scope.setPageRoute($rootScope.Route.Checkout)) {
           return;
         }
         return $scope.showPage('checkout');
       } else if ($scope.bb.payment_status === "complete") {
-        return $scope.showPage('payment_complete');
+        return $scope.showPage('confirmation');
       }
     };
     $scope.showCheckout = function() {
@@ -3594,10 +3828,11 @@ function getURIparam( name ){
         }
       }
     };
-    $scope.loadPreviousStep = function() {
-      var previousStep;
-      previousStep = $scope.bb.current_step - 1;
-      return $scope.loadStep(previousStep);
+    $scope.loadPreviousStep = function(number_of_steps_to_go_back) {
+      var step;
+      number_of_steps_to_go_back = number_of_steps_to_go_back || 1;
+      step = $scope.bb.current_step - number_of_steps_to_go_back;
+      return $scope.loadStep(step);
     };
     $scope.loadStepByPageName = function(page_name) {
       var j, len, ref, step;
@@ -3742,7 +3977,7 @@ function getURIparam( name ){
       return $scope.bb.isAdmin;
     };
     $scope.isAdminIFrame = function() {
-      var err, location;
+      var err, error, location;
       if (!$scope.bb.isAdmin) {
         return false;
       }
@@ -3753,8 +3988,8 @@ function getURIparam( name ){
         } else {
           return false;
         }
-      } catch (_error) {
-        err = _error;
+      } catch (error) {
+        err = error;
         return false;
       }
     };
@@ -3795,6 +4030,24 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbMiniBasket
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  * Loads a list of mini basket for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {boolean} setUsingBasket Set using basket  or not
+   */
   angular.module('BB.Directives').directive('bbMiniBasket', function() {
     return {
       restrict: 'AE',
@@ -3810,6 +4063,18 @@ function getURIparam( name ){
     $rootScope.connection_started.then((function(_this) {
       return function() {};
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name basketDescribe
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Basked describe in according of basket length 
+    *
+    * @param {string} nothing Nothing to describe
+    * @param {string} single The single describe
+    * @param {string} plural The plural describe
+     */
     return $scope.basketDescribe = (function(_this) {
       return function(nothing, single, plural) {
         if (!$scope.bb.basket || $scope.bb.basket.length() === 0) {
@@ -3844,6 +4109,16 @@ function getURIparam( name ){
         });
       };
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name addAnother
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Add another basket item in acording of route parameter
+    *
+    * @param {string} route A route of the added another item
+     */
     $scope.addAnother = (function(_this) {
       return function(route) {
         $scope.clearBasketItem();
@@ -3852,6 +4127,16 @@ function getURIparam( name ){
         return $scope.restart();
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name checkout
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Reset the basket to the last item whereas the curren_item is not complete and should not be in the basket and that way, we can proceed to checkout instead of hard-coding it on the html page.
+    *
+    * @param {string} route A route of the added another item
+     */
     $scope.checkout = (function(_this) {
       return function(route) {
         $scope.setReadyToCheckout(true);
@@ -3864,6 +4149,16 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name applyCoupon
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Apply the coupon of basket item in according of coupon parameter
+    *
+    * @param {string} coupon The applied coupon
+     */
     $scope.applyCoupon = (function(_this) {
       return function(coupon) {
         var params;
@@ -3895,6 +4190,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name applyDeal
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Apply the coupon of basket item in according of deal code parameter
+    *
+    * @param {string} deal code The deal code
+     */
     $scope.applyDeal = (function(_this) {
       return function(deal_code) {
         var params;
@@ -3934,6 +4239,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name removeDeal
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Remove the deal in according of deal code parameter
+    *
+    * @param {string} deal code The deal code
+     */
     $scope.removeDeal = (function(_this) {
       return function(deal_code) {
         var params;
@@ -3965,6 +4280,14 @@ function getURIparam( name ){
     $scope.topUpWallet = function() {
       return $scope.decideNextPage("basket_wallet");
     };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMiniBasket
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = function() {
       if ($scope.bb.basket.items.length > 0) {
         return $scope.setReadyToCheckout(true);
@@ -3978,6 +4301,40 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCategories
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  * Loads a list of categories for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} name The category name
+  * @property {integer} id The category id
+  * @example
+  *  <example module="BB"> 
+  *    <file name="index.html">
+  *   <div bb-api-url='https://uk.bookingbug.com'>
+  *   <div  bb-widget='{company_id:21}'>
+  *     <div bb-categories>
+  *        <ul>
+  *          <li ng-repeat='category in items'>name: {{category.name}}</li>
+  *        </ul>
+  *     </div>
+  *     </div>
+  *     </div>
+  *   </file> 
+  *  </example>
+  *
+   */
   angular.module('BB.Directives').directive('bbCategories', function() {
     return {
       restrict: 'AE',
@@ -4015,6 +4372,17 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbCategories
+    * @description
+    * Select an item 
+    *
+    * @param {object} item The Service or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
     return $scope.selectItem = (function(_this) {
       return function(item, route) {
         $scope.bb.current_item.setCategory(item);
@@ -4027,6 +4395,31 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCheckout
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  * Loads a list of checkouts for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbCheckout   A hash of options
+  * @property {string} loadingTotal The loading total
+  * @property {string} skipThisStep The skip this step
+  * @property {string} decideNextPage The decide next page
+  * @property {boolean} checkoutSuccess The checkout success
+  * @property {string} setLoaded The set loaded
+  * @property {string} setLoadedAndShowError The set loaded and show error
+  * @property {boolean} checkoutFailed The checkout failed
+   */
   angular.module('BB.Directives').directive('bbCheckout', function() {
     return {
       restrict: 'AE',
@@ -4072,12 +4465,32 @@ function getURIparam( name ){
     })(this), function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name print
+    * @methodOf BB.Directives:bbCheckout
+    * @description
+    * Print booking details using print_purchase.html template
+    *
+     */
     $scope.print = (function(_this) {
       return function() {
         $window.open($scope.bb.partial_url + 'print_purchase.html?id=' + $scope.total.long_id, '_blank', 'width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=0,top=0');
         return true;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name printElement
+    * @methodOf BB.Directives:bbCheckout
+    * @description
+    * Print by creating popup containing the contents of the specified element
+    *
+    * @param {integer} id The id of the specified element
+    * @param {string} stylesheet The stylesheet of popup
+     */
     return $scope.printElement = function(id, stylesheet) {
       var data, mywindow;
       data = $bbug('#' + id).html();
@@ -4101,6 +4514,44 @@ function getURIparam( name ){
   });
 
 }).call(this);
+
+
+/***
+* @ngdoc directive
+* @name BB.Directives:bbClientDetails
+* @restrict AE
+* @scope true
+*
+* @description
+* Loads a list of client details for the currently in scope company
+*
+* <pre>
+* restrict: 'AE'
+* replace: true
+* scope: true
+* </pre>
+*
+* @property {array} questions Questions of the client
+* @property {integer} company_id The company id of the client company
+* @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+* @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+* @example
+*  <example module="BB"> 
+*    <file name="index.html">
+*   <div bb-api-url='https://uk.bookingbug.com'>
+*   <div  bb-widget='{company_id:21}'>
+*     <div bb-client-details>
+*        <p>company_id: {{client_details.company_id}}</p>
+*        <p>offer_login: {{client_details.offer_login}}</p>
+*        <p>ask_address: {{client_details.ask_address}}</p>
+*        <p>no_phone: {{client_details.no_phone}}</p>
+*      </div>
+*     </div>
+*     </div>
+*   </file> 
+*  </example>
+*
+ */
 
 (function() {
   angular.module('BB.Directives').directive('bbClientDetails', function() {
@@ -4161,6 +4612,17 @@ function getURIparam( name ){
         }
       };
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name validateClient
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Validate the client
+    *
+    * @param {object} client_form The client form
+    * @param {string=} route A specific route to load
+     */
     $scope.validateClient = (function(_this) {
       return function(client_form, route) {
         $scope.notLoaded($scope);
@@ -4178,7 +4640,7 @@ function getURIparam( name ){
           $scope.existing_member = false;
           return $scope.decideNextPage(route);
         }, function(err) {
-          if (err.data.error === "Please login") {
+          if (err.data.error === "Please Login") {
             $scope.existing_member = true;
             AlertService.danger({
               msg: "You have already registered with this email address. Please login or reset your password using the Forgot Password link below."
@@ -4188,6 +4650,14 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name clientLogin
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Client login
+     */
     $scope.clientLogin = (function(_this) {
       return function() {
         $scope.login_error = false;
@@ -4209,6 +4679,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+     */
     $scope.setReady = (function(_this) {
       return function() {
         var prom;
@@ -4228,6 +4706,14 @@ function getURIparam( name ){
         return prom;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name clientSearch
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Client search
+     */
     $scope.clientSearch = function() {
       if (($scope.client != null) && ($scope.client.email != null) && $scope.client.email !== "") {
         $scope.notLoaded($scope);
@@ -4245,6 +4731,16 @@ function getURIparam( name ){
         return $scope.client = {};
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name switchNumber
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Switch number
+    *
+    * @param {array} to Switch number to mobile
+     */
     $scope.switchNumber = function(to) {
       $scope.no_mobile = !$scope.no_mobile;
       if (to === 'mobile') {
@@ -4259,6 +4755,16 @@ function getURIparam( name ){
         return $scope.client.mobile = null;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name getQuestion
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Get question by id
+    *
+    * @param {integer} id The id question
+     */
     $scope.getQuestion = function(id) {
       var i, len, question, ref;
       ref = $scope.client_details.questions;
@@ -4270,9 +4776,27 @@ function getURIparam( name ){
       }
       return null;
     };
+
+    /***
+    * @ngdoc method
+    * @name useClient
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Use client by client
+    *
+    * @param {array} client The client
+     */
     $scope.useClient = function(client) {
       return $scope.setClient(client);
     };
+
+    /***
+    * @ngdoc method
+    * @name recalc_question
+    * @methodOf BB.Directives:bbClientDetails
+    * @description
+    * Recalculate question
+     */
     return $scope.recalc_question = function() {
       if ($scope.client_details.questions) {
         return QuestionService.checkConditionalQuestions($scope.client_details.questions);
@@ -4352,6 +4876,52 @@ function getURIparam( name ){
     };
   };
 
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCompanies
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of companies for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {integer} id The company id
+  * @property {string} name The company name
+  * @property {integer} address_id Company address id
+  * @property {string} country_code Company country code
+  * @property {string} currency_code The company currency code
+  * @property {string} timezone The company time zone
+  * @property {integer} numeric_widget_id The numeric widget id of the company
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+  * @example
+  *  <example module="BB"> 
+  *    <file name="index.html">
+  *   <div bb-api-url='https://uk.bookingbug.com'>
+  *   <div  bb-widget='{company_id:21}'>
+  *     <div bb-company>
+  *       <p>id: {{company.id}}</p>
+  *        <p>name: {{company.name}}</p>
+  *        <p>address_id: {{company.address_id}}</p>
+  *        <p>country_code: {{company.country_code}}</p>
+  *        <p>currency_code: {{company.country_code}}</p>
+  *        <p>timezone: {{company.timezone}}</p>
+  *        <p>numeric_widget_id: {{company.numeric_widget_id}}</p>
+  *      </div>
+  *     </div>
+  *     </div>
+  *   </file> 
+  *  </example>
+   */
+
   angular.module('BB.Directives').directive('bbCompanies', function() {
     return {
       restrict: 'AE',
@@ -4376,6 +4946,17 @@ function getURIparam( name ){
     $scope.controller = "PostcodeLookup";
     angular.extend(this, new CompanyListBase($scope, $rootScope, $q, $attrs));
     $scope.validator = ValidatorService;
+
+    /***
+    * @ngdoc method
+    * @name searchPostcode
+    * @methodOf BB.Directives:bbCompanies
+    * @description
+    * Search the postcode
+    *
+    * @param {object} form The form where postcode has been searched
+    * @param {object} prms The parameters of postcode searching
+     */
     $scope.searchPostcode = (function(_this) {
       return function(form, prms) {
         var promise;
@@ -4398,6 +4979,16 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name getNearestCompany
+    * @methodOf BB.Directives:bbCompanies
+    * @description
+    * Get nearest company in according of center parameter
+    * 
+    * @param {string} center Geolocation parameter
+     */
     return $scope.getNearestCompany = (function(_this) {
       return function(arg) {
         var R, a, c, center, chLat, chLon, company, d, dLat, dLon, distances, i, lat1, lat2, latlong, len, lon1, lon2, pi, rLat1, rLat2, ref;
@@ -4439,6 +5030,27 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCustomBookingText
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of custom booking text for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} messages The messages text
+  * @property {string} setLoaded Loading set of custom text
+  * @property {object} setLoadedAndShowError Set loaded and show error
+   */
   angular.module('BB.Directives').directive('bbCustomBookingText', function() {
     return {
       restrict: 'AE',
@@ -4482,6 +5094,14 @@ function getURIparam( name ){
     }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbCustomBookingText
+    * @description
+    * Load data and display a text message
+     */
     return $scope.loadData = (function(_this) {
       return function() {
         if ($scope.total) {
@@ -4513,6 +5133,28 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbMonthAvailability
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of month availability for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} message The message text
+  * @property {string} setLoaded  Set the day list loaded
+  * @property {object} setLoadedAndShowError Set loaded and show error
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbMonthAvailability', function() {
     return {
       restrict: 'A',
@@ -4548,16 +5190,46 @@ function getURIparam( name ){
     $scope.$on("currentItemUpdate", function(event) {
       return $scope.loadData();
     });
+
+    /***
+    * @ngdoc method
+    * @name setCalType
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set cal type in acording of type
+    *
+    * @param {array} type The type of day list
+     */
     $scope.setCalType = (function(_this) {
       return function(type) {
         return $scope.type = type;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setDataSource
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set data source in according of source
+    *
+    * @param {string} source The source of day list
+     */
     $scope.setDataSource = (function(_this) {
       return function(source) {
         return $scope.data_source = source;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_date
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Format date and get current date
+    *
+    * @param {date} fmt The format date
+     */
     $scope.format_date = (function(_this) {
       return function(fmt) {
         if ($scope.current_date) {
@@ -4565,11 +5237,31 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_start_date
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Format start date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
     $scope.format_start_date = (function(_this) {
       return function(fmt) {
         return $scope.format_date(fmt);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_end_date
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Format end date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
     $scope.format_end_date = (function(_this) {
       return function(fmt) {
         if ($scope.end_date) {
@@ -4577,6 +5269,18 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectDay
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Select day
+    *
+    * @param {date} day The day
+    * @param {string=} route A specific route to load
+    * @param {string} force The force
+     */
     $scope.selectDay = (function(_this) {
       return function(day, route, force) {
         if (day.spaces === 0 && !force) {
@@ -4591,6 +5295,17 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setMonth
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set month
+    *
+    * @param {date} month The month
+    * @param {date} year The year
+     */
     $scope.setMonth = (function(_this) {
       return function(month, year) {
         $scope.current_date = moment().startOf('month').year(year).month(month - 1);
@@ -4598,6 +5313,17 @@ function getURIparam( name ){
         return $scope.type = "month";
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setWeek
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set month
+    *
+    * @param {date} week The week
+    * @param {date} year The year
+     */
     $scope.setWeek = (function(_this) {
       return function(week, year) {
         $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
@@ -4605,17 +5331,47 @@ function getURIparam( name ){
         return $scope.type = "week";
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Add the current date in according of type and amount parameters
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
     $scope.add = (function(_this) {
       return function(type, amount) {
         $scope.current_date.add(amount, type);
         return $scope.loadData();
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Substract the current date in according of type and amount
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
     $scope.subtract = (function(_this) {
       return function(type, amount) {
         return $scope.add(type, -amount);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
+     */
     $scope.isPast = (function(_this) {
       return function() {
         if (!$scope.current_date) {
@@ -4624,6 +5380,14 @@ function getURIparam( name ){
         return moment().isAfter($scope.current_date);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Load week if type is equals with week else load month
+     */
     $scope.loadData = (function(_this) {
       return function() {
         if ($scope.type === "week") {
@@ -4633,6 +5397,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadMonth
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Load month
+     */
     $scope.loadMonth = (function(_this) {
       return function() {
         var date, edate;
@@ -4672,6 +5444,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadWeek
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Load week
+     */
     $scope.loadWeek = (function(_this) {
       return function() {
         var date, edate;
@@ -4702,6 +5482,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = (function(_this) {
       return function() {
         if ($scope.bb.current_item.date) {
@@ -4721,6 +5509,27 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbDeals
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of deals for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} deals The deals list
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbDeals', function() {
     return {
       restrict: 'AE',
@@ -4750,6 +5559,16 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name selectDeal
+    * @methodOf BB.Directives:bbDeals
+    * @description
+    * Select the deal and open modal
+    *
+    * @param {array} deal The deals array
+     */
     $scope.selectDeal = function(deal) {
       var iitem, modalInstance;
       iitem = new BBModel.BasketItem(null, $scope.bb);
@@ -4789,6 +5608,16 @@ function getURIparam( name ){
       $scope.controller = 'ModalInstanceCtrl';
       $scope.item = item;
       $scope.recipient = false;
+
+      /***
+      * @ngdoc method
+      * @name addToBasket
+      * @methodOf BB.Directives:bbDeals
+      * @description
+      * Add to basket in according of form parameter
+      *
+      * @param {object} form The form where is added deal list to basket
+       */
       $scope.addToBasket = function(form) {
         if (!ValidatorService.validateForm(form)) {
           return;
@@ -4799,6 +5628,14 @@ function getURIparam( name ){
         return $modalInstance.dismiss('cancel');
       };
     };
+
+    /***
+    * @ngdoc method
+    * @name purchaseDeals
+    * @methodOf BB.Directives:bbDeals
+    * @description
+    * Purchase deals if basket items and basket items length is bigger than 0 else display a alert message
+     */
     $scope.purchaseDeals = function() {
       if ($scope.bb.basket.items && $scope.bb.basket.items.length > 0) {
         return $scope.decideNextPage();
@@ -4808,6 +5645,14 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbDeals
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = function() {
       if ($scope.bb.basket.items && $scope.bb.basket.items.length > 0) {
         return true;
@@ -4823,6 +5668,26 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbDurations
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of durations for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} duration The duration list
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbDurations', function() {
     return {
       restrict: 'AE',
@@ -4890,6 +5755,17 @@ function getURIparam( name ){
         return $scope.setLoaded($scope);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbDurations
+    * @description
+    * Select duration of the list in according of dur and route parameter
+    *
+    * @param {object} dur The duration list
+    * @param {string=} route A specific route to load
+     */
     $scope.selectDuration = (function(_this) {
       return function(dur, route) {
         if ($scope.$parent.$has_page_control) {
@@ -4901,12 +5777,28 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name durationChanged
+    * @methodOf BB.Directives:bbDurations
+    * @description
+    * Change the list duration and update item
+     */
     $scope.durationChanged = (function(_this) {
       return function() {
         $scope.bb.current_item.setDuration($scope.duration.value);
         return $scope.broadcastItemUpdate();
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbDurations
+    * @description
+    * Set this page section as ready
+     */
     $scope.setReady = (function(_this) {
       return function() {
         if ($scope.duration) {
@@ -4930,6 +5822,26 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbEvent
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  * Loads a list of event for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {integer} total_entries The total entries of the event
+  * @property {array} events The events array
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+   */
   angular.module('BB.Directives').directive('bbEvent', function() {
     return {
       restrict: 'AE',
@@ -4968,12 +5880,15 @@ function getURIparam( name ){
           };
           $scope.event.image = image;
         }
-        ref = $scope.event.tickets;
-        for (i = 0, len = ref.length; i < len; i++) {
-          ticket = ref[i];
-          ticket.qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
+        $scope.event.tickets[0].qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
+        if ($scope.event.tickets.length > 1) {
+          ref = $scope.event.tickets.slice(1);
+          for (i = 0, len = ref.length; i < len; i++) {
+            ticket = ref[i];
+            ticket.qty = 0;
+          }
         }
-        if ($scope.event_options.default_num_tickets && $scope.event_options.auto_select_tickets && $scope.event.tickets.length === 1) {
+        if ($scope.event_options.default_num_tickets && $scope.event_options.auto_select_tickets && $scope.event.tickets.length === 1 && $scope.event.tickets[0].max_num_bookings === 1) {
           $scope.selectTickets();
         }
         $scope.tickets = $scope.event.tickets;
@@ -4987,6 +5902,14 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name selectTickets
+    * @methodOf BB.Directives:bbEvent
+    * @description
+    * Process the selected tickets - this may mean adding multiple basket items - add them all to the basket
+     */
     $scope.selectTickets = function() {
       var base_item, c, i, item, j, len, ref, ref1, ticket;
       $scope.notLoaded($scope);
@@ -5046,6 +5969,17 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbEvent
+    * @description
+    * Select an item event in according of item and route parameter
+    *
+    * @param {array} item The Event or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
     $scope.selectItem = (function(_this) {
       return function(item, route) {
         if ($scope.$parent.$has_page_control) {
@@ -5059,6 +5993,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbEvent
+    * @description
+    * Set this page section as ready
+     */
     $scope.setReady = (function(_this) {
       return function() {
         $scope.bb.event_details = {
@@ -5073,6 +6015,17 @@ function getURIparam( name ){
         return $scope.updateBasket();
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name getPrePaidsForEvent
+    * @methodOf BB.Directives:bbEvent
+    * @description
+    * Get pre paids for event in according of client and event parameter
+    *
+    * @param {array} client The client 
+    * @param {array} event The event
+     */
     return $scope.getPrePaidsForEvent = function(client, event) {
       var defer, params;
       defer = $q.defer();
@@ -5093,6 +6046,28 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbEventGroups
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of event groups for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {integer} total_entries The event total entries
+  * @property {array} events The events array
+  * @property {hash} filters A hash of filters
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+   */
   angular.module('BB.Directives').directive('bbEventGroups', function() {
     return {
       restrict: 'AE',
@@ -5180,6 +6155,16 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name setEventGroupItem
+    * @methodOf BB.Directives:bbEventGroups
+    * @description
+    * Set event group item in accroding of items parameter
+    *
+    * @param {array} items Items of event group
+     */
     setEventGroupItem = function(items) {
       $scope.items = items;
       if ($scope.event_group) {
@@ -5190,6 +6175,17 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbEventGroups
+    * @description
+    * Select an item from event group in according of item and route parameters
+    *
+    * @param {array} item The event group or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
     $scope.selectItem = (function(_this) {
       return function(item, route) {
         if ($scope.$parent.$has_page_control) {
@@ -5212,6 +6208,14 @@ function getURIparam( name ){
         }
       };
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbEventGroups
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = (function(_this) {
       return function() {
         if ($scope.event_group) {
@@ -5228,6 +6232,27 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbEvents
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of events for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbEvents A hash of options
+  * @property {integer} total_entries The event total entries
+  * @property {array} events The events array
+   */
   angular.module('BB.Directives').directive('bbEvents', function() {
     return {
       restrict: 'AE',
@@ -5336,6 +6361,14 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name loadEventSummary
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Load event summary
+     */
     $scope.loadEventSummary = function() {
       var comp, current_event, deferred, params;
       deferred = $q.defer();
@@ -5384,6 +6417,16 @@ function getURIparam( name ){
       });
       return deferred.promise;
     };
+
+    /***
+    * @ngdoc method
+    * @name loadEventChainData
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Load event chain data in according of comp parameter
+    *
+    * @param {array} comp The company
+     */
     $scope.loadEventChainData = function(comp) {
       var deferred, params;
       deferred = $q.defer();
@@ -5406,6 +6449,16 @@ function getURIparam( name ){
       }
       return deferred.promise;
     };
+
+    /***
+    * @ngdoc method
+    * @name loadEventData
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Load event data. De-select the event chain if there's one already picked - as it's hiding other events in the same group
+    *
+    * @param {array} comp The company parameter
+     */
     $scope.loadEventData = function(comp) {
       var chains, current_event, deferred, params;
       deferred = $q.defer();
@@ -5500,6 +6553,14 @@ function getURIparam( name ){
       });
       return deferred.promise;
     };
+
+    /***
+    * @ngdoc method
+    * @name isFullyBooked
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Verify if the items from event list are be fully booked
+     */
     isFullyBooked = function() {
       var full_events, item, j, len, ref;
       full_events = [];
@@ -5514,6 +6575,16 @@ function getURIparam( name ){
         return $scope.fully_booked = true;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name showDay
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Display days of the event list
+    *
+    * @param {date} day The day of the event
+     */
     $scope.showDay = function(day) {
       var date, new_date;
       if (!day || (day && !day.data)) {
@@ -5556,8 +6627,20 @@ function getURIparam( name ){
         }
       };
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Select an item into the current event list in according of item and route parameters
+    *
+    * @param {array} item The Event or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
     $scope.selectItem = (function(_this) {
       return function(item, route) {
+        var i, j, len, ref;
         if (!((item.getSpacesLeft() <= 0 && $scope.bb.company.settings.has_waitlists) || item.hasSpace())) {
           return false;
         }
@@ -5571,6 +6654,13 @@ function getURIparam( name ){
           $scope.setLoaded($scope);
           return false;
         } else {
+          if ($scope.bb.moving_purchase) {
+            ref = $scope.bb.basket.items;
+            for (j = 0, len = ref.length; j < len; j++) {
+              i = ref[j];
+              i.setEvent(item);
+            }
+          }
           $scope.bb.current_item.setEvent(item);
           $scope.bb.current_item.ready = false;
           $q.all($scope.bb.current_item.promises).then(function() {
@@ -5582,6 +6672,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+     */
     $scope.setReady = function() {
       if (!$scope.event) {
         return false;
@@ -5589,6 +6687,16 @@ function getURIparam( name ){
       $scope.bb.current_item.setEvent($scope.event);
       return true;
     };
+
+    /***
+    * @ngdoc method
+    * @name filterEvents
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Filter events from the event list in according of item parameter
+    *
+    * @param {array} item The Event or BookableItem to select
+     */
     $scope.filterEvents = function(item) {
       var result;
       result = (item.date.isSame(moment($scope.filters.date), 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_sold_out_events && item.getSpacesLeft() !== 0) || !$scope.filters.hide_sold_out_events) && filterEventsWithDynamicFilters(item);
@@ -5635,10 +6743,26 @@ function getURIparam( name ){
       }
       return result;
     };
+
+    /***
+    * @ngdoc method
+    * @name filterDateChanged
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Filtering data exchanged from the list of events
+     */
     $scope.filterDateChanged = function() {
       $scope.filterChanged();
       return $scope.showDay(moment($scope.filters.date));
     };
+
+    /***
+    * @ngdoc method
+    * @name resetFilters
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Reset the filters
+     */
     $scope.resetFilters = function() {
       $scope.filters = {};
       if ($scope.has_company_questions) {
@@ -5652,6 +6776,14 @@ function getURIparam( name ){
       return $scope.dynamic_filters.values = {};
     };
     sort = function() {};
+
+    /***
+    * @ngdoc method
+    * @name filterChanged
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Change filter of the event list
+     */
     $scope.filterChanged = function() {
       if ($scope.items) {
         $scope.filtered_items = $filter('filter')($scope.items, $scope.filterEvents);
@@ -5660,6 +6792,14 @@ function getURIparam( name ){
         return PaginationService.update($scope.pagination, $scope.filtered_items.length);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name pageChanged
+    * @methodOf BB.Directives:bbEvents
+    * @description
+    * Change page of the event list
+     */
     $scope.pageChanged = function() {
       PaginationService.update($scope.pagination, $scope.filtered_items.length);
       return $rootScope.$broadcast("page:changed");
@@ -5681,6 +6821,26 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbGetAvailability
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of availability for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} earliest_day The availability of earliest day
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbGetAvailability', function() {
     return {
       restrict: 'AE',
@@ -5696,6 +6856,16 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('GetAvailability', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, halClient) {
+
+    /***
+    * @ngdoc method
+    * @name loadAvailability
+    * @methodOf BB.Directives:bbGetAvailability
+    * @description
+    * Load availability of the services in according of prms parameter
+    *
+    * @param {array} prms The parameters of availability
+     */
     return $scope.loadAvailability = (function(_this) {
       return function(prms) {
         var service;
@@ -5736,6 +6906,30 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbItemDetails
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of item details for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} item An array of all item details
+  * @property {array} product The product
+  * @property {array} booking The booking
+  * @property {array} upload_progress The item upload progress
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbItemDetails', function() {
     return {
       restrict: 'AE',
@@ -5756,7 +6950,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, ItemDetailsService, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, QuestionService, $modal, $location, $upload, $translate, SettingsService) {
+  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, ItemDetailsService, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, QuestionService, $modal, $location, $upload, $translate, SettingsService, PurchaseService) {
     var confirming, setItemDetails;
     $scope.controller = "public.controllers.ItemDetails";
     $scope.suppress_basket_update = $attrs.bbSuppressBasketUpdate != null;
@@ -5767,7 +6961,6 @@ function getURIparam( name ){
       FormDataStoreService.init('ItemDetails', $scope, ['item_details']);
     }
     QuestionService.addAnswersByName($scope.client, ['first_name', 'last_name', 'email', 'mobile']);
-    $scope.notLoaded($scope);
     $scope.validator = ValidatorService;
     confirming = false;
     $rootScope.connection_started.then(function() {
@@ -5777,8 +6970,19 @@ function getURIparam( name ){
     }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name loadItem
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Load item in according of item parameter
+    *
+    * @param {array} item The item loaded
+     */
     $scope.loadItem = function(item) {
       var params;
+      $scope.notLoaded($scope);
       confirming = true;
       $scope.item = item;
       if ($scope.bb.private_note) {
@@ -5800,20 +7004,32 @@ function getURIparam( name ){
           cItem: $scope.item
         };
         return ItemDetailsService.query(params).then(function(details) {
-          setItemDetails(details);
-          $scope.item.item_details = $scope.item_details;
-          QuestionService.addDynamicAnswersByName($scope.item_details.questions);
-          if ($scope.bb.item_defaults.answers) {
-            QuestionService.addAnswersFromDefaults($scope.item_details.questions, $scope.bb.item_defaults.answers);
+          if (details) {
+            setItemDetails(details);
+            $scope.item.item_details = $scope.item_details;
+            QuestionService.addDynamicAnswersByName($scope.item_details.questions);
+            if ($scope.bb.item_defaults.answers) {
+              QuestionService.addAnswersFromDefaults($scope.item_details.questions, $scope.bb.item_defaults.answers);
+            }
+            $scope.recalc_price();
+            $scope.$emit("item_details:loaded");
           }
-          $scope.recalc_price();
-          $scope.setLoaded($scope);
-          return $scope.$emit("item_details:loaded");
+          return $scope.setLoaded($scope);
         }, function(err) {
           return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name setItemDetails
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Set item details in according of details parameter
+    *
+    * @param {array} details The details parameter
+     */
     setItemDetails = function(details) {
       var oldQuestions;
       if ($scope.item && $scope.item.defaults) {
@@ -5846,18 +7062,40 @@ function getURIparam( name ){
         return $scope.loadItem($scope.bb.current_item);
       }
     });
+
+    /***
+    * @ngdoc method
+    * @name recalc_price
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Recalculate item price in function of quantity
+     */
     $scope.recalc_price = function() {
       var bprice, qprice;
       qprice = $scope.item_details.questionPrice($scope.item.getQty());
       bprice = $scope.item.base_price;
       return $scope.item.setPrice(qprice + bprice);
     };
+
+    /***
+    * @ngdoc method
+    * @name confirm
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Confirm the question
+    *
+    * @param {object} form The form where question are introduced
+    * @param {string=} route A specific route to load
+     */
     $scope.confirm = function(form, route) {
       if (!ValidatorService.validateForm(form)) {
         return;
       }
       if ($scope.bb.moving_booking) {
         return $scope.confirm_move(form, route);
+      }
+      if (!$scope.has_page_control) {
+        return true;
       }
       $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
@@ -5872,6 +7110,14 @@ function getURIparam( name ){
         return $scope.decideNextPage(route);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+     */
     $scope.setReady = (function(_this) {
       return function() {
         $scope.item.setAskedQuestions();
@@ -5882,53 +7128,86 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name confirm_move
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Confirm move question information has been correctly entered here
+    *
+    * @param {string=} route A specific route to load
+     */
     $scope.confirm_move = function(route) {
+      var params;
       confirming = true;
       $scope.item || ($scope.item = $scope.bb.current_item);
       $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
-        return PurchaseBookingService.update($scope.item).then(function(booking) {
-          var _i, b, i, len, oldb, ref;
-          b = new BBModel.Purchase.Booking(booking);
-          if ($scope.bb.purchase) {
-            ref = $scope.bb.purchase.bookings;
-            for (_i = i = 0, len = ref.length; i < len; _i = ++i) {
-              oldb = ref[_i];
-              if (oldb.id === b.id) {
-                $scope.bb.purchase.bookings[_i] = b;
+        if ($scope.bb.moving_purchase) {
+          params = {
+            purchase: $scope.bb.moving_purchase,
+            bookings: $scope.bb.basket.items
+          };
+          return PurchaseService.update(params).then(function(purchase) {
+            $scope.purchase = purchase;
+            $scope.setLoaded($scope);
+            $scope.item.move_done = true;
+            $rootScope.$broadcast("booking:moved");
+            return $scope.decideNextPage(route);
+          });
+        } else {
+          return PurchaseBookingService.update($scope.item).then(function(booking) {
+            var _i, b, i, len, oldb, ref;
+            b = new BBModel.Purchase.Booking(booking);
+            if ($scope.bb.purchase) {
+              ref = $scope.bb.purchase.bookings;
+              for (_i = i = 0, len = ref.length; i < len; _i = ++i) {
+                oldb = ref[_i];
+                if (oldb.id === b.id) {
+                  $scope.bb.purchase.bookings[_i] = b;
+                }
               }
             }
-          }
-          $scope.setLoaded($scope);
-          $scope.item.move_done = true;
-          $rootScope.$broadcast("booking:moved");
-          $scope.decideNextPage(route);
-          if (SettingsService.isInternationalizatonEnabled()) {
-            return $translate('MOVE_BOOKINGS_MSG', {
-              datetime: b.datetime.format('dddd Do MMMM[,] h.mma')
-            }).then(function(translated_text) {
-              return AlertService.add("info", {
-                msg: translated_text
-              });
-            });
-          } else {
-            return AlertService.add("info", {
-              msg: "Your booking has been moved to " + (b.datetime.format('dddd Do MMMM[,] h.mma'))
-            });
-          }
-        }, (function(_this) {
-          return function(err) {
             $scope.setLoaded($scope);
-            return AlertService.add("danger", {
-              msg: "Failed to move booking. Please try again."
-            });
-          };
-        })(this));
+            $scope.item.move_done = true;
+            $rootScope.$broadcast("booking:moved");
+            $scope.decideNextPage(route);
+            if (SettingsService.isInternationalizatonEnabled()) {
+              return $translate('MOVE_BOOKINGS_MSG', {
+                datetime: b.datetime.format('LLLL')
+              }).then(function(translated_text) {
+                return AlertService.add("info", {
+                  msg: translated_text
+                });
+              });
+            } else {
+              return AlertService.add("info", {
+                msg: "Your booking has been moved to " + (b.datetime.format('LLLL'))
+              });
+            }
+          }, (function(_this) {
+            return function(err) {
+              $scope.setLoaded($scope);
+              return AlertService.add("danger", {
+                msg: "Failed to move booking. Please try again."
+              });
+            };
+          })(this));
+        }
       } else {
         return $scope.decideNextPage(route);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name openTermsAndConditions
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Display terms and conditions view
+     */
     $scope.openTermsAndConditions = function() {
       var modalInstance;
       return modalInstance = $modal.open({
@@ -5936,6 +7215,16 @@ function getURIparam( name ){
         scope: $scope
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name getQuestion
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Get question by id
+    *
+    * @param {integer} id The id of the question
+     */
     $scope.getQuestion = function(id) {
       var i, len, question, ref;
       ref = $scope.item_details.questions;
@@ -5947,6 +7236,14 @@ function getURIparam( name ){
       }
       return null;
     };
+
+    /***
+    * @ngdoc method
+    * @name updateItem
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Update item
+     */
     $scope.updateItem = function() {
       $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
@@ -5973,9 +7270,28 @@ function getURIparam( name ){
         })(this));
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name editItem
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Edit item
+     */
     $scope.editItem = function() {
       return $scope.item_details_updated = false;
     };
+
+    /***
+    * @ngdoc method
+    * @name onFileSelect
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Select file to upload in according of item, $file and existing parameters
+    *
+    * @param {array} item The item for uploading
+    * @param {boolean} existing Checks if file item exist or not
+     */
     return $scope.onFileSelect = function(item, $file, existing) {
       var att_id, file, method, url;
       $scope.upload_progress = 0;
@@ -6012,6 +7328,31 @@ function getURIparam( name ){
 
 }).call(this);
 
+
+/***
+* @ngdoc directive
+* @name BB.Directives:bbLogin
+* @restrict AE
+* @scope true
+*
+* @description
+*
+* Loads a list of logins for the currently in scope company
+*
+* <pre>
+* restrict: 'AE'
+* replace: true
+* scope: true
+* </pre>
+*
+* @property {boolean} password_updated The user password updated
+* @property {boolean} password_error The user password error
+* @property {boolean} email_sent The email sent
+* @property {boolean} success If user are log in with success
+* @property {boolean} login_error If user have some errors when try to log in
+* @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+ */
+
 (function() {
   angular.module('BB.Directives').directive('bbLogin', function() {
     return {
@@ -6022,7 +7363,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location) {
+  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location, AlertService, ErrorService) {
     $scope.controller = "public.controllers.Login";
     $scope.error = false;
     $scope.password_updated = false;
@@ -6031,9 +7372,20 @@ function getURIparam( name ){
     $scope.success = false;
     $scope.login_error = false;
     $scope.validator = ValidatorService;
-    $scope.login_sso = (function(_this) {
-      return function(token, route) {
-        return $rootScope.connection_started.then(function() {
+
+    /***
+    * @ngdoc method
+    * @name login_sso
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Login to application
+    *
+    * @param {object} token The token to use for login
+    * @param {string=} route A specific route to load
+     */
+    $scope.login_sso = function(token, route) {
+      return $rootScope.connection_started.then((function(_this) {
+        return function() {
           return LoginService.ssoLogin({
             company_id: $scope.bb.company.id,
             root: $scope.bb.api_url
@@ -6046,79 +7398,167 @@ function getURIparam( name ){
           }, function(err) {
             return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
           });
-        }, function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-    $scope.login_with_password = (function(_this) {
-      return function(email, password) {
-        $scope.login_error = false;
-        return LoginService.companyLogin($scope.bb.company, {}, {
-          email: email,
-          password: password
-        }).then(function(member) {
+        };
+      })(this), function(err) {
+        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+      });
+    };
+
+    /***
+    * @ngdoc method
+    * @name login_with_password
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Login with password
+    *
+    * @param {string} email The email address that use for the login 
+    * @param {string} password The password use for the login
+     */
+    $scope.login_with_password = function(email, password) {
+      $scope.login_error = false;
+      return LoginService.companyLogin($scope.bb.company, {}, {
+        email: email,
+        password: password
+      }).then((function(_this) {
+        return function(member) {
           $scope.member = new BBModel.Member.Member(member);
           $scope.success = true;
           return $scope.login_error = false;
-        }, function(err) {
-          return $scope.login_error = err;
-        });
-      };
-    })(this);
+        };
+      })(this), (function(_this) {
+        return function(err) {
+          $scope.login_error = err;
+          return AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+        };
+      })(this));
+    };
+
+    /***
+    * @ngdoc method
+    * @name showEmailPasswordReset
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Display email reset password page
+     */
     $scope.showEmailPasswordReset = (function(_this) {
       return function() {
         return $scope.showPage('email_reset_password');
       };
     })(this);
-    $scope.isLoggedIn = (function(_this) {
-      return function() {
-        return LoginService.isLoggedIn();
-      };
-    })(this);
-    $scope.sendPasswordReset = (function(_this) {
-      return function(email) {
-        $scope.error = false;
-        return LoginService.sendPasswordReset($scope.bb.company, {
-          email: email,
-          custom: true
-        }).then(function() {
-          return $scope.email_sent = true;
-        }, function(err) {
-          return $scope.error = err;
-        });
-      };
-    })(this);
-    return $scope.updatePassword = (function(_this) {
-      return function(new_password, confirm_new_password) {
-        var auth_token;
-        auth_token = $scope.member.getOption('auth_token');
-        $scope.password_error = false;
-        $scope.error = false;
-        if ($scope.member && auth_token && new_password && confirm_new_password && (new_password === confirm_new_password)) {
-          return LoginService.updatePassword($rootScope.member, {
-            auth_token: auth_token,
-            new_password: new_password,
-            confirm_new_password: confirm_new_password
-          }).then(function(member) {
+
+    /***
+    * @ngdoc method
+    * @name isLoggedIn
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Verify if user are logged in
+     */
+    $scope.isLoggedIn = function() {
+      return LoginService.isLoggedIn();
+    };
+
+    /***
+    * @ngdoc method
+    * @name sendPasswordReset
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Send password reset via email
+    *
+    * @param {string} email The email address use for the send new password
+     */
+    $scope.sendPasswordReset = function(email) {
+      $scope.error = false;
+      return LoginService.sendPasswordReset($scope.bb.company, {
+        email: email,
+        custom: true
+      }).then(function() {
+        $scope.email_sent = true;
+        return AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_REQ_SUCCESS'));
+      }, (function(_this) {
+        return function(err) {
+          $scope.error = err;
+          return AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_REQ_FAILED'));
+        };
+      })(this));
+    };
+
+    /***
+    * @ngdoc method
+    * @name updatePassword
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Update password
+    *
+    * @param {string} new_password The new password has been set
+    * @param {string} confirm_new_password The new password has been confirmed
+     */
+    return $scope.updatePassword = function(new_password, confirm_new_password) {
+      AlertService.clear();
+      $scope.password_error = false;
+      $scope.error = false;
+      if ($rootScope.member && new_password && confirm_new_password && (new_password === confirm_new_password)) {
+        return LoginService.updatePassword($rootScope.member, {
+          new_password: new_password,
+          confirm_new_password: confirm_new_password
+        }).then((function(_this) {
+          return function(member) {
             if (member) {
               $scope.password_updated = true;
-              return $scope.showPage('login');
+              $scope.setClient(member);
+              AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_SUCESS'));
+              return $rootScope.$emit("login:password_reset");
             }
-          }, function(err) {
-            return $scope.error = err;
-          });
-        } else {
-          return $scope.password_error = true;
-        }
-      };
-    })(this);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            $scope.error = err;
+            return AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_FAILED'));
+          };
+        })(this));
+      } else {
+        $scope.password_error = true;
+        return AlertService.raise(ErrorService.getAlert('PASSWORD_MISMATCH'));
+      }
+    };
   });
 
 }).call(this);
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbMap
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of maps for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbMap A hash of options
+  * @property {object} mapLoaded The map has been loaded
+  * @property {object} mapReady The maps has been ready
+  * @property {object} map_init The initialization the map
+  * @property {object} numSearchResults The number of search results
+  * @property {object} range_limit The range limit
+  * @property {boolean} showAllMarkers Display or not all markers
+  * @property {array} mapMarkers The map markers
+  * @property {array} shownMarkers Display the markers
+  * @property {integer} numberedPin The numbered pin
+  * @property {integer} defaultPin The default pin
+  * @proeprty {boolean} hide_not_live_stores Hide or not the live stores
+  * @property {object} address The address
+  * @property {object} error_msg The error message
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbMap', function() {
     return {
       restrict: 'AE',
@@ -6188,16 +7628,16 @@ function getURIparam( name ){
           latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
           $scope.mapBounds.extend(latlong);
         }
-        $scope.mapOptions = {
-          center: $scope.mapBounds.getCenter(),
-          zoom: 6,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
-          }
-        };
       }
+      $scope.mapOptions = {
+        center: $scope.mapBounds.getCenter(),
+        zoom: 6,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+          style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
+        }
+      };
       if (options && options.map_options) {
         ref1 = options.map_options;
         for (key in ref1) {
@@ -6239,6 +7679,14 @@ function getURIparam( name ){
         return $scope.hide_not_live_stores = options.hide_not_live_stores;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name checkDataStore
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * If the user has clicked back to the map then display it.
+     */
     checkDataStore = function() {
       if ($scope.selectedStore) {
         $scope.notLoaded($scope);
@@ -6256,6 +7704,14 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name title
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Create title for the map selection step
+     */
     $scope.title = function() {
       var ci, p1;
       ci = $scope.bb.current_item;
@@ -6266,6 +7722,16 @@ function getURIparam( name ){
       }
       return p1 + ' - ' + $scope.$eval('getCurrentStepTitle()');
     };
+
+    /***
+    * @ngdoc method
+    * @name searchAddress
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Search address in according of prms parameter
+    *
+    * @param {object} prms The parameters of the address
+     */
     $scope.searchAddress = function(prms) {
       if ($scope.reverse_geocode_address && $scope.reverse_geocode_address === $scope.address) {
         return false;
@@ -6314,6 +7780,16 @@ function getURIparam( name ){
       });
       return $scope.setLoaded($scope);
     };
+
+    /***
+    * @ngdoc method
+    * @name searchPlaces
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Search places in according of prms parameter
+    *
+    * @param {object} prms The parameters of the places
+     */
     searchPlaces = function(prms) {
       var req, service;
       req = {
@@ -6334,6 +7810,16 @@ function getURIparam( name ){
         }
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name searchSuccess
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Search has been succeeded, and return 
+    *
+    * @param {object} result The result of the search
+     */
     searchSuccess = function(result) {
       AlertService.clear();
       $scope.search_failed = false;
@@ -6343,11 +7829,29 @@ function getURIparam( name ){
       $scope.showClosestMarkers($scope.loc);
       return $rootScope.$broadcast("map:search_success");
     };
+
+    /***
+    * @ngdoc method
+    * @name searchFailed
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Search failed and displayed an error
+     */
     searchFailed = function() {
       $scope.search_failed = true;
       AlertService.danger(ErrorService.getError('LOCATION_NOT_FOUND'));
       return $rootScope.$apply();
     };
+
+    /***
+    * @ngdoc method
+    * @name validateAddress
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Validate the address using form
+    *
+    * @param {object} form The form where address has been validate
+     */
     $scope.validateAddress = function(form) {
       if (!form) {
         return false;
@@ -6360,6 +7864,16 @@ function getURIparam( name ){
         return true;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name showClosestMarkers
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Display the closest markers
+    *
+    * @param {array} latlong Using for determinate the closest markers
+     */
     $scope.showClosestMarkers = function(latlong) {
       var R, a, c, chLat, chLon, d, dLat, dLon, distances, distances_kilometres, i, iconPath, index, item, items, j, k, l, lat1, lat2, len, len1, len2, localBounds, lon1, lon2, marker, pi, rLat1, rLat2, ref, ref1;
       pi = Math.PI;
@@ -6419,13 +7933,35 @@ function getURIparam( name ){
         localBounds.extend(marker.position);
         index += 1;
       }
+      $scope.$emit('map:shown_markers_updated', $scope.shownMarkers);
       google.maps.event.trigger($scope.myMap, 'resize');
       return $scope.myMap.fitBounds(localBounds);
     };
+
+    /***
+    * @ngdoc method
+    * @name openMarkerInfo
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Display marker information on the map
+    *
+    * @param {object} marker The marker
+     */
     $scope.openMarkerInfo = function(marker) {
       $scope.currentMarker = marker;
       return $scope.myInfoWindow.open($scope.myMap, marker);
     };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Select an item from map
+    *
+    * @param {array} item The Map or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
     $scope.selectItem = function(item, route) {
       if (!$scope.$debounce(1000)) {
         return;
@@ -6446,9 +7982,28 @@ function getURIparam( name ){
         first_page: route
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name roundNumberUp
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Calculate the round number up 
+    *
+    * @param {integer} num The number of places
+    * @param {object} places The places
+     */
     $scope.roundNumberUp = function(num, places) {
       return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
     };
+
+    /***
+    * @ngdoc method
+    * @name geolocate
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Get geolocation information
+     */
     $scope.geolocate = function() {
       if (!navigator.geolocation || ($scope.reverse_geocode_address && $scope.reverse_geocode_address === $scope.address)) {
         return false;
@@ -6462,6 +8017,16 @@ function getURIparam( name ){
         return navigator.geolocation.getCurrentPosition(reverseGeocode, geolocateFail, options);
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name geolocateFail
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Geolocation fail and display an error message
+    *
+    * @param {object} error The error
+     */
     geolocateFail = function(error) {
       switch (error.code) {
         case 2:
@@ -6472,6 +8037,16 @@ function getURIparam( name ){
           return $scope.setLoaded($scope);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name reverseGeocode
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Reverse geocode in according of position parameter
+    *
+    * @param {object} positon The postion get latitude and longitude from google maps api
+     */
     reverseGeocode = function(position) {
       var lat, latlng, long;
       lat = parseFloat(position.coords.latitude);
@@ -6499,6 +8074,14 @@ function getURIparam( name ){
         return $scope.setLoaded($scope);
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name increaseRange
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Increase range, the range limit is infinity
+     */
     $scope.increaseRange = function() {
       $scope.range_limit = Infinity;
       return $scope.searchAddress($scope.search_prms);
@@ -6524,6 +8107,31 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbMultiServiceSelect
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of multi service selected for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbMultiServiceSelect A hash of options
+  * @property {object} options The options of service
+  * @property {object} max_services The max services
+  * @property {boolean} ordered_categories Verify if categories are ordered or not
+  * @property {array} services The services
+  * @property {array} company The company
+  * @property {array} items An array of items service
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   var hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Directives').directive('bbMultiServiceSelect', function() {
@@ -6598,6 +8206,14 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name checkItemDefaults
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Check item defaults
+     */
     checkItemDefaults = function() {
       var j, len, ref, service;
       if (!$scope.bb.item_defaults.service) {
@@ -6612,6 +8228,16 @@ function getURIparam( name ){
         }
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name initialiseCategories
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Initialize the categories in according of categories parameter
+    *
+    * @param {array} categories The categories of service
+     */
     initialiseCategories = function(categories) {
       var all_categories, category, category_details, category_id, grouped_sub_categories, grouped_sub_category, j, k, key, len, len1, results, services, sub_categories, sub_category, value;
       if ($scope.options.ordered_categories) {
@@ -6645,6 +8271,7 @@ function getURIparam( name ){
       results = [];
       for (category_id in categories) {
         services = categories[category_id];
+        category = {};
         grouped_sub_categories = [];
         if (sub_categories) {
           for (k = 0, len1 = sub_categories.length; k < len1; k++) {
@@ -6659,6 +8286,9 @@ function getURIparam( name ){
               grouped_sub_categories.push(grouped_sub_category);
             }
           }
+          category.sub_categories = grouped_sub_categories;
+        } else {
+          category.services = services;
         }
         if ($scope.all_categories[category_id]) {
           category_details = {
@@ -6666,11 +8296,8 @@ function getURIparam( name ){
             description: $scope.all_categories[category_id].description
           };
         }
-        category = {
-          name: category_details.name,
-          description: category_details.description,
-          sub_categories: grouped_sub_categories
-        };
+        category.name = category_details.name;
+        category.description = category_details.description;
         if ($scope.options.ordered_categories) {
           category.order = $scope.all_categories[category_id].order;
         }
@@ -6686,6 +8313,17 @@ function getURIparam( name ){
       }
       return results;
     };
+
+    /***
+    * @ngdoc method
+    * @name changeCategory
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Change category in according of category name and services parameres
+    *
+    * @param {string} category_name The category name
+    * @param {array} services The services array
+     */
     $scope.changeCategory = function(category_name, services) {
       if (category_name && services) {
         $scope.selected_category = {
@@ -6696,10 +8334,29 @@ function getURIparam( name ){
         return $rootScope.$broadcast("multi_service_select:category_changed");
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name changeCategoryName
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Change the category name
+     */
     $scope.changeCategoryName = function() {
       $scope.selected_category_name = $scope.selected_category.name;
       return $rootScope.$broadcast("multi_service_select:category_changed");
     };
+
+    /***
+    * @ngdoc method
+    * @name addItem
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Add item in according of item and duration parameters
+    *
+    * @param {array} item The item that been added
+    * @param {date} duration The duration
+     */
     $scope.addItem = function(item, duration) {
       var i, iitem, j, len, ref, results;
       if ($scope.bb.stacked_items.length < $scope.options.max_services) {
@@ -6731,6 +8388,17 @@ function getURIparam( name ){
         return results;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name removeItem
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Remove item in according of item and options parameters
+    *
+    * @params {array} item The item that been removed
+    * @params {array} options The options remove
+     */
     $scope.removeItem = function(item, options) {
       var i, j, len, ref, results;
       item.selected = false;
@@ -6754,11 +8422,29 @@ function getURIparam( name ){
       }
       return results;
     };
+
+    /***
+    * @ngdoc method
+    * @name removeStackedItem
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Removed stacked item whose type is 'BasketItem'
+    *
+    * @params {array} item The item that been removed
+     */
     $scope.removeStackedItem = function(item) {
       return $scope.removeItem(item, {
         type: 'BasketItem'
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name nextStep
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Next step to selected an basket item, if basket item is not selected she display an error message
+     */
     $scope.nextStep = function() {
       if ($scope.bb.stacked_items.length > 1) {
         return $scope.decideNextPage();
@@ -6777,9 +8463,25 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name addService
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Add service which add a new item
+     */
     $scope.addService = function() {
       return $rootScope.$broadcast("multi_service_select:add_item");
     };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Set this page section as ready
+     */
     $scope.setReady = function() {
       if ($scope.bb.stacked_items.length > 1) {
         return true;
@@ -6799,6 +8501,16 @@ function getURIparam( name ){
         return false;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name selectDuration
+    * @methodOf BB.Directives:bbMultiServiceSelect
+    * @description
+    * Select duration in according of service parameter and display the modal
+    *
+    * @params {object} service The service
+     */
     return $scope.selectDuration = function(service) {
       var modalInstance;
       if (service.durations.length === 1) {
@@ -6838,6 +8550,35 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeRangeStacked
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of time range stacked for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbTimeRangeStacked A hash of options
+  * @property {date} start_date The start date of time range list
+  * @property {date} end_date The end date of time range list
+  * @property {integer} available_times The available times of range list
+  * @property {object} day_of_week The day of week
+  * @property {object} selected_day The selected day from the multi time range list
+  * @property {object} original_start_date The original start date of range list
+  * @property {object} start_at_week_start The start at week start of range list
+  * @property {object} selected_slot The selected slot from multi time range list
+  * @property {object} selected_date The selected date from multi time range list
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   var hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Directives').directive('bbTimeRangeStacked', function() {
@@ -6899,6 +8640,17 @@ function getURIparam( name ){
     }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name setTimeRange
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set time range in according of selected_date 
+    *
+    * @param {date} selected_date The selected date from multi time range list
+    * @param {date} start_date The start date of range list
+     */
     setTimeRange = function(selected_date, start_date) {
       if (start_date) {
         $scope.start_date = start_date;
@@ -6913,6 +8665,17 @@ function getURIparam( name ){
       $scope.selected_date = $scope.selected_day.toDate();
       return isSubtractValid();
     };
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Add date
+    *
+    * @param {object} amount The selected amount
+    * @param {array} type The start type
+     */
     $scope.add = function(amount, type) {
       $scope.selected_day = moment($scope.selected_date);
       switch (type) {
@@ -6925,9 +8688,28 @@ function getURIparam( name ){
       }
       return $scope.loadData();
     };
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Subtract in according of amount and type parameters
+    *
+    * @param {object} amount The selected amount
+    * @param {object} type The start type
+     */
     $scope.subtract = function(amount, type) {
       return $scope.add(-amount, type);
     };
+
+    /***
+    * @ngdoc method
+    * @name isSubtractValid
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Verify if the subtract is valid or not
+     */
     isSubtractValid = function() {
       var diff;
       $scope.is_subtract_valid = true;
@@ -6944,11 +8726,27 @@ function getURIparam( name ){
         return $scope.subtract_string = "Prev";
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name selectedDateChanged
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Called on datepicker date change
+     */
     $scope.selectedDateChanged = function() {
       setTimeRange(moment($scope.selected_date));
       $scope.selected_slot = null;
       return $scope.loadData();
     };
+
+    /***
+    * @ngdoc method
+    * @name updateHideStatus
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Update the hidden status
+     */
     updateHideStatus = function() {
       var day, key, ref, results;
       ref = $scope.days;
@@ -6959,12 +8757,31 @@ function getURIparam( name ){
       }
       return results;
     };
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Calculate if the current earliest date is in the past - in which case we. Might want to disable going backwards
+     */
     $scope.isPast = function() {
       if (!$scope.start_date) {
         return true;
       }
       return moment().isAfter($scope.start_date);
     };
+
+    /***
+    * @ngdoc method
+    * @name status
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Check the status of the slot to see if it has been selected
+    *
+    * @param {date} day The day
+    * @param {object} slot The slot of day in multi time range list
+     */
     $scope.status = function(day, slot) {
       var status;
       if (!slot) {
@@ -6973,6 +8790,17 @@ function getURIparam( name ){
       status = slot.status();
       return status;
     };
+
+    /***
+    * @ngdoc method
+    * @name highlightSlot
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Check the highlight slot
+    *
+    * @param {date} day The day
+    * @param {object} slot The slot of day in multi time range list
+     */
     $scope.highlightSlot = function(day, slot) {
       var i, item, len, ref;
       if (day && slot && slot.availability() > 0) {
@@ -7001,6 +8829,14 @@ function getURIparam( name ){
         return $rootScope.$broadcast("time:selected");
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Load the time data
+     */
     $scope.loadData = function() {
       var edate, grouped_items, i, items, len, pslots;
       $scope.notLoaded($scope);
@@ -7073,6 +8909,17 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name spliceExistingDateTimes
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Splice existing date and times
+    *
+    * @param {array} stacked_item The stacked item
+    * @param {object} slots The slots of stacked_item from the multi_time_range_list
+     */
     spliceExistingDateTimes = function(stacked_item, slots) {
       var datetime, time, time_slot;
       if (!stacked_item.datetime && !stacked_item.date) {
@@ -7091,6 +8938,14 @@ function getURIparam( name ){
         return time_slot.selected = stacked_item.self === $scope.bb.stacked_items[0].self;
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name setEnabledSlots
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set the enabled slots
+     */
     setEnabledSlots = function() {
       var day, day_data, isSlotValid, ref, results, slot, time;
       ref = $scope.days;
@@ -7146,6 +9001,18 @@ function getURIparam( name ){
       }
       return results;
     };
+
+    /***
+    * @ngdoc method
+    * @name pretty_month_title
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Display pretty month title in according of month format and year format parameters
+    *
+    * @param {date} month_format The month format
+    * @param {date} year_format The year format
+    * @param {string} separator The separator is '-'
+     */
     $scope.pretty_month_title = function(month_format, year_format, seperator) {
       var month_year_format, start_date;
       if (seperator == null) {
@@ -7165,6 +9032,17 @@ function getURIparam( name ){
         return $scope.start_date.format(month_year_format);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name confirm
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Confirm the time range stacked
+    *
+    * @param {string =} route A specific route to load
+    * @param {object} options The options
+     */
     $scope.confirm = function(route, options) {
       var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
       if (options == null) {
@@ -7263,6 +9141,14 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = function() {
       return $scope.confirm('', {
         do_not_route: true
@@ -7274,6 +9160,29 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPackagePicker
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of package pickers for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {date} sel_date The sel date
+  * @property {date} selected_date The selected date
+  * @property {boolean} picked_time The picked time
+  * @property {array} timeSlots The time slots
+  * @property {boolean} data_valid The valid data
+   */
   angular.module('BB.Directives').directive('bbPackagePicker', function() {
     return {
       restrict: 'AE',
@@ -7294,6 +9203,14 @@ function getURIparam( name ){
         return $scope.loadDay();
       };
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name loadDay
+    * @methodOf BB.Directives:bbPackagePicker
+    * @description
+    * Load day
+     */
     $scope.loadDay = (function(_this) {
       return function() {
         var i, item, len, pslots, ref;
@@ -7366,6 +9283,17 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectSlot
+    * @methodOf BB.Directives:bbPackagePicker
+    * @description
+    * Select slot in according of sel_item and slot parameters
+    *
+    * @param {array} sel_item The sel item
+    * @param {object} slot The slot
+     */
     $scope.selectSlot = (function(_this) {
       return function(sel_item, slot) {
         var count, current, i, item, j, k, latest, len, len1, len2, next, ref, ref1, slots, time;
@@ -7425,6 +9353,18 @@ function getURIparam( name ){
         return $scope.picked_time = true;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name hasAvailability
+    * @methodOf BB.Directives:bbPackagePicker
+    * @description
+    * Checks if picker have the start time and the end time available
+    *
+    * @param {object} slots The slots of the package picker
+    * @param {date} start_time The start time of the picker
+    * @param {date} end_time The end time of the picker
+     */
     $scope.hasAvailability = (function(_this) {
       return function(slots, start_time, end_time) {
         var i, j, k, l, len, len1, len2, len3, slot;
@@ -7510,6 +9450,14 @@ function getURIparam( name ){
         return ready_list;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name checkReady
+    * @methodOf BB.Directives:bbPage
+    * @description
+    * Check the page ready
+     */
     $scope.checkReady = function() {
       var checkread, i, len, ready_list, v;
       ready_list = isScopeReady($scope);
@@ -7538,6 +9486,16 @@ function getURIparam( name ){
       });
       return true;
     };
+
+    /***
+    * @ngdoc method
+    * @name routeReady
+    * @methodOf BB.Directives:bbPage
+    * @description
+    * Check the page route ready
+    *
+    * @param {string=} route A specific route to load
+     */
     return $scope.routeReady = function(route) {
       if (!$scope.$checkingReady) {
         return $scope.decideNextPage(route);
@@ -7550,6 +9508,24 @@ function getURIparam( name ){
       }
     };
   };
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPage
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of page for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+   */
 
   angular.module('BB.Directives').directive('bbPage', function() {
     return {
@@ -7568,6 +9544,25 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of payments for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
   angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService) {
     var error, getHost, linker, sendLoadEvent;
     error = function(scope, message) {
@@ -7662,16 +9657,40 @@ function getURIparam( name ){
         }
       };
     })(this));
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call not loaded
+     */
     $scope.callNotLoaded = (function(_this) {
       return function() {
         return $scope.notLoaded($scope);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call set loaded
+     */
     $scope.callSetLoaded = (function(_this) {
       return function() {
         return $scope.setLoaded($scope);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Payment done
+     */
     $scope.paymentDone = function() {
       $scope.bb.payment_status = "complete";
       return $scope.decideNextPage();
@@ -7685,7 +9704,37 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPayForm
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of pay forms for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total pay_form price
+  * @property {array} card The card is used to payment
+   */
   angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location, SettingsService) {
+
+    /***
+    * @ngdoc method
+    * @name applyCustomPartials
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Apply the custom partials in according of custom partial url, scope and element parameters
+    *
+    * @param {string} custom_partial_url The custom partial url
+     */
     var applyCustomPartials, applyCustomStylesheet, linker;
     applyCustomPartials = function(custom_partial_url, scope, element) {
       if (custom_partial_url != null) {
@@ -7723,6 +9772,16 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name applyCustomStylesheet
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Apply the custom stylesheet from href
+    *
+    * @param {string} href The href of the stylesheet
+     */
     applyCustomStylesheet = function(href) {
       var css_id, head, link;
       css_id = 'custom_css';
@@ -7783,12 +9842,40 @@ function getURIparam( name ){
   angular.module('BB.Controllers').controller('PayForm', function($scope, $location) {
     var sendSubmittingEvent, submitPaymentForm;
     $scope.controller = "public.controllers.PayForm";
+
+    /***
+    * @ngdoc method
+    * @name setTotal
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Set total price
+    *
+    * @param {array} total The total price
+     */
     $scope.setTotal = function(total) {
       return $scope.total = total;
     };
+
+    /***
+    * @ngdoc method
+    * @name setCard
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Set card used to payment
+    *
+    * @param {array} card The card used to payment
+     */
     $scope.setCard = function(card) {
       return $scope.card = card;
     };
+
+    /***
+    * @ngdoc method
+    * @name sendSubmittingEvent
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Send submitting event
+     */
     sendSubmittingEvent = (function(_this) {
       return function() {
         var payload, referrer, target_origin;
@@ -7804,6 +9891,14 @@ function getURIparam( name ){
         return parent.postMessage(payload, target_origin);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitPaymentForm
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Submit payment form
+     */
     submitPaymentForm = (function(_this) {
       return function() {
         var payment_form;
@@ -7811,6 +9906,16 @@ function getURIparam( name ){
         return payment_form[0].submit();
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitAndSendMessage
+    * @methodOf BB.Directives:bbPayForm
+    * @description
+    * Submit and send message in according of event paramenter
+    *
+    * @param {object} event The event
+     */
     return $scope.submitAndSendMessage = (function(_this) {
       return function(event) {
         var payment_form;
@@ -7832,6 +9937,28 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPeople
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of peoples for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} items The items of the person list
+  * @property {array} bookable_people The bookable people from the person list
+  * @property {array} bookable_items The bookable items from the person list
+  * @property {array} booking_item The booking item from the person list
+   */
   angular.module('BB.Directives').directive('bbPeople', function() {
     return {
       restrict: 'AE',
@@ -7931,6 +10058,16 @@ function getURIparam( name ){
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name setPerson
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Storing the person property in the form store
+    *
+    * @param {array} people The people
+     */
     setPerson = function(people) {
       $scope.bookable_people = people;
       if ($scope.person) {
@@ -7941,6 +10078,16 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name getItemFromPerson
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Get item from person
+    *
+    * @param {array} person The person
+     */
     getItemFromPerson = (function(_this) {
       return function(person) {
         var item, j, len, ref;
@@ -7958,6 +10105,17 @@ function getURIparam( name ){
         return person;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Select an item into the current person list in according of item and route parameters
+    *
+    * @param {array} item Selected item from the list of current people
+    * @param {string=} route A specific route to load
+     */
     $scope.selectItem = (function(_this) {
       return function(item, route) {
         if ($scope.$parent.$has_page_control) {
@@ -7970,6 +10128,17 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectAndRoute
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Select and route person from list in according of item and route parameters
+    *
+    * @param {array} item Selected item from the list of current people
+    * @param {string=} route A specific route to load
+     */
     $scope.selectAndRoute = (function(_this) {
       return function(item, route) {
         $scope.booking_item.setPerson(getItemFromPerson(item));
@@ -7993,6 +10162,14 @@ function getURIparam( name ){
     $scope.$on("currentItemUpdate", function(event) {
       return loadData();
     });
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = (function(_this) {
       return function() {
         if ($scope.person) {
@@ -8010,6 +10187,28 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbProductList
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of product for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} products The products from the list
+  * @property {array} item The item of the product list
+  * @property {array} booking_item The booking item
+  * @property {product} product The currectly selected product
+   */
   angular.module('BB.Directives').directive('bbProductList', function() {
     return {
       restrict: 'AE',
@@ -8047,6 +10246,17 @@ function getURIparam( name ){
         });
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbProductList
+    * @description
+    * Select an item from the product list in according of item and route parameter
+    *
+    * @param {array} item The array items
+    * @param {string=} route A specific route to load
+     */
     return $scope.selectItem = function(item, route) {
       if ($scope.$parent.$has_page_control) {
         $scope.product = item;
@@ -8063,6 +10273,25 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPurchaseTotal
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of purchase total for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total purchase
+   */
   angular.module('BB.Directives').directive('bbPurchaseTotal', function() {
     return {
       restrict: 'AE',
@@ -8075,6 +10304,16 @@ function getURIparam( name ){
   angular.module('BB.Controllers').controller('PurchaseTotal', function($scope, $rootScope, $window, PurchaseTotalService, $q) {
     $scope.controller = "public.controllers.PurchaseTotal";
     angular.extend(this, new $window.PageController($scope, $q));
+
+    /***
+    * @ngdoc method
+    * @name load
+    * @methodOf BB.Directives:bbPurchaseTotal
+    * @description
+    * Load the total purchase by id
+    *
+    * @param {integer} total_id The total id of the total purchase
+     */
     return $scope.load = (function(_this) {
       return function(total_id) {
         return $rootScope.connection_started.then(function() {
@@ -8208,6 +10447,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name getItemFromResource
+    * @methodOf BB.Directives:bbResources
+    * @description
+    * Get item from resource in according of resource parameter
+    *
+    * @param {object} resource The resource
+     */
     getItemFromResource = (function(_this) {
       return function(resource) {
         var item, j, len, ref;
@@ -8225,6 +10474,18 @@ function getURIparam( name ){
         return resource;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbResources
+    * @description
+    * Select an item into the current booking journey and route on to the next page dpending on the current page control
+    *
+    * @param {array} item The Service or BookableItem to select
+    * @param {string=} route A specific route to load
+    * @param {string=} skip_step The skip_step has been set to false
+     */
     $scope.selectItem = (function(_this) {
       return function(item, route, skip_step) {
         if (skip_step == null) {
@@ -8256,6 +10517,14 @@ function getURIparam( name ){
     })(this));
     $scope.$on("currentItemUpdate", function(event) {
       return loadData();
+
+      /***
+      * @ngdoc method
+      * @name setReady
+      * @methodOf BB.Directives:bbResources
+      * @description
+      * Set this page section as ready
+       */
     });
     return $scope.setReady = (function(_this) {
       return function() {
@@ -8560,6 +10829,14 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name errorModal
+    * @methodOf BB.Directives:bbServices
+    * @description
+    * Display error message in modal
+     */
     $scope.errorModal = function() {
       var error_modal;
       return error_modal = $modal.open({
@@ -8572,6 +10849,14 @@ function getURIparam( name ){
         }
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name filterFunction
+    * @methodOf BB.Directives:bbServices
+    * @description
+    * Filter service
+     */
     $scope.filterFunction = function(service) {
       if (!service) {
         return false;
@@ -8632,6 +10917,14 @@ function getURIparam( name ){
       $scope.filters.custom_array_value = null;
       return $scope.filterChanged();
     };
+
+    /***
+    * @ngdoc method
+    * @name filterChanged
+    * @methodOf BB.Directives:bbServices
+    * @description
+    * Filter changed
+     */
     return $scope.filterChanged = function() {
       return $scope.filtered_items = $filter('filter')($scope.items, $scope.filterFunction);
     };
@@ -8641,6 +10934,30 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeSlots
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of time slots for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} booking_item The booking item 
+  * @property {date} start_date The start date
+  * @property {date} end_date The end date
+  * @property {array} slots The slots
+  * @property {object} validator The validator service - see {@link BB.Services:Validator validator Service}
+  *
+   */
   angular.module('BB.Directives').directive('bbTimeSlots', function() {
     return {
       restrict: 'AE',
@@ -8687,6 +11004,17 @@ function getURIparam( name ){
     setItem = function(slot) {
       return $scope.booking_item.setSlot(slot);
     };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbTimeSlots
+    * @description
+    * Select an item into the current booking journey and route on to the next page dpending on the current page control
+    *
+    * @param {object} slot The slot from list
+    * @param {string=} route A specific route to load
+     */
     return $scope.selectItem = function(slot, route) {
       if ($scope.$parent.$has_page_control) {
         setItem(slot);
@@ -8703,6 +11031,26 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbSpaces
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of spaces for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} items An array of all services
+  * @property {space} space The currectly selected space
+   */
   angular.module('BB.Directives').directive('bbSpaces', function() {
     return {
       restrict: 'AE',
@@ -8744,6 +11092,17 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbSpaces
+    * @description
+    * Select the current item in according of item and route parameters
+    *
+    * @param {array} item The Space or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
     return $scope.selectItem = (function(_this) {
       return function(item, route) {
         $scope.currentItem.setService(item);
@@ -8754,7 +11113,33 @@ function getURIparam( name ){
 
 }).call(this);
 
+
+/***
+* @ngdoc directive
+* @name BB.Directives:bbSurveyQuestions
+* @restrict AE
+* @scope true
+*
+* @description
+*
+* Loads a list of survey questions for the currently in scope company
+*
+* <pre>
+* restrict: 'AE'
+* replace: true
+* scope: true
+* </pre>
+*
+* @property {integer} company_id The company id
+* @property {array} questions An array with questions
+* @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+* @property {object} widget The widget service - see {@link BB.Models:BBWidget Widget Service}
+* @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+ */
+
 (function() {
+  var getBookingAndSurvey, getBookingRef, getPurchaseID, setPurchaseCompany;
+
   angular.module('BB.Directives').directive('bbSurveyQuestions', function() {
     return {
       restrict: 'AE',
@@ -8765,7 +11150,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('SurveyQuestions', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, ValidatorService, PurchaseBookingService, $sessionStorage) {
-    var getBookingAndSurvey, getBookingRef, getMember, getPurchaseID, init, setPurchaseCompany, showLoginError;
+    var getMember, init, showLoginError;
     $scope.controller = "SurveyQuestions";
     $scope.completed = false;
     $scope.login = {
@@ -8796,11 +11181,29 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name checkIfLoggedIn
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Check if logged in
+     */
     $scope.checkIfLoggedIn = (function(_this) {
       return function() {
         return LoginService.checkLogin();
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadSurvey
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Load Survey in according of purchase parameter
+    *
+    * @param {array} purchase The purchase
+     */
     $scope.loadSurvey = (function(_this) {
       return function(purchase) {
         if (!$scope.company) {
@@ -8863,6 +11266,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitSurveyLogin
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Submit survey login in according of form parameter else display an error message
+    *
+    * @param {object} form The survey login form
+     */
     $scope.submitSurveyLogin = (function(_this) {
       return function(form) {
         if (!ValidatorService.validateForm(form)) {
@@ -8881,6 +11294,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadSurveyFromPurchaseID
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Load survey from purchase id in according of id parameter else display an error message
+    *
+    * @param {object} id The id of purchase
+     */
     $scope.loadSurveyFromPurchaseID = (function(_this) {
       return function(id) {
         var auth_token, params;
@@ -8901,6 +11324,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadSurveyFromBookingRef
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Load survey from booking ref in according of id else display an error message
+    *
+    * @param {object} id The id of booking
+     */
     $scope.loadSurveyFromBookingRef = (function(_this) {
       return function(id) {
         var auth_token, params;
@@ -8923,6 +11356,16 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitSurvey
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Submit survey in according of form parameter
+    *
+    * @param {object} form The survey form
+     */
     $scope.submitSurvey = (function(_this) {
       return function(form) {
         var booking, i, len, params, ref, results;
@@ -8951,6 +11394,16 @@ function getURIparam( name ){
         return results;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitBookingRef
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Submit booking in according of form parameter
+    *
+    * @param {object} form The submit booking form
+     */
     $scope.submitBookingRef = (function(_this) {
       return function(form) {
         var auth_token, params;
@@ -8977,15 +11430,39 @@ function getURIparam( name ){
         });
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name storeBookingCookie
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Store booking cookie
+     */
     $scope.storeBookingCookie = function() {
       return document.cookie = "bookingrefsc=" + $scope.booking_ref;
     };
+
+    /***
+    * @ngdoc method
+    * @name showLoginError
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Show login error
+     */
     showLoginError = (function(_this) {
       return function() {
         return $scope.login_error = true;
       };
     })(this);
-    getMember = (function(_this) {
+
+    /***
+    * @ngdoc method
+    * @name getMember
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get member
+     */
+    return getMember = (function(_this) {
       return function() {
         var params;
         params = {
@@ -8997,60 +11474,125 @@ function getURIparam( name ){
         });
       };
     })(this);
-    setPurchaseCompany = function(company) {
-      $scope.bb.company_id = company.id;
-      $scope.bb.company = new BBModel.Company(company);
-      $scope.company = $scope.bb.company;
-      $scope.bb.item_defaults.company = $scope.bb.company;
-      if (company.settings) {
-        if (company.settings.merge_resources) {
-          $scope.bb.item_defaults.merge_resources = true;
-        }
-        if (company.settings.merge_people) {
-          return $scope.bb.item_defaults.merge_people = true;
-        }
-      }
-    };
-    getBookingRef = function() {
-      var booking_ref, matches;
-      matches = /^.*(?:\?|&)booking_ref=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        booking_ref = matches[1];
-      }
-      return booking_ref;
-    };
-    getPurchaseID = function() {
-      var matches, purchase_id;
-      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        purchase_id = matches[1];
-      }
-      return purchase_id;
-    };
-    return getBookingAndSurvey = function() {
-      var id;
-      id = getBookingRef();
-      if (id) {
-        return $scope.loadSurveyFromBookingRef(id);
-      } else {
-        id = getPurchaseID();
-        if (id) {
-          return $scope.loadSurveyFromPurchaseID(id);
-        } else {
-          if ($scope.bb.total) {
-            return $scope.loadSurveyFromPurchaseID($scope.bb.total.long_id);
-          } else {
 
-          }
+    /***
+      * @ngdoc method
+      * @name setPurchaseCompany
+      * @methodOf BB.Directives:bbSurveyQuestions
+      * @description
+      * Set purchase company in according of company parameter
+      *
+      * @param {object} company The company
+     */
+  });
+
+  setPurchaseCompany = function(company) {
+    $scope.bb.company_id = company.id;
+    $scope.bb.company = new BBModel.Company(company);
+    $scope.company = $scope.bb.company;
+    $scope.bb.item_defaults.company = $scope.bb.company;
+    if (company.settings) {
+      if (company.settings.merge_resources) {
+        $scope.bb.item_defaults.merge_resources = true;
+      }
+      if (company.settings.merge_people) {
+        return $scope.bb.item_defaults.merge_people = true;
+      }
+    }
+  };
+
+
+  /***
+  * @ngdoc method
+  * @name getBookingRef
+  * @methodOf BB.Directives:bbSurveyQuestions
+  * @description
+  * Get booking references
+   */
+
+  getBookingRef = function() {
+    var booking_ref, matches;
+    matches = /^.*(?:\?|&)booking_ref=(.*?)(?:&|$)/.exec($location.absUrl());
+    if (matches) {
+      booking_ref = matches[1];
+    }
+    return booking_ref;
+  };
+
+
+  /***
+  * @ngdoc method
+  * @name getPurchaseID
+  * @methodOf BB.Directives:bbSurveyQuestions
+  * @description
+  * Get purchase Id
+   */
+
+  getPurchaseID = function() {
+    var matches, purchase_id;
+    matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+    if (matches) {
+      purchase_id = matches[1];
+    }
+    return purchase_id;
+  };
+
+
+  /***
+  * @ngdoc method
+  * @name getBookingAndSurvey
+  * @methodOf BB.Directives:bbSurveyQuestions
+  * @description
+  * Get booking and survey
+   */
+
+  getBookingAndSurvey = function() {
+    var id;
+    id = getBookingRef();
+    if (id) {
+      return $scope.loadSurveyFromBookingRef(id);
+    } else {
+      id = getPurchaseID();
+      if (id) {
+        return $scope.loadSurveyFromPurchaseID(id);
+      } else {
+        if ($scope.bb.total) {
+          return $scope.loadSurveyFromPurchaseID($scope.bb.total.long_id);
+        } else {
+
         }
       }
-    };
-  });
+    }
+  };
 
 }).call(this);
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimes
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of times for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbTimes A hash of options
+  * @property {array} selected_day The selected day
+  * @property {date} selected_date The selected date
+  * @property {array} data_source The data source
+  * @property {array} item_link_source The item link source
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbTimes', function() {
     return {
       restrict: 'AE',
@@ -9074,6 +11616,16 @@ function getURIparam( name ){
     })(this), function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name setDate
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Set a date of time list
+    *
+    * @param {date} date The date of time list
+     */
     $scope.setDate = (function(_this) {
       return function(date) {
         var day;
@@ -9084,17 +11636,47 @@ function getURIparam( name ){
         return $scope.setDay(day);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setDay
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Set based on a day model
+    *
+    * @param {object} dayItem The dayItem
+     */
     $scope.setDay = (function(_this) {
       return function(dayItem) {
         $scope.selected_day = dayItem;
         return $scope.selected_date = dayItem.date;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setDataSource
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Set data source model of time list
+    *
+    * @param {object} source The source
+     */
     $scope.setDataSource = (function(_this) {
       return function(source) {
         return $scope.data_source = source;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setItemLinkSource
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Set item link source model
+    *
+    * @param {object} source The source
+     */
     $scope.setItemLinkSource = (function(_this) {
       return function(source) {
         return $scope.item_link_source = source;
@@ -9109,6 +11691,16 @@ function getURIparam( name ){
     $scope.$on("currentItemUpdate", function(event) {
       return $scope.loadDay();
     });
+
+    /***
+    * @ngdoc method
+    * @name format_date
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Format data source date of the time list
+    *
+    * @param {date} fmt The format data
+     */
     $scope.format_date = (function(_this) {
       return function(fmt) {
         if ($scope.data_source.date) {
@@ -9116,6 +11708,17 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectSlot
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Select the slot from time list in according of slot and route parameters
+    *
+    * @param {date} slot The slot
+    * @param {string=} A specific route to load
+     */
     $scope.selectSlot = (function(_this) {
       return function(slot, route) {
         if (slot && slot.availability() > 0) {
@@ -9141,6 +11744,16 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name highlightSlot
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * The highlight slot from time list 
+    *
+    * @param {date} slot The slot
+     */
     $scope.highlightSlot = (function(_this) {
       return function(slot) {
         if (slot && slot.availability() > 0) {
@@ -9153,6 +11766,16 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name status
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Check the status of the slot to see if it has been selected
+    *
+    * @param {date} slot The slot
+     */
     $scope.status = function(slot) {
       var status;
       if (!slot) {
@@ -9161,6 +11784,17 @@ function getURIparam( name ){
       status = slot.status();
       return status;
     };
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Add unit of time to the selected day
+    *
+    * @param {date} type The type
+    * @param {date} amount The amount
+     */
     $scope.add = (function(_this) {
       return function(type, amount) {
         var newdate;
@@ -9174,11 +11808,30 @@ function getURIparam( name ){
         return $scope.$broadcast('dateChanged', newdate);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Subtract unit of time to the selected day
+    *
+    * @param {date} type The type
+    * @param {date} amount The amount
+     */
     $scope.subtract = (function(_this) {
       return function(type, amount) {
         return $scope.add(type, -amount);
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadDay
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Load day
+     */
     $scope.loadDay = (function(_this) {
       return function() {
         var pslots;
@@ -9255,11 +11908,29 @@ function getURIparam( name ){
         }
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name padTimes
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Pad Times in according of times parameter
+    *
+    * @param {date} times The times
+     */
     $scope.padTimes = (function(_this) {
       return function(times) {
         return $scope.add_padding = times;
       };
     })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbTimes
+    * @description
+    * Set this page section as ready
+     */
     return $scope.setReady = (function(_this) {
       return function() {
         if (!$scope.data_source.time) {
@@ -9372,6 +12043,31 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeRanges
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of time rangers for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbTimeRanges A hash of options
+  * @property {string} selected_slot The selected slot
+  * @property {date} selected_date The selected date
+  * @property {string} postcode The postcode
+  * @property {date} original_start_date The original start date
+  * @property {date} start_at_week_start The start at week start
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
   angular.module('BB.Directives').directive('bbTimeRanges', function() {
     return {
       restrict: 'AE',
@@ -9440,6 +12136,17 @@ function getURIparam( name ){
     }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name setTimeRange
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Set time range in according of selected date and start date parameters
+    *
+    * @param {date} selected_date The selected date
+    * @param {date} start_date The start date
+     */
     setTimeRange = function(selected_date, start_date) {
       if (start_date) {
         $scope.start_date = start_date;
@@ -9464,15 +12171,46 @@ function getURIparam( name ){
         }
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name moment
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Add to moment date in according of date parameter
+    *
+    * @param {date} date The date
+     */
     $scope.moment = function(date) {
       return moment(date);
     };
+
+    /***
+    * @ngdoc method
+    * @name setDataSource
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Set data source in according of source parameter
+    *
+    * @param {array} source The source of data
+     */
     $scope.setDataSource = function(source) {
       return $scope.data_source = source;
     };
     $scope.$on("currentItemUpdate", function(event) {
       return $scope.loadData();
     });
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Add new time range in according of type and amount parameters
+    *
+    * @param {object} type The type
+    * @param {object} amount The amount of the days
+     */
     $scope.add = function(type, amount) {
       if (amount > 0) {
         $element.removeClass('subtract');
@@ -9484,17 +12222,42 @@ function getURIparam( name ){
           setTimeRange($scope.selected_day.add(amount, 'days'));
           break;
         case 'weeks':
-        case 'months':
           $scope.start_date.add(amount, type);
+          setTimeRange($scope.start_date);
+          break;
+        case 'months':
+          $scope.start_date.add(amount, type).startOf('month');
           setTimeRange($scope.start_date);
       }
       return $scope.loadData();
     };
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Substract amount
+    *
+    * @param {object} type The type
+    * @param {object} amount The amount of the days
+     */
     $scope.subtract = function(type, amount) {
       $element.removeClass('add');
       $element.addClass('subtract');
       return $scope.add(type, -amount);
     };
+
+    /***
+    * @ngdoc method
+    * @name isSubtractValid
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Deprecated due to performance issues, use $scope.is_subtract_valid and $scope.subtract_length instead
+    *
+    * @param {object} type The type
+    * @param {object} amount The amount of the days
+     */
     $scope.isSubtractValid = function(type, amount) {
       var date;
       if (!$scope.start_date || $scope.isAdmin()) {
@@ -9503,6 +12266,15 @@ function getURIparam( name ){
       date = $scope.start_date.clone().subtract(amount, type);
       return !date.isBefore(moment(), 'day');
     };
+
+    /***
+    * @ngdoc method
+    * @name isSubtractValid
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Verify if substraction is valid
+    *
+     */
     isSubtractValid = function() {
       var diff;
       $scope.is_subtract_valid = true;
@@ -9519,11 +12291,29 @@ function getURIparam( name ){
         return $scope.subtract_string = "Prev";
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name selectedDateChanged
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Select date change
+    *
+     */
     $scope.selectedDateChanged = function() {
       setTimeRange(moment($scope.selected_date));
       $scope.selected_slot = null;
       return $scope.loadData();
     };
+
+    /***
+    * @ngdoc method
+    * @name updateHideStatus
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Update the hidden status
+    *
+     */
     $scope.updateHideStatus = function() {
       var day, i, len, ref, results;
       ref = $scope.days;
@@ -9534,12 +12324,32 @@ function getURIparam( name ){
       }
       return results;
     };
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Calculate if the current earliest date is in the past - in which case we might want to disable going backwards
+    *
+     */
     $scope.isPast = function() {
       if (!$scope.start_date) {
         return true;
       }
       return moment().isAfter($scope.start_date);
     };
+
+    /***
+    * @ngdoc method
+    * @name status
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Check the status of the slot to see if it has been selected
+    *
+    * @param {date} day The day
+    * @param {array} slot The slot
+     */
     $scope.status = function(day, slot) {
       var status;
       if (!slot) {
@@ -9548,6 +12358,18 @@ function getURIparam( name ){
       status = slot.status();
       return status;
     };
+
+    /***
+    * @ngdoc method
+    * @name selectSlot
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Called when user selects a time slot use this when you want to route to the next step as a slot is selected
+    *
+    * @param {date} day The day
+    * @param {array} slot The slot
+    * @param {string=} route A route of the selected slot
+     */
     $scope.selectSlot = function(day, slot, route) {
       if (slot && slot.availability() > 0) {
         $scope.bb.current_item.setTime(slot);
@@ -9568,6 +12390,17 @@ function getURIparam( name ){
         }
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name highlightSlot
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Called when user selects a time slot use this when you just want to hightlight the the slot and not progress to the next step
+    *
+    * @param {date} day The day
+    * @param {array} slot The slot
+     */
     $scope.highlightSlot = function(day, slot) {
       var current_item;
       current_item = $scope.bb.current_item;
@@ -9589,6 +12422,15 @@ function getURIparam( name ){
         return $scope.$broadcast('slotChanged', day, slot);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Load the time data
+    *
+     */
     $scope.loadData = function() {
       var current_item, date, duration, edate, loc, promise;
       current_item = $scope.bb.current_item;
@@ -9619,6 +12461,7 @@ function getURIparam( name ){
         }
         promise = TimeService.query({
           company: $scope.bb.company,
+          resource_ids: $scope.bb.item_defaults.resources,
           cItem: $scope.data_source,
           date: date,
           client: $scope.client,
@@ -9685,6 +12528,17 @@ function getURIparam( name ){
         return $scope.setLoaded($scope);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name checkRequestedTime
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Check requested time
+    *
+    * @param {date} day The day
+    * @param {date} time_losts The time slots
+     */
     checkRequestedTime = function(day, time_slots) {
       var current_item, found_time, i, len, slot;
       current_item = $scope.bb.current_item;
@@ -9713,9 +12567,27 @@ function getURIparam( name ){
         }
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name padTimes
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * The pad time
+    *
+    * @param {date} times The times
+     */
     $scope.padTimes = function(times) {
       return $scope.add_padding = times;
     };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Set this page section as ready
+     */
     $scope.setReady = function() {
       if (!$scope.bb.current_item.time) {
         AlertService.raise(ErrorService.getAlert('TIME_SLOT_NOT_SELECTED'));
@@ -9739,19 +12611,61 @@ function getURIparam( name ){
         }
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name format_date
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Format the date in according of fmt parameter
+    *
+    * @param {date} fmt The format of date
+     */
     $scope.format_date = function(fmt) {
       if ($scope.start_date) {
         return $scope.start_date.format(fmt);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name format_start_date
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Format the start date in according of fmt parameter
+    *
+    * @param {date} fmt The format of start date
+     */
     $scope.format_start_date = function(fmt) {
       return $scope.format_date(fmt);
     };
+
+    /***
+    * @ngdoc method
+    * @name format_end_date
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Format the end date in according of fmt parameter
+    *
+    * @param {date} fmt The format of end date
+     */
     $scope.format_end_date = function(fmt) {
       if ($scope.end_date) {
         return $scope.end_date.format(fmt);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name pretty_month_title
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Format the month title in according of month formant, year format and separator parameters
+    *
+    * @param {date} month_format The month format
+    * @param {date} year_format The year format
+    * @param {object} separator The separator of month and year format
+     */
     $scope.pretty_month_title = function(month_format, year_format, seperator) {
       var month_year_format, start_date;
       if (seperator == null) {
@@ -9768,6 +12682,14 @@ function getURIparam( name ){
         return $scope.format_start_date(month_year_format);
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name selectEarliestTimeSlot
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Select earliest time slot
+     */
     return $scope.selectEarliestTimeSlot = function() {
       var day, slot;
       day = _.find($scope.days, function(day) {
@@ -9787,6 +12709,27 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTotal
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of totals for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbTotal A hash of options
+  * @property {array} payment_status The payment status
+  * @property {array} total The total
+   */
   angular.module('BB.Directives').directive('bbTotal', function() {
     return {
       restrict: 'AE',
@@ -9820,6 +12763,14 @@ function getURIparam( name ){
     })(this), function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
+
+    /***
+    * @ngdoc method
+    * @name print
+    * @methodOf BB.Directives:bbTotal
+    * @description
+    * Open new window from partial url
+     */
     return $scope.print = (function(_this) {
       return function() {
         $window.open($scope.bb.partial_url + 'print_purchase.html?id=' + $scope.total.long_id, '_blank', 'width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=0,top=0');
@@ -10012,12 +12963,12 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, ie8orLess;
+    var e, error, ie8orLess;
     ie8orLess = false;
     try {
       ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       ie8orLess = false;
     }
     return {
@@ -10852,10 +13803,21 @@ function getURIparam( name ){
               date_format_2 = 'MM/dd/yyyy';
             }
             return scope.$watch(attrs.bbQuestion, function(question) {
-              var e, html, i, index, itemx, j, lastName, len1, len2, name, ref1, ref2;
+              var e, html, i, index, itemx, j, lastName, len1, len2, name, placeholder, ref1, ref2;
               if (question) {
                 html = '';
                 lastName = '';
+                placeholder = '';
+                if (attrs.defaultPlaceholder != null) {
+                  if (question.detail_type === "text_area" | question.detail_type === "text_field") {
+                    if (question["default"]) {
+                      placeholder = question["default"];
+                    }
+                    if (question.answer === question["default"]) {
+                      question.answer = "";
+                    }
+                  }
+                }
                 scope.recalc = (function(_this) {
                   return function() {
                     if (angular.isDefined(scope.recalc_price)) {
@@ -10880,7 +13842,7 @@ function getURIparam( name ){
                   }
                   html += "</select>";
                 } else if (question.detail_type === "text_area") {
-                  html = "<textarea ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
+                  html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
                 } else if (question.detail_type === "radio") {
                   html = '<div class="radio-group">';
                   ref2 = question.options;
@@ -10901,7 +13863,7 @@ function getURIparam( name ){
                 } else if (question.detail_type === "date") {
                   html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
                 } else {
-                  html = "<input type='text' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
+                  html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && (" + adminRequired + " || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
                 }
                 if (html) {
                   return e = $compile(html)(scope, (function(_this) {
@@ -11133,7 +14095,7 @@ function getURIparam( name ){
       });
     };
     return {
-      restrict: "C",
+      restrict: "AC",
       link: linker,
       scope: {
         'cardType': '='
@@ -11290,7 +14252,8 @@ function getURIparam( name ){
           return compare(ctrl.$viewValue);
         });
         compare = function(value) {
-          return ctrl.$setValidity('match', scope.val_1 === value);
+          ctrl.$setValidity('match', scope.val_1 === value);
+          return value;
         };
         return ctrl.$parsers.push(compare);
       }
@@ -11304,15 +14267,22 @@ function getURIparam( name ){
 
   app = angular.module('BB.Directives');
 
-  app.directive("intTelNumber", function() {
+  app.directive("bbIntTelNumber", function($parse) {
     return {
       restrict: "A",
       require: "ngModel",
       link: function(scope, element, attrs, ctrl) {
-        var convertNumber, options;
-        options = scope.$eval(attrs.intTelNumber);
+        var format, isValid, options, parse;
+        options = scope.$eval(attrs.bbIntTelNumber);
         element.intlTelInput(options);
-        convertNumber = function(value) {
+        isValid = function(value) {
+          if (value) {
+            return element.intlTelInput("isValidNumber");
+          } else {
+            return true;
+          }
+        };
+        format = function(value) {
           var str;
           str = "";
           if (scope.$eval(attrs.ngModel + '_prefix') != null) {
@@ -11323,11 +14293,20 @@ function getURIparam( name ){
           }
           if (str[0] === "+") {
             element.intlTelInput("setNumber", "+" + (scope.$eval(attrs.ngModel + '_prefix')) + " " + (scope.$eval(attrs.ngModel)));
-            ctrl.$setValidity("pattern", true);
+            ctrl.$setValidity("phone", isValid(value));
           }
           return str;
         };
-        return ctrl.$formatters.push(convertNumber);
+        parse = function(value) {
+          var getter, prefix;
+          prefix = element.intlTelInput("getSelectedCountryData").dialCode;
+          getter = $parse(attrs.ngModel + '_prefix');
+          getter.assign(scope, prefix);
+          ctrl.$setValidity("phone", isValid(value));
+          return value;
+        };
+        ctrl.$formatters.push(format);
+        return ctrl.$parsers.push(parse);
       }
     };
   });
@@ -11394,6 +14373,23 @@ function getURIparam( name ){
           $compile(html)(scope);
         });
       }
+    };
+  });
+
+  app.directive('bbLoadingSpinner', function($compile) {
+    return {
+      transclude: true,
+      link: function(scope, element, attrs, controller, transclude) {
+        var loadingScopes;
+        loadingScopes = {};
+        scope.isLoading = false;
+        return scope.$on('isLoading', function(event, isLoading) {
+          event.stopPropagation();
+          loadingScopes[event.targetScope.$id] = isLoading;
+          return scope.isLoading = _.every(_.values(loadingScopes));
+        });
+      },
+      template: "<div ng-show=\"isLoading\" class=\"loader-wrapper\">\n  <div class=\"loader\"></div>\n</div>\n<div ng-transclude></div>"
     };
   });
 
@@ -11527,8 +14523,17 @@ function getURIparam( name ){
       restrict: 'A',
       require: '^form',
       link: function(scope, elem, attrs, ctrls) {
+        var form_controller;
+        form_controller = ctrls;
         return elem.on("submit", function() {
-          var invalid_form_group, invalid_input;
+          var invalid_form_group, invalid_input, property;
+          form_controller.submitted = true;
+          for (property in form_controller) {
+            if (form_controller[property].hasOwnProperty('$valid')) {
+              form_controller[property].submitted = true;
+            }
+          }
+          scope.$apply();
           invalid_form_group = elem.find('.has-error:first');
           if (invalid_form_group && invalid_form_group.length > 0) {
             if ('parentIFrame' in $window) {
@@ -12103,7 +15108,7 @@ function getURIparam( name ){
   angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
       check = document.createElement('style');
       if (typeof check.sheet !== 'undefined') {
         DOMStyle = 'sheet';
@@ -12124,8 +15129,8 @@ function getURIparam( name ){
       testStyle = testSheet[DOMRules][0];
       try {
         testStyle.selectorText = 'd';
-      } catch (_error) {
-        e = _error;
+      } catch (error) {
+        e = error;
       }
       changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
       check.parentNode.removeChild(check);
@@ -12791,7 +15796,7 @@ function getURIparam( name ){
         return;
       }
       result = datetime.format(format);
-      if (datetime.zone() !== new Date().getTimezoneOffset() && show_timezone) {
+      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
         if (datetime._z) {
           result += datetime.format(" z");
         } else {
@@ -13067,6 +16072,18 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Affiliate
+  *
+  * @description
+  * Representation of an Affiliate Object
+  *
+  * @property {string} affiliate_id Id of the affiliated company
+  * @property {string} reference The reference of the affiliated company
+  * @property {integer} country_code Country code of the affiliated company
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -13079,6 +16096,19 @@ function getURIparam( name ){
         Affiliate.__super__.constructor.call(this, data);
         this.test = 1;
       }
+
+
+      /***
+      * @ngdoc method
+      * @name getCompanyByRef
+      * @methodOf BB.Models:Affiliate
+      * @description
+      * Find a company in accordin to reference
+      *
+      * @param {string} ref A reference to find a company based on it
+      *
+      * @returns {promise} A promise for the company reference
+       */
 
       Affiliate.prototype.getCompanyByRef = function(ref) {
         var defer;
@@ -13107,6 +16137,16 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Answer
+  *
+  * @description
+  * Representation of an Answer Object
+  *
+  * @property {string} question The question that the answer belongs to
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -13118,6 +16158,17 @@ function getURIparam( name ){
       function Answer(data) {
         Answer.__super__.constructor.call(this, data);
       }
+
+
+      /***
+      * @ngdoc method
+      * @name getQuestion
+      * @methodOf BB.Models:Answer
+      * @description
+      * Build an array of questions 
+      *
+      * @returns {promise} A promise for the question/s
+       */
 
       Answer.prototype.getQuestion = function() {
         var defer;
@@ -13388,6 +16439,19 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Basket
+  *
+  * @description
+  * Representation of an Basket Object
+  *
+  * @property {integer} company_id Company id that the basket belongs to 
+  * @property {integer} total_price Total price of the basket
+  * @property {integer} total_due_price Total price of the basket after applying discounts
+  * @property {array} items Array of items that are in the basket
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -13409,6 +16473,17 @@ function getURIparam( name ){
         Basket.__super__.constructor.call(this, data);
       }
 
+
+      /***
+      * @ngdoc method
+      * @name addItem
+      * @methodOf BB.Models:Basket
+      * @description
+      * Adds an item to the items array of the basket
+      *
+      * @returns {array} items Array with the newly added item
+       */
+
       Basket.prototype.addItem = function(item) {
         var i, j, len, ref;
         ref = this.items;
@@ -13424,15 +16499,48 @@ function getURIparam( name ){
         return this.items.push(item);
       };
 
+
+      /***
+      * @ngdoc method
+      * @name clear
+      * @methodOf BB.Models:Basket
+      * @description
+      * Empty items array
+      *
+      * @returns {array} Emptied items array
+       */
+
       Basket.prototype.clear = function() {
         return this.items = [];
       };
+
+
+      /***
+      * @ngdoc method
+      * @name clearItem
+      * @methodOf BB.Models:Basket
+      * @description
+      * Remove a given item from the items array
+      *
+      * @returns {array} items Array without the given item
+       */
 
       Basket.prototype.clearItem = function(item) {
         return this.items = this.items.filter(function(i) {
           return i !== item;
         });
       };
+
+
+      /***
+      * @ngdoc method
+      * @name readyToCheckout
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if items array is not empty, so it's ready for the checkout
+      *
+      * @returns {boolean} If items array is not empty
+       */
 
       Basket.prototype.readyToCheckout = function() {
         if (this.items.length > 0) {
@@ -13441,6 +16549,17 @@ function getURIparam( name ){
           return false;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name timeItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array of time items(all items that are not coupons)
+      *
+      * @returns {array} the newly build array of items
+       */
 
       Basket.prototype.timeItems = function() {
         var i, j, len, ref, titems;
@@ -13455,6 +16574,17 @@ function getURIparam( name ){
         return titems;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name couponItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array of items that are coupons
+      *
+      * @returns {array} the newly build array of coupon items
+       */
+
       Basket.prototype.couponItems = function() {
         var citems, i, j, len, ref;
         citems = [];
@@ -13468,11 +16598,33 @@ function getURIparam( name ){
         return citems;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name removeCoupons
+      * @methodOf BB.Models:Basket
+      * @description
+      * Remove coupon items from the items array
+      *
+      * @returns {array} the items array after removing items that are coupons
+       */
+
       Basket.prototype.removeCoupons = function() {
         return this.items = _.reject(this.items, function(x) {
           return x.is_coupon;
         });
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setSettings
+      * @methodOf BB.Models:Basket
+      * @description
+      * Extend the settings with the set param passed to the function
+      *
+      * @returns {object} settings object
+       */
 
       Basket.prototype.setSettings = function(set) {
         if (!set) {
@@ -13482,13 +16634,46 @@ function getURIparam( name ){
         return $.extend(this.settings, set);
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setClient
+      * @methodOf BB.Models:Basket
+      * @description
+      * Set the client
+      *
+      * @returns {object} client object
+       */
+
       Basket.prototype.setClient = function(client) {
         return this.client = client;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setClientDetails
+      * @methodOf BB.Models:Basket
+      * @description
+      * Set client details
+      *
+      * @returns {object} client details
+       */
+
       Basket.prototype.setClientDetails = function(client_details) {
         return this.client_details = new BBModel.PurchaseItem(client_details);
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array with details for every item in items array
+      *
+      * @returns {array} newly created details array
+       */
 
       Basket.prototype.getPostData = function() {
         var item, j, len, post, ref;
@@ -13508,6 +16693,17 @@ function getURIparam( name ){
         return post;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name dueTotal
+      * @methodOf BB.Models:Basket
+      * @description
+      * Total price after checking every item if it is on the wait list
+      *
+      * @returns {integer} total
+       */
+
       Basket.prototype.dueTotal = function() {
         var item, j, len, ref, total;
         total = this.totalPrice();
@@ -13524,9 +16720,31 @@ function getURIparam( name ){
         return total;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name length
+      * @methodOf BB.Models:Basket
+      * @description
+      * Length of the items array
+      *
+      * @returns {integer} length
+       */
+
       Basket.prototype.length = function() {
         return this.items.length;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name questionPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates total question's price
+      *
+      * @returns {integer} question's price
+       */
 
       Basket.prototype.questionPrice = function(options) {
         var item, j, len, price, ref, unready;
@@ -13542,6 +16760,17 @@ function getURIparam( name ){
         return price;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name totalPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates total price of the items after coupuns have been applied
+      *
+      * @returns {integer} total price
+       */
+
       Basket.prototype.totalPrice = function(options) {
         var item, j, len, price, ref, unready;
         unready = options && options.unready;
@@ -13556,9 +16785,31 @@ function getURIparam( name ){
         return price;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name updateTotalPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Update the total_price attribute using totalPrice method
+      *
+      * @returns {integer} the updated total_price variable
+       */
+
       Basket.prototype.updateTotalPrice = function(options) {
         return this.total_price = this.totalPrice(options);
       };
+
+
+      /***
+      * @ngdoc method
+      * @name fullPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates full price of all items, before applying any coupons or deals
+      *
+      * @returns {integer} full price
+       */
 
       Basket.prototype.fullPrice = function() {
         var item, j, len, price, ref;
@@ -13570,6 +16821,17 @@ function getURIparam( name ){
         }
         return price;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name hasCoupon
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is an item in items array, that is a coupon
+      *
+      * @returns {boolean} true or false if a coupon is found or not
+       */
 
       Basket.prototype.hasCoupon = function() {
         var item, j, len, ref;
@@ -13583,9 +16845,31 @@ function getURIparam( name ){
         return false;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name totalCoupons
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the full discount for the basket
+      *
+      * @returns {integer} full discount
+       */
+
       Basket.prototype.totalCoupons = function() {
         return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
       };
+
+
+      /***
+      * @ngdoc method
+      * @name totalDuration
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates total duration of all items in basket
+      *
+      * @returns {integer} total duration
+       */
 
       Basket.prototype.totalDuration = function() {
         var duration, item, j, len, ref;
@@ -13600,6 +16884,17 @@ function getURIparam( name ){
         return duration;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name containsDeal
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is an item in items array, that is a deal
+      *
+      * @returns {boolean} true or false depending if a deal was found or not
+       */
+
       Basket.prototype.containsDeal = function() {
         var item, j, len, ref;
         ref = this.items;
@@ -13611,6 +16906,17 @@ function getURIparam( name ){
         }
         return false;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name hasDeal
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is any item in items array with a deal code
+      *
+      * @returns {boolean} true or false depending if a deal code was found or not
+       */
 
       Basket.prototype.hasDeal = function() {
         var item, j, len, ref;
@@ -13624,10 +16930,32 @@ function getURIparam( name ){
         return false;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getDealCodes
+      * @methodOf BB.Models:Basket
+      * @description
+      * Builds an array of deal codes
+      *
+      * @returns {array} deal codes array
+       */
+
       Basket.prototype.getDealCodes = function() {
         this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
         return this.deals;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name totalDeals
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the total amount of deal codes array
+      *
+      * @returns {integer} total amount of deals
+       */
 
       Basket.prototype.totalDeals = function() {
         var deal, j, len, ref, value;
@@ -13639,6 +16967,17 @@ function getURIparam( name ){
         }
         return value;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name totalDealPaid
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the amount paid by gift certificates
+      *
+      * @returns {integer} amount paid by deals
+       */
 
       Basket.prototype.totalDealPaid = function() {
         var item, j, len, ref, total_cert_paid;
@@ -13653,9 +16992,31 @@ function getURIparam( name ){
         return total_cert_paid;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name remainingDealBalance
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the difference between total deals amount and amount paid by deals
+      *
+      * @returns {integer} The remaining deal (gift certificate) balance
+       */
+
       Basket.prototype.remainingDealBalance = function() {
         return this.totalDeals() - this.totalDealPaid();
       };
+
+
+      /***
+      * @ngdoc method
+      * @name hasWaitlistItem
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is an item in the items array that's on the wait list
+      *
+      * @returns {boolean} true or false
+       */
 
       Basket.prototype.hasWaitlistItem = function() {
         var item, j, len, ref;
@@ -13678,6 +17039,23 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BasketItem
+  *
+  * @description
+  * Representation of an BasketItem Object
+  *
+  * @property {integer} company_id Company id that the basket item belongs to
+  * @property {integer} total_price Total price of the basket item
+  * @property {integer} total_due_price Total price of the basket item after applying discounts
+  * @property {array} items Arrays of items that are in the basket
+  * @property {integer} event_id The event id of the basket item
+  * @property {date} datetime Date and time of the event
+  * @property {integer} status Status of the items
+  *
+   */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -13872,6 +17250,17 @@ function getURIparam( name ){
         }
       }
 
+
+      /***
+      * @ngdoc method
+      * @name setDefaults
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the default settings
+      *
+      * @returns {object} Default settings
+       */
+
       BasketItem.prototype.setDefaults = function(defaults) {
         if (defaults.settings) {
           this.settings = defaults.settings;
@@ -13924,9 +17313,31 @@ function getURIparam( name ){
         return this.defaults = defaults;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name storeDefaults
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Store the default settings by attaching them to the current context
+      *
+      * @returns {array} defaults variable
+       */
+
       BasketItem.prototype.storeDefaults = function(defaults) {
         return this.defaults = defaults;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name defaultService
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Return the default service if existent
+      *
+      * @returns {array} Default service
+       */
 
       BasketItem.prototype.defaultService = function() {
         if (!this.defaults) {
@@ -13935,10 +17346,31 @@ function getURIparam( name ){
         return this.defaults.service;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name requestedTimeUnavailable
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Delete requested time and date if these are unavailable
+       */
+
       BasketItem.prototype.requestedTimeUnavailable = function() {
         delete this.requested_time;
         return delete this.requested_date;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setSlot
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the current slot based on the passed parameter
+      *
+      * @param {object} slot A hash representing a slot object
+      * @returns {array} The available slot
+       */
 
       BasketItem.prototype.setSlot = function(slot) {
         var t;
@@ -13955,6 +17387,16 @@ function getURIparam( name ){
         return this.available_slot = slot.id;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setCompany
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the current company based on the passed parameter
+      * @param {object} company a hash representing a company object
+       */
+
       BasketItem.prototype.setCompany = function(company) {
         this.company = company;
         this.parts_links.company = this.company.$href('self');
@@ -13962,6 +17404,15 @@ function getURIparam( name ){
           return this.item_details.currency_code = this.company.currency_code;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name clearExistingItem
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Clear existing item
+       */
 
       BasketItem.prototype.clearExistingItem = function() {
         var prom;
@@ -13973,6 +17424,15 @@ function getURIparam( name ){
         delete this.earliest_time;
         return delete this.event_id;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setItem
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the current item based on the item object passed as parameter
+       */
 
       BasketItem.prototype.setItem = function(item) {
         if (!item) {
@@ -13986,6 +17446,17 @@ function getURIparam( name ){
           return this.setResource(item);
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setService
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set service in according of server parameter, if default_question is null
+      *
+      * @returns {array} The returned service set
+       */
 
       BasketItem.prototype.setService = function(serv, default_questions) {
         var prom;
@@ -14067,6 +17538,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setEventGroup
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set event group based on the event_group param
+      *
+      * @param {object} event_group a hash
+       */
+
       BasketItem.prototype.setEventGroup = function(event_group) {
         var prom;
         if (this.event_group) {
@@ -14083,6 +17565,17 @@ function getURIparam( name ){
           }
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setEventChain
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set event chain in according of event_chain parameter, default_qustions is null
+      *
+      * @returns {array} The returned set event chaint
+       */
 
       BasketItem.prototype.setEventChain = function(event_chain, default_questions) {
         var prom;
@@ -14136,6 +17629,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setEvent
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set event according to event parameter
+      *
+      * @param {object} event A hash representing an event object
+       */
+
       BasketItem.prototype.setEvent = function(event) {
         var prom;
         if (this.event) {
@@ -14176,9 +17680,33 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setCategory
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set category according to cat parameter
+      *
+      * @param {object} cat A hash representing a category object
+       */
+
       BasketItem.prototype.setCategory = function(cat) {
         return this.category = cat;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setPerson
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set person according to per parameter
+      *
+      * @param {object} per A hash representing a person object
+      
+      * @param {boolean} set_selected The returned set resource for basket item
+       */
 
       BasketItem.prototype.setPerson = function(per, set_selected) {
         if (set_selected == null) {
@@ -14226,6 +17754,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setResource
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set resource in according of res parameter, if set_selected is true
+      *
+      * @returns {object} The returned set resource for basket item
+       */
+
       BasketItem.prototype.setResource = function(res, set_selected) {
         if (set_selected == null) {
           set_selected = true;
@@ -14272,6 +17811,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setDuration
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set duration in according of dur parameter
+      *
+      * @returns {integer} The returned set duration for basket item
+       */
+
       BasketItem.prototype.setDuration = function(dur) {
         this.duration = dur;
         if (this.service) {
@@ -14287,17 +17837,50 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name print_time
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print time
+      *
+      * @returns {date} The returned print time
+       */
+
       BasketItem.prototype.print_time = function() {
         if (this.time) {
           return this.time.print_time();
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name print_end_time
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print end time
+      *
+      * @returns {date} The returned print end time
+       */
+
       BasketItem.prototype.print_end_time = function() {
         if (this.time) {
           return this.time.print_end_time(this.duration);
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name print_time12
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print time12 if show suffix is true
+      *
+      * @returns {date} The returned print time12
+       */
 
       BasketItem.prototype.print_time12 = function(show_suffix) {
         if (show_suffix == null) {
@@ -14308,6 +17891,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name print_end_time12
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print end time12 if show_suffix is true
+      *
+      * @returns {date} The returned print end time12
+       */
+
       BasketItem.prototype.print_end_time12 = function(show_suffix) {
         if (show_suffix == null) {
           show_suffix = true;
@@ -14316,6 +17910,17 @@ function getURIparam( name ){
           return this.time.print_end_time12(show_suffix, this.duration);
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set time in according of time parameter
+      *
+      * @returns {date} The returned set time
+       */
 
       BasketItem.prototype.setTime = function(time) {
         var hours, mins, val;
@@ -14347,6 +17952,17 @@ function getURIparam( name ){
         return this.checkReady();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setDate
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set date in according of date parameter
+      *
+      * @returns {date} The returned set date
+       */
+
       BasketItem.prototype.setDate = function(date) {
         this.date = date;
         if (this.date) {
@@ -14360,6 +17976,17 @@ function getURIparam( name ){
         return this.checkReady();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name clearDateTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Clear date and time
+      *
+      * @returns {date} The returned clear date and time
+       */
+
       BasketItem.prototype.clearDateTime = function() {
         delete this.date;
         delete this.time;
@@ -14368,20 +17995,64 @@ function getURIparam( name ){
         return this.reserve_ready = false;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name clearTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Clear time
+      *
+      * @returns {date} The returned clear time
+       */
+
       BasketItem.prototype.clearTime = function() {
         delete this.time;
         this.ready = false;
         return this.reserve_ready = false;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name clearTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set group in according of group parameter
+      *
+      * @returns {object} The returned set group
+       */
+
       BasketItem.prototype.setGroup = function(group) {
         return this.group = group;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setAskedQuestions
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set asked questions
+      *
+      * @returns {object} The returned set asked questions
+       */
 
       BasketItem.prototype.setAskedQuestions = function() {
         this.asked_questions = true;
         return this.checkReady();
       };
+
+
+      /***
+      * @ngdoc method
+      * @name checkReady
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Check if an item is ready for checking out
+      *
+      * @returns {date} The returned item has been ready for checking out
+       */
 
       BasketItem.prototype.checkReady = function() {
         if (((this.date && this.time && this.service) || this.event || this.product || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
@@ -14391,6 +18062,17 @@ function getURIparam( name ){
           return this.reserve_ready = true;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Build an array with details for every basket item in items array
+      *
+      * @returns {array} Newly created details array
+       */
 
       BasketItem.prototype.getPostData = function() {
         var data, i, j, len, len1, m_question, o_question, ref, ref1;
@@ -14517,6 +18199,17 @@ function getURIparam( name ){
         return data;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set price in according of nprice parameter
+      *
+      * @returns {integer} The returned set price
+       */
+
       BasketItem.prototype.setPrice = function(nprice) {
         var printed_price;
         if (nprice != null) {
@@ -14541,6 +18234,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getStep
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Build a temp object with current step variables
+      *
+      * @returns {object} Temp hash
+       */
+
       BasketItem.prototype.getStep = function() {
         var temp;
         temp = {};
@@ -14560,6 +18264,19 @@ function getURIparam( name ){
         return temp;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name loadStep
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Build current step variables based on a hash object passed as parameter
+      *
+      * @param {object} step Hash object representing a step
+      *
+      * @returns {object} The returned load step
+       */
+
       BasketItem.prototype.loadStep = function(step) {
         if (this.id) {
           return;
@@ -14578,6 +18295,17 @@ function getURIparam( name ){
         this.book_link = step.book_link;
         return this.ready = step.ready;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name describe
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get information about of the basket item
+      *
+      * @returns {object} The returned title
+       */
 
       BasketItem.prototype.describe = function() {
         var title;
@@ -14600,12 +18328,34 @@ function getURIparam( name ){
         return title;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name booking_date
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking date of the basket item, in according of format parameter
+      *
+      * @returns {date} The returned booking date
+       */
+
       BasketItem.prototype.booking_date = function(format) {
         if (!this.date || !this.date.date) {
           return null;
         }
         return this.date.date.format(format);
       };
+
+
+      /***
+      * @ngdoc method
+      * @name booking_time
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking time of the basket item in according with separator = '-'
+      *
+      * @returns {date} The returned booking time
+       */
 
       BasketItem.prototype.booking_time = function(seperator) {
         var duration;
@@ -14619,6 +18369,17 @@ function getURIparam( name ){
         return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
       };
 
+
+      /***
+      * @ngdoc method
+      * @name duePrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get due price for the basket item
+      *
+      * @returns {string} The returned price
+       */
+
       BasketItem.prototype.duePrice = function() {
         if (this.isWaitlist()) {
           return 0;
@@ -14626,9 +18387,31 @@ function getURIparam( name ){
         return this.price;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name isWaitlist
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Checks if this is a wait list
+      *
+      * @returns {boolean} If this is a wait list
+       */
+
       BasketItem.prototype.isWaitlist = function() {
         return this.status && this.status === 8;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name start_datetime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking start date and time
+      *
+      * @returns {date} The returned start date time
+       */
 
       BasketItem.prototype.start_datetime = function() {
         var start_datetime;
@@ -14639,6 +18422,17 @@ function getURIparam( name ){
         start_datetime.minutes(this.time.time);
         return start_datetime;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name end_datetime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking end date and time
+      *
+      * @returns {date} The returned end date time
+       */
 
       BasketItem.prototype.end_datetime = function() {
         var duration, end_datetime;
@@ -14651,26 +18445,92 @@ function getURIparam( name ){
         return end_datetime;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setSrcBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set a booking are to be a move if according of booking parameter
+      *
+      * @returns {object} The returned end date time
+       */
+
       BasketItem.prototype.setSrcBooking = function(booking) {
         this.srcBooking = booking;
         return this.duration = booking.duration / 60;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name anyPerson
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Verify type of any person
+      *
+      * @returns {boolean} The returned any person
+       */
+
       BasketItem.prototype.anyPerson = function() {
         return this.person && (typeof this.person === 'boolean');
       };
+
+
+      /***
+      * @ngdoc method
+      * @name anyResource
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Verify type of any resorce
+      *
+      * @returns {boolean} The returned any resource
+       */
 
       BasketItem.prototype.anyResource = function() {
         return this.resource && (typeof this.resource === 'boolean');
       };
 
+
+      /***
+      * @ngdoc method
+      * @name isMovingBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Verify if booking has been moved
+      *
+      * @returns {boolean} The returned moving booking
+       */
+
       BasketItem.prototype.isMovingBooking = function() {
         return this.srcBooking || this.move_item_id;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setCloneAnswers
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set clone answers in according of other item parameter
+      *
+      * @returns {object} The returned clone answers
+       */
+
       BasketItem.prototype.setCloneAnswers = function(otherItem) {
         return this.cloneAnswersItem = otherItem;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name questionPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Question price for the basket item
+      *
+      * @returns {integer} The returned question price
+       */
 
       BasketItem.prototype.questionPrice = function() {
         if (!this.item_details) {
@@ -14678,6 +18538,17 @@ function getURIparam( name ){
         }
         return this.item_details.questionPrice(this.getQty());
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getQty
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get quantity of tickets
+      *
+      * @returns {integer} The returned quatity of tickets
+       */
 
       BasketItem.prototype.getQty = function() {
         if (this.qty) {
@@ -14688,6 +18559,17 @@ function getURIparam( name ){
         }
         return 1;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name totalPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Total price of the basket item (price including discounts)
+      *
+      * @returns {integer} The returned total price
+       */
 
       BasketItem.prototype.totalPrice = function() {
         var pr;
@@ -14707,6 +18589,17 @@ function getURIparam( name ){
         return pr + this.questionPrice();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name fullPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Full price for the basket item (price not including discounts)
+      *
+      * @returns {integer} The returned full price
+       */
+
       BasketItem.prototype.fullPrice = function() {
         var pr;
         pr = this.base_price;
@@ -14715,6 +18608,17 @@ function getURIparam( name ){
         pr || (pr = 0);
         return pr + this.questionPrice();
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setProduct
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set product in according of product parameter
+      *
+      * @returns {array} The returned product
+       */
 
       BasketItem.prototype.setProduct = function(product) {
         this.product = product;
@@ -14726,6 +18630,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setExternalPurchase
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set external purchase in according of external_purchase product
+      *
+      * @returns {object} The returned external purchase
+       */
+
       BasketItem.prototype.setExternalPurchase = function(external_purchase) {
         this.external_purchase = external_purchase;
         this.book_link = this.company;
@@ -14733,6 +18648,17 @@ function getURIparam( name ){
           return this.setPrice(external_purchase.price);
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setDeal
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set deal of the basket item, in according of deal parameter
+      *
+      * @returns {object} The returned deal
+       */
 
       BasketItem.prototype.setDeal = function(deal) {
         this.deal = deal;
@@ -14744,6 +18670,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Checks if price is valid or not
+      *
+      * @returns {boolean} If this is a valid price
+       */
+
       BasketItem.prototype.hasPrice = function() {
         if (this.price) {
           return true;
@@ -14751,6 +18688,17 @@ function getURIparam( name ){
           return false;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getAttachment
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get attachment of the basket item
+      *
+      * @returns {object} The returned attachment
+       */
 
       BasketItem.prototype.getAttachment = function() {
         if (this.attachment) {
@@ -14775,6 +18723,19 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BookableItem
+  *
+  * @description
+  * Representation of an BookableItem Object
+  *
+  * @property {string} name Property name display "-Waiting-"
+  * @property {string} ready The ready
+  * @property {string} promise The promise
+  * @property {string} item Bookable item
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -14851,6 +18812,14 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BussinessQuestion
+  *
+  * @description
+  * Representation of an BussinessQuestion Object
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -14872,6 +18841,14 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Category
+  *
+  * @description
+  * Representation of an Category Object
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -14893,6 +18870,30 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Client
+  *
+  * @description
+  * Representation of an Client Object
+  *
+  * @property {string} first_name Client first name
+  * @property {string} last_name Client last name
+  * @property {string} email Client email address
+  * @property {string} address1 The first line of client address
+  * @property {string} address2 The second line of client address
+  * @property {string} address3 The third line of client address
+  * @property {string} address4 The fourth line of client address
+  * @property {string} address4 The fifth line of client address
+  * @property {string} postcode Postcode of the client
+  * @property {string} country Country of the client
+  * @property {integer} phone The phone number of the client
+  * @property {integer} mobile The mobile phone number of the client
+  * @property {integer} id Id of the client
+  * @property {array} answers Answers of the client
+  * @property {boolean} deleted Verify if the client account is deleted or not
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -14928,10 +18929,32 @@ function getURIparam( name ){
         }
       }
 
+
+      /***
+      * @ngdoc method
+      * @name setClientDetails
+      * @methodOf BB.Models:Client
+      * @description
+      * Set client details in according to details parameter
+      *
+      * @returns {object} The returned client details
+       */
+
       Client.prototype.setClientDetails = function(details) {
         this.client_details = details;
         return this.questions = this.client_details.questions;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setDefaults
+      * @methodOf BB.Models:Client
+      * @description
+      * Set client defaults in according of values parameter
+      *
+      * @returns {object} The returned client defaults
+       */
 
       Client.prototype.setDefaults = function(values) {
         if (values.name) {
@@ -14987,6 +19010,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name pre_fill_answers
+      * @methodOf BB.Models:Client
+      * @description
+      * Pre fill client answers according of details
+      *
+      * @returns {object} The returned pre fill answers
+       */
+
       Client.prototype.pre_fill_answers = function(details) {
         var i, len, q, ref, results;
         if (!this.default_answers) {
@@ -15005,6 +19039,17 @@ function getURIparam( name ){
         return results;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getName
+      * @methodOf BB.Models:Client
+      * @description
+      * Get client first name and last name
+      *
+      * @returns {string} The returned client name
+       */
+
       Client.prototype.getName = function() {
         var str;
         str = "";
@@ -15019,6 +19064,17 @@ function getURIparam( name ){
         }
         return str;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name addressSingleLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get the address and postcode of the client
+      *
+      * @returns {string} The returned address
+       */
 
       Client.prototype.addressSingleLine = function() {
         var str;
@@ -15059,9 +19115,31 @@ function getURIparam( name ){
         return str;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasAddress
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this is considered a valid address
+      *
+      * @returns {boolean} If this is a valid address
+       */
+
       Client.prototype.hasAddress = function() {
         return this.address1 || this.address2 || this.postcode;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name addressCsvLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get all address fields, postcode and country for CSV file
+      *
+      * @returns {string} The returned address
+       */
 
       Client.prototype.addressCsvLine = function() {
         var str;
@@ -15095,6 +19173,17 @@ function getURIparam( name ){
         }
         return str;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name addressMultiLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get address several lines separated by line breaks
+      *
+      * @returns {string} The returned address
+       */
 
       Client.prototype.addressMultiLine = function() {
         var str;
@@ -15135,6 +19224,17 @@ function getURIparam( name ){
         return str;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:Address
+      * @description
+      * Build an array with details of the client
+      *
+      * @returns {array} newly created details array
+       */
+
       Client.prototype.getPostData = function() {
         var i, len, q, ref, x;
         x = {};
@@ -15174,6 +19274,17 @@ function getURIparam( name ){
         return x;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name valid
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this is considered a valid email
+      *
+      * @returns {boolean} If this is a valid email
+       */
+
       Client.prototype.valid = function() {
         if (this.isValid) {
           return this.isValid;
@@ -15185,17 +19296,61 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setValid
+      * @methodOf BB.Models:Address
+      * @description
+      * Set valid client, according of val
+      *
+      * @returns {object} The returned valid client
+       */
+
       Client.prototype.setValid = function(val) {
         return this.isValid = val;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name hasServerId
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this has a id
+      *
+      * @returns {boolean} If this has a id
+       */
 
       Client.prototype.hasServerId = function() {
         return this.id;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setAskedQuestions
+      * @methodOf BB.Models:Address
+      * @description
+      * Set asked questions of the client
+      *
+      * @returns {boolean} If this is set
+       */
+
       Client.prototype.setAskedQuestions = function() {
         return this.asked_questions = true;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name fullMobile
+      * @methodOf BB.Models:Address
+      * @description
+      * Full mobile phone number of the client 
+      *
+      * @returns {object} The returned full mobile number
+       */
 
       Client.prototype.fullMobile = function() {
         if (!this.mobile) {
@@ -15207,6 +19362,17 @@ function getURIparam( name ){
         return "+" + this.mobile_prefix + this.mobile;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name remove_prefix
+      * @methodOf BB.Models:Address
+      * @description
+      * Remove prefix from mobile number of the client
+      *
+      * @returns {array} The returned full mobile number without prefix
+       */
+
       Client.prototype.remove_prefix = function() {
         var pref_arr;
         pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
@@ -15215,6 +19381,17 @@ function getURIparam( name ){
           return this.mobile_prefix = pref_arr[0];
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getPrePaidBookingsPromise
+      * @methodOf BB.Models:Address
+      * @description
+      * Get pre paid bookings promise of the client
+      *
+      * @returns {promise} A promise for client pre paid bookings
+       */
 
       Client.prototype.getPrePaidBookingsPromise = function(params) {
         var defer;
@@ -15253,6 +19430,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:ClientDetails
+  *
+  * @description
+  * Representation of an ClientDetails Object
+  *
+  * @property {array} questions Questions of the client
+  * @property {integer} company_id The company id of the client company
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -15275,6 +19463,17 @@ function getURIparam( name ){
         this.hasQuestions = this.questions.length > 0;
       }
 
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:ClientDetails
+      * @description
+      * Get post data from client details according to questions
+      *
+      * @returns {object} The returned data
+       */
+
       ClientDetails.prototype.getPostData = function(questions) {
         var data, i, len, q;
         data = [];
@@ -15288,6 +19487,17 @@ function getURIparam( name ){
         }
         return data;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setAnswers
+      * @methodOf BB.Models:ClientDetails
+      * @description
+      * Set answers of the client details in function of answers
+      *
+      * @returns {object} The returned answers
+       */
 
       ClientDetails.prototype.setAnswers = function(answers) {
         var a, ahash, i, j, len, len1, q, ref, results;
@@ -15318,6 +19528,31 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Clinic
+  *
+  * @description
+  * Representation of an Clinic Object
+  *
+  * @property {string} setTimes Set times for the clinic
+  * @property {string} setResourcesAndPeople Set resources and people for the clinic 
+  * @property {object} settings Clinic settings
+  * @property {string} resources Clinic resources
+  * @property {integer} resource_ids Clinic resources ids
+  * @property {string} people Clinic people
+  * @property {integer} person_ids Clinic Person ids
+  * @property {string} services Clinic services
+  * @property {integer} services_ids Clinic service ids
+  * @property {string} uncovered The uncovered
+  * @property {string} className The class Name
+  * @property {string} start_time The clinic start thime
+  * @property {string} start The clinic start
+  * @property {string} end_time The clinic end time
+  * @property {string} end The clinic end
+  * @property {string} title The title
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -15332,6 +19567,17 @@ function getURIparam( name ){
         this.setResourcesAndPeople();
         this.settings || (this.settings = {});
       }
+
+
+      /***
+      * @ngdoc method
+      * @name setResourcesAndPeople
+      * @methodOf BB.Models:Clinic
+      * @description
+      * Set resources and people for clinic
+      *
+      * @returns {object} The returned resources and people
+       */
 
       Clinic.prototype.setResourcesAndPeople = function() {
         this.resources = _.reduce(this.resource_ids, function(h, id) {
@@ -15353,6 +19599,17 @@ function getURIparam( name ){
           return this.className = "clinic_covered";
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setTimes
+      * @methodOf BB.Models:Clinic
+      * @description
+      * Set time for clinic
+      *
+      * @returns {object} The returned time
+       */
 
       Clinic.prototype.setTimes = function() {
         if (this.start_time) {
@@ -15502,6 +19759,17 @@ function getURIparam( name ){
         return null;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getSettings
+      * @methodOf BB.Models:Company
+      * @description
+      * Get settings company
+      *
+      * @returns {promise} A promise for settings company
+       */
+
       Company.prototype.getSettings = function() {
         var def;
         def = $q.defer();
@@ -15521,6 +19789,17 @@ function getURIparam( name ){
         }
         return def.promise;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name pusherSubscribe
+      * @methodOf BB.Models:Company
+      * @description
+      * Push subscribe for company
+      *
+      * @returns {object} Subscriber company
+       */
 
       Company.prototype.pusherSubscribe = function(callback, options) {
         var channelName;
@@ -15558,6 +19837,14 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:CompanySettings
+  *
+  * @description
+  * Representation of an CompanySettings Object
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -15579,6 +19866,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Day
+  *
+  * @description
+  * Representation of an Day Object
+  *
+  * @property {string} string_date The string date
+  * @property {date} date Second The date
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -15593,13 +19891,46 @@ function getURIparam( name ){
         this.date = moment(this.date);
       }
 
+
+      /***
+      * @ngdoc method
+      * @name day
+      * @methodOf BB.Models:Day
+      * @description
+      * Get day date
+      *
+      * @returns {date} The returned day
+       */
+
       Day.prototype.day = function() {
         return this.date.date();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name off
+      * @methodOf BB.Models:Day
+      * @description
+      * Get off by month
+      *
+      * @returns {date} The returned off
+       */
+
       Day.prototype.off = function(month) {
         return this.date.month() !== month;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name class
+      * @methodOf BB.Models:Day
+      * @description
+      * Get class in according of month
+      *
+      * @returns {string} The returned class
+       */
 
       Day.prototype["class"] = function(month) {
         var str;
@@ -15651,6 +19982,13 @@ function getURIparam( name ){
 *
 * @description
 * This is the event object returned by the API
+*
+* @property {integer} id The event id
+* @property {date} datetime The event date and time
+* @property {string} description Description of the event
+* @property {integer} status Status of the event
+* @property {integer} spaces_booked The booked spaces
+* @property {integer} duration Duration of the event
  */
 
 (function() {
@@ -15673,6 +20011,17 @@ function getURIparam( name ){
         }
       }
 
+
+      /***
+      * @ngdoc method
+      * @name getGroup
+      * @methodOf BB.Models:Event
+      * @description
+      * Get event groups
+      *
+      * @returns {promise} A promise for the group event
+       */
+
       Event.prototype.getGroup = function() {
         var defer;
         defer = $q.defer();
@@ -15692,6 +20041,17 @@ function getURIparam( name ){
         }
         return defer.promise;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getGroup
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the chains of the event
+      *
+      * @returns {promise} A promise for the chains event
+       */
 
       Event.prototype.getChain = function() {
         var defer;
@@ -15713,6 +20073,17 @@ function getURIparam( name ){
         return defer.promise;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getDate
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the date of the event
+      *
+      * @returns {date} The returned date
+       */
+
       Event.prototype.getDate = function() {
         if (this.date) {
           return this.date;
@@ -15721,6 +20092,17 @@ function getURIparam( name ){
         return this.date;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name dateString
+      * @methodOf BB.Models:Event
+      * @description
+      * Get date string of the event
+      *
+      * @returns {string} The returned date string
+       */
+
       Event.prototype.dateString = function(str) {
         var date;
         date = this.date();
@@ -15728,6 +20110,17 @@ function getURIparam( name ){
           return date.format(str);
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getDuration
+      * @methodOf BB.Models:Event
+      * @description
+      * Get duration of the event chains
+      *
+      * @returns {promise} A promise for duration of the event
+       */
 
       Event.prototype.getDuration = function() {
         var defer;
@@ -15745,6 +20138,17 @@ function getURIparam( name ){
         return defer.promise;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name printDuration
+      * @methodOf BB.Models:Event
+      * @description
+      * Display duration of the event
+      *
+      * @returns {date} The returned printed duration
+       */
+
       Event.prototype.printDuration = function() {
         var h, m;
         if (this.duration < 60) {
@@ -15760,9 +20164,31 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getDescription
+      * @methodOf BB.Models:Event
+      * @description
+      * Get duration of the event
+      *
+      * @returns {object} The returned description
+       */
+
       Event.prototype.getDescription = function() {
         return this.getChain().description;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getColour
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the colour 
+      *
+      * @returns {string} The returned colour
+       */
 
       Event.prototype.getColour = function() {
         if (this.getGroup()) {
@@ -15772,9 +20198,31 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getPerson
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the person name
+      *
+      * @returns {object} The returned person
+       */
+
       Event.prototype.getPerson = function() {
         return this.getChain().person_name;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getPounds
+      * @methodOf BB.Models:Event
+      * @description
+      * Get pounts 
+      *
+      * @returns {integer} The returned pounts
+       */
 
       Event.prototype.getPounds = function() {
         if (this.chain) {
@@ -15782,9 +20230,31 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getPrice
+      * @methodOf BB.Models:Event
+      * @description
+      * Get price 
+      *
+      * @returns {integer} The returned price
+       */
+
       Event.prototype.getPrice = function() {
         return 0;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getPence
+      * @methodOf BB.Models:Event
+      * @description
+      * Get price 
+      *
+      * @returns {integer} The returned pence
+       */
 
       Event.prototype.getPence = function() {
         if (this.chain) {
@@ -15792,9 +20262,31 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getNumBooked
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the number booked 
+      *
+      * @returns {object} The returned number booked
+       */
+
       Event.prototype.getNumBooked = function() {
         return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getSpacesLeft
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the number of spaces left (possibly limited by a specific ticket pool)
+      *
+      * @returns {object} The returned spaces left
+       */
 
       Event.prototype.getSpacesLeft = function(pool) {
         if (pool == null) {
@@ -15806,13 +20298,46 @@ function getURIparam( name ){
         return this.num_spaces - this.getNumBooked();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasSpace
+      * @methodOf BB.Models:Event
+      * @description
+      * Checks if this considered a valid space
+      *
+      * @returns {boolean} If this is a valid space
+       */
+
       Event.prototype.hasSpace = function() {
         return this.getSpacesLeft() > 0;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasWaitlistSpace
+      * @methodOf BB.Models:Event
+      * @description
+      * Checks if this considered a valid waiting list space
+      *
+      * @returns {boolean} If this is a valid waiting list space
+       */
+
       Event.prototype.hasWaitlistSpace = function() {
         return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getRemainingDescription
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the remaining description
+      *
+      * @returns {object} The returned remaining description
+       */
 
       Event.prototype.getRemainingDescription = function() {
         var left;
@@ -15826,15 +20351,48 @@ function getURIparam( name ){
         return "";
       };
 
+
+      /***
+      * @ngdoc method
+      * @name select
+      * @methodOf BB.Models:Event
+      * @description
+      * Checks is this considered a selected
+      *
+      * @returns {boolean} If this is a selected
+       */
+
       Event.prototype.select = function() {
         return this.selected = true;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name unselect
+      * @methodOf BB.Models:Event
+      * @description
+      * Unselect if is selected
+      *
+      * @returns {boolean} If this is a unselected
+       */
 
       Event.prototype.unselect = function() {
         if (this.selected) {
           return delete this.selected;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name prepEvent
+      * @methodOf BB.Models:Event
+      * @description
+      * Prepare the event
+      *
+      * @returns {promise} A promise for the event
+       */
 
       Event.prototype.prepEvent = function() {
         var def;
@@ -15874,6 +20432,17 @@ function getURIparam( name ){
         return def.promise;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name updatePrice
+      * @methodOf BB.Models:Event
+      * @description
+      * Update price for the ticket
+      *
+      * @returns {object} The returned update price
+       */
+
       Event.prototype.updatePrice = function() {
         var i, len, ref, results, ticket;
         ref = this.tickets;
@@ -15898,6 +20467,24 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventChain
+  *
+  * @description
+  * Representation of an EventChain Object
+  * 
+  * @property {integer} id The id of event chain
+  * @property {string} name Name of the event chain
+  * @property {string} description The description of the event
+  * @property {integer} capacity_view The capacity view
+  * @property {date} start_date Event chain start date
+  * @property {date} finish_date Event chain finish date
+  * @property {integer} price The price of the event chain
+  * @property {string} ticket_type Type of the ticket
+  * @property {boolean} course Verify is couse exist or not
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -15914,13 +20501,46 @@ function getURIparam( name ){
         return this._data.name;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name isSingleBooking
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Verify if is a single booking
+      *
+      * @returns {array} If maximum number of bookings is equal with 1 and not have an ticket sets
+       */
+
       EventChain.prototype.isSingleBooking = function() {
         return this.max_num_bookings === 1 && !this.$has('ticket_sets');
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasTickets
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Checks if this is considered a valid tickets
+      *
+      * @returns {boolean} If this have an ticket sets
+       */
+
       EventChain.prototype.hasTickets = function() {
         return this.$has('ticket_sets');
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getTickets
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Get the tickets of the event
+      *
+      * @returns {promise} A promise for the tickets
+       */
 
       EventChain.prototype.getTickets = function() {
         var def;
@@ -15958,6 +20578,17 @@ function getURIparam( name ){
         return def.promise;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name adjustTicketsForRemaining
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Adjust the number of tickets that can be booked due to changes in the number of remaining spaces for each ticket set
+      *
+      * @returns {object} The returned adjust tickets for remaining
+       */
+
       EventChain.prototype.adjustTicketsForRemaining = function() {
         var i, len, ref, results;
         if (this.tickets) {
@@ -15980,6 +20611,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventGroup
+  *
+  * @description
+  * Representation of an EventGroup Object
+  *
+  * @property {integer} total_entries The total of entries in  event groupst
+  * @property {array} event_chains An array with items of the event
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16009,6 +20651,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventSequence
+  *
+  * @description
+  * Representation of an EventSequence Object
+  *
+  * @property {integer} total_entries The total of entries in  event groupst
+  * @property {array} event_chains An array with items of the event
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16034,6 +20687,24 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventTicket
+  *
+  * @description
+  * Representation of an EventTicket Object
+  *
+  * @property {integer} max The maximum of the event ticket
+  * @property {integer} max_num_bookings The maximum number of the bookings
+  * @property {integer} max_spaces The maximum spaces of the evenet
+  * @property {integer} counts_as The counts as
+  * @property {string} pool_name The pool name
+  * @property {string} name The name 
+  * @property {string} min_num_bookings The minimum number of the bookings
+  * @property {string} qty The quantity of the event ticket
+  * @property {string} totalQty The total quantity of the event ticket
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16057,12 +20728,34 @@ function getURIparam( name ){
         }
       }
 
+
+      /***
+      * @ngdoc method
+      * @name fullName
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the full name
+      *
+      * @returns {object} The returned full name
+       */
+
       EventTicket.prototype.fullName = function() {
         if (this.pool_name) {
           return this.pool_name + " - " + this.name;
         }
         return this.name;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getRange
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the range between minimum number of bookings and the maximum number of bookings
+      *
+      * @returns {array} The returned range
+       */
 
       EventTicket.prototype.getRange = function(cap) {
         var c, i, ref, ref1, results;
@@ -16082,6 +20775,17 @@ function getURIparam( name ){
         }).apply(this));
       };
 
+
+      /***
+      * @ngdoc method
+      * @name totalQty
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the total quantity of the event ticket
+      *
+      * @returns {array} The returned total quantity
+       */
+
       EventTicket.prototype.totalQty = function() {
         if (!this.qty) {
           return 0;
@@ -16091,6 +20795,17 @@ function getURIparam( name ){
         }
         return this.qty * this.counts_as;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getMax
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickest already selected (from passing in the event being booked)
+      *
+      * @returns {array} The returned maximum
+       */
 
       EventTicket.prototype.getMax = function(cap, ev) {
         var c, i, len, live_max, ref, ticket, used;
@@ -16128,6 +20843,17 @@ function getURIparam( name ){
         return live_max;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name add
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Add to the a quantity a new value
+      *
+      * @returns {array} The returned new quantity added
+       */
+
       EventTicket.prototype.add = function(value) {
         if (!this.qty) {
           this.qty = 0;
@@ -16138,6 +20864,17 @@ function getURIparam( name ){
         }
         return this.qty += value;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name subtract
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Subtract a value from the quantity
+      *
+      * @returns {array} The returned substract
+       */
 
       EventTicket.prototype.subtract = function(value) {
         return this.add(-value);
@@ -16152,6 +20889,16 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Image
+  *
+  * @description
+  * Representation of an Image Object
+  *
+  * @property {array} iamges An array with event images
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16173,6 +20920,21 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:ItemDetails
+  *
+  * @description
+  * Representation of an ItemDetails Object
+  *
+  * @property {string} self The self
+  * @property {array} questions The questions
+  * @property {array} survey_questions The survey questions
+  * @property {string} hasQuestions Has questions about the item details
+  * @property {string} hasSurveyQuestions Has survey questions about the item details
+  * @property {string} checkConditionalQuestions Check conditional questions about the item details
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16207,6 +20969,17 @@ function getURIparam( name ){
         this.hasSurveyQuestions = this.survey_questions.length > 0;
       }
 
+
+      /***
+      * @ngdoc method
+      * @name questionPrice
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Get question about price in according of quantity
+      *
+      * @returns {integer} The returned price
+       */
+
       ItemDetails.prototype.questionPrice = function(qty) {
         var i, len, price, q, ref;
         qty || (qty = 1);
@@ -16220,9 +20993,31 @@ function getURIparam( name ){
         return price;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name checkConditionalQuestions
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Checks if exist conditional questions 
+      *
+      * @returns {boolean} The returned existing conditional questions
+       */
+
       ItemDetails.prototype.checkConditionalQuestions = function() {
         return QuestionService.checkConditionalQuestions(this.questions);
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Get data 
+      *
+      * @returns {array} The returned data
+       */
 
       ItemDetails.prototype.getPostData = function() {
         var data, i, len, q, ref;
@@ -16236,6 +21031,17 @@ function getURIparam( name ){
         }
         return data;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setAnswers
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Load the answers from an answer set - probably from loading an existing basket item
+      *
+      * @returns {object} The returned answers set
+       */
 
       ItemDetails.prototype.setAnswers = function(answers) {
         var a, ahash, i, j, len, len1, q, ref;
@@ -16254,6 +21060,17 @@ function getURIparam( name ){
         return this.checkConditionalQuestions();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name getQuestion
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Get question about item details by id
+      *
+      * @returns {object} The returned question
+       */
+
       ItemDetails.prototype.getQuestion = function(id) {
         return _.findWhere(this.questions, {
           id: id
@@ -16269,6 +21086,20 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Person
+  *
+  * @description
+  * Representation of an Person Object
+  *
+  * @property {integer} id Person id
+  * @property {string} name Person name
+  * @property {boolean} deleted Verify if person is deleted or not
+  * @property {boolean} disabled Verify if person is disabled or not
+  * @property {integer} order The person order
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16287,6 +21118,15 @@ function getURIparam( name ){
   });
 
 }).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Models:PrePaidBooking
+*
+* @description
+* Representation of an PrePaidBooking Object
+ */
 
 (function() {
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -16310,6 +21150,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:PurchaseItem
+  *
+  * @description
+  * Representation of an PurchaseItem Object
+  *
+  * @property {float} price Price of the purchase item
+  * @property {float} paid Purchase item paid
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16337,13 +21188,46 @@ function getURIparam( name ){
         }
       }
 
+
+      /***
+      * @ngdoc method
+      * @name describe
+      * @methodOf BB.Models:PurchaseItem
+      * @description
+      * Describe the item for purchase
+      *
+      * @returns {object} The returned describe
+       */
+
       PurchaseItem.prototype.describe = function() {
         return this.get('describe');
       };
 
+
+      /***
+      * @ngdoc method
+      * @name full_describe
+      * @methodOf BB.Models:PurchaseItem
+      * @description
+      * Full description of the item purchase
+      *
+      * @returns {object} The returned full describe
+       */
+
       PurchaseItem.prototype.full_describe = function() {
         return this.get('full_describe');
       };
+
+
+      /***
+      * @ngdoc method
+      * @name hasPrice
+      * @methodOf BB.Models:PurchaseItem
+      * @description
+      * Checks if the item for purchase have a price
+      *
+      * @returns {boolean} If the item for purchase have a price
+       */
 
       PurchaseItem.prototype.hasPrice = function() {
         return this.price && this.price > 0;
@@ -16358,6 +21242,19 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:PurchaseTotal
+  *
+  * @description
+  * Representation of an PurchaseTotal Object
+  *
+  * @property {float} total_price The total price of items
+  * @property {float} price Price of items
+  * @property {float} tax_payable_on_price The tax payable on price of the item
+  * @property {float} due_now The due now
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16392,17 +21289,61 @@ function getURIparam( name ){
         }
       }
 
+
+      /***
+      * @ngdoc method
+      * @name icalLink
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get the icalLink
+      *
+      * @returns {object} The returned icalLink
+       */
+
       PurchaseTotal.prototype.icalLink = function() {
         return this._data.$href('ical');
       };
+
+
+      /***
+      * @ngdoc method
+      * @name webcalLink
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get webcalLink
+      *
+      * @returns {object} The returned webcalLink
+       */
 
       PurchaseTotal.prototype.webcalLink = function() {
         return this._data.$href('ical');
       };
 
+
+      /***
+      * @ngdoc method
+      * @name gcalLink
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get the gcalLink
+      *
+      * @returns {object} The returned gcalLink
+       */
+
       PurchaseTotal.prototype.gcalLink = function() {
         return this._data.$href('gcal');
       };
+
+
+      /***
+      * @ngdoc method
+      * @name id
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get the id
+      *
+      * @returns {object} The returned id
+       */
 
       PurchaseTotal.prototype.id = function() {
         return this.get('id');
@@ -16417,6 +21358,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Question
+  *
+  * @description
+  * Representation of an Question Object
+  *
+  * @property {integer} company_id The company id
+  * @property {array} question An array with questions
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16456,9 +21408,31 @@ function getURIparam( name ){
         this.currentlyShown = true;
       }
 
+
+      /***
+      * @ngdoc method
+      * @name hasPrice
+      * @methodOf BB.Models:Question
+      * @description
+      * Check if it contains one of the following: "check-price", "select-price", "radio-price"
+      *
+      * @returns {boolean} If this contains detail_type
+       */
+
       Question.prototype.hasPrice = function() {
         return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
       };
+
+
+      /***
+      * @ngdoc method
+      * @name selectedPrice
+      * @methodOf BB.Models:Question
+      * @description
+      * Select price if detail type si equal with check-price
+      *
+      * @returns {float} The returned selected price
+       */
 
       Question.prototype.selectedPrice = function() {
         var i, len, option, ref;
@@ -16478,6 +21452,17 @@ function getURIparam( name ){
         return 0;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name selectedPriceQty
+      * @methodOf BB.Models:Question
+      * @description
+      * Select price quantity if selected price has been selected
+      *
+      * @returns {object} The returned selected price quantity
+       */
+
       Question.prototype.selectedPriceQty = function(qty) {
         var p;
         qty || (qty = 1);
@@ -16487,6 +21472,17 @@ function getURIparam( name ){
         }
         return p;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getAnswerId
+      * @methodOf BB.Models:Question
+      * @description
+      * Get answer id
+      *
+      * @returns {object} The returned answer id
+       */
 
       Question.prototype.getAnswerId = function() {
         var i, len, o, ref;
@@ -16503,13 +21499,46 @@ function getURIparam( name ){
         return null;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name showElement
+      * @methodOf BB.Models:Question
+      * @description
+      * Show element
+      *
+      * @returns {boolean} If element is displayed
+       */
+
       Question.prototype.showElement = function() {
         return this.currentlyShown = true;
       };
 
+
+      /***
+      * @ngdoc hideElement
+      * @name showElement
+      * @methodOf BB.Models:Question
+      * @description
+      * Hide element
+      *
+      * @returns {boolean} If element is hidden
+       */
+
       Question.prototype.hideElement = function() {
         return this.currentlyShown = false;
       };
+
+
+      /***
+      * @ngdoc hideElement
+      * @name getPostData
+      * @methodOf BB.Models:Question
+      * @description
+      * Get post data
+      *
+      * @returns {object} The returned post data
+       */
 
       Question.prototype.getPostData = function() {
         var p, x;
@@ -16535,6 +21564,22 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Resource
+  *
+  * @description
+  * Representation of an Resource Object
+  *
+  * @property {integer} total_entries The total entries
+  * @property {array} resources An array with resources elements
+  * @property {integer} id The resources id
+  * @property {string} name Name of resources
+  * @propertu {string} type Type of resources
+  * @property {boolean} deleted Verify if resources is deleted or not
+  * @property {boolean} disabled Verify if resources is disabled or not
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16556,6 +21601,23 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Service
+  *
+  * @description
+  * Representation of an Service Object
+  *
+  * @property {integer} id Id of the service
+  * @property {string} name The name of service
+  * @property {date} duration Duration of the service
+  * @property {float} prices The prices of the service
+  * @property {integer} detail_group_id The detail group id
+  * @property {date} booking_time_step The time step of the booking
+  * @property {integer} min_bookings The minimum number of bookings
+  * @property {integer} max_booings The maximum number of bookings
+   */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -16585,6 +21647,17 @@ function getURIparam( name ){
         this.max_advance_datetime = moment().add(this.max_advance_period, 'seconds');
       }
 
+
+      /***
+      * @ngdoc method
+      * @name getPriceByDuration
+      * @methodOf BB.Models:Service
+      * @description
+      * Get price by duration in function of duration
+      *
+      * @returns {object} The returning price by duration
+       */
+
       Service.prototype.getPriceByDuration = function(dur) {
         var d, i, j, len, ref;
         ref = this.durations;
@@ -16595,6 +21668,17 @@ function getURIparam( name ){
           }
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getCategoryPromise
+      * @methodOf BB.Models:Service
+      * @description
+      * Get category promise
+      *
+      * @returns {object} The returning category promise
+       */
 
       Service.prototype.getCategoryPromise = function() {
         var prom;
@@ -16609,6 +21693,17 @@ function getURIparam( name ){
         })(this));
         return prom;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name days_array
+      * @methodOf BB.Models:Service
+      * @description
+      * Put days in array
+      *
+      * @returns {array} The returning days array
+       */
 
       Service.prototype.days_array = function() {
         var arr, j, ref, ref1, str, x;
@@ -16635,6 +21730,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Slot
+  *
+  * @description
+  * Representation of an Slot Object
+  *
+  * @property {integer} total_entries The The total entries of the slot
+  * @property {array} slots An array with slots
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16657,6 +21763,14 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Space
+  *
+  * @description
+  * Representation of an Space Object
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16678,6 +21792,17 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:SurveyQuestion
+  *
+  * @description
+  * Representation of an SurveyQuestion Object
+  *
+  * @property {integer} company_id The company id
+  * @property {array} questions An array with questions
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16699,6 +21824,27 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:TimeSlot
+  *
+  * @description
+  * Representation of an TimeSlot Object
+  *
+  * @property {string} service The service
+  * @property {date} time_12 The time_12 of time slot
+  * @property {date} time_24 The time_24 of time slot
+  * @property {date} start The start time of the slot
+  * @property {date} end The end time of the slot
+  * @property {string} service The service of time slot
+  * @property {string} get Get the time slot
+  * @property {string} selected The selected
+  * @property {boolean} disabled Verify if time slot are disabled or not
+  * @property {string} disabled_reason The disabled reason
+  * @property {string} availability The availability of time slot
+  * @property {string} avail The avail of time slot
+   */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16714,6 +21860,17 @@ function getURIparam( name ){
         this.time_24 = this.print_time();
       }
 
+
+      /***
+      * @ngdoc method
+      * @name print_time
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print time of the slot
+      *
+      * @returns {date} The returning time
+       */
+
       TimeSlot.prototype.print_time = function() {
         var min, t;
         if (this.start) {
@@ -16728,6 +21885,17 @@ function getURIparam( name ){
           return "" + Math.floor(t / 60) + ":" + min;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name print_end_time
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print end time of the slot
+      *
+      * @returns {date} The returning end time
+       */
 
       TimeSlot.prototype.print_end_time = function(dur) {
         var min, t;
@@ -16746,6 +21914,17 @@ function getURIparam( name ){
           return "" + Math.floor(t / 60) + ":" + min;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name print_time12
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print 12 hour time
+      *
+      * @returns {date} The returning 12 hour time
+       */
 
       TimeSlot.prototype.print_time12 = function(show_suffix) {
         var h, m, suffix, t, time;
@@ -16768,6 +21947,17 @@ function getURIparam( name ){
         }
         return time;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name print_end_time12
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print 12 hour end time
+      *
+      * @returns {date} The returning 12 hour end time
+       */
 
       TimeSlot.prototype.print_end_time12 = function(show_suffix, dur) {
         var end_time, h, m, suffix, t;
@@ -16799,13 +21989,46 @@ function getURIparam( name ){
         return end_time;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name availability
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Get availability
+      *
+      * @returns {object} The returning availability
+       */
+
       TimeSlot.prototype.availability = function() {
         return this.avail;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name select
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Checks if selected is true
+      *
+      * @returns {boolean} If this is checked
+       */
+
       TimeSlot.prototype.select = function() {
         return this.selected = true;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name unselect
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Unselect if is selected
+      *
+      * @returns {boolean} If this is unselect
+       */
 
       TimeSlot.prototype.unselect = function() {
         if (this.selected) {
@@ -16813,10 +22036,32 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name disable
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Disable time slot by reason
+      *
+      * @returns {boolean} If this is a disabled
+       */
+
       TimeSlot.prototype.disable = function(reason) {
         this.disabled = true;
         return this.disabled_reason = reason;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name enable
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Enable time slot
+      *
+      * @returns {boolean} If this is a enable
+       */
 
       TimeSlot.prototype.enable = function() {
         if (this.disabled) {
@@ -16826,6 +22071,17 @@ function getURIparam( name ){
           return delete this.disabled_reason;
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name status
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Get status of the time slot
+      *
+      * @returns {object} The returned status
+       */
 
       TimeSlot.prototype.status = function() {
         if (this.selected) {
@@ -16889,10 +22145,32 @@ function getURIparam( name ){
 
 }).call(this);
 
+
+/***
+* @ngdoc service
+* @name BB.Services:Alert
+*
+* @description
+* Representation of an Alert Object
+*
+* @property {array} alerts The array with all types of alerts
+* @property {string} add Add alert message
+ */
+
 (function() {
   angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
     var alertService, titleLookup;
     $rootScope.alerts = [];
+
+    /***
+      * @ngdoc method
+      * @name titleLookup
+      * @methodOf BB.Services:Alert
+      * @description
+      * Title look up in according of type and title parameters
+      *
+      * @returns {boolean} The returned title
+     */
     titleLookup = function(type, title) {
       if (title) {
         return title;
@@ -16931,15 +22209,55 @@ function getURIparam( name ){
         }
         return $rootScope.$broadcast("alert:raised");
       },
+
+      /***
+      * @ngdoc method
+      * @name closeAlert
+      * @methodOf BB.Services:Alert
+      * @description
+      * Close alert
+      *
+      * @returns {boolean}  close alert
+       */
       closeAlert: function(alert) {
         return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
       },
+
+      /***
+      * @ngdoc method
+      * @name closeAlertIdx
+      * @methodOf BB.Services:Alert
+      * @description
+      * Close alert index
+      *
+      * @returns {boolean}  The returned close alert index
+       */
       closeAlertIdx: function(index) {
         return $rootScope.alerts.splice(index, 1);
       },
+
+      /***
+      * @ngdoc method
+      * @name clear
+      * @methodOf BB.Services:Alert
+      * @description
+      * Clear alert message
+      *
+      * @returns {array} Newly clear array of the alert messages
+       */
       clear: function() {
         return $rootScope.alerts = [];
       },
+
+      /***
+      * @ngdoc error
+      * @name clear
+      * @methodOf BB.Services:Alert
+      * @description
+      * Error alert
+      *
+      * @returns {array} The returned error alert
+       */
       error: function(alert) {
         if (!alert) {
           return;
@@ -16950,6 +22268,16 @@ function getURIparam( name ){
           persist: alert.persist
         });
       },
+
+      /***
+      * @ngdoc error
+      * @name danger
+      * @methodOf BB.Services:Alert
+      * @description
+      * Danger alert
+      *
+      * @returns {array} The returned danger alert
+       */
       danger: function(alert) {
         if (!alert) {
           return;
@@ -16960,6 +22288,16 @@ function getURIparam( name ){
           persist: alert.persist
         });
       },
+
+      /***
+      * @ngdoc error
+      * @name info
+      * @methodOf BB.Services:Alert
+      * @description
+      * Info alert
+      *
+      * @returns {array} The returned info alert
+       */
       info: function(alert) {
         if (!alert) {
           return;
@@ -16970,6 +22308,16 @@ function getURIparam( name ){
           persist: alert.persist
         });
       },
+
+      /***
+      * @ngdoc error
+      * @name warning
+      * @methodOf BB.Services:Alert
+      * @description
+      * Warning alert
+      *
+      * @returns {array} The returned warning alert
+       */
       warning: function(alert) {
         if (!alert) {
           return;
@@ -16980,6 +22328,16 @@ function getURIparam( name ){
           persist: alert.persist
         });
       },
+
+      /***
+      * @ngdoc error
+      * @name raise
+      * @methodOf BB.Services:Alert
+      * @description
+      * Raise alert
+      *
+      * @returns {array} The returned raise alert
+       */
       raise: function(alert) {
         if (!alert) {
           return;
@@ -17215,6 +22573,7 @@ function getURIparam( name ){
             data.no_notifications = params.bb.no_notifications;
           }
           data.affiliate_id = $rootScope.affiliate_id;
+          basket.waiting_for_checkout = true;
           MutexService.getLock().then(function(mutex) {
             return basket.$post('checkout', params, data).then(function(total) {
               var tot;
@@ -17223,11 +22582,14 @@ function getURIparam( name ){
               tot = new BBModel.Purchase.Total(total);
               $rootScope.$broadcast('newCheckout', tot);
               basket.clear();
+              basket.waiting_for_checkout = false;
               return deferred.resolve(tot);
             }, function(err) {
+              basket.waiting_for_checkout = false;
               return deferred.reject(err);
             });
           }, function(err) {
+            basket.waiting_for_checkout = false;
             MutexService.unlock(mutex);
             return deferred.reject(err);
           });
@@ -18036,6 +23398,36 @@ function getURIparam( name ){
         title: '',
         persist: true,
         msg: 'Sorry, your email or password was not recognised. Please try again.'
+      }, {
+        key: 'PASSWORD_RESET_REQ_SUCCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'We have sent you an email with instructions on how to reset your password.'
+      }, {
+        key: 'PASSWORD_RESET_REQ_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, we didn\'t find an account registered with that email.'
+      }, {
+        key: 'PASSWORD_RESET_SUCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'Your password has been updated.'
+      }, {
+        key: 'PASSWORD_RESET_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, we couldn\'t update your password. Plese try again.'
+      }, {
+        key: 'PASSWORD_MISMATCH',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Your passwords don\'t match each other.'
       }
     ];
     return {
@@ -18446,11 +23838,11 @@ function getURIparam( name ){
         _.each(listenerArr, function(item, index) {
           var func;
           func = $rootScope.$on(item[1], function() {
-            var e;
+            var e, error;
             try {
               return cpage[2][item[0]] = 'data:destroyed';
-            } catch (_error) {
-              e = _error;
+            } catch (error) {
+              e = error;
               return log(e);
             }
           });
@@ -18722,7 +24114,7 @@ function getURIparam( name ){
             })(this));
           }
         } else {
-          deferred.reject("No service link found");
+          deferred.resolve();
         }
         return deferred.promise;
       }
@@ -19781,6 +25173,7 @@ function getURIparam( name ){
             extra.end_date = prms.end_date.toISODate();
           }
           extra.duration = prms.duration;
+          extra.resource_ids = prms.resource_ids;
           extra.num_resources = prms.num_resources;
           if (extra.event_id) {
             item_link = prms.company;
@@ -20387,9 +25780,30 @@ function getURIparam( name ){
 
 }).call(this);
 
+
+/***
+* @ngdoc service
+* @name BB.Services:Validator
+*
+* @description
+* Representation of an Validator Object
+*
+* @property {string} uk_postcode_regex The UK postcode regex
+* @property {string} uk_postcode_regex_lenient The UK postcode regex (lenient)
+* @property {string} number_only_regex The number only regex
+* @property {integer} uk_mobile_regex_strict The UK mobile regex (strict)
+* @property {integer} mobile_regex_lenient Mobile number regex (lenient)
+* @property {integer} uk_landline_regex_strict The UK landline regex (strict)
+* @property {integer} uk_landline_regex_lenient The UK landline regex (lenient)
+* @property {integer} international_number The international number
+* @property {string} alphanumeric The alphanumeric
+* @property {string} alpha The letters and spaces
+* @property {integer} us_phone_number The Us phone number
+ */
+
 (function() {
   angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, ErrorService, BBModel, $q, $bbug) {
-    var alphanumeric, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
+    var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
     uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
     uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
     number_only_regex = /^\d+$/;
@@ -20398,20 +25812,84 @@ function getURIparam( name ){
     uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
     uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
     international_number = /^(\+)([\d \(\)]{9,19})$/;
+    email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
     alphanumeric = /^[a-zA-Z0-9]*$/;
     geocode_result = null;
     return {
       alpha: /^[a-zA-Z\s]*$/,
       us_phone_number: /(^[\d \(\)-]{9,16})$/,
+
+      /***
+        * @ngdoc method
+        * @name getEmailPattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the email pattern
+        *
+        * @returns {string} The returned the email pattern
+       */
+      getEmailPattern: function() {
+        return email_regex;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getUKPostcodePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK postcode pattern
+        *
+        * @returns {string} The returned the UK postcode regex lenient
+       */
+
+      /***
+        * @ngdoc method
+        * @name getUKPostcodePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK postcode patternt
+        *
+        * @returns {integer} Return the UK postcode pattern
+       */
       getUKPostcodePattern: function() {
         return uk_postcode_regex_lenient;
       },
+
+      /***
+        * @ngdoc method
+        * @name getNumberOnlyPattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the number only pattern
+        *
+        * @returns {integer} Return the number only regex
+       */
       getNumberOnlyPattern: function() {
         return number_only_regex;
       },
+
+      /***
+        * @ngdoc method
+        * @name getAlphaNumbericPattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the alphanumeric pattern
+        *
+        * @returns {string} The returned the alphanumeric regex
+       */
       getAlphaNumbericPattern: function() {
         return alphanumeric;
       },
+
+      /***
+        * @ngdoc method
+        * @name getUKMobilePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK mobile pattern if strict is equals with false
+        *
+        * @returns {integer} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
+       */
       getUKMobilePattern: function(strict) {
         if (strict == null) {
           strict = false;
@@ -20421,9 +25899,29 @@ function getURIparam( name ){
         }
         return mobile_regex_lenient;
       },
+
+      /***
+        * @ngdoc method
+        * @name getMobilePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the mobile pattern
+        *
+        * @returns {integer} The returned the mobile regex lenient
+       */
       getMobilePattern: function() {
         return mobile_regex_lenient;
       },
+
+      /***
+        * @ngdoc method
+        * @name getUKLandlinePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK landline patternt if strict is equals with false
+        *
+        * @returns {integer} The returned the UK landline regex strict if this is strict else return UK landline regex lenient
+       */
       getUKLandlinePattern: function(strict) {
         if (strict == null) {
           strict = false;
@@ -20433,14 +25931,44 @@ function getURIparam( name ){
         }
         return uk_landline_regex_lenient;
       },
+
+      /***
+        * @ngdoc method
+        * @name getIntPhonePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the international number
+        *
+        * @returns {integer} The returned the international number
+       */
       getIntPhonePattern: function() {
         return international_number;
       },
+
+      /***
+        * @ngdoc method
+        * @name getGeocodeResult
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the geocode result
+        *
+        * @returns {string} The returned geocode result
+       */
       getGeocodeResult: function() {
         if (geocode_result) {
           return geocode_result;
         }
       },
+
+      /***
+        * @ngdoc method
+        * @name validatePostcode
+        * @methodOf BB.Services:Validator
+        * @description
+        * Validate the postcode in according with form and prm parameters
+        *
+        * @returns {promise} A promise for valid postocde
+       */
       validatePostcode: function(form, prms) {
         var deferred, geocoder, ne, postcode, req, sw;
         AlertService.clear();
@@ -20484,6 +26012,16 @@ function getURIparam( name ){
           return deferred.promise;
         }
       },
+
+      /***
+        * @ngdoc method
+        * @name validateForm
+        * @methodOf BB.Services:Validator
+        * @description
+        * Validate the form in according with form parameter
+        *
+        * @returns {boolean} Checks if this is valid or not
+       */
       validateForm: function(form) {
         if (!form) {
           return false;
@@ -20500,32 +26038,73 @@ function getURIparam( name ){
         } else {
           return true;
         }
-      },
-      resetForm: function(form) {
-        if (form) {
-          form.submitted = false;
-          return form.$setPristine();
-        }
-      },
-      resetForms: function(forms) {
-        var form, i, len, results1;
-        if (forms && $bbug.isArray(forms)) {
-          results1 = [];
-          for (i = 0, len = forms.length; i < len; i++) {
-            form = forms[i];
-            form.submitted = false;
-            results1.push(form.$setPristine());
-          }
-          return results1;
-        }
       }
+
+      /***
+       * @ngdoc method
+       * @name resetForm
+       * @methodOf BB.Services:Validator
+       * @description
+       * Reset the form in according with form parameter
+       *
+       * @returns {boolean} Checks if this is reset or not
+       */
     };
+  });
+
+  ({
+    resetForm: function(form) {
+      if (form) {
+        form.submitted = false;
+        return form.$setPristine();
+      }
+    },
+
+    /***
+      * @ngdoc method
+      * @name resetForms
+      * @methodOf BB.Services:Validator
+      * @description
+      * Reset the forms in according with forms parameter
+      *
+      * @returns {boolean} Checks if this is reset or not
+     */
+    resetForms: function(forms) {
+      var form, i, len, results1;
+      if (forms && $bbug.isArray(forms)) {
+        results1 = [];
+        for (i = 0, len = forms.length; i < len; i++) {
+          form = forms[i];
+          form.submitted = false;
+          results1.push(form.$setPristine());
+        }
+        return results1;
+      }
+    }
   });
 
 }).call(this);
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BBWidget
+  *
+  * @description
+  * Representation of an BBWidget Object
+  *
+  * @property {integer} uid The unique id of the widget
+  * @property {string} page_suffix Widget page suffix
+  * @property {array} steps The widget steps
+  * @property {array} allSteps The all steps of the widget
+  * @property {object} item_defaults Widget defaults item
+  * @property {boolean} Checks if widget using basket or not
+  * @property {boolean} confirmCheckout Checks if widget confirm is checkout or not
+  * @property {boolean} isAdm,in Verify if user is admin
+  * @property {string} payment_status The payment status
+   */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope) {
@@ -20557,9 +26136,31 @@ function getURIparam( name ){
         this.payment_status = null;
       }
 
+
+      /***
+      * @ngdoc method
+      * @name pageURL
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Get page url in according of route
+      *
+      * @returns {object} The returned the page url
+       */
+
       Widget.prototype.pageURL = function(route) {
         return route + '.html';
       };
+
+
+      /***
+      * @ngdoc method
+      * @name updateRoute
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Update page route
+      *
+      * @returns {string} The returned the url
+       */
 
       Widget.prototype.updateRoute = function(page) {
         var company, date, event_group, pattern, prms, service_name, time, url;
@@ -20606,6 +26207,17 @@ function getURIparam( name ){
         return url;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setRouteFormat
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set route format
+      *
+      * @returns {object} The returned the match
+       */
+
       Widget.prototype.setRouteFormat = function(route) {
         var match, match_test, parts, path, pattern;
         this.routeFormat = route;
@@ -20638,6 +26250,9 @@ function getURIparam( name ){
             if (match.resource) {
               this.item_defaults.resource = decodeURIComponent(match.resource);
             }
+            if (match.resources) {
+              this.item_defaults.resources = decodeURIComponent(match.resoures);
+            }
             if (match.date) {
               this.item_defaults.date = match.date;
             }
@@ -20648,6 +26263,17 @@ function getURIparam( name ){
           }
         }
       };
+
+
+      /***
+      * @ngdoc method
+      * @name matchURLToStep
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Match url to step
+      *
+      * @returns {object} The returned null
+       */
 
       Widget.prototype.matchURLToStep = function() {
         var _i, j, len, path, ref, step;
@@ -20665,6 +26291,17 @@ function getURIparam( name ){
         return null;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name convertToDashSnakeCase
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Convert to dash snake case in according of str parameter
+      *
+      * @returns {string} The returned str
+       */
+
       Widget.prototype.convertToDashSnakeCase = function(str) {
         str = str.toLowerCase();
         str = $.trim(str);
@@ -20673,6 +26310,17 @@ function getURIparam( name ){
         str = str.replace(/\s/g, '-');
         return str;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name recordCurrentPage
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Record current page
+      *
+      * @returns {string} The returned record step
+       */
 
       Widget.prototype.recordCurrentPage = function() {
         var j, k, l, len, len1, len2, match, ref, ref1, ref2, step, title;
@@ -20719,6 +26367,17 @@ function getURIparam( name ){
         return this.recordStep(this.current_step, title);
       };
 
+
+      /***
+      * @ngdoc method
+      * @name recordCurrentPage
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Record step in according of step and title parameters. Calculate percentile complete
+      *
+      * @returns {boolean} If is the last step or not
+       */
+
       Widget.prototype.recordStep = function(step, title) {
         var j, len, ref;
         this.steps[step - 1] = {
@@ -20746,9 +26405,31 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name calculatePercentageComplete
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Calculate percentage complete in according of step number parameter
+      *
+      * @returns {integer} The returned percentage complete
+       */
+
       Widget.prototype.calculatePercentageComplete = function(step_number) {
         return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name setRoute
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set route data
+      *
+      * @returns {object} The returned route set
+       */
 
       Widget.prototype.setRoute = function(rdata) {
         var i, j, k, len, len1, ref, route, step;
@@ -20784,6 +26465,17 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setBasicRoute
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set basic route in according of routes parameter
+      *
+      * @returns {object} The returned route set
+       */
+
       Widget.prototype.setBasicRoute = function(routes) {
         var i, j, len, step;
         this.nextSteps = {};
@@ -20797,21 +26489,65 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name waitForRoutes
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Wait for route
+      *
+      * @returns {object}  The returned waiting route
+       */
+
       Widget.prototype.waitForRoutes = function() {
         if (!this.$wait_for_routing) {
           return this.$wait_for_routing = $q.defer();
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name stackItem
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Push item in stacked items in according of item parameter
+      *
+      * @returns {array} The returned sorted stacked items
+       */
+
       Widget.prototype.stackItem = function(item) {
         this.stacked_items.push(item);
         return this.sortStackedItems();
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setStackedItems
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set stacket items in according of items parameter
+      *
+      * @returns {array} The returned sorted stacked items
+       */
+
       Widget.prototype.setStackedItems = function(items) {
         this.stacked_items = items;
         return this.sortStackedItems();
       };
+
+
+      /***
+      * @ngdoc method
+      * @name sortStackedItems
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Sort stacked items
+      *
+      * @returns {array} The returned sorted stacked items
+       */
 
       Widget.prototype.sortStackedItems = function() {
         var arr, item, j, len, ref;
@@ -20845,6 +26581,17 @@ function getURIparam( name ){
         })(this));
       };
 
+
+      /***
+      * @ngdoc method
+      * @name deleteStackedItem
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Delete stacked item in according of item parameter
+      *
+      * @returns {array} The returned stacked items
+       */
+
       Widget.prototype.deleteStackedItem = function(item) {
         if (item && item.id) {
           BasketService.deleteItem(item, this.company, {
@@ -20856,11 +26603,33 @@ function getURIparam( name ){
         });
       };
 
+
+      /***
+      * @ngdoc method
+      * @name removeItemFromStack
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Remove item from stack in according of item parameter
+      *
+      * @returns {array} The returned stacked items
+       */
+
       Widget.prototype.removeItemFromStack = function(item) {
         return this.stacked_items = this.stacked_items.filter(function(i) {
           return i !== item;
         });
       };
+
+
+      /***
+      * @ngdoc method
+      * @name deleteStackedItemByService
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Delete stacked item bu service in according of item parameter
+      *
+      * @returns {array} The returned stacked items
+       */
 
       Widget.prototype.deleteStackedItemByService = function(item) {
         var i, j, len, ref;
@@ -20878,9 +26647,31 @@ function getURIparam( name ){
         });
       };
 
+
+      /***
+      * @ngdoc method
+      * @name emptyStackedItems
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Empty stacked items
+      *
+      * @returns {array} The returned stacked items empty
+       */
+
       Widget.prototype.emptyStackedItems = function() {
         return this.stacked_items = [];
       };
+
+
+      /***
+      * @ngdoc method
+      * @name pushStackToBasket
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Push stack to basket
+      *
+      * @returns {array} The returned stacked items
+       */
 
       Widget.prototype.pushStackToBasket = function() {
         var i, j, len, ref;
@@ -20892,6 +26683,17 @@ function getURIparam( name ){
         }
         return this.emptyStackedItems();
       };
+
+
+      /***
+      * @ngdoc method
+      * @name totalStackedItemsDuration
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Total stacked items duration
+      *
+      * @returns {array} The returned duration
+       */
 
       Widget.prototype.totalStackedItemsDuration = function() {
         var duration, item, j, len, ref;
@@ -20906,6 +26708,17 @@ function getURIparam( name ){
         return duration;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name clearStackedItemsDateTime
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Clear stacked items date and time
+      *
+      * @returns {array} The returned item with date and time clear
+       */
+
       Widget.prototype.clearStackedItemsDateTime = function() {
         var item, j, len, ref, results;
         ref = this.stacked_items;
@@ -20916,6 +26729,17 @@ function getURIparam( name ){
         }
         return results;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name clearAddress
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Clear address
+      *
+      * @returns {string} The returned address clear
+       */
 
       Widget.prototype.clearAddress = function() {
         delete this.address1;
@@ -20947,7 +26771,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, ErrorService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
     var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
     $scope.controller = "Purchase";
     $scope.is_waitlist = false;
@@ -20972,9 +26796,7 @@ function getURIparam( name ){
           msg: $scope.fail_msg
         });
       } else {
-        return AlertService.danger({
-          msg: "Sorry, something went wrong"
-        });
+        return AlertService.danger(ErrorService.getAlert('GENERIC'));
       }
     };
     $scope.init = function(options) {
@@ -20987,11 +26809,6 @@ function getURIparam( name ){
       }
       if (options.move_all) {
         $scope.move_all = options.move_all;
-      }
-      if (options.login_redirect) {
-        $scope.requireLogin({
-          redirect: options.login_redirect
-        });
       }
       if (options.fail_msg) {
         $scope.fail_msg = options.fail_msg;
@@ -21083,7 +26900,7 @@ function getURIparam( name ){
                 });
               }, function(err) {
                 $scope.setLoaded($scope);
-                if (err && err.status === 401 && $scope.login_action) {
+                if (err && err.status === 401) {
                   if (LoginService.isLoggedIn()) {
                     return failMsg();
                   } else {
@@ -21140,24 +26957,10 @@ function getURIparam( name ){
         return results;
       })();
     };
-    $scope.requireLogin = (function(_this) {
-      return function(action) {
-        var div;
-        if (_.isString(action.redirect)) {
-          if (action.redirect.indexOf('?') === -1) {
-            div = '?';
-          } else {
-            div = '&';
-          }
-          action.redirect += div + 'ref=' + encodeURIComponent(QueryStringService('ref'));
-        }
-        return $scope.login_action = action;
-      };
-    })(this);
     loginRequired = (function(_this) {
       return function() {
-        if ($scope.login_action.redirect) {
-          return window.location = $scope.login_action.redirect;
+        if (!$scope.bb.login_required) {
+          return window.location = window.location.href + "&login=true";
         }
       };
     })(this);
@@ -21249,6 +27052,13 @@ function getURIparam( name ){
               $scope.bb.moving_booking = $scope.bookings[0];
             } else {
               $scope.bb.moving_booking = $scope.purchase;
+            }
+            if (_.every(_.map($scope.bookings, function(b) {
+              return b.event_id;
+            }), function(event_id) {
+              return event_id === $scope.bookings[0].event_id;
+            })) {
+              $scope.bb.moving_purchase = $scope.purchase;
             }
             $scope.quickEmptybasket();
             ref = $scope.bookings;
@@ -21491,27 +27301,29 @@ function getURIparam( name ){
       Purchase_Booking.prototype.getAnswersPromise = function() {
         var defer;
         defer = $q.defer();
-        if (this.answers) {
+        if (this.answers != null) {
           defer.resolve(this.answers);
-        }
-        if (this._data.$has('answers')) {
-          this._data.$get('answers').then((function(_this) {
-            return function(answers) {
-              var a;
-              _this.answers = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = answers.length; i < len; i++) {
-                  a = answers[i];
-                  results.push(new BBModel.Answer(a));
-                }
-                return results;
-              })();
-              return defer.resolve(_this.answers);
-            };
-          })(this));
         } else {
-          defer.resolve([]);
+          this.answers = [];
+          if (this._data.$has('answers')) {
+            this._data.$get('answers').then((function(_this) {
+              return function(answers) {
+                var a;
+                _this.answers = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = answers.length; i < len; i++) {
+                    a = answers[i];
+                    results.push(new BBModel.Answer(a));
+                  }
+                  return results;
+                })();
+                return defer.resolve(_this.answers);
+              };
+            })(this));
+          } else {
+            defer.resolve([]);
+          }
         }
         return defer.promise;
       };
@@ -21546,14 +27358,19 @@ function getURIparam( name ){
 
       Purchase_Booking.prototype.answer = function(q) {
         var a, i, len, ref;
-        if (this.answers) {
+        if (this.answers != null) {
           ref = this.answers;
           for (i = 0, len = ref.length; i < len; i++) {
             a = ref[i];
-            if (a.name === q) {
+            if (a.name && a.name === q) {
               return a.answer;
             }
+            if (a.question_text && a.question_text === q) {
+              return a.value;
+            }
           }
+        } else {
+          this.getAnswersPromise();
         }
         return null;
       };
@@ -22019,7 +27836,6 @@ function getURIparam( name ){
             duration += item.duration;
           }
         }
-        duration /= 60;
         return duration;
       };
 
@@ -22070,6 +27886,8 @@ function getURIparam( name ){
         var data, deferred;
         deferred = $q.defer();
         data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
         booking.$put('self', {}, data).then((function(_this) {
           return function(booking) {
             return deferred.resolve(new BBModel.Purchase.Booking(booking));
