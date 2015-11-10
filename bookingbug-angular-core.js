@@ -1165,9 +1165,18 @@ angular
 
 })
 .factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', function(
-    $http, $q, data_cache, shared_header, UriTemplate
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', function(
+    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
   ){
+
+
+    if ($cookies['Auth-Token']){
+      $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
+    }
+    if ($sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'))
+
+
     return {
       setCache: function(cache) {
         data_cache = cache
@@ -1207,7 +1216,9 @@ angular
         return parseHal(data)
       }//parse
     };
-  
+
+
+
     function BaseResource(href, options, data){
       if(!options) options = {};
       var links = {};
@@ -2541,7 +2552,7 @@ function getURIparam( name ){
   * @property {string} pusher_channel The pusher channel
   * @property {string} init_params Initialization of basic parameters
    */
-  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope) {
 
     /***
     * @ngdoc method
@@ -2687,7 +2698,7 @@ function getURIparam( name ){
       transclude: true,
       controller: 'BBCtrl',
       link: function(scope, element, attrs, controller, transclude) {
-        var evaluator, init_params, prms;
+        var evaluator, init_params;
         if (attrs.member != null) {
           scope.client = attrs.member;
         }
@@ -2697,56 +2708,59 @@ function getURIparam( name ){
         }
         init_params = evaluator.$eval(attrs.bbWidget);
         scope.initWidget(init_params);
-        prms = scope.bb;
-        if (prms.custom_partial_url) {
-          prms.design_id = prms.custom_partial_url.match(/^.*\/(.*?)$/)[1];
-          $bbug("[ng-app='BB']").append("<div id='widget_" + prms.design_id + "'></div>");
-        }
-        if (scope.bb.partial_url) {
-          if (init_params.partial_url) {
-            AppConfig['partial_url'] = init_params.partial_url;
-          } else {
-            AppConfig['partial_url'] = scope.bb.partial_url;
-          }
-        }
-        return transclude(scope, (function(_this) {
-          return function(clone) {
-            scope.has_content = clone.length > 1 || (clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText)));
-            if (!scope.has_content) {
-              if (prms.custom_partial_url) {
-                appendCustomPartials(scope, element, prms).then(function(style) {
-                  return $q.when(getTemplate()).then(function(template) {
-                    element.html(template).show();
-                    $compile(element.contents())(scope);
-                    element.append(style);
-                    if (prms.update_design) {
-                      return setupPusher(scope, element, prms);
-                    }
-                  });
-                });
-              } else if (prms.template) {
-                renderTemplate(scope, element, prms.design_mode, prms.template);
-              } else {
-                renderTemplate(scope, element, prms.design_mode);
-              }
-              return scope.$on('refreshPage', function() {
-                return renderTemplate(scope, element, prms.design_mode);
-              });
-            } else if (prms.custom_partial_url) {
-              appendCustomPartials(scope, element, prms);
-              if (prms.update_design) {
-                setupPusher(scope, element, prms);
-              }
-              return scope.$on('refreshPage', function() {
-                return scope.showPage(scope.bb.current_page);
-              });
-            } else {
-              element.html(clone).show();
-              if (prms.design_mode) {
-                element.append('<style widget_css scoped></style>');
-              }
-              return $compile(element.contents())(scope);
+        return $rootScope.widget_started.then((function(_this) {
+          return function() {
+            var prms;
+            prms = scope.bb;
+            if (prms.custom_partial_url) {
+              prms.design_id = prms.custom_partial_url.match(/^.*\/(.*?)$/)[1];
+              $bbug("[ng-app='BB']").append("<div id='widget_" + prms.design_id + "'></div>");
             }
+            if (scope.bb.partial_url) {
+              if (init_params.partial_url) {
+                AppConfig['partial_url'] = init_params.partial_url;
+              } else {
+                AppConfig['partial_url'] = scope.bb.partial_url;
+              }
+            }
+            return transclude(scope, function(clone) {
+              scope.has_content = clone.length > 1 || (clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText)));
+              if (!scope.has_content) {
+                if (prms.custom_partial_url) {
+                  appendCustomPartials(scope, element, prms).then(function(style) {
+                    return $q.when(getTemplate()).then(function(template) {
+                      element.html(template).show();
+                      $compile(element.contents())(scope);
+                      element.append(style);
+                      if (prms.update_design) {
+                        return setupPusher(scope, element, prms);
+                      }
+                    });
+                  });
+                } else if (prms.template) {
+                  renderTemplate(scope, element, prms.design_mode, prms.template);
+                } else {
+                  renderTemplate(scope, element, prms.design_mode);
+                }
+                return scope.$on('refreshPage', function() {
+                  return renderTemplate(scope, element, prms.design_mode);
+                });
+              } else if (prms.custom_partial_url) {
+                appendCustomPartials(scope, element, prms);
+                if (prms.update_design) {
+                  setupPusher(scope, element, prms);
+                }
+                return scope.$on('refreshPage', function() {
+                  return scope.showPage(scope.bb.current_page);
+                });
+              } else {
+                element.html(clone).show();
+                if (prms.design_mode) {
+                  element.append('<style widget_css scoped></style>');
+                }
+                return $compile(element.contents())(scope);
+              }
+            });
           };
         })(this));
       }
@@ -2770,6 +2784,8 @@ function getURIparam( name ){
     $scope.bb = new BBWidget();
     AppConfig.uid = $scope.bb.uid;
     $scope.qs = QueryStringService;
+    $scope.company_api_path = '/api/v1/company/{company_id}{?embed,category_id}';
+    $scope.company_admin_api_path = '/api/v1/admin/{company_id}/company{?embed,category_id}';
     if ($scope.apiUrl) {
       $scope.bb || ($scope.bb = {});
       $scope.bb.api_url = $scope.apiUrl;
@@ -2856,7 +2872,7 @@ function getURIparam( name ){
     })(this);
     $scope.initWidget2 = (function(_this) {
       return function() {
-        var aff_promise, comp_category_id, comp_promise, comp_url, company_id, embed_params, get_total, k, match, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
+        var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
         $scope.init_widget_started = true;
         prms = _this.$init_prms;
         if (prms.query) {
@@ -3032,12 +3048,46 @@ function getURIparam( name ){
               comp_category_id = $scope.bb.item_defaults.category;
             }
           }
-          comp_url = new UriTemplate($scope.bb.api_url + '/api/v1/company/{company_id}{?embed,category_id}').fillFromObject({
-            company_id: company_id,
-            category_id: comp_category_id,
-            embed: embed_params
-          });
-          comp_promise = halClient.$get(comp_url);
+          comp_def = $q.defer();
+          comp_promise = comp_def.promise;
+          if ($scope.bb.isAdmin) {
+            comp_url = new UriTemplate($scope.bb.api_url + $scope.company_admin_api_path).fillFromObject({
+              company_id: company_id,
+              category_id: comp_category_id,
+              embed: embed_params
+            });
+            halClient.$get(comp_url, {
+              "auth_token": $sessionStorage.getItem('auth_token')
+            }).then(function(company) {
+              return comp_def.resolve(company);
+            }, function(err) {
+              comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
+                company_id: company_id,
+                category_id: comp_category_id,
+                embed: embed_params
+              });
+              return halClient.$get(comp_url, {
+                "auth_token": $sessionStorage.getItem('auth_token')
+              }).then(function(company) {
+                return comp_def.resolve(company);
+              }, function(err) {
+                return comp_def.reject(err);
+              });
+            });
+          } else {
+            comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
+              company_id: company_id,
+              category_id: comp_category_id,
+              embed: embed_params
+            });
+            halClient.$get(comp_url, {
+              "auth_token": $sessionStorage.getItem('auth_token')
+            }).then(function(company) {
+              return comp_def.resolve(company);
+            }, function(err) {
+              return comp_def.reject(err);
+            });
+          }
           setup_promises.push(comp_promise);
           comp_promise.then(function(company) {
             var child, comp, cprom, parent_company;
@@ -3164,7 +3214,7 @@ function getURIparam( name ){
     })(this);
     setupDefaults = (function(_this) {
       return function(company_id) {
-        var category, clinic, def, event, event_group, k, person, ref, resource, service, v;
+        var category, clinic, def, event, event_chain, event_group, k, person, ref, resource, service, v;
         def = $q.defer();
         if (first_call || ($scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id)) {
           $scope.bb.orginal_company_id = company_id;
@@ -3177,52 +3227,91 @@ function getURIparam( name ){
             }
           }
           if ($scope.bb.item_defaults.resource) {
-            resource = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+            if ($scope.bb.isAdmin) {
+              resource = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+            } else {
+              resource = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+            }
             $scope.bb.default_setup_promises.push(resource);
             resource.then(function(res) {
               return $scope.bb.item_defaults.resource = new BBModel.Resource(res);
             });
           }
           if ($scope.bb.item_defaults.person) {
-            person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+            if ($scope.bb.isAdmin) {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+            } else {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+            }
             $scope.bb.default_setup_promises.push(person);
             person.then(function(res) {
               return $scope.bb.item_defaults.person = new BBModel.Person(res);
             });
           }
           if ($scope.bb.item_defaults.person_ref) {
-            person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+            if ($scope.bb.isAdmin) {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+            } else {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+            }
             $scope.bb.default_setup_promises.push(person);
             person.then(function(res) {
               return $scope.bb.item_defaults.person = new BBModel.Person(res);
             });
           }
           if ($scope.bb.item_defaults.service) {
-            service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+            if ($scope.bb.isAdmin) {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+            } else {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+            }
             $scope.bb.default_setup_promises.push(service);
             service.then(function(res) {
               return $scope.bb.item_defaults.service = new BBModel.Service(res);
             });
           }
           if ($scope.bb.item_defaults.service_ref) {
-            service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+            if ($scope.bb.isAdmin) {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+            } else {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+            }
             $scope.bb.default_setup_promises.push(service);
             service.then(function(res) {
               return $scope.bb.item_defaults.service = new BBModel.Service(res);
             });
           }
           if ($scope.bb.item_defaults.event_group) {
-            event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+            if ($scope.bb.isAdmin) {
+              event_group = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+            } else {
+              event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+            }
             $scope.bb.default_setup_promises.push(event_group);
             event_group.then(function(res) {
               return $scope.bb.item_defaults.event_group = new BBModel.EventGroup(res);
             });
           }
           if ($scope.bb.item_defaults.event) {
-            event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+            if ($scope.bb.isAdmin) {
+              event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+            } else {
+              event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+            }
             $scope.bb.default_setup_promises.push(event);
             event.then(function(res) {
               return $scope.bb.item_defaults.event = new BBModel.Event(res);
+            });
+          }
+          if ($scope.bb.item_defaults.event_chain) {
+            if ($scope.bb.isAdmin) {
+              event_chain = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
+            } else {
+              event_chain = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
+            }
+            $scope.bb.default_setup_promises.push(event_chain);
+            event_chain.then(function(res) {
+              return $scope.bb.item_defaults.event_chain = new BBModel.EventChain(res);
             });
           }
           if ($scope.bb.item_defaults.category) {
@@ -7094,10 +7183,10 @@ function getURIparam( name ){
       if ($scope.bb.moving_booking) {
         return $scope.confirm_move(form, route);
       }
-      if (!$scope.has_page_control) {
+      $scope.item.setAskedQuestions();
+      if ($scope.$parent.$has_page_control) {
         return true;
       }
-      $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
         return $scope.addItemToBasket().then(function() {
@@ -8298,7 +8387,7 @@ function getURIparam( name ){
         }
         category.name = category_details.name;
         category.description = category_details.description;
-        if ($scope.options.ordered_categories) {
+        if ($scope.options.ordered_categories && $scope.all_categories[category_id]) {
           category.order = $scope.all_categories[category_id].order;
         }
         $scope.categories.push(category);
