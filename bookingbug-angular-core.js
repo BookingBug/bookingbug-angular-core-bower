@@ -1165,9 +1165,18 @@ angular
 
 })
 .factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', function(
-    $http, $q, data_cache, shared_header, UriTemplate
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', function(
+    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
   ){
+
+
+    if ($cookies['Auth-Token']){
+      $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
+    }
+    if ($sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'))
+
+
     return {
       setCache: function(cache) {
         data_cache = cache
@@ -1207,7 +1216,9 @@ angular
         return parseHal(data)
       }//parse
     };
-  
+
+
+
     function BaseResource(href, options, data){
       if(!options) options = {};
       var links = {};
@@ -2541,7 +2552,7 @@ function getURIparam( name ){
   * @property {string} pusher_channel The pusher channel
   * @property {string} init_params Initialization of basic parameters
    */
-  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope) {
 
     /***
     * @ngdoc method
@@ -2687,7 +2698,7 @@ function getURIparam( name ){
       transclude: true,
       controller: 'BBCtrl',
       link: function(scope, element, attrs, controller, transclude) {
-        var evaluator, init_params, prms;
+        var evaluator, init_params;
         if (attrs.member != null) {
           scope.client = attrs.member;
         }
@@ -2697,56 +2708,59 @@ function getURIparam( name ){
         }
         init_params = evaluator.$eval(attrs.bbWidget);
         scope.initWidget(init_params);
-        prms = scope.bb;
-        if (prms.custom_partial_url) {
-          prms.design_id = prms.custom_partial_url.match(/^.*\/(.*?)$/)[1];
-          $bbug("[ng-app='BB']").append("<div id='widget_" + prms.design_id + "'></div>");
-        }
-        if (scope.bb.partial_url) {
-          if (init_params.partial_url) {
-            AppConfig['partial_url'] = init_params.partial_url;
-          } else {
-            AppConfig['partial_url'] = scope.bb.partial_url;
-          }
-        }
-        return transclude(scope, (function(_this) {
-          return function(clone) {
-            scope.has_content = clone.length > 1 || (clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText)));
-            if (!scope.has_content) {
-              if (prms.custom_partial_url) {
-                appendCustomPartials(scope, element, prms).then(function(style) {
-                  return $q.when(getTemplate()).then(function(template) {
-                    element.html(template).show();
-                    $compile(element.contents())(scope);
-                    element.append(style);
-                    if (prms.update_design) {
-                      return setupPusher(scope, element, prms);
-                    }
-                  });
-                });
-              } else if (prms.template) {
-                renderTemplate(scope, element, prms.design_mode, prms.template);
-              } else {
-                renderTemplate(scope, element, prms.design_mode);
-              }
-              return scope.$on('refreshPage', function() {
-                return renderTemplate(scope, element, prms.design_mode);
-              });
-            } else if (prms.custom_partial_url) {
-              appendCustomPartials(scope, element, prms);
-              if (prms.update_design) {
-                setupPusher(scope, element, prms);
-              }
-              return scope.$on('refreshPage', function() {
-                return scope.showPage(scope.bb.current_page);
-              });
-            } else {
-              element.html(clone).show();
-              if (prms.design_mode) {
-                element.append('<style widget_css scoped></style>');
-              }
-              return $compile(element.contents())(scope);
+        return $rootScope.widget_started.then((function(_this) {
+          return function() {
+            var prms;
+            prms = scope.bb;
+            if (prms.custom_partial_url) {
+              prms.design_id = prms.custom_partial_url.match(/^.*\/(.*?)$/)[1];
+              $bbug("[ng-app='BB']").append("<div id='widget_" + prms.design_id + "'></div>");
             }
+            if (scope.bb.partial_url) {
+              if (init_params.partial_url) {
+                AppConfig['partial_url'] = init_params.partial_url;
+              } else {
+                AppConfig['partial_url'] = scope.bb.partial_url;
+              }
+            }
+            return transclude(scope, function(clone) {
+              scope.has_content = clone.length > 1 || (clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText)));
+              if (!scope.has_content) {
+                if (prms.custom_partial_url) {
+                  appendCustomPartials(scope, element, prms).then(function(style) {
+                    return $q.when(getTemplate()).then(function(template) {
+                      element.html(template).show();
+                      $compile(element.contents())(scope);
+                      element.append(style);
+                      if (prms.update_design) {
+                        return setupPusher(scope, element, prms);
+                      }
+                    });
+                  });
+                } else if (prms.template) {
+                  renderTemplate(scope, element, prms.design_mode, prms.template);
+                } else {
+                  renderTemplate(scope, element, prms.design_mode);
+                }
+                return scope.$on('refreshPage', function() {
+                  return renderTemplate(scope, element, prms.design_mode);
+                });
+              } else if (prms.custom_partial_url) {
+                appendCustomPartials(scope, element, prms);
+                if (prms.update_design) {
+                  setupPusher(scope, element, prms);
+                }
+                return scope.$on('refreshPage', function() {
+                  return scope.showPage(scope.bb.current_page);
+                });
+              } else {
+                element.html(clone).show();
+                if (prms.design_mode) {
+                  element.append('<style widget_css scoped></style>');
+                }
+                return $compile(element.contents())(scope);
+              }
+            });
           };
         })(this));
       }
@@ -2770,6 +2784,8 @@ function getURIparam( name ){
     $scope.bb = new BBWidget();
     AppConfig.uid = $scope.bb.uid;
     $scope.qs = QueryStringService;
+    $scope.company_api_path = '/api/v1/company/{company_id}{?embed,category_id}';
+    $scope.company_admin_api_path = '/api/v1/admin/{company_id}/company{?embed,category_id}';
     if ($scope.apiUrl) {
       $scope.bb || ($scope.bb = {});
       $scope.bb.api_url = $scope.apiUrl;
@@ -2856,7 +2872,7 @@ function getURIparam( name ){
     })(this);
     $scope.initWidget2 = (function(_this) {
       return function() {
-        var aff_promise, comp_category_id, comp_promise, comp_url, company_id, embed_params, get_total, k, match, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
+        var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
         $scope.init_widget_started = true;
         prms = _this.$init_prms;
         if (prms.query) {
@@ -3040,12 +3056,46 @@ function getURIparam( name ){
               comp_category_id = $scope.bb.item_defaults.category;
             }
           }
-          comp_url = new UriTemplate($scope.bb.api_url + '/api/v1/company/{company_id}{?embed,category_id}').fillFromObject({
-            company_id: company_id,
-            category_id: comp_category_id,
-            embed: embed_params
-          });
-          comp_promise = halClient.$get(comp_url);
+          comp_def = $q.defer();
+          comp_promise = comp_def.promise;
+          if ($scope.bb.isAdmin) {
+            comp_url = new UriTemplate($scope.bb.api_url + $scope.company_admin_api_path).fillFromObject({
+              company_id: company_id,
+              category_id: comp_category_id,
+              embed: embed_params
+            });
+            halClient.$get(comp_url, {
+              "auth_token": $sessionStorage.getItem('auth_token')
+            }).then(function(company) {
+              return comp_def.resolve(company);
+            }, function(err) {
+              comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
+                company_id: company_id,
+                category_id: comp_category_id,
+                embed: embed_params
+              });
+              return halClient.$get(comp_url, {
+                "auth_token": $sessionStorage.getItem('auth_token')
+              }).then(function(company) {
+                return comp_def.resolve(company);
+              }, function(err) {
+                return comp_def.reject(err);
+              });
+            });
+          } else {
+            comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
+              company_id: company_id,
+              category_id: comp_category_id,
+              embed: embed_params
+            });
+            halClient.$get(comp_url, {
+              "auth_token": $sessionStorage.getItem('auth_token')
+            }).then(function(company) {
+              return comp_def.resolve(company);
+            }, function(err) {
+              return comp_def.reject(err);
+            });
+          }
           setup_promises.push(comp_promise);
           comp_promise.then(function(company) {
             var child, comp, cprom, parent_company;
@@ -3172,7 +3222,7 @@ function getURIparam( name ){
     })(this);
     setupDefaults = (function(_this) {
       return function(company_id) {
-        var category, clinic, def, event, event_group, k, person, ref, resource, service, v;
+        var category, clinic, def, event, event_chain, event_group, k, person, ref, resource, service, v;
         def = $q.defer();
         if (first_call || ($scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id)) {
           $scope.bb.orginal_company_id = company_id;
@@ -3185,52 +3235,91 @@ function getURIparam( name ){
             }
           }
           if ($scope.bb.item_defaults.resource) {
-            resource = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+            if ($scope.bb.isAdmin) {
+              resource = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+            } else {
+              resource = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+            }
             $scope.bb.default_setup_promises.push(resource);
             resource.then(function(res) {
               return $scope.bb.item_defaults.resource = new BBModel.Resource(res);
             });
           }
           if ($scope.bb.item_defaults.person) {
-            person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+            if ($scope.bb.isAdmin) {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+            } else {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+            }
             $scope.bb.default_setup_promises.push(person);
             person.then(function(res) {
               return $scope.bb.item_defaults.person = new BBModel.Person(res);
             });
           }
           if ($scope.bb.item_defaults.person_ref) {
-            person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+            if ($scope.bb.isAdmin) {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+            } else {
+              person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+            }
             $scope.bb.default_setup_promises.push(person);
             person.then(function(res) {
               return $scope.bb.item_defaults.person = new BBModel.Person(res);
             });
           }
           if ($scope.bb.item_defaults.service) {
-            service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+            if ($scope.bb.isAdmin) {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+            } else {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+            }
             $scope.bb.default_setup_promises.push(service);
             service.then(function(res) {
               return $scope.bb.item_defaults.service = new BBModel.Service(res);
             });
           }
           if ($scope.bb.item_defaults.service_ref) {
-            service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+            if ($scope.bb.isAdmin) {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+            } else {
+              service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+            }
             $scope.bb.default_setup_promises.push(service);
             service.then(function(res) {
               return $scope.bb.item_defaults.service = new BBModel.Service(res);
             });
           }
           if ($scope.bb.item_defaults.event_group) {
-            event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+            if ($scope.bb.isAdmin) {
+              event_group = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+            } else {
+              event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+            }
             $scope.bb.default_setup_promises.push(event_group);
             event_group.then(function(res) {
               return $scope.bb.item_defaults.event_group = new BBModel.EventGroup(res);
             });
           }
           if ($scope.bb.item_defaults.event) {
-            event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+            if ($scope.bb.isAdmin) {
+              event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+            } else {
+              event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+            }
             $scope.bb.default_setup_promises.push(event);
             event.then(function(res) {
               return $scope.bb.item_defaults.event = new BBModel.Event(res);
+            });
+          }
+          if ($scope.bb.item_defaults.event_chain) {
+            if ($scope.bb.isAdmin) {
+              event_chain = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
+            } else {
+              event_chain = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
+            }
+            $scope.bb.default_setup_promises.push(event_chain);
+            event_chain.then(function(res) {
+              return $scope.bb.item_defaults.event_chain = new BBModel.EventChain(res);
             });
           }
           if ($scope.bb.item_defaults.category) {
@@ -7133,10 +7222,10 @@ function getURIparam( name ){
       if ($scope.bb.moving_booking) {
         return $scope.confirm_move(form, route);
       }
-      if (!$scope.has_page_control) {
+      $scope.item.setAskedQuestions();
+      if ($scope.$parent.$has_page_control) {
         return true;
       }
-      $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
         return $scope.addItemToBasket().then(function() {
@@ -8404,7 +8493,7 @@ function getURIparam( name ){
         }
         category.name = category_details.name;
         category.description = category_details.description;
-        if ($scope.options.ordered_categories) {
+        if ($scope.options.ordered_categories && $scope.all_categories[category_id]) {
           category.order = $scope.all_categories[category_id].order;
         }
         $scope.categories.push(category);
@@ -9669,7 +9758,7 @@ function getURIparam( name ){
   *
   * @property {array} total The total of payment
    */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService) {
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, ErrorService, AlertService) {
     var error, getHost, linker, sendLoadEvent;
     error = function(scope, message) {
       return scope.error(message);
@@ -9728,8 +9817,9 @@ function getURIparam( name ){
                 case "submitting":
                   return scope.callNotLoaded();
                 case "error":
-                  scope.callSetLoaded();
-                  return error(scope, event.data.message);
+                  scope.callNotLoaded();
+                  AlertService.raise(ErrorService.getAlert('PAYMENT_FAILED'));
+                  return document.getElementsByTagName("iframe")[0].src += '';
                 case "payment_complete":
                   scope.callSetLoaded();
                   return scope.paymentDone();
@@ -16885,6 +16975,7 @@ function getURIparam( name ){
         };
         post.is_admin = this.is_admin;
         post.parent_client_id = this.parent_client_id;
+        post.take_from_wallet = this.take_from_wallet;
         post.items = [];
         ref = this.items;
         for (j = 0, len = ref.length; j < len; j++) {
@@ -17214,7 +17305,7 @@ function getURIparam( name ){
       * @name hasWaitlistItem
       * @methodOf BB.Models:Basket
       * @description
-      * Checks if there is an item in the items array that's on the wait list
+      * Checks if the basket contains an wait list event
       *
       * @returns {boolean} true or false
        */
@@ -17231,6 +17322,17 @@ function getURIparam( name ){
         return false;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasExternalPurchase
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if the basket contains an external purchase
+      *
+      * @returns {boolean} true or false
+       */
+
       Basket.prototype.hasExternalPurchase = function() {
         var item, j, len, ref;
         ref = this.items;
@@ -17241,6 +17343,27 @@ function getURIparam( name ){
           }
         }
         return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setTakeFromWallet
+      * @methodOf BB.Models:Basket
+      * @description
+      * Indicates if a wallet should be used for payment
+      *
+      * @returns {boolean} true or false
+       */
+
+      Basket.prototype.setTakeFromWallet = function(value, client) {
+        if (client && client.$has('wallet') && value) {
+          this.take_from_wallet = true;
+          return true;
+        } else {
+          this.take_from_wallet = false;
+          return false;
+        }
       };
 
       return Basket;
@@ -23717,6 +23840,12 @@ function getURIparam( name ){
         title: '',
         persist: true,
         msg: 'Your passwords don\'t match each other.'
+      }, {
+        key: 'PAYMENT_FAILED',
+        type: 'danger',
+        title: '',
+        persist: true,
+        msg: 'We were unable to take payment. Please contact your card issuer or try again using a different card'
       }
     ];
     return {
@@ -27752,161 +27881,6 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, len, ref;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.booking) {
-          data.booking = params.booking.getPostData();
-        }
-        data.booking_id = data.booking.id;
-        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_all: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_item: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -28551,6 +28525,161 @@ function getURIparam( name ){
       return Purchase_Total;
 
     })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, len, ref;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.booking) {
+          data.booking = params.booking.getPostData();
+        }
+        data.booking_id = data.booking.id;
+        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_all: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_item: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
   });
 
 }).call(this);
