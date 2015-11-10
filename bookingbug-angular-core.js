@@ -3294,7 +3294,7 @@ function getURIparam( name ){
           }
           if ($scope.bb.item_defaults.event) {
             if ($scope.bb.isAdmin) {
-              event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+              event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain + '/events/' + $scope.bb.item_defaults.event);
             } else {
               event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
             }
@@ -4908,15 +4908,13 @@ function getURIparam( name ){
       return function() {
         if ($scope.bb.company.companies) {
           $scope.init($scope.bb.company);
-          $rootScope.parent_id = $scope.bb.company.id;
+          return $rootScope.parent_id = $scope.bb.company.id;
         } else if ($rootScope.parent_id) {
           $scope.initWidget({
             company_id: $rootScope.parent_id,
             first_page: $scope.bb.current_page
           });
-          return;
-        }
-        if ($scope.bb.company) {
+        } else {
           return $scope.init($scope.bb.company);
         }
       };
