@@ -17348,7 +17348,7 @@ function getURIparam( name ){
 
       /***
       * @ngdoc method
-      * @name setTakeFromWallet
+      * @name useWallet
       * @methodOf BB.Models:Basket
       * @description
       * Indicates if a wallet should be used for payment
@@ -17356,7 +17356,7 @@ function getURIparam( name ){
       * @returns {boolean} true or false
        */
 
-      Basket.prototype.setTakeFromWallet = function(value, client) {
+      Basket.prototype.useWallet = function(value, client) {
         if (client && client.$has('wallet') && value) {
           this.take_from_wallet = true;
           return true;
