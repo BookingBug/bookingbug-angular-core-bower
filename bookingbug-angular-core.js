@@ -869,234 +869,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-(function() {
-  window.Collection = (function() {
-    function Collection() {}
-
-    return Collection;
-
-  })();
-
-  window.Collection.Base = (function() {
-    function Base(res, items, params) {
-      var clean_params, key, m, n, val;
-      this.res = res;
-      this.items = items;
-      this.params = params;
-      this.callbacks = [];
-      clean_params = {};
-      for (key in params) {
-        val = params[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      this.jparams = JSON.stringify(clean_params);
-      if (res) {
-        for (n in res) {
-          m = res[n];
-          this[n] = m;
-        }
-      }
-    }
-
-    Base.prototype.checkItem = function(item) {
-      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
-      if (!this.matchesParams(item)) {
-        this.deleteItem(item);
-        return true;
-      } else {
-        ref = this.items;
-        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
-          existingItem = ref[index];
-          if (item.self === existingItem.self) {
-            this.items[index] = item;
-            ref1 = this.callbacks;
-            for (j = 0, len2 = ref1.length; j < len2; j++) {
-              call = ref1[j];
-              call[1](item, "update");
-            }
-            return true;
-          }
-        }
-      }
-      this.items.push(item);
-      ref2 = this.callbacks;
-      results = [];
-      for (k = 0, len3 = ref2.length; k < len3; k++) {
-        call = ref2[k];
-        results.push(call[1](item, "add"));
-      }
-      return results;
-    };
-
-    Base.prototype.deleteItem = function(item) {
-      var call, i, len, len1, ref, results;
-      len = this.items.length;
-      this.items = this.items.filter(function(x) {
-        return x.self !== item.self;
-      });
-      if (this.items.length !== len) {
-        ref = this.callbacks;
-        results = [];
-        for (i = 0, len1 = ref.length; i < len1; i++) {
-          call = ref[i];
-          results.push(call[1](item, "delete"));
-        }
-        return results;
-      }
-    };
-
-    Base.prototype.getItems = function() {
-      return this.items;
-    };
-
-    Base.prototype.addCallback = function(obj, fn) {
-      var call, i, len1, ref;
-      ref = this.callbacks;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        call = ref[i];
-        if (call[0] === obj) {
-          return;
-        }
-      }
-      return this.callbacks.push([obj, fn]);
-    };
-
-    Base.prototype.matchesParams = function(item) {
-      return true;
-    };
-
-    return Base;
-
-  })();
-
-  window.BaseCollections = (function() {
-    function BaseCollections() {
-      this.collections = [];
-    }
-
-    BaseCollections.prototype.count = function() {
-      return this.collections.length;
-    };
-
-    BaseCollections.prototype.add = function(col) {
-      return this.collections.push(col);
-    };
-
-    BaseCollections.prototype.checkItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.checkItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.deleteItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.deleteItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.find = function(prms) {
-      var clean_params, col, i, jprms, key, len1, ref, val;
-      clean_params = {};
-      for (key in prms) {
-        val = prms[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      jprms = JSON.stringify(clean_params);
-      ref = this.collections;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        if (jprms === col.jparams) {
-          return col;
-        }
-      }
-    };
-
-    return BaseCollections;
-
-  })();
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Day = (function(superClass) {
-    extend(Day, superClass);
-
-    function Day() {
-      return Day.__super__.constructor.apply(this, arguments);
-    }
-
-    Day.prototype.checkItem = function(item) {
-      return Day.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Day;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("DayCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Space = (function(superClass) {
-    extend(Space, superClass);
-
-    function Space() {
-      return Space.__super__.constructor.apply(this, arguments);
-    }
-
-    Space.prototype.checkItem = function(item) {
-      return Space.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Space;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("SpaceCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
 
 angular
 .module('angular-hal', []).provider('data_cache', function() {
@@ -2039,6 +1811,234 @@ function getURIparam( name ){
   else
     return results[1];
 }
+(function() {
+  window.Collection = (function() {
+    function Collection() {}
+
+    return Collection;
+
+  })();
+
+  window.Collection.Base = (function() {
+    function Base(res, items, params) {
+      var clean_params, key, m, n, val;
+      this.res = res;
+      this.items = items;
+      this.params = params;
+      this.callbacks = [];
+      clean_params = {};
+      for (key in params) {
+        val = params[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      this.jparams = JSON.stringify(clean_params);
+      if (res) {
+        for (n in res) {
+          m = res[n];
+          this[n] = m;
+        }
+      }
+    }
+
+    Base.prototype.checkItem = function(item) {
+      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
+      if (!this.matchesParams(item)) {
+        this.deleteItem(item);
+        return true;
+      } else {
+        ref = this.items;
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          existingItem = ref[index];
+          if (item.self === existingItem.self) {
+            this.items[index] = item;
+            ref1 = this.callbacks;
+            for (j = 0, len2 = ref1.length; j < len2; j++) {
+              call = ref1[j];
+              call[1](item, "update");
+            }
+            return true;
+          }
+        }
+      }
+      this.items.push(item);
+      ref2 = this.callbacks;
+      results = [];
+      for (k = 0, len3 = ref2.length; k < len3; k++) {
+        call = ref2[k];
+        results.push(call[1](item, "add"));
+      }
+      return results;
+    };
+
+    Base.prototype.deleteItem = function(item) {
+      var call, i, len, len1, ref, results;
+      len = this.items.length;
+      this.items = this.items.filter(function(x) {
+        return x.self !== item.self;
+      });
+      if (this.items.length !== len) {
+        ref = this.callbacks;
+        results = [];
+        for (i = 0, len1 = ref.length; i < len1; i++) {
+          call = ref[i];
+          results.push(call[1](item, "delete"));
+        }
+        return results;
+      }
+    };
+
+    Base.prototype.getItems = function() {
+      return this.items;
+    };
+
+    Base.prototype.addCallback = function(obj, fn) {
+      var call, i, len1, ref;
+      ref = this.callbacks;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        call = ref[i];
+        if (call[0] === obj) {
+          return;
+        }
+      }
+      return this.callbacks.push([obj, fn]);
+    };
+
+    Base.prototype.matchesParams = function(item) {
+      return true;
+    };
+
+    return Base;
+
+  })();
+
+  window.BaseCollections = (function() {
+    function BaseCollections() {
+      this.collections = [];
+    }
+
+    BaseCollections.prototype.count = function() {
+      return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function(col) {
+      return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.checkItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.deleteItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.deleteItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.find = function(prms) {
+      var clean_params, col, i, jprms, key, len1, ref, val;
+      clean_params = {};
+      for (key in prms) {
+        val = prms[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      jprms = JSON.stringify(clean_params);
+      ref = this.collections;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        if (jprms === col.jparams) {
+          return col;
+        }
+      }
+    };
+
+    return BaseCollections;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Day = (function(superClass) {
+    extend(Day, superClass);
+
+    function Day() {
+      return Day.__super__.constructor.apply(this, arguments);
+    }
+
+    Day.prototype.checkItem = function(item) {
+      return Day.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Day;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("DayCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Space = (function(superClass) {
+    extend(Space, superClass);
+
+    function Space() {
+      return Space.__super__.constructor.apply(this, arguments);
+    }
+
+    Space.prototype.checkItem = function(item) {
+      return Space.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Space;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("SpaceCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
+    };
+  });
+
+}).call(this);
+
 (function() {
   'use strict';
 
@@ -3768,7 +3768,7 @@ function getURIparam( name ){
                 return res.$get('baskets').then(function(baskets) {
                   var basket;
                   basket = _.find(baskets, function(b) {
-                    return b.company_id === $scope.bb.company_id;
+                    return parseInt(b.company_id) === $scope.bb.company_id;
                   });
                   if (basket) {
                     basket = new BBModel.Basket(basket, $scope.bb);
@@ -12864,6 +12864,499 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
     return {
@@ -15462,499 +15955,6 @@ function getURIparam( name ){
     };
   });
 }(window.angular));
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-}).call(this);
 
 (function() {
   'use strict';
@@ -26846,6 +26846,485 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  var ModalDelete, ModalDeleteAll;
+
+  angular.module('BB.Directives').directive('bbPurchase', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Purchase',
+      link: function(scope, element, attrs) {
+        scope.init(scope.$eval(attrs.bbPurchase));
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, ErrorService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
+    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
+    $scope.controller = "Purchase";
+    $scope.is_waitlist = false;
+    $scope.make_payment = false;
+    setPurchaseCompany = function(company) {
+      $scope.bb.company_id = company.id;
+      $scope.bb.company = new BBModel.Company(company);
+      $scope.company = $scope.bb.company;
+      $scope.bb.item_defaults.company = $scope.bb.company;
+      if (company.settings) {
+        if (company.settings.merge_resources) {
+          $scope.bb.item_defaults.merge_resources = true;
+        }
+        if (company.settings.merge_people) {
+          return $scope.bb.item_defaults.merge_people = true;
+        }
+      }
+    };
+    failMsg = function() {
+      if ($scope.fail_msg) {
+        return AlertService.danger({
+          msg: $scope.fail_msg
+        });
+      } else {
+        return AlertService.danger(ErrorService.getAlert('GENERIC'));
+      }
+    };
+    $scope.init = function(options) {
+      if (!options) {
+        options = {};
+      }
+      $scope.notLoaded($scope);
+      if (options.move_route) {
+        $scope.move_route = options.move_route;
+      }
+      if (options.move_all) {
+        $scope.move_all = options.move_all;
+      }
+      if (options.fail_msg) {
+        $scope.fail_msg = options.fail_msg;
+      }
+      if ($scope.bb.total) {
+        return $scope.load($scope.bb.total.long_id);
+      } else if ($scope.bb.purchase) {
+        $scope.purchase = $scope.bb.purchase;
+        $scope.bookings = $scope.bb.purchase.bookings;
+        if ($scope.purchase.confirm_messages) {
+          $scope.messages = $scope.purchase.confirm_messages;
+        }
+        return $scope.setLoaded($scope);
+      } else {
+        if (options.member_sso) {
+          return SSOService.memberLogin(options).then(function(login) {
+            return $scope.load();
+          }, function(err) {
+            $scope.setLoaded($scope);
+            return failMsg();
+          });
+        } else {
+          return $scope.load();
+        }
+      }
+    };
+    $scope.load = function(id) {
+      $scope.notLoaded($scope);
+      id = getPurchaseID();
+      if (!($scope.loaded || !id)) {
+        $rootScope.widget_started.then((function(_this) {
+          return function() {
+            return $scope.waiting_for_conn_started.then(function() {
+              var auth_token, company_id, params;
+              company_id = getCompanyID();
+              if (company_id) {
+                CompanyService.query(company_id, {}).then(function(company) {
+                  return setPurchaseCompany(company);
+                });
+              }
+              params = {
+                purchase_id: id,
+                url_root: $scope.bb.api_url
+              };
+              auth_token = $sessionStorage.getItem('auth_token');
+              if (auth_token) {
+                params.auth_token = auth_token;
+              }
+              return PurchaseService.query(params).then(function(purchase) {
+                if ($scope.bb.company == null) {
+                  purchase.$get('company').then((function(_this) {
+                    return function(company) {
+                      return setPurchaseCompany(company);
+                    };
+                  })(this));
+                }
+                $scope.purchase = purchase;
+                $scope.bb.purchase = purchase;
+                $scope.price = !($scope.purchase.price === 0);
+                $scope.purchase.getBookingsPromise().then(function(bookings) {
+                  var booking, i, len, ref, results;
+                  $scope.bookings = bookings;
+                  $scope.setLoaded($scope);
+                  checkIfMoveBooking(bookings);
+                  checkIfWaitlistBookings(bookings);
+                  ref = $scope.bookings;
+                  results = [];
+                  for (i = 0, len = ref.length; i < len; i++) {
+                    booking = ref[i];
+                    results.push(booking.getAnswersPromise().then(function(answers) {
+                      return booking.answers = answers;
+                    }));
+                  }
+                  return results;
+                }, function(err) {
+                  $scope.setLoaded($scope);
+                  return failMsg();
+                });
+                if (purchase.$has('client')) {
+                  purchase.$get('client').then((function(_this) {
+                    return function(client) {
+                      return $scope.setClient(new BBModel.Client(client));
+                    };
+                  })(this));
+                }
+                return $scope.purchase.getConfirmMessages().then(function(messages) {
+                  $scope.purchase.confirm_messages = messages;
+                  return $scope.messages = messages;
+                });
+              }, function(err) {
+                $scope.setLoaded($scope);
+                if (err && err.status === 401) {
+                  if (LoginService.isLoggedIn()) {
+                    return failMsg();
+                  } else {
+                    return loginRequired();
+                  }
+                } else {
+                  return failMsg();
+                }
+              });
+            }, function(err) {
+              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+            });
+          };
+        })(this), function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      }
+      return $scope.loaded = true;
+    };
+    checkIfMoveBooking = function(bookings) {
+      var b, id, matches, move_booking;
+      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        id = parseInt(matches[1]);
+      }
+      if (id) {
+        move_booking = (function() {
+          var i, len, results;
+          results = [];
+          for (i = 0, len = bookings.length; i < len; i++) {
+            b = bookings[i];
+            if (b.id === id) {
+              results.push(b);
+            }
+          }
+          return results;
+        })();
+        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
+          return $scope.move(move_booking[0]);
+        }
+      }
+    };
+    checkIfWaitlistBookings = function(bookings) {
+      var booking;
+      return $scope.waitlist_bookings = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = bookings.length; i < len; i++) {
+          booking = bookings[i];
+          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+            results.push(booking);
+          }
+        }
+        return results;
+      })();
+    };
+    loginRequired = (function(_this) {
+      return function() {
+        if (!$scope.bb.login_required) {
+          return window.location = window.location.href + "&login=true";
+        }
+      };
+    })(this);
+    getCompanyID = function() {
+      var company_id, matches;
+      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        company_id = matches[1];
+      }
+      return company_id;
+    };
+    getPurchaseID = function() {
+      var id, matches;
+      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (!matches) {
+        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (!matches) {
+        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (matches) {
+        id = matches[1];
+      } else {
+        if (QueryStringService('ref')) {
+          id = QueryStringService('ref');
+        }
+      }
+      if (QueryStringService('booking_id')) {
+        id = QueryStringService('booking_id');
+      }
+      return id;
+    };
+    $scope.move = function(booking, route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      if ($scope.move_all) {
+        return $scope.moveAll(route, options);
+      }
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: booking.company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var new_item, proms;
+            proms = [];
+            $scope.bb.moving_booking = booking;
+            $scope.quickEmptybasket();
+            new_item = new BBModel.BasketItem(booking, $scope.bb);
+            new_item.setSrcBooking(booking, $scope.bb);
+            new_item.ready = false;
+            Array.prototype.push.apply(proms, new_item.promises);
+            $scope.bb.basket.addItem(new_item);
+            $scope.setBasketItem(new_item);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              $rootScope.$broadcast("booking:move");
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.moveAll = function(route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: $scope.bookings[0].company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var booking, i, len, new_item, proms, ref;
+            proms = [];
+            if ($scope.bookings.length === 1) {
+              $scope.bb.moving_booking = $scope.bookings[0];
+            } else {
+              $scope.bb.moving_booking = $scope.purchase;
+            }
+            if (_.every(_.map($scope.bookings, function(b) {
+              return b.event_id;
+            }), function(event_id) {
+              return event_id === $scope.bookings[0].event_id;
+            })) {
+              $scope.bb.moving_purchase = $scope.purchase;
+            }
+            $scope.quickEmptybasket();
+            ref = $scope.bookings;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              new_item = new BBModel.BasketItem(booking, $scope.bb);
+              new_item.setSrcBooking(booking);
+              new_item.ready = false;
+              new_item.move_done = false;
+              Array.prototype.push.apply(proms, new_item.promises);
+              $scope.bb.basket.addItem(new_item);
+            }
+            $scope.bb.sortStackedItems();
+            $scope.setBasketItem($scope.bb.basket.items[0]);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.bookWaitlistItem = function(booking) {
+      var params;
+      $scope.notLoaded($scope);
+      params = {
+        purchase: $scope.purchase,
+        booking: booking
+      };
+      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
+        $scope.purchase = purchase;
+        $scope.total = $scope.purchase;
+        $scope.bb.purchase = purchase;
+        return $scope.purchase.getBookingsPromise().then(function(bookings) {
+          $scope.bookings = bookings;
+          $scope.waitlist_bookings = (function() {
+            var i, len, ref, results;
+            ref = $scope.bookings;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+                results.push(booking);
+              }
+            }
+            return results;
+          })();
+          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
+            $scope.make_payment = true;
+          }
+          return $scope.setLoaded($scope);
+        }, function(err) {
+          $scope.setLoaded($scope);
+          return failMsg();
+        });
+      }, (function(_this) {
+        return function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        };
+      })(this));
+    };
+    $scope["delete"] = function(booking) {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDelete,
+        resolve: {
+          booking: function() {
+            return booking;
+          }
+        }
+      });
+      return modalInstance.result.then(function(booking) {
+        return booking.$del('self').then((function(_this) {
+          return function(service) {
+            $scope.bookings = _.without($scope.bookings, booking);
+            return $rootScope.$broadcast("booking:cancelled");
+          };
+        })(this));
+      });
+    };
+    $scope.delete_all = function() {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDeleteAll,
+        resolve: {
+          purchase: function() {
+            return $scope.purchase;
+          }
+        }
+      });
+      return modalInstance.result.then(function(purchase) {
+        return PurchaseService.delete_all(purchase).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.bookings = [];
+          return $rootScope.$broadcast("booking:cancelled");
+        });
+      });
+    };
+    $scope.isMovable = function(booking) {
+      if (booking.min_cancellation_time) {
+        return moment().isBefore(booking.min_cancellation_time);
+      }
+      return booking.datetime.isAfter(moment());
+    };
+    $scope.onFileSelect = function(booking, $file, existing) {
+      var att_id, file, method;
+      $scope.upload_progress = 0;
+      file = $file;
+      att_id = null;
+      if (existing) {
+        att_id = existing.id;
+      }
+      method = "POST";
+      if (att_id) {
+        method = "PUT";
+      }
+      return $scope.upload = $upload.upload({
+        url: booking.$href('attachments'),
+        method: method,
+        data: {
+          att_id: att_id
+        },
+        file: file
+      }).progress(function(evt) {
+        if ($scope.upload_progress < 100) {
+          return $scope.upload_progress = parseInt(99.0 * evt.loaded / evt.total);
+        }
+      }).success(function(data, status, headers, config) {
+        $scope.upload_progress = 100;
+        if (data && data.attachments && booking) {
+          return booking.attachments = data.attachments;
+        }
+      });
+    };
+    $scope.createBasketItem = function(booking) {
+      var item;
+      item = new BBModel.BasketItem(booking, $scope.bb);
+      item.setSrcBooking(booking);
+      return item;
+    };
+    return $scope.checkAnswer = function(answer) {
+      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
+    };
+  });
+
+  ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
+    $scope.controller = "ModalDelete";
+    $scope.booking = booking;
+    $scope.confirm_delete = function() {
+      return $modalInstance.close(booking);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
+
+  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
+    $scope.controller = "ModalDeleteAll";
+    $scope.purchase = purchase;
+    $scope.confirm_delete = function() {
+      return $modalInstance.close(purchase);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
+
+}).call(this);
+
+(function() {
   'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -27470,485 +27949,6 @@ function getURIparam( name ){
 
     })(BaseModel);
   });
-
-}).call(this);
-
-(function() {
-  var ModalDelete, ModalDeleteAll;
-
-  angular.module('BB.Directives').directive('bbPurchase', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Purchase',
-      link: function(scope, element, attrs) {
-        scope.init(scope.$eval(attrs.bbPurchase));
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, ErrorService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
-    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
-    $scope.controller = "Purchase";
-    $scope.is_waitlist = false;
-    $scope.make_payment = false;
-    setPurchaseCompany = function(company) {
-      $scope.bb.company_id = company.id;
-      $scope.bb.company = new BBModel.Company(company);
-      $scope.company = $scope.bb.company;
-      $scope.bb.item_defaults.company = $scope.bb.company;
-      if (company.settings) {
-        if (company.settings.merge_resources) {
-          $scope.bb.item_defaults.merge_resources = true;
-        }
-        if (company.settings.merge_people) {
-          return $scope.bb.item_defaults.merge_people = true;
-        }
-      }
-    };
-    failMsg = function() {
-      if ($scope.fail_msg) {
-        return AlertService.danger({
-          msg: $scope.fail_msg
-        });
-      } else {
-        return AlertService.danger(ErrorService.getAlert('GENERIC'));
-      }
-    };
-    $scope.init = function(options) {
-      if (!options) {
-        options = {};
-      }
-      $scope.notLoaded($scope);
-      if (options.move_route) {
-        $scope.move_route = options.move_route;
-      }
-      if (options.move_all) {
-        $scope.move_all = options.move_all;
-      }
-      if (options.fail_msg) {
-        $scope.fail_msg = options.fail_msg;
-      }
-      if ($scope.bb.total) {
-        return $scope.load($scope.bb.total.long_id);
-      } else if ($scope.bb.purchase) {
-        $scope.purchase = $scope.bb.purchase;
-        $scope.bookings = $scope.bb.purchase.bookings;
-        if ($scope.purchase.confirm_messages) {
-          $scope.messages = $scope.purchase.confirm_messages;
-        }
-        return $scope.setLoaded($scope);
-      } else {
-        if (options.member_sso) {
-          return SSOService.memberLogin(options).then(function(login) {
-            return $scope.load();
-          }, function(err) {
-            $scope.setLoaded($scope);
-            return failMsg();
-          });
-        } else {
-          return $scope.load();
-        }
-      }
-    };
-    $scope.load = function(id) {
-      $scope.notLoaded($scope);
-      id = getPurchaseID();
-      if (!($scope.loaded || !id)) {
-        $rootScope.widget_started.then((function(_this) {
-          return function() {
-            return $scope.waiting_for_conn_started.then(function() {
-              var auth_token, company_id, params;
-              company_id = getCompanyID();
-              if (company_id) {
-                CompanyService.query(company_id, {}).then(function(company) {
-                  return setPurchaseCompany(company);
-                });
-              }
-              params = {
-                purchase_id: id,
-                url_root: $scope.bb.api_url
-              };
-              auth_token = $sessionStorage.getItem('auth_token');
-              if (auth_token) {
-                params.auth_token = auth_token;
-              }
-              return PurchaseService.query(params).then(function(purchase) {
-                if ($scope.bb.company == null) {
-                  purchase.$get('company').then((function(_this) {
-                    return function(company) {
-                      return setPurchaseCompany(company);
-                    };
-                  })(this));
-                }
-                $scope.purchase = purchase;
-                $scope.bb.purchase = purchase;
-                $scope.price = !($scope.purchase.price === 0);
-                $scope.purchase.getBookingsPromise().then(function(bookings) {
-                  var booking, i, len, ref, results;
-                  $scope.bookings = bookings;
-                  $scope.setLoaded($scope);
-                  checkIfMoveBooking(bookings);
-                  checkIfWaitlistBookings(bookings);
-                  ref = $scope.bookings;
-                  results = [];
-                  for (i = 0, len = ref.length; i < len; i++) {
-                    booking = ref[i];
-                    results.push(booking.getAnswersPromise().then(function(answers) {
-                      return booking.answers = answers;
-                    }));
-                  }
-                  return results;
-                }, function(err) {
-                  $scope.setLoaded($scope);
-                  return failMsg();
-                });
-                if (purchase.$has('client')) {
-                  purchase.$get('client').then((function(_this) {
-                    return function(client) {
-                      return $scope.setClient(new BBModel.Client(client));
-                    };
-                  })(this));
-                }
-                return $scope.purchase.getConfirmMessages().then(function(messages) {
-                  $scope.purchase.confirm_messages = messages;
-                  return $scope.messages = messages;
-                });
-              }, function(err) {
-                $scope.setLoaded($scope);
-                if (err && err.status === 401) {
-                  if (LoginService.isLoggedIn()) {
-                    return failMsg();
-                  } else {
-                    return loginRequired();
-                  }
-                } else {
-                  return failMsg();
-                }
-              });
-            }, function(err) {
-              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-            });
-          };
-        })(this), function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      }
-      return $scope.loaded = true;
-    };
-    checkIfMoveBooking = function(bookings) {
-      var b, id, matches, move_booking;
-      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        id = parseInt(matches[1]);
-      }
-      if (id) {
-        move_booking = (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = bookings.length; i < len; i++) {
-            b = bookings[i];
-            if (b.id === id) {
-              results.push(b);
-            }
-          }
-          return results;
-        })();
-        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
-          return $scope.move(move_booking[0]);
-        }
-      }
-    };
-    checkIfWaitlistBookings = function(bookings) {
-      var booking;
-      return $scope.waitlist_bookings = (function() {
-        var i, len, results;
-        results = [];
-        for (i = 0, len = bookings.length; i < len; i++) {
-          booking = bookings[i];
-          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-            results.push(booking);
-          }
-        }
-        return results;
-      })();
-    };
-    loginRequired = (function(_this) {
-      return function() {
-        if (!$scope.bb.login_required) {
-          return window.location = window.location.href + "&login=true";
-        }
-      };
-    })(this);
-    getCompanyID = function() {
-      var company_id, matches;
-      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        company_id = matches[1];
-      }
-      return company_id;
-    };
-    getPurchaseID = function() {
-      var id, matches;
-      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (!matches) {
-        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (!matches) {
-        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (matches) {
-        id = matches[1];
-      } else {
-        if (QueryStringService('ref')) {
-          id = QueryStringService('ref');
-        }
-      }
-      if (QueryStringService('booking_id')) {
-        id = QueryStringService('booking_id');
-      }
-      return id;
-    };
-    $scope.move = function(booking, route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      if ($scope.move_all) {
-        return $scope.moveAll(route, options);
-      }
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: booking.company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var new_item, proms;
-            proms = [];
-            $scope.bb.moving_booking = booking;
-            $scope.quickEmptybasket();
-            new_item = new BBModel.BasketItem(booking, $scope.bb);
-            new_item.setSrcBooking(booking, $scope.bb);
-            new_item.ready = false;
-            Array.prototype.push.apply(proms, new_item.promises);
-            $scope.bb.basket.addItem(new_item);
-            $scope.setBasketItem(new_item);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              $rootScope.$broadcast("booking:move");
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.moveAll = function(route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: $scope.bookings[0].company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var booking, i, len, new_item, proms, ref;
-            proms = [];
-            if ($scope.bookings.length === 1) {
-              $scope.bb.moving_booking = $scope.bookings[0];
-            } else {
-              $scope.bb.moving_booking = $scope.purchase;
-            }
-            if (_.every(_.map($scope.bookings, function(b) {
-              return b.event_id;
-            }), function(event_id) {
-              return event_id === $scope.bookings[0].event_id;
-            })) {
-              $scope.bb.moving_purchase = $scope.purchase;
-            }
-            $scope.quickEmptybasket();
-            ref = $scope.bookings;
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              new_item = new BBModel.BasketItem(booking, $scope.bb);
-              new_item.setSrcBooking(booking);
-              new_item.ready = false;
-              new_item.move_done = false;
-              Array.prototype.push.apply(proms, new_item.promises);
-              $scope.bb.basket.addItem(new_item);
-            }
-            $scope.bb.sortStackedItems();
-            $scope.setBasketItem($scope.bb.basket.items[0]);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.bookWaitlistItem = function(booking) {
-      var params;
-      $scope.notLoaded($scope);
-      params = {
-        purchase: $scope.purchase,
-        booking: booking
-      };
-      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
-        $scope.purchase = purchase;
-        $scope.total = $scope.purchase;
-        $scope.bb.purchase = purchase;
-        return $scope.purchase.getBookingsPromise().then(function(bookings) {
-          $scope.bookings = bookings;
-          $scope.waitlist_bookings = (function() {
-            var i, len, ref, results;
-            ref = $scope.bookings;
-            results = [];
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-                results.push(booking);
-              }
-            }
-            return results;
-          })();
-          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
-            $scope.make_payment = true;
-          }
-          return $scope.setLoaded($scope);
-        }, function(err) {
-          $scope.setLoaded($scope);
-          return failMsg();
-        });
-      }, (function(_this) {
-        return function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        };
-      })(this));
-    };
-    $scope["delete"] = function(booking) {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDelete,
-        resolve: {
-          booking: function() {
-            return booking;
-          }
-        }
-      });
-      return modalInstance.result.then(function(booking) {
-        return booking.$del('self').then((function(_this) {
-          return function(service) {
-            $scope.bookings = _.without($scope.bookings, booking);
-            return $rootScope.$broadcast("booking:cancelled");
-          };
-        })(this));
-      });
-    };
-    $scope.delete_all = function() {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDeleteAll,
-        resolve: {
-          purchase: function() {
-            return $scope.purchase;
-          }
-        }
-      });
-      return modalInstance.result.then(function(purchase) {
-        return PurchaseService.delete_all(purchase).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.bookings = [];
-          return $rootScope.$broadcast("booking:cancelled");
-        });
-      });
-    };
-    $scope.isMovable = function(booking) {
-      if (booking.min_cancellation_time) {
-        return moment().isBefore(booking.min_cancellation_time);
-      }
-      return booking.datetime.isAfter(moment());
-    };
-    $scope.onFileSelect = function(booking, $file, existing) {
-      var att_id, file, method;
-      $scope.upload_progress = 0;
-      file = $file;
-      att_id = null;
-      if (existing) {
-        att_id = existing.id;
-      }
-      method = "POST";
-      if (att_id) {
-        method = "PUT";
-      }
-      return $scope.upload = $upload.upload({
-        url: booking.$href('attachments'),
-        method: method,
-        data: {
-          att_id: att_id
-        },
-        file: file
-      }).progress(function(evt) {
-        if ($scope.upload_progress < 100) {
-          return $scope.upload_progress = parseInt(99.0 * evt.loaded / evt.total);
-        }
-      }).success(function(data, status, headers, config) {
-        $scope.upload_progress = 100;
-        if (data && data.attachments && booking) {
-          return booking.attachments = data.attachments;
-        }
-      });
-    };
-    $scope.createBasketItem = function(booking) {
-      var item;
-      item = new BBModel.BasketItem(booking, $scope.bb);
-      item.setSrcBooking(booking);
-      return item;
-    };
-    return $scope.checkAnswer = function(answer) {
-      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
-    };
-  });
-
-  ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
-    $scope.controller = "ModalDelete";
-    $scope.booking = booking;
-    $scope.confirm_delete = function() {
-      return $modalInstance.close(booking);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
-
-  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
-    $scope.controller = "ModalDeleteAll";
-    $scope.purchase = purchase;
-    $scope.confirm_delete = function() {
-      return $modalInstance.close(purchase);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
 
 }).call(this);
 
