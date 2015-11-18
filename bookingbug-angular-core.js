@@ -864,7 +864,9 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'datetime', 'bootstrap_ui_datetime_form.html');
     schemaFormDecoratorsProvider.createDirective('datetime', 'bootstrap_ui_datetime_form.html');
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'price', 'price_form.html');
-    return schemaFormDecoratorsProvider.createDirective('price', 'price_form.html');
+    schemaFormDecoratorsProvider.createDirective('price', 'price_form.html');
+    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'date', 'date_form.html');
+    return schemaFormDecoratorsProvider.createDirective('date', 'date_form.html');
   });
 
 }).call(this);
@@ -1348,6 +1350,11 @@ angular
       }//hrefLink
 
       function callLink(method, link, params, data) {
+
+        if (params == null) {
+          params = {};
+        }
+          
         if(angular.isArray(link)) return $q.all(link.map(function(link){
           if(method !== 'GET') throw 'method is not supported for arrays';
 
@@ -1356,9 +1363,11 @@ angular
 
         var linkHref = hrefLink(link, params);
         if(method === 'GET') {
-          if(embedded.has(linkHref)) return embedded.get(linkHref);
-          
-          return embedded.set(linkHref, callService(method, linkHref, options, data));
+          if(embedded.has(linkHref) && !params['no_cache']) {
+            return embedded.get(linkHref);
+          } else {
+            return embedded.set(linkHref, callService(method, linkHref, options, data));
+          }
         }
         else {
           return callService(method, linkHref, options, data);  
@@ -3483,7 +3492,7 @@ function getURIparam( name ){
         }
         return $scope.showPage('duration_list');
       } else if ($scope.bb.current_item.days_link && !$scope.bb.current_item.date && ($scope.bb.current_item.event == null) && !$scope.bb.current_item.deal) {
-        if ($scope.bb.company.$has('slots')) {
+        if ($scope.bb.company.$has('availability_slots')) {
           if ($scope.setPageRoute($rootScope.Route.Slot)) {
             return;
           }
@@ -4200,11 +4209,11 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
+  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, FormDataStoreService, LoginService) {
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
     $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
-    $scope.basket_options = $scope.$eval($attrs.bbBasketList) || {};
+    $scope.bb.basket.setSettings($scope.$eval($attrs.bbBasketList || {}));
     $rootScope.connection_started.then(function() {
       var basket_item, i, len, params, promises, ref;
       if ($scope.client) {
@@ -4227,7 +4236,7 @@ function getURIparam( name ){
           for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
             basket_item = ref1[index];
             prepaid_bookings = result[index];
-            if ($scope.basket_options.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
+            if ($scope.bb.basket.settings && $scope.bb.basket.settings.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
               basket_item.setPrepaidBooking(prepaid_bookings[0]);
             }
           }
@@ -4269,6 +4278,10 @@ function getURIparam( name ){
      */
     $scope.checkout = (function(_this) {
       return function(route) {
+        if ($scope.bb.basket.settings && $scope.bb.basket.settings.requires_deal && !$scope.bb.basket.hasDeal()) {
+          AlertService.raise('GIFT_CERTIFICATE_REQUIRED');
+          return false;
+        }
         if ($scope.bb.basket.items.length > 0) {
           $scope.setReadyToCheckout(true);
           if ($scope.$parent.$has_page_control) {
@@ -4277,7 +4290,6 @@ function getURIparam( name ){
             return $scope.decideNextPage(route);
           }
         } else {
-          AlertService.clear();
           AlertService.raise('EMPTY_BASKET_FOR_CHECKOUT');
           return false;
         }
@@ -8162,10 +8174,12 @@ function getURIparam( name ){
         case 2:
         case 3:
           $scope.setLoaded($scope);
-          return AlertService.raise('GEOLOCATION_ERROR');
+          AlertService.raise('GEOLOCATION_ERROR');
+          break;
         default:
-          return $scope.setLoaded($scope);
+          $scope.setLoaded($scope);
       }
+      return $scope.$apply();
     };
 
     /***
@@ -10821,6 +10835,9 @@ function getURIparam( name ){
     if ($scope.options.allow_single_pick) {
       $scope.allowSinglePick = true;
     }
+    if ($scope.options.hide_disabled) {
+      $scope.hide_disabled = true;
+    }
     $scope.price_options = {
       min: 0,
       max: 100
@@ -10856,6 +10873,11 @@ function getURIparam( name ){
       ppromise.then((function(_this) {
         return function(items) {
           var filterItems, item, j, k, len, len1;
+          if ($scope.hide_disabled) {
+            items = items.filter(function(x) {
+              return !x.disabled && !x.deleted;
+            });
+          }
           filterItems = $attrs.filterServices === 'false' ? false : true;
           if (filterItems) {
             if ($scope.booking_item.service_ref && !$scope.show_all) {
@@ -10927,6 +10949,11 @@ function getURIparam( name ){
             if ($scope.booking_item.group) {
               items = items.filter(function(x) {
                 return !x.group_id || x.group_id === $scope.booking_item.group;
+              });
+            }
+            if ($scope.hide_disabled) {
+              items = items.filter(function(x) {
+                return (x.item == null) || (!x.item.disabled && !x.item.deleted);
               });
             }
             services = (function() {
@@ -22756,6 +22783,26 @@ function getURIparam( name ){
 
       /***
       * @ngdoc error
+      * @name success
+      * @methodOf BB.Services:Alert
+      * @description
+      * Success alert
+      *
+      * @returns {array} The returned warning alert
+       */
+      success: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('success', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
       * @name raise
       * @methodOf BB.Services:Alert
       * @description
@@ -23780,6 +23827,12 @@ function getURIparam( name ){
         title: '',
         persist: true,
         msg: 'Sorry, the maximum number of tickets per person has been reached.'
+      }, {
+        key: 'GIFT_CERTIFICATE_REQUIRED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'A valid Gift Certificate is required to proceed with this booking'
       }, {
         key: 'TIME_SLOT_NOT_SELECTED',
         type: 'warning',
