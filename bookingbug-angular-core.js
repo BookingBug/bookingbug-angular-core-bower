@@ -13376,8 +13376,8 @@ function getURIparam( name ){
       return function() {
         var id;
         $scope.bb.payment_status = null;
-        id = $scope.bb.total ? $scope.bb.total.long_id : QueryStringService('purchase_id');
-        if (id) {
+        id = QueryStringService('purchase_id');
+        if (id && !$scope.bb.total) {
           return PurchaseService.query({
             url_root: $scope.bb.api_url,
             purchase_id: id
@@ -13388,6 +13388,9 @@ function getURIparam( name ){
               return $scope.$emit("checkout:success", total);
             }
           });
+        } else {
+          $scope.total = $scope.bb.total;
+          return $scope.setLoaded($scope);
         }
       };
     })(this), function(err) {
@@ -23582,6 +23585,12 @@ function getURIparam( name ){
         title: '',
         persist: true,
         msg: 'Your passwords don\'t match'
+      }, {
+        key: 'ATTENDEES_CHANGED',
+        type: 'info',
+        title: '',
+        persist: true,
+        msg: 'Your booking has been successfully updated'
       }
     ];
     return {
@@ -25412,6 +25421,7 @@ function getURIparam( name ){
         if (!all_events || all_events.length === 0) {
           return [];
         }
+        all_events = _.shuffle(all_events);
         sorted_times = [];
         for (j = 0, len = all_events.length; j < len; j++) {
           ev = all_events[j];
@@ -27303,7 +27313,7 @@ function getURIparam( name ){
         })(this));
       });
     };
-    $scope.delete_all = function() {
+    $scope.deleteAll = function() {
       var modalInstance;
       modalInstance = $modal.open({
         templateUrl: $scope.getPartial("_cancel_modal"),
@@ -27315,7 +27325,7 @@ function getURIparam( name ){
         }
       });
       return modalInstance.result.then(function(purchase) {
-        return PurchaseService.delete_all(purchase).then(function(purchase) {
+        return PurchaseService.deleteAll(purchase).then(function(purchase) {
           $scope.purchase = purchase;
           $scope.bookings = [];
           return $rootScope.$broadcast("booking:cancelled");
@@ -27364,15 +27374,18 @@ function getURIparam( name ){
       item.setSrcBooking(booking);
       return item;
     };
-    return $scope.checkAnswer = function(answer) {
+    $scope.checkAnswer = function(answer) {
       return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
+    };
+    return $scope.changeAttendees = function(route) {
+      return $scope.moveAll(route);
     };
   });
 
   ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
     $scope.controller = "ModalDelete";
     $scope.booking = booking;
-    $scope.confirm_delete = function() {
+    $scope.confirmDelete = function() {
       return $modalInstance.close(booking);
     };
     return $scope.cancel = function() {
@@ -27383,7 +27396,7 @@ function getURIparam( name ){
   ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
     $scope.controller = "ModalDeleteAll";
     $scope.purchase = purchase;
-    $scope.confirm_delete = function() {
+    $scope.confirmDelete = function() {
       return $modalInstance.close(purchase);
     };
     return $scope.cancel = function() {
@@ -27545,9 +27558,6 @@ function getURIparam( name ){
         data.describe = this.describe;
         data.duration = this.duration;
         data.end_datetime = this.end_datetime;
-        if (this.slot_id) {
-          data.event_id = this.slot_id;
-        }
         if (this.event) {
           data.event_id = this.event.id;
         }
@@ -27593,6 +27603,12 @@ function getURIparam( name ){
         }
         if (this.email_admin != null) {
           data.email_admin = this.email_admin;
+        }
+        if (this.first_name) {
+          data.first_name = this.first_name;
+        }
+        if (this.last_name) {
+          data.last_name = this.last_name;
         }
         formatted_survey_answers = [];
         if (this.survey_questions) {
@@ -27653,6 +27669,10 @@ function getURIparam( name ){
 
       Purchase_Booking.prototype.canMove = function() {
         return this.canCancel();
+      };
+
+      Purchase_Booking.prototype.getAttendeeName = function() {
+        return this.first_name + " " + this.last_name;
       };
 
       return Purchase_Booking;
@@ -28145,7 +28165,7 @@ function getURIparam( name ){
         })(this));
         return defer.promise;
       },
-      delete_all: function(purchase) {
+      deleteAll: function(purchase) {
         var defer;
         defer = $q.defer();
         if (!purchase) {
