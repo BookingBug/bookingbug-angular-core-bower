@@ -4783,7 +4783,7 @@ function getURIparam( name ){
 * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
 * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
 * @example
-*  <example module="BB"> 
+*  <example module="BB">
 *    <file name="index.html">
 *   <div bb-api-url='https://uk.bookingbug.com'>
 *   <div  bb-widget='{company_id:21}'>
@@ -4795,7 +4795,7 @@ function getURIparam( name ){
 *      </div>
 *     </div>
 *     </div>
-*   </file> 
+*   </file>
 *  </example>
 *
  */
@@ -4889,7 +4889,7 @@ function getURIparam( name ){
           $scope.existing_member = false;
           return $scope.decideNextPage(route);
         }, function(err) {
-          return handleError();
+          return handleError(err);
         });
       };
     })(this);
@@ -4915,9 +4915,7 @@ function getURIparam( name ){
           }, function(err) {
             $scope.login_error = true;
             $scope.setLoaded($scope);
-            return AlertService.danger({
-              msg: "Sorry, your email or password was not recognised. Please try again."
-            });
+            return AlertService.raise('LOGIN_FAILED');
           });
         }
       };
