@@ -2,7 +2,7 @@
   'use strict';
   var app;
 
-  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngLocalData', 'ngAnimate', 'angular-data.DSCacheFactory', 'angularFileUpload', 'schemaForm', 'ngStorage', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'slick', 'pascalprecht.translate', 'vcRecaptcha']);
+  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngLocalData', 'ngAnimate', 'angular-data.DSCacheFactory', 'angularFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'slick', 'pascalprecht.translate', 'vcRecaptcha']);
 
   app.value('AppConfig', {
     appId: 'f6b16c23',
@@ -864,7 +864,9 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'datetime', 'bootstrap_ui_datetime_form.html');
     schemaFormDecoratorsProvider.createDirective('datetime', 'bootstrap_ui_datetime_form.html');
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'price', 'price_form.html');
-    return schemaFormDecoratorsProvider.createDirective('price', 'price_form.html');
+    schemaFormDecoratorsProvider.createDirective('price', 'price_form.html');
+    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'date', 'date_form.html');
+    return schemaFormDecoratorsProvider.createDirective('date', 'date_form.html');
   });
 
 }).call(this);
@@ -1141,10 +1143,10 @@ angular
 
       return {
 
-        set: function(key, val)
+        set: function(key, val, store)
         {
           // also store this in the session store
-          sessionStorage.setItem(key, val)
+          store.setItem(key, val)
           data[key] = val
           return val
         },
@@ -1174,7 +1176,7 @@ angular
       $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
     }
     if ($sessionStorage.getItem('auth_token'))
-      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
 
 
     return {
@@ -1348,6 +1350,11 @@ angular
       }//hrefLink
 
       function callLink(method, link, params, data) {
+
+        if (params == null) {
+          params = {};
+        }
+          
         if(angular.isArray(link)) return $q.all(link.map(function(link){
           if(method !== 'GET') throw 'method is not supported for arrays';
 
@@ -1356,9 +1363,11 @@ angular
 
         var linkHref = hrefLink(link, params);
         if(method === 'GET') {
-          if(embedded.has(linkHref)) return embedded.get(linkHref);
-          
-          return embedded.set(linkHref, callService(method, linkHref, options, data));
+          if(embedded.has(linkHref) && !params['no_cache']) {
+            return embedded.get(linkHref);
+          } else {
+            return embedded.set(linkHref, callService(method, linkHref, options, data));
+          }
         }
         else {
           return callService(method, linkHref, options, data);  
@@ -1426,11 +1435,11 @@ angular
         , 'Content-Type': 'application/json'
         , 'Accept': 'application/hal+json,application/json'
       }
-      if (options.app_id) shared_header.set('app_id', options.app_id);
-      if (options.app_key) shared_header.set('app_key', options.app_key);
+      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
+      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
       if (options.auth_token) {
-        sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token);
+        $sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token, $sessionStorage);
       }
 
       if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
@@ -1451,7 +1460,7 @@ angular
           // copy out the auth token from the header if there was one and make sure the child commands use it
           if (res.headers('auth-token') && res.status != 304){
             options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'))
+            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
           }
           switch(res.status){
             case 200:
@@ -1505,27 +1514,30 @@ angular
 
 angular.module('ngStorage', [])
 .factory('$fakeStorage', [
-  function(){
+  '$cookies',
+  function($cookies){
     function FakeStorage() {};
     FakeStorage.prototype.setItem = function (key, value) {
-      this[key] = value;
+      $cookies[key] = value;
     };
     FakeStorage.prototype.getItem = function (key) {
-      return typeof this[key] == 'undefined' ? null : this[key];
+      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
     }
     FakeStorage.prototype.removeItem = function (key) {
-      this[key] = undefined;
+      if ($cookies[key]){
+        delete $cookies[key];
+      }
     };
     FakeStorage.prototype.clear = function(){
-      for (var key in this) {
-        if( this.hasOwnProperty(key) )
+      for (var key in $cookies) {
+        if( $cookies.hasOwnProperty(key) )
         {
-          this.removeItem(key);
+          delete $cookies[key];
         }
       }
     };
     FakeStorage.prototype.key = function(index){
-      return Object.keys(this)[index];
+      return Object.keys($cookies)[index];
     };
     return new FakeStorage();
   }
@@ -1870,7 +1882,7 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($pars
 })();
 
 angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', function( halClient, $q) {
+ factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
     data = {};
 
     jsonData = function(data) {
@@ -1879,7 +1891,7 @@ angular.module('ngLocalData', ['angular-hal']).
 
     storage = function()
     {
-      return sessionStorage
+      return $sessionStorage
     } 
     localSave = function(key, item){
       storage().setItem(key, item.$toStore())   
@@ -1934,7 +1946,7 @@ angular.module('ngLocalData', ['angular-hal']).
     }
 
 }]).
- factory('$localData', ['$http', '$rootScope', function($http, $rootScope) {
+ factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
     function LocalDataFactory(name) {
       function LocalData(value){
         this.setStore(value);
@@ -1946,7 +1958,7 @@ angular.module('ngLocalData', ['angular-hal']).
 
       LocalData.prototype.storage = function()
       {
-        return sessionStorage
+        return $sessionStorage
       }  
 
       LocalData.prototype.localSave = function(item)
@@ -2168,7 +2180,7 @@ function getURIparam( name ){
           ref = $scope.source_slots;
           for (i = 0, len = ref.length; i < len; i++) {
             slot = ref[i];
-            if (slot.time >= $scope.start_time && slot.time < $scope.end_time) {
+            if (slot.time >= $scope.start_time && slot.time < $scope.end_time && slot.avail === 1) {
               $scope.accordian_slots.push(slot);
             }
           }
@@ -2176,7 +2188,7 @@ function getURIparam( name ){
           ref1 = $scope.source_slots;
           for (key in ref1) {
             slot = ref1[key];
-            if (slot.time >= $scope.start_time && slot.time < $scope.end_time) {
+            if (slot.time >= $scope.start_time && slot.time < $scope.end_time && slot.avail === 1) {
               $scope.accordian_slots.push(slot);
             }
           }
@@ -2524,13 +2536,87 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Directives').directive('bbAttendees', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: function($scope, $rootScope, $q, PurchaseService, BBModel, AlertService, ValidatorService) {
+        var initialise, updateBooking;
+        $scope.validator = ValidatorService;
+        $rootScope.connection_started.then(function() {
+          return initialise();
+        });
+        initialise = function() {
+          return $scope.items = $scope.bb.basket.timeItems();
+        };
+        updateBooking = function() {
+          var deferred, params;
+          deferred = $q.defer();
+          params = {
+            purchase: $scope.bb.moving_purchase,
+            bookings: $scope.bb.basket.items
+          };
+          PurchaseService.update(params).then(function(purchase) {
+            $scope.bb.purchase = purchase;
+            $scope.setLoaded($scope);
+            $scope.bb.current_item.move_done = true;
+            $rootScope.$broadcast("booking:updated");
+            return deferred.resolve();
+          }, function(err) {
+            return deferred.reject();
+          });
+          return deferred.promise;
+        };
+
+        /***
+        * @ngdoc method
+        * @name updateBooking
+        * @methodOf BB.Directives:bbAttendees
+        * @description
+        * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+         */
+        $scope.changeAttendees = function() {
+          if (!$scope.bb.current_item.ready || !$scope.bb.moving_purchase) {
+            return false;
+          }
+          $scope.notLoaded($scope);
+          if ($scope.$parent.$has_page_control) {
+            return updateBooking();
+          } else {
+            return updateBooking().then(function() {
+              $scope.decideNextPage('purchase');
+              return AlertService.raise('ATTENDEES_CHANGED');
+            }, function(err) {
+              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+            });
+          }
+        };
+
+        /***
+        * @ngdoc method
+        * @name setReady
+        * @methodOf BB.Directives:bbAttendees
+        * @description
+        * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+         */
+        return $scope.setReady = function() {
+          return $scope.changeAttendees();
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
   * @ngdoc directive
   * @name BB.Directives:bbWidget
   * @restrict A
-  * @scope 
+  * @scope
   *   client: '=?'
   *   apiUrl: '@?'
   *   useParent:'='
@@ -3302,7 +3388,7 @@ function getURIparam( name ){
           }
           if ($scope.bb.item_defaults.event) {
             if ($scope.bb.isAdmin) {
-              event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+              event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain + '/events/' + $scope.bb.item_defaults.event);
             } else {
               event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
             }
@@ -3483,7 +3569,7 @@ function getURIparam( name ){
         }
         return $scope.showPage('duration_list');
       } else if ($scope.bb.current_item.days_link && !$scope.bb.current_item.date && ($scope.bb.current_item.event == null) && !$scope.bb.current_item.deal) {
-        if ($scope.bb.company.$has('slots')) {
+        if ($scope.bb.company.$has('availability_slots')) {
           if ($scope.setPageRoute($rootScope.Route.Slot)) {
             return;
           }
@@ -3629,15 +3715,21 @@ function getURIparam( name ){
       return add_defer.promise;
     };
     $scope.emptyBasket = function() {
+      var defer;
       if (!$scope.bb.basket.items || ($scope.bb.basket.items && $scope.bb.basket.items.length === 0)) {
         return;
       }
-      return BasketService.empty($scope.bb).then(function(basket) {
+      defer = $q.defer();
+      BasketService.empty($scope.bb).then(function(basket) {
         if ($scope.bb.current_item.id) {
           delete $scope.bb.current_item.id;
         }
-        return $scope.setBasket(basket);
+        $scope.setBasket(basket);
+        return defer.resolve();
+      }, function(err) {
+        return defer.reject();
       });
+      return defer.promise;
     };
     $scope.deleteBasketItem = function(item) {
       return BasketService.deleteItem(item, $scope.bb.company, {
@@ -3762,9 +3854,11 @@ function getURIparam( name ){
             }
             if (res.$has('member')) {
               res.$get('member').then(function(member) {
-                member = LoginService.setLogin(member);
-                $rootScope.member = member;
-                return $scope.setClient(member);
+                if (member.client_type !== 'Contact') {
+                  member = LoginService.setLogin(member);
+                  $rootScope.member = member;
+                  return $scope.setClient(member);
+                }
               });
             }
             if ($scope.bb.clear_basket) {
@@ -3925,11 +4019,31 @@ function getURIparam( name ){
         }
       }
     };
-    $scope.loadPreviousStep = function(number_of_steps_to_go_back) {
-      var step;
-      number_of_steps_to_go_back = number_of_steps_to_go_back || 1;
-      step = $scope.bb.current_step - number_of_steps_to_go_back;
-      return $scope.loadStep(step);
+
+    /***
+    * @ngdoc method
+    * @name loadPreviousStep
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Loads the previous unskipped step
+    *
+    * @param {object} steps_to_go_back The number of steps to go back
+     */
+    $scope.loadPreviousStep = function(steps_to_go_back) {
+      var last_step, past_steps, step_count, step_to_load;
+      steps_to_go_back = steps_to_go_back || 1;
+      past_steps = _.without($scope.bb.steps, _.last($scope.bb.steps));
+      step_count = 0;
+      while (step_count < steps_to_go_back) {
+        last_step = past_steps.pop();
+        if (!last_step.skipped) {
+          step_to_load = last_step.number;
+          step_count++;
+        }
+      }
+      if (step_to_load) {
+        return $scope.loadStep(step_to_load);
+      }
     };
     $scope.loadStepByPageName = function(page_name) {
       var j, len, ref, step;
@@ -3955,8 +4069,16 @@ function getURIparam( name ){
     $scope.setBasicRoute = function(routes) {
       return $scope.bb.setBasicRoute(routes);
     };
+
+    /***
+    * @ngdoc method
+    * @name skipThisStep
+    * @methodOf BB.Directives:bbWidget
+    * @description
+    * Marks the current step as skipped
+     */
     $scope.skipThisStep = function() {
-      return $scope.bb.current_step -= 1;
+      return $scope.bb.steps[$scope.bb.steps.length - 1].skipped = true;
     };
     $scope.setUsingBasket = (function(_this) {
       return function(usingBasket) {
@@ -4121,9 +4243,12 @@ function getURIparam( name ){
     $scope.isMemberLoggedIn = function() {
       return LoginService.isLoggedIn();
     };
-    return $scope.scrollTo = function(id) {
+    $scope.scrollTo = function(id) {
       $location.hash(id);
       return $anchorScroll();
+    };
+    return $scope.redirectTo = function(url) {
+      return $window.location.href = url;
     };
   });
 
@@ -4198,11 +4323,11 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, ErrorService, FormDataStoreService, LoginService) {
+  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, FormDataStoreService, LoginService) {
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
     $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
-    $scope.basket_options = $scope.$eval($attrs.bbBasketList) || {};
+    $scope.bb.basket.setSettings($scope.$eval($attrs.bbBasketList || {}));
     $rootScope.connection_started.then(function() {
       var basket_item, i, len, params, promises, ref;
       if ($scope.client) {
@@ -4225,7 +4350,7 @@ function getURIparam( name ){
           for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
             basket_item = ref1[index];
             prepaid_bookings = result[index];
-            if ($scope.basket_options.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
+            if ($scope.bb.basket.settings && $scope.bb.basket.settings.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
               basket_item.setPrepaidBooking(prepaid_bookings[0]);
             }
           }
@@ -4267,6 +4392,10 @@ function getURIparam( name ){
      */
     $scope.checkout = (function(_this) {
       return function(route) {
+        if ($scope.bb.basket.settings && $scope.bb.basket.settings.requires_deal && !$scope.bb.basket.hasDeal()) {
+          AlertService.raise('GIFT_CERTIFICATE_REQUIRED');
+          return false;
+        }
         if ($scope.bb.basket.items.length > 0) {
           $scope.setReadyToCheckout(true);
           if ($scope.$parent.$has_page_control) {
@@ -4275,8 +4404,7 @@ function getURIparam( name ){
             return $scope.decideNextPage(route);
           }
         } else {
-          AlertService.clear();
-          AlertService.add('info', ErrorService.getError('EMPTY_BASKET_FOR_CHECKOUT'));
+          AlertService.raise('EMPTY_BASKET_FOR_CHECKOUT');
           return false;
         }
       };
@@ -4664,7 +4792,7 @@ function getURIparam( name ){
 * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
 * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
 * @example
-*  <example module="BB"> 
+*  <example module="BB">
 *    <file name="index.html">
 *   <div bb-api-url='https://uk.bookingbug.com'>
 *   <div  bb-widget='{company_id:21}'>
@@ -4676,7 +4804,7 @@ function getURIparam( name ){
 *      </div>
 *     </div>
 *     </div>
-*   </file> 
+*   </file>
 *  </example>
 *
  */
@@ -4691,12 +4819,15 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ClientDetails', function($scope, $rootScope, ClientDetailsService, ClientService, LoginService, BBModel, ValidatorService, QuestionService, AlertService) {
+  angular.module('BB.Controllers').controller('ClientDetails', function($scope, $attrs, $rootScope, ClientDetailsService, ClientService, LoginService, BBModel, ValidatorService, QuestionService, AlertService) {
+    var handleError, options;
     $scope.controller = "public.controllers.ClientDetails";
     $scope.notLoaded($scope);
     $scope.validator = ValidatorService;
     $scope.existing_member = false;
     $scope.login_error = false;
+    options = $scope.$eval($attrs.bbClientDetails) || {};
+    $scope.suppress_client_create = ($attrs.bbSuppressCreate != null) || options.suppress_client_create;
     $rootScope.connection_started.then((function(_this) {
       return function() {
         if (!$scope.client.valid() && LoginService.isLoggedIn()) {
@@ -4768,13 +4899,7 @@ function getURIparam( name ){
           $scope.existing_member = false;
           return $scope.decideNextPage(route);
         }, function(err) {
-          if (err.data.error === "Please Login") {
-            $scope.existing_member = true;
-            AlertService.danger({
-              msg: "You have already registered with this email address. Please login or reset your password using the Forgot Password link below."
-            });
-          }
-          return $scope.setLoaded($scope);
+          return handleError(err);
         });
       };
     })(this);
@@ -4800,9 +4925,7 @@ function getURIparam( name ){
           }, function(err) {
             $scope.login_error = true;
             $scope.setLoaded($scope);
-            return AlertService.danger({
-              msg: "Sorry, your email or password was not recognised. Please try again."
-            });
+            return AlertService.raise('LOGIN_FAILED');
           });
         }
       };
@@ -4819,19 +4942,23 @@ function getURIparam( name ){
       return function() {
         var prom;
         $scope.client.setClientDetails($scope.client_details);
-        prom = ClientService.create_or_update($scope.bb.company, $scope.client);
-        prom.then(function(client) {
-          $scope.setLoaded($scope);
-          $scope.setClient(client);
-          if (client.waitingQuestions) {
-            return client.gotQuestions.then(function() {
-              return $scope.client_details = client.client_details;
-            });
-          }
-        }, function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-        return prom;
+        if (!$scope.suppress_client_create) {
+          prom = ClientService.create_or_update($scope.bb.company, $scope.client);
+          prom.then(function(client) {
+            $scope.setLoaded($scope);
+            $scope.setClient(client);
+            if (client.waitingQuestions) {
+              return client.gotQuestions.then(function() {
+                return $scope.client_details = client.client_details;
+              });
+            }
+          }, function(err) {
+            return handleError(err);
+          });
+          return prom;
+        } else {
+          return true;
+        }
       };
     })(this);
 
@@ -4925,10 +5052,17 @@ function getURIparam( name ){
     * @description
     * Recalculate question
      */
-    return $scope.recalc_question = function() {
+    $scope.recalc_question = function() {
       if ($scope.client_details.questions) {
         return QuestionService.checkConditionalQuestions($scope.client_details.questions);
       }
+    };
+    return handleError = function(error) {
+      if (error.data.error === "Please Login") {
+        $scope.existing_member = true;
+        AlertService.raise('ALREADY_REGISTERED');
+      }
+      return $scope.setLoaded($scope);
     };
   });
 
@@ -4947,15 +5081,13 @@ function getURIparam( name ){
       return function() {
         if ($scope.bb.company.companies) {
           $scope.init($scope.bb.company);
-          $rootScope.parent_id = $scope.bb.company.id;
+          return $rootScope.parent_id = $scope.bb.company.id;
         } else if ($rootScope.parent_id) {
           $scope.initWidget({
             company_id: $rootScope.parent_id,
             first_page: $scope.bb.current_page
           });
-          return;
-        }
-        if ($scope.bb.company) {
+        } else {
           return $scope.init($scope.bb.company);
         }
       };
@@ -5825,10 +5957,12 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DurationList', function($scope, $rootScope, PageControllerService, $q, $attrs, AlertService) {
+  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, PageControllerService, $q, AlertService, $filter) {
+    var options;
     $scope.controller = "public.controllers.DurationList";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
+    options = $scope.$eval($attrs.bbDurations) || {};
     $rootScope.connection_started.then(function() {
       return $scope.loadData();
     }, function(err) {
@@ -5836,7 +5970,7 @@ function getURIparam( name ){
     });
     $scope.loadData = (function(_this) {
       return function() {
-        var d, duration, i, id, initial_duration, len, ref, rem, service;
+        var d, duration, i, id, initial_duration, len, ref, service;
         id = $scope.bb.company_id;
         service = $scope.bb.current_item.service;
         if (service && !$scope.durations) {
@@ -5863,16 +5997,9 @@ function getURIparam( name ){
               $scope.duration = duration;
               $scope.bb.current_item.setDuration(duration.value);
             }
-            if (duration.value < 60) {
-              duration.pretty = duration.value + " minutes";
-            } else if (duration.value === 60) {
-              duration.pretty = "1 hour";
-            } else {
-              duration.pretty = Math.floor(duration.value / 60) + " hours";
-              rem = duration.value % 60;
-              if (rem !== 0) {
-                duration.pretty += " " + rem + " minutes";
-              }
+            duration.pretty = $filter('time_period')(duration.value);
+            if (options.show_prices) {
+              duration.pretty += " (" + ($filter('currency')(duration.price)) + ")";
             }
           }
           if ($scope.durations.length === 1) {
@@ -5979,52 +6106,47 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService) {
+  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService) {
+    var init, initImage, initTickets;
     $scope.controller = "public.controllers.Event";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
     $scope.validator = ValidatorService;
     $scope.event_options = $scope.$eval($attrs.bbEvent) || {};
+    FormDataStoreService.init('ItemDetails', $scope, ['selected_tickets', 'event_options']);
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
-        return $scope.init($scope.bb.company);
+        return init($scope.bb.company);
       }
     }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
-    $scope.init = function(comp) {
+    init = function(comp) {
       var promises;
+      if ($scope.bb.stacked_items && $scope.bb.stacked_items.length === 0) {
+        delete $scope.selected_tickets;
+      }
       $scope.event = $scope.bb.current_item.event;
+      $scope.event_options.use_my_details = $scope.event_options.use_my_details == null ? true : $scope.event_options.use_my_details;
       promises = [$scope.current_item.event_group.getImagesPromise(), $scope.event.prepEvent()];
       if ($scope.client) {
         promises.push($scope.getPrePaidsForEvent($scope.client, $scope.event));
       }
       return $q.all(promises).then(function(result) {
-        var i, image, len, ref, ticket;
+        var event, images, prepaids;
         if (result[0] && result[0].length > 0) {
-          image = result[0][0];
-          image.background_css = {
-            'background-image': 'url(' + image.url + ')'
-          };
-          $scope.event.image = image;
+          images = result[0];
         }
-        $scope.event.tickets[0].qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
-        if ($scope.event.tickets.length > 1) {
-          ref = $scope.event.tickets.slice(1);
-          for (i = 0, len = ref.length; i < len; i++) {
-            ticket = ref[i];
-            ticket.qty = 0;
-          }
+        event = result[1];
+        if (result[2] && result[2].length > 0) {
+          prepaids = result[2];
         }
-        if ($scope.event_options.default_num_tickets && $scope.event_options.auto_select_tickets && $scope.event.tickets.length === 1 && $scope.event.tickets[0].max_num_bookings === 1) {
-          $scope.selectTickets();
+        $scope.event = event;
+        if (images) {
+          initImage(images);
         }
-        $scope.tickets = $scope.event.tickets;
-        $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
-        $scope.stopTicketWatch = $scope.$watch('tickets', function(tickets, oldtickets) {
-          $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
-          return $scope.event.updatePrice();
-        }, true);
+        initTickets();
+        $scope.$broadcast("bbEvent:initialised");
         return $scope.setLoaded($scope);
       }, function(err) {
         return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
@@ -6036,7 +6158,7 @@ function getURIparam( name ){
     * @name selectTickets
     * @methodOf BB.Directives:bbEvent
     * @description
-    * Process the selected tickets - this may mean adding multiple basket items - add them all to the basket
+    * Processes the selected tickets and adds them to the basket
      */
     $scope.selectTickets = function() {
       var base_item, c, i, item, j, len, ref, ref1, ticket;
@@ -6131,6 +6253,7 @@ function getURIparam( name ){
      */
     $scope.setReady = (function(_this) {
       return function() {
+        $scope.bb.current_item.setEvent($scope.event);
         $scope.bb.event_details = {
           name: $scope.event.chain.name,
           image: $scope.event.image,
@@ -6140,7 +6263,11 @@ function getURIparam( name ){
           duration: $scope.event.duration,
           tickets: $scope.event.tickets
         };
-        return $scope.updateBasket();
+        if ($scope.event_options.suppress_basket_update) {
+          return true;
+        } else {
+          return $scope.updateBasket();
+        }
       };
     })(this);
 
@@ -6154,7 +6281,7 @@ function getURIparam( name ){
     * @param {array} client The client 
     * @param {array} event The event
      */
-    return $scope.getPrePaidsForEvent = function(client, event) {
+    $scope.getPrePaidsForEvent = function(client, event) {
       var defer, params;
       defer = $q.defer();
       params = {
@@ -6167,6 +6294,39 @@ function getURIparam( name ){
         return defer.reject(err);
       });
       return defer.promise;
+    };
+    initImage = function(images) {
+      var image;
+      image = images[0];
+      if (image) {
+        image.background_css = {
+          'background-image': 'url(' + image.url + ')'
+        };
+        return $scope.event.image = image;
+      }
+    };
+    return initTickets = function() {
+      var i, len, ref, ticket;
+      if ($scope.selected_tickets) {
+        return;
+      }
+      $scope.event.tickets[0].qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
+      if ($scope.event.tickets.length > 1) {
+        ref = $scope.event.tickets.slice(1);
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
+          ticket.qty = 0;
+        }
+      }
+      if ($scope.event_options.default_num_tickets && $scope.event_options.auto_select_tickets && $scope.event.tickets.length === 1 && $scope.event.tickets[0].max_num_bookings === 1) {
+        $scope.selectTickets();
+      }
+      $scope.tickets = $scope.event.tickets;
+      $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
+      return $scope.stopTicketWatch = $scope.$watch('tickets', function(tickets, oldtickets) {
+        $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
+        return $scope.event.updatePrice();
+      }, true);
     };
   });
 
@@ -6390,7 +6550,7 @@ function getURIparam( name ){
       link: function(scope, element, attrs) {
         var options;
         scope.summary = attrs.summary != null;
-        options = scope.$eval(attrs.bbEvents || {});
+        options = scope.$eval(attrs.bbEvents) || {};
         scope.mode = options && options.mode ? options.mode : 0;
         if (scope.summary) {
           scope.mode = 0;
@@ -6399,8 +6559,8 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService) {
-    var buildDynamicFilters, filterEventsWithDynamicFilters, isFullyBooked, sort;
+  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout) {
+    var buildDynamicFilters, filterEventsWithDynamicFilters, sort;
     $scope.controller = "public.controllers.EventList";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
@@ -6408,7 +6568,6 @@ function getURIparam( name ){
     $scope.start_date = moment();
     $scope.end_date = moment().add(1, 'year');
     $scope.filters = {};
-    $scope.price_options = [0, 1000, 2500, 5000];
     $scope.pagination = PaginationService.initialise({
       page_size: 10,
       max_size: 5
@@ -6438,8 +6597,10 @@ function getURIparam( name ){
     $scope.initialise = function() {
       var event_group, promises;
       $scope.notLoaded($scope);
-      $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null) ? true : false;
-      if ($scope.current_item.event && $scope.mode !== 0) {
+      if (!$scope.event_group_manually_set && ($scope.current_item.event_group == null)) {
+        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null) ? true : false;
+      }
+      if ($scope.bb.current_item.event) {
         event_group = $scope.current_item.event_group;
         $scope.clearBasketItem();
         $scope.emptyBasket();
@@ -6456,7 +6617,7 @@ function getURIparam( name ){
         promises.push($q.when([]));
         $scope.has_company_questions = false;
       }
-      if (!$scope.current_item.event_group) {
+      if (!$scope.current_item.event_group && $scope.bb.company.$has('event_groups')) {
         promises.push($scope.bb.company.getEventGroupsPromise());
       } else {
         promises.push($q.when([]));
@@ -6472,7 +6633,7 @@ function getURIparam( name ){
         promises.push($q.when([]));
       }
       return $q.all(promises).then(function(result) {
-        var company_questions, event_data, event_groups, event_summary;
+        var company_questions, event_data, event_groups, event_groups_collection, event_summary, item, j, len, ref;
         company_questions = result[0];
         event_groups = result[1];
         event_summary = result[2];
@@ -6481,8 +6642,14 @@ function getURIparam( name ){
         if (company_questions) {
           buildDynamicFilters(company_questions);
         }
-        if (event_groups) {
-          $scope.event_groups = _.indexBy(event_groups, 'id');
+        $scope.event_groups = event_groups;
+        event_groups_collection = _.indexBy(event_groups, 'id');
+        if ($scope.items) {
+          ref = $scope.items;
+          for (j = 0, len = ref.length; j < len; j++) {
+            item = ref[j];
+            item.group = event_groups_collection[item.service_id];
+          }
         }
         return $scope.setLoaded($scope);
       }, function(err) {
@@ -6568,9 +6735,9 @@ function getURIparam( name ){
           start_date: $scope.start_date.toISODate(),
           end_date: $scope.end_date.toISODate()
         };
-        EventChainService.query(comp, params).then(function(events) {
+        EventChainService.query(comp, params).then(function(event_chains) {
           $scope.setLoaded($scope);
-          return deferred.resolve($scope.items);
+          return deferred.resolve(event_chains);
         }, function(err) {
           return deferred.reject();
         });
@@ -6608,20 +6775,28 @@ function getURIparam( name ){
       chains = $scope.loadEventChainData(comp);
       $scope.events = {};
       EventService.query(comp, params).then(function(events) {
-        var key, value;
-        events = _.groupBy(events, function(event) {
-          return event.date.toISODate();
-        });
-        for (key in events) {
-          value = events[key];
-          $scope.events[key] = value;
+        var item, j, len, ref;
+        $scope.items = _.flatten(events);
+        ref = $scope.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          item.spaces_left = item.num_spaces - item.getNumBooked();
         }
-        $scope.items = _.flatten(_.toArray($scope.events));
+        $scope.bb.company.getAddressPromise().then(function(address) {
+          var k, len1, ref1, results;
+          ref1 = $scope.items;
+          results = [];
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            item = ref1[k];
+            results.push(item.address = address);
+          }
+          return results;
+        });
         return chains.then(function() {
-          var idate, item, item_dates, j, k, len, len1, ref, x, y;
-          ref = $scope.items;
-          for (j = 0, len = ref.length; j < len; j++) {
-            item = ref[j];
+          var idate, item_dates, k, l, len1, len2, ref1, x, y;
+          ref1 = $scope.items;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            item = ref1[k];
             item.prepEvent();
             if ($scope.mode === 0 && current_event && current_event.self === item.self) {
               item.select();
@@ -6631,8 +6806,8 @@ function getURIparam( name ){
           if ($scope.mode === 1) {
             item_dates = {};
             if (items.length > 0) {
-              for (k = 0, len1 = items.length; k < len1; k++) {
-                item = items[k];
+              for (l = 0, len2 = items.length; l < len2; l++) {
+                item = items[l];
                 item.getDuration();
                 idate = parseInt(item.date.format("YYYYDDDD"));
                 item.idate = idate;
@@ -6667,7 +6842,7 @@ function getURIparam( name ){
               ];
             }
           }
-          isFullyBooked();
+          $scope.isFullyBooked();
           $scope.filtered_items = $scope.items;
           $scope.filterChanged();
           PaginationService.update($scope.pagination, $scope.filtered_items.length);
@@ -6689,7 +6864,7 @@ function getURIparam( name ){
     * @description
     * Verify if the items from event list are be fully booked
      */
-    isFullyBooked = function() {
+    $scope.isFullyBooked = function() {
       var full_events, item, j, len, ref;
       full_events = [];
       ref = $scope.items;
@@ -6715,13 +6890,13 @@ function getURIparam( name ){
      */
     $scope.showDay = function(day) {
       var date, new_date;
-      if (!day || (day && !day.data)) {
+      if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
         return;
       }
+      date = moment.isMoment(day) ? day : day.date;
       if ($scope.selected_day) {
         $scope.selected_day.selected = false;
       }
-      date = day.date;
       if ($scope.event && !$scope.selected_date.isSame(date, 'day')) {
         delete $scope.event;
       }
@@ -6738,7 +6913,9 @@ function getURIparam( name ){
       if (new_date) {
         $scope.selected_date = new_date;
         $scope.filters.date = new_date.toDate();
-        $scope.selected_day = day;
+        $scope.selected_day = moment.isMoment(day) ? {
+          date: new_date
+        } : day;
         $scope.selected_day.selected = true;
       } else {
         delete $scope.selected_date;
@@ -6879,9 +7056,20 @@ function getURIparam( name ){
     * @description
     * Filtering data exchanged from the list of events
      */
-    $scope.filterDateChanged = function() {
-      $scope.filterChanged();
-      return $scope.showDay(moment($scope.filters.date));
+    $scope.filterDateChanged = function(options) {
+      if (options == null) {
+        options = {
+          reset: false
+        };
+      }
+      if ($scope.filters.date) {
+        $scope.showDay(moment($scope.filters.date));
+        if (options.reset === true || ($scope.selected_date == null)) {
+          return $timeout(function() {
+            return delete $scope.filters.date;
+          }, 250);
+        }
+      }
     };
 
     /***
@@ -7125,7 +7313,7 @@ function getURIparam( name ){
         }
         $scope.recalc_price();
         $scope.setLoaded($scope);
-        return $scope.$emit("item_details:loaded");
+        return $scope.$emit("item_details:loaded", $scope.item_details);
       } else {
         params = {
           company: $scope.bb.company,
@@ -7140,7 +7328,7 @@ function getURIparam( name ){
               QuestionService.addAnswersFromDefaults($scope.item_details.questions, $scope.bb.item_defaults.answers);
             }
             $scope.recalc_price();
-            $scope.$emit("item_details:loaded");
+            $scope.$emit("item_details:loaded", $scope.item_details);
           }
           return $scope.setLoaded($scope);
         }, function(err) {
@@ -7183,7 +7371,7 @@ function getURIparam( name ){
       }
       return $scope.item_details = details;
     };
-    $scope.$on('currentItemUpdate', function(service) {
+    $scope.$on('currentItemUpdate', function(event) {
       if ($scope.item_from_param) {
         return $scope.loadItem($scope.item_from_param);
       } else {
@@ -7222,10 +7410,10 @@ function getURIparam( name ){
       if ($scope.bb.moving_booking) {
         return $scope.confirm_move(form, route);
       }
-      if (!$scope.has_page_control) {
+      $scope.item.setAskedQuestions();
+      if ($scope.$parent.$has_page_control) {
         return true;
       }
-      $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
         return $scope.addItemToBasket().then(function() {
@@ -7283,7 +7471,13 @@ function getURIparam( name ){
             $scope.setLoaded($scope);
             $scope.item.move_done = true;
             $rootScope.$broadcast("booking:moved");
-            return $scope.decideNextPage(route);
+            $scope.decideNextPage(route);
+            return $scope.showMoveMessage($scope.bb.purchase.bookings[0].datetime);
+          }, function(err) {
+            $scope.setLoaded($scope);
+            return AlertService.add("danger", {
+              msg: "Failed to move booking. Please try again."
+            });
           });
         } else {
           return PurchaseBookingService.update($scope.item).then(function(booking) {
@@ -7302,19 +7496,7 @@ function getURIparam( name ){
             $scope.item.move_done = true;
             $rootScope.$broadcast("booking:moved");
             $scope.decideNextPage(route);
-            if (SettingsService.isInternationalizatonEnabled()) {
-              return $translate('MOVE_BOOKINGS_MSG', {
-                datetime: b.datetime.format('LLLL')
-              }).then(function(translated_text) {
-                return AlertService.add("info", {
-                  msg: translated_text
-                });
-              });
-            } else {
-              return AlertService.add("info", {
-                msg: "Your booking has been moved to " + (b.datetime.format('LLLL'))
-              });
-            }
+            return $scope.showMoveMessage(b.datetime);
           }, (function(_this) {
             return function(err) {
               $scope.setLoaded($scope);
@@ -7326,6 +7508,21 @@ function getURIparam( name ){
         }
       } else {
         return $scope.decideNextPage(route);
+      }
+    };
+    $scope.showMoveMessage = function(datetime) {
+      if (SettingsService.isInternationalizatonEnabled()) {
+        return $translate('MOVE_BOOKINGS_MSG', {
+          datetime: datetime.format('LLLL')
+        }).then(function(translated_text) {
+          return AlertService.add("info", {
+            msg: translated_text
+          });
+        });
+      } else {
+        return AlertService.add("info", {
+          msg: "Your booking has been moved to " + (datetime.format('LLLL'))
+        });
       }
     };
 
@@ -7491,7 +7688,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location, AlertService, ErrorService) {
+  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location, AlertService) {
     $scope.controller = "public.controllers.Login";
     $scope.error = false;
     $scope.password_updated = false;
@@ -7556,7 +7753,7 @@ function getURIparam( name ){
       })(this), (function(_this) {
         return function(err) {
           $scope.login_error = err;
-          return AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+          return AlertService.raise('LOGIN_FAILED');
         };
       })(this));
     };
@@ -7601,11 +7798,11 @@ function getURIparam( name ){
         custom: true
       }).then(function() {
         $scope.email_sent = true;
-        return AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_REQ_SUCCESS'));
+        return AlertService.raise('PASSWORD_RESET_REQ_SUCCESS');
       }, (function(_this) {
         return function(err) {
           $scope.error = err;
-          return AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_REQ_FAILED'));
+          return AlertService.raise('PASSWORD_RESET_REQ_FAILED');
         };
       })(this));
     };
@@ -7633,19 +7830,19 @@ function getURIparam( name ){
             if (member) {
               $scope.password_updated = true;
               $scope.setClient(member);
-              AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_SUCESS'));
+              AlertService.raise('PASSWORD_RESET_SUCESS');
               return $rootScope.$emit("login:password_reset");
             }
           };
         })(this), (function(_this) {
           return function(err) {
             $scope.error = err;
-            return AlertService.raise(ErrorService.getAlert('PASSWORD_RESET_FAILED'));
+            return AlertService.raise('PASSWORD_RESET_FAILED');
           };
         })(this));
       } else {
         $scope.password_error = true;
-        return AlertService.raise(ErrorService.getAlert('PASSWORD_MISMATCH'));
+        return AlertService.raise('PASSWORD_MISMATCH');
       }
     };
   });
@@ -7696,7 +7893,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, ErrorService, FormDataStoreService, $q, $window, $timeout) {
+  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, $q, $window, $timeout) {
     var checkDataStore, geolocateFail, map_ready_def, options, reverseGeocode, searchFailed, searchPlaces, searchSuccess;
     $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
@@ -7967,7 +8164,7 @@ function getURIparam( name ){
      */
     searchFailed = function() {
       $scope.search_failed = true;
-      AlertService.danger(ErrorService.getError('LOCATION_NOT_FOUND'));
+      AlertService.raise('LOCATION_NOT_FOUND');
       return $rootScope.$apply();
     };
 
@@ -7986,7 +8183,7 @@ function getURIparam( name ){
       }
       if (form.$error.required) {
         AlertService.clear();
-        AlertService.danger(ErrorService.getError('MISSING_LOCATION'));
+        AlertService.raise('MISSING_LOCATION');
         return false;
       } else {
         return true;
@@ -8160,10 +8357,12 @@ function getURIparam( name ){
         case 2:
         case 3:
           $scope.setLoaded($scope);
-          return AlertService.danger(ErrorService.getError('GEOLOCATION_ERROR'));
+          AlertService.raise('GEOLOCATION_ERROR');
+          break;
         default:
-          return $scope.setLoaded($scope);
+          $scope.setLoaded($scope);
       }
+      return $scope.$apply();
     };
 
     /***
@@ -9758,7 +9957,7 @@ function getURIparam( name ){
   *
   * @property {array} total The total of payment
    */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService) {
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
     var error, getHost, linker, sendLoadEvent;
     error = function(scope, message) {
       return scope.error(message);
@@ -9789,7 +9988,7 @@ function getURIparam( name ){
     };
     linker = function(scope, element, attributes) {
       scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? false : true;
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
       element.find('iframe').bind('load', (function(_this) {
         return function(event) {
           var origin, url;
@@ -9817,8 +10016,10 @@ function getURIparam( name ){
                 case "submitting":
                   return scope.callNotLoaded();
                 case "error":
-                  scope.callSetLoaded();
-                  return error(scope, event.data.message);
+                  scope.$emit("payment:failed");
+                  scope.callNotLoaded();
+                  AlertService.raise('PAYMENT_FAILED');
+                  return document.getElementsByTagName("iframe")[0].src += '';
                 case "payment_complete":
                   scope.callSetLoaded();
                   return scope.paymentDone();
@@ -10624,8 +10825,10 @@ function getURIparam( name ){
                 $scope.resource = i.item;
               }
             }
-            if (resources.length === 1) {
-              if (!$scope.selectItem(items[0].item, $scope.nextRoute, true)) {
+            if (resources.length === 1 && !$scope.options.allow_single_pick) {
+              if (!$scope.selectItem(items[0].item, $scope.nextRoute, {
+                skip_step: true
+              })) {
                 $scope.bookable_resources = resources;
                 $scope.bookable_items = items;
               }
@@ -10686,16 +10889,16 @@ function getURIparam( name ){
     * @param {string=} skip_step The skip_step has been set to false
      */
     $scope.selectItem = (function(_this) {
-      return function(item, route, skip_step) {
-        if (skip_step == null) {
-          skip_step = false;
+      return function(item, route, options) {
+        if (options == null) {
+          options = {};
         }
         if ($scope.$parent.$has_page_control) {
           $scope.resource = item;
           return false;
         } else {
           $scope.bb.current_item.setResource(getItemFromResource(item));
-          if (skip_step) {
+          if (options.skip_step) {
             $scope.skipThisStep();
           }
           $scope.decideNextPage(route);
@@ -10818,6 +11021,9 @@ function getURIparam( name ){
     if ($scope.options.allow_single_pick) {
       $scope.allowSinglePick = true;
     }
+    if ($scope.options.hide_disabled) {
+      $scope.hide_disabled = true;
+    }
     $scope.price_options = {
       min: 0,
       max: 100
@@ -10849,10 +11055,14 @@ function getURIparam( name ){
         $scope.service = null;
       }
       ppromise = comp.getServicesPromise();
-      this.skipped = false;
       ppromise.then((function(_this) {
         return function(items) {
           var filterItems, item, j, k, len, len1;
+          if ($scope.hide_disabled) {
+            items = items.filter(function(x) {
+              return !x.disabled && !x.deleted;
+            });
+          }
           filterItems = $attrs.filterServices === 'false' ? false : true;
           if (filterItems) {
             if ($scope.booking_item.service_ref && !$scope.show_all) {
@@ -10871,11 +11081,10 @@ function getURIparam( name ){
             });
           }
           if (items.length === 1 && !$scope.allowSinglePick) {
-            if (!$scope.selectItem(items[0], $scope.nextRoute)) {
+            if (!$scope.selectItem(items[0], $scope.nextRoute, {
+              skip_step: true
+            })) {
               setServiceItem(items);
-            } else if (!_this.skipped) {
-              $scope.skipThisStep();
-              _this.skipped = true;
             }
           } else {
             setServiceItem(items);
@@ -10926,6 +11135,11 @@ function getURIparam( name ){
                 return !x.group_id || x.group_id === $scope.booking_item.group;
               });
             }
+            if ($scope.hide_disabled) {
+              items = items.filter(function(x) {
+                return (x.item == null) || (!x.item.disabled && !x.item.deleted);
+              });
+            }
             services = (function() {
               var j, len, results;
               results = [];
@@ -10940,11 +11154,10 @@ function getURIparam( name ){
             $scope.bookable_services = services;
             $scope.bookable_items = items;
             if (services.length === 1 && !$scope.allowSinglePick) {
-              if (!$scope.selectItem(services[0], $scope.nextRoute)) {
+              if (!$scope.selectItem(services[0], $scope.nextRoute, {
+                skip_step: true
+              })) {
                 setServiceItem(services);
-              } else if (!_this.skipped) {
-                $scope.skipThisStep();
-                _this.skipped = true;
               }
             } else {
               setServiceItem(services);
@@ -10979,7 +11192,10 @@ function getURIparam( name ){
     * @param {string=} route A specific route to load
      */
     $scope.selectItem = (function(_this) {
-      return function(item, route) {
+      return function(item, route, options) {
+        if (options == null) {
+          options = {};
+        }
         if ($scope.routed) {
           return true;
         }
@@ -10988,10 +11204,16 @@ function getURIparam( name ){
           return false;
         } else if (item.is_event_group) {
           $scope.booking_item.setEventGroup(item);
+          if (options.skip_step) {
+            $scope.skipThisStep();
+          }
           $scope.decideNextPage(route);
           return $scope.routed = true;
         } else {
           $scope.booking_item.setService(item);
+          if (options.skip_step) {
+            $scope.skipThisStep();
+          }
           $scope.decideNextPage(route);
           $scope.routed = true;
           return true;
@@ -11315,6 +11537,75 @@ function getURIparam( name ){
 
 /***
 * @ngdoc directive
+* @name BB.Directives:bbSummary
+* @restrict AE
+* @scope true
+*
+* @description
+* Loads a summary of the booking
+*
+*
+ */
+
+(function() {
+  angular.module('BB.Directives').directive('bbSummary', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Summary'
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Summary', function($scope, $rootScope, ClientService, $q) {
+    $scope.controller = "public.controllers.Summary";
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        $scope.item = $scope.bb.current_item;
+        return $scope.items = $scope.bb.basket.timeItems();
+      };
+    })(this));
+
+    /***
+    * @ngdoc method
+    * @name confirm
+    * @methodOf BB.Directives:bbSummary
+    * @description
+    * Submits the client and BasketItem to the API
+     */
+    return $scope.confirm = (function(_this) {
+      return function() {
+        var promises;
+        $scope.notLoaded($scope);
+        promises = [ClientService.create_or_update($scope.bb.company, $scope.client)];
+        if ($scope.bb.current_item.service) {
+          promises.push($scope.addItemToBasket());
+        } else if ($scope.bb.current_item.event) {
+          promises.push($scope.updateBasket());
+        }
+        return $q.all(promises).then(function(result) {
+          var client;
+          client = result[0];
+          $scope.setClient(client);
+          if (client.waitingQuestions) {
+            client.gotQuestions.then(function() {
+              return $scope.client_details = client.client_details;
+            });
+          }
+          $scope.setLoaded($scope);
+          return $scope.decideNextPage();
+        }, function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc directive
 * @name BB.Directives:bbSurveyQuestions
 * @restrict AE
 * @scope true
@@ -11337,8 +11628,6 @@ function getURIparam( name ){
  */
 
 (function() {
-  var getBookingAndSurvey, getBookingRef, getPurchaseID, setPurchaseCompany;
-
   angular.module('BB.Directives').directive('bbSurveyQuestions', function() {
     return {
       restrict: 'AE',
@@ -11349,7 +11638,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('SurveyQuestions', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, ValidatorService, PurchaseBookingService, $sessionStorage) {
-    var getMember, init, showLoginError;
+    var getBookingAndSurvey, getBookingRef, getMember, getPurchaseID, init, setPurchaseCompany, showLoginError;
     $scope.controller = "SurveyQuestions";
     $scope.completed = false;
     $scope.login = {
@@ -11661,7 +11950,7 @@ function getURIparam( name ){
     * @description
     * Get member
      */
-    return getMember = (function(_this) {
+    getMember = (function(_this) {
       return function() {
         var params;
         params = {
@@ -11675,94 +11964,87 @@ function getURIparam( name ){
     })(this);
 
     /***
-      * @ngdoc method
-      * @name setPurchaseCompany
-      * @methodOf BB.Directives:bbSurveyQuestions
-      * @description
-      * Set purchase company in according of company parameter
-      *
-      * @param {object} company The company
+    * @ngdoc method
+    * @name setPurchaseCompany
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Set purchase company in according of company parameter
+    *
+    * @param {object} company The company
      */
-  });
-
-  setPurchaseCompany = function(company) {
-    $scope.bb.company_id = company.id;
-    $scope.bb.company = new BBModel.Company(company);
-    $scope.company = $scope.bb.company;
-    $scope.bb.item_defaults.company = $scope.bb.company;
-    if (company.settings) {
-      if (company.settings.merge_resources) {
-        $scope.bb.item_defaults.merge_resources = true;
-      }
-      if (company.settings.merge_people) {
-        return $scope.bb.item_defaults.merge_people = true;
-      }
-    }
-  };
-
-
-  /***
-  * @ngdoc method
-  * @name getBookingRef
-  * @methodOf BB.Directives:bbSurveyQuestions
-  * @description
-  * Get booking references
-   */
-
-  getBookingRef = function() {
-    var booking_ref, matches;
-    matches = /^.*(?:\?|&)booking_ref=(.*?)(?:&|$)/.exec($location.absUrl());
-    if (matches) {
-      booking_ref = matches[1];
-    }
-    return booking_ref;
-  };
-
-
-  /***
-  * @ngdoc method
-  * @name getPurchaseID
-  * @methodOf BB.Directives:bbSurveyQuestions
-  * @description
-  * Get purchase Id
-   */
-
-  getPurchaseID = function() {
-    var matches, purchase_id;
-    matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-    if (matches) {
-      purchase_id = matches[1];
-    }
-    return purchase_id;
-  };
-
-
-  /***
-  * @ngdoc method
-  * @name getBookingAndSurvey
-  * @methodOf BB.Directives:bbSurveyQuestions
-  * @description
-  * Get booking and survey
-   */
-
-  getBookingAndSurvey = function() {
-    var id;
-    id = getBookingRef();
-    if (id) {
-      return $scope.loadSurveyFromBookingRef(id);
-    } else {
-      id = getPurchaseID();
-      if (id) {
-        return $scope.loadSurveyFromPurchaseID(id);
-      } else {
-        if ($scope.bb.total) {
-          return $scope.loadSurveyFromPurchaseID($scope.bb.total.long_id);
-        } else {
-
+    setPurchaseCompany = function(company) {
+      $scope.bb.company_id = company.id;
+      $scope.bb.company = new BBModel.Company(company);
+      $scope.company = $scope.bb.company;
+      $scope.bb.item_defaults.company = $scope.bb.company;
+      if (company.settings) {
+        if (company.settings.merge_resources) {
+          $scope.bb.item_defaults.merge_resources = true;
+        }
+        if (company.settings.merge_people) {
+          return $scope.bb.item_defaults.merge_people = true;
         }
       }
-    }
-  };
+    };
+
+    /***
+    * @ngdoc method
+    * @name getBookingRef
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get booking references
+     */
+    getBookingRef = function() {
+      var booking_ref, matches;
+      matches = /^.*(?:\?|&)booking_ref=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        booking_ref = matches[1];
+      }
+      return booking_ref;
+    };
+
+    /***
+    * @ngdoc method
+    * @name getPurchaseID
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get purchase Id
+     */
+    getPurchaseID = function() {
+      var matches, purchase_id;
+      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        purchase_id = matches[1];
+      }
+      return purchase_id;
+    };
+
+    /***
+    * @ngdoc method
+    * @name getBookingAndSurvey
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get booking and survey
+     */
+    return getBookingAndSurvey = function() {
+      var id;
+      id = getBookingRef();
+      if (id) {
+        return $scope.loadSurveyFromBookingRef(id);
+      } else {
+        id = getPurchaseID();
+        if (id) {
+          return $scope.loadSurveyFromPurchaseID(id);
+        } else {
+          if ($scope.bb.total) {
+            return $scope.loadSurveyFromPurchaseID($scope.bb.total.long_id);
+          } else {
+
+          }
+        }
+      }
+    };
+  });
 
 }).call(this);
 
@@ -12277,7 +12559,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService) {
     var checkRequestedTime, currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -12762,7 +13044,7 @@ function getURIparam( name ){
         }
         if (!found_time) {
           current_item.requestedTimeUnavailable();
-          return AlertService.raise(ErrorService.getAlert('REQ_TIME_NOT_AVAIL'));
+          return AlertService.raise('REQ_TIME_NOT_AVAIL');
         }
       }
     };
@@ -12789,10 +13071,10 @@ function getURIparam( name ){
      */
     $scope.setReady = function() {
       if (!$scope.bb.current_item.time) {
-        AlertService.raise(ErrorService.getAlert('TIME_SLOT_NOT_SELECTED'));
+        AlertService.raise('TIME_SLOT_NOT_SELECTED');
         return false;
       } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime)) {
-        AlertService.raise(ErrorService.getAlert('APPT_AT_SAME_TIME'));
+        AlertService.raise('APPT_AT_SAME_TIME');
         return false;
       } else if ($scope.bb.moving_booking) {
         if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource) {
@@ -12982,507 +13264,6 @@ function getURIparam( name ){
         return true;
       };
     })(this);
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
   });
 
 }).call(this);
@@ -13830,12 +13611,12 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, ErrorService, $window) {
+  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, $window) {
     return {
       restrict: 'A',
       scope: true,
       link: function(scope, element, attrs) {
-        var checkLoginState, loginToBBWithFBUser, redirectTo, statusChangeCallback;
+        var checkLoginState, loginToBBWithFBUser, statusChangeCallback;
         $rootScope.connection_started.then(function() {
           return checkLoginState();
         });
@@ -13852,7 +13633,6 @@ function getURIparam( name ){
           }
         };
         checkLoginState = function() {
-          console.log("FBLogin - checkLoginState");
           FB.getLoginStatus(function(response) {
             statusChangeCallback(response);
           });
@@ -13868,11 +13648,8 @@ function getURIparam( name ){
               return scope.decideNextPage();
             }
           }, function(err) {
-            return AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+            return AlertService.raise('LOGIN_FAILED');
           });
-        };
-        redirectTo = function(destination) {
-          return $window.location.href = destination;
         };
         return scope.loginFB = function() {
           return FB.login((function(response) {
@@ -13882,9 +13659,9 @@ function getURIparam( name ){
               params.access_token = response.authResponse.accessToken;
               loginToBBWithFBUser(params);
             } else if (response.status === 'not_authorized') {
-              AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+              AlertService.raise('LOGIN_FAILED');
             } else {
-              AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+              AlertService.raise('LOGIN_FAILED');
             }
           }), {
             scope: 'public_profile,email'
@@ -14270,47 +14047,60 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('bbCommPref', function($parse) {
+  app.directive('bbCommPref', function() {
     return {
       restrict: 'A',
       require: ['ngModel'],
       link: function(scope, element, attrs, ctrls) {
-        var comm_pref_default, ngModelCtrl;
-        ngModelCtrl = ctrls[0];
-        comm_pref_default = scope.$eval(attrs.bbCommPref || false);
-        ngModelCtrl.$setViewValue(comm_pref_default);
-        return scope.$watch(attrs.ngModel, function(newval, oldval) {
-          if (newval !== oldval) {
-            scope.bb.current_item.settings.send_email_followup = newval;
-            return scope.bb.current_item.settings.send_sms_followup = newval;
-          }
-        });
+        var comm_pref, ng_model_ctrl, parser;
+        ng_model_ctrl = ctrls[0];
+        comm_pref = scope.$eval(attrs.bbCommPref) || false;
+        if ((scope.bb.current_item.settings.send_email_followup != null) && (scope.bb.current_item.settings.send_sms_followup != null)) {
+          comm_pref = scope.bb.current_item.settings.send_email_followup;
+        } else {
+          scope.bb.current_item.settings.send_email_followup = comm_pref;
+          scope.bb.current_item.settings.send_sms_followup = comm_pref;
+        }
+        ng_model_ctrl.$setViewValue(comm_pref);
+        parser = function(value) {
+          scope.bb.current_item.settings.send_email_followup = value;
+          scope.bb.current_item.settings.send_sms_followup = value;
+          return value;
+        };
+        return ng_model_ctrl.$parsers.push(parser);
       }
     };
   });
 
-  app.directive('bbCountTicketTypes', function() {
+  app.directive('bbCountTicketTypes', function($rootScope) {
     return {
       restrict: 'A',
+      scope: false,
       link: function(scope, element, attrs) {
-        var counts, i, item, items, len, results;
-        items = scope.$eval(attrs.bbCountTicketTypes);
-        counts = [];
-        results = [];
-        for (i = 0, len = items.length; i < len; i++) {
-          item = items[i];
-          if (item.tickets) {
-            if (counts[item.tickets.name]) {
-              counts[item.tickets.name] += 1;
-            } else {
-              counts[item.tickets.name] = 1;
+        var countTicketTypes;
+        $rootScope.connection_started.then(function() {
+          return countTicketTypes();
+        });
+        scope.$on("basket:updated", function(event, basket) {
+          return countTicketTypes();
+        });
+        return countTicketTypes = function(items) {
+          var counts, i, item, len;
+          items = scope.bb.basket.timeItems();
+          counts = [];
+          for (i = 0, len = items.length; i < len; i++) {
+            item = items[i];
+            if (item.tickets) {
+              if (counts[item.tickets.name]) {
+                counts[item.tickets.name] += item.tickets.qty;
+              } else {
+                counts[item.tickets.name] = item.tickets.qty;
+              }
+              item.number = counts[item.tickets.name];
             }
-            results.push(item.number = counts[item.tickets.name]);
-          } else {
-            results.push(void 0);
           }
-        }
-        return results;
+          return scope.counts = counts;
+        };
       }
     };
   });
@@ -15404,7 +15194,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, ErrorService) {
+  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService) {
     return {
       restrict: 'A',
       template: "<form name=\"login_form\" ng-submit=\"submit(login_form)\" sf-schema=\"schema\"\nsf-form=\"form\" sf-model=\"login_form\" sf-options=\"{feedback: false}\"\nng-if=\"schema && form\"></form>",
@@ -15436,9 +15226,6 @@ function getURIparam( name ){
             });
           }
         });
-        $scope.redirectTo = function(destination) {
-          return $window.location.href = destination;
-        };
         return $scope.submit = function(form) {
           form['role'] = 'member';
           return $scope.company.$post('login', {}, form).then(function(login) {
@@ -15468,7 +15255,11 @@ function getURIparam( name ){
               });
             }
           }, function(err) {
-            return AlertService.raise(ErrorService.getAlert('LOGIN_FAILED'));
+            if (err.data.error === "Account has been disabled") {
+              return AlertService.raise('ACCOUNT_DISABLED');
+            } else {
+              return AlertService.raise('LOGIN_FAILED');
+            }
           });
         };
       }
@@ -15478,12 +15269,15 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbMonthPicker', function() {
+  angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc) {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      require: '^bbEvents',
+      require: ['^?bbEvents', '^?bbMultiCompanyEvents'],
+      templateUrl: function(element, attrs) {
+        return PathSvc.directivePartial("_month_picker");
+      },
       link: function(scope, el, attrs) {
         scope.picker_settings = scope.$eval(attrs.bbMonthPicker) || {};
         scope.watch_val = attrs.dayData;
@@ -15611,15 +15405,12 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Directives').directive('bbSlick', function($rootScope, $timeout, $bbug, PathSvc, $compile, $templateCache, $window) {
+  angular.module('BB.Directives').directive('bbSlick', function($rootScope, $timeout, $bbug, $compile, $templateCache, $window) {
     return {
       restrict: 'A',
       replace: true,
       scope: true,
       require: '^bbMonthPicker',
-      templateUrl: function(element, attrs) {
-        return PathSvc.directivePartial("_month_picker");
-      },
       controller: function($scope, $element, $attrs) {
         return $scope.slickOnInit = function() {
           $scope.refreshing = true;
@@ -16139,6 +15930,507 @@ function getURIparam( name ){
 }(window.angular));
 
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -16164,8 +16456,13 @@ function getURIparam( name ){
     return Address = (function(superClass) {
       extend(Address, superClass);
 
-      function Address() {
-        return Address.__super__.constructor.apply(this, arguments);
+      function Address(data) {
+        Address.__super__.constructor.call(this, data);
+        if (!this.map_url || this.map_url === "") {
+          if (this.lat && this.long) {
+            this.map_url = "https://www.google.com/maps/@" + this.lat + "," + this.long + ",17z";
+          }
+        }
       }
 
 
@@ -16463,7 +16760,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection', 'ExternalPurchase'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -16490,7 +16787,7 @@ function getURIparam( name ){
       fn1(model);
     }
     funcs['Purchase'] = pfuncs;
-    member_models = ['Member', 'Booking', 'PrePaidBooking', 'Wallet', 'WalletLog'];
+    member_models = ['Member', 'Booking', 'PrePaidBooking', 'Wallet', 'WalletLog', 'Purchase', 'PurchaseItem', 'WalletPurchaseBand'];
     mfuncs = {};
     fn2 = (function(_this) {
       return function(model) {
@@ -16838,6 +17135,40 @@ function getURIparam( name ){
         return titems;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasTimeItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array of time items(all items that are not coupons)
+      *
+      * @returns {array} the newly build array of items
+       */
+
+      Basket.prototype.hasTimeItems = function() {
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (!i.is_coupon && !i.isExternalPurchase()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name basketItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Gets all BasketItem's that are not coupons
+      *
+      * @returns {array} array of basket items
+       */
+
       Basket.prototype.basketItems = function() {
         var bitems, i, j, len, ref;
         bitems = [];
@@ -16850,6 +17181,17 @@ function getURIparam( name ){
         }
         return bitems;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name externalPurchaseItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Gets all external purchases in the basket
+      *
+      * @returns {array} array of external purchases
+       */
 
       Basket.prototype.externalPurchaseItems = function() {
         var eitems, i, j, len, ref;
@@ -16974,7 +17316,7 @@ function getURIparam( name ){
         };
         post.is_admin = this.is_admin;
         post.parent_client_id = this.parent_client_id;
-        post.take_from_wallet = this.take_from_wallet != null;
+        post.take_from_wallet = this.take_from_wallet;
         post.items = [];
         ref = this.items;
         for (j = 0, len = ref.length; j < len; j++) {
@@ -17347,7 +17689,7 @@ function getURIparam( name ){
 
       /***
       * @ngdoc method
-      * @name setTakeFromWallet
+      * @name useWallet
       * @methodOf BB.Models:Basket
       * @description
       * Indicates if a wallet should be used for payment
@@ -17355,7 +17697,7 @@ function getURIparam( name ){
       * @returns {boolean} true or false
        */
 
-      Basket.prototype.setTakeFromWallet = function(value, client) {
+      Basket.prototype.useWallet = function(value, client) {
         if (client && client.$has('wallet') && value) {
           this.take_from_wallet = true;
           return true;
@@ -17584,6 +17926,9 @@ function getURIparam( name ){
               };
             })(this));
           }
+          if (data.clinic_id) {
+            this.clinic_id = data.clinic_id;
+          }
         }
       }
 
@@ -17637,6 +17982,7 @@ function getURIparam( name ){
         }
         if (defaults.clinic) {
           this.clinic = defaults.clinic;
+          this.clinic_id = defaults.clinic.id;
         }
         if (defaults.private_note) {
           this.private_note = defaults.private_note;
@@ -18168,15 +18514,12 @@ function getURIparam( name ){
         this.duration = dur;
         if (this.service) {
           this.base_price = this.service.getPriceByDuration(dur);
-        }
-        if (this.time && this.time.price) {
+        } else if (this.time && this.time.price) {
           this.base_price = this.time.price;
+        } else if (this.price) {
+          this.base_price = this.price;
         }
-        if (this.price && (this.price !== this.base_price)) {
-          return this.setPrice(this.price);
-        } else {
-          return this.setPrice(this.base_price);
-        }
+        return this.setPrice(this.base_price);
       };
 
 
@@ -18541,6 +18884,9 @@ function getURIparam( name ){
         if (this.available_slot) {
           data.available_slot = this.available_slot;
         }
+        if (this.clinic_id) {
+          data.clinic_id = this.clinic_id;
+        }
         return data;
       };
 
@@ -18803,7 +19149,7 @@ function getURIparam( name ){
 
       BasketItem.prototype.setSrcBooking = function(booking) {
         this.srcBooking = booking;
-        return this.duration = booking.duration / 60;
+        return this.duration = booking.duration;
       };
 
 
@@ -19058,14 +19404,46 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setPrepaidBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a prepaid booking
+      *
+       */
+
       BasketItem.prototype.setPrepaidBooking = function(prepaid_booking) {
         this.prepaid_booking = prepaid_booking;
         return this.pre_paid_booking_id = prepaid_booking.id;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasPrepaidBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the basket item has a prepaid booking applied
+      *
+      * @returns {boolean} boolean indicating if the BasketItem has a prepaid booking
+       */
+
       BasketItem.prototype.hasPrepaidBooking = function() {
         return this.pre_paid_booking_id != null;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getEventId
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get the event id for the BasketItem
+      *
+      * @returns {string} The Event ID
+       */
 
       BasketItem.prototype.getEventId = function() {
         if (this.time && this.time.event_id) {
@@ -19077,8 +19455,38 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name isExternalPurchase
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the BasketItem is an external purchase
+      *
+      * @returns {boolean}
+       */
+
       BasketItem.prototype.isExternalPurchase = function() {
         return this.external_purchase != null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getName
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Returns the name
+      *
+      * @returns {String}
+       */
+
+      BasketItem.prototype.getName = function(client) {
+        if (this.first_name) {
+          return this.first_name + " " + this.last_name;
+        } else if (client) {
+          return client.getName();
+        }
       };
 
       return BasketItem;
@@ -20385,6 +20793,7 @@ function getURIparam( name ){
         if (this.duration) {
           this.end_datetime = this.date.clone().add(this.duration, 'minutes');
         }
+        this.date_unix = this.date.unix();
       }
 
 
@@ -21158,7 +21567,7 @@ function getURIparam( name ){
       * @name getMax
       * @methodOf BB.Models:EventTicket
       * @description
-      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickest already selected (from passing in the event being booked)
+      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
       *
       * @returns {array} The returned maximum
        */
@@ -21237,6 +21646,27 @@ function getURIparam( name ){
       };
 
       return EventTicket;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ExternalPurchaseModel", function($q, BBModel, BaseModel) {
+    var ExternalPurchase;
+    return ExternalPurchase = (function(superClass) {
+      extend(ExternalPurchase, superClass);
+
+      function ExternalPurchase() {
+        return ExternalPurchase.__super__.constructor.apply(this, arguments);
+      }
+
+      return ExternalPurchase;
 
     })(BaseModel);
   });
@@ -22741,6 +23171,26 @@ function getURIparam( name ){
 
       /***
       * @ngdoc error
+      * @name success
+      * @methodOf BB.Services:Alert
+      * @description
+      * Success alert
+      *
+      * @returns {array} The returned warning alert
+       */
+      success: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('success', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
       * @name raise
       * @methodOf BB.Services:Alert
       * @description
@@ -22748,15 +23198,19 @@ function getURIparam( name ){
       *
       * @returns {array} The returned raise alert
        */
-      raise: function(alert) {
-        if (!alert) {
+      raise: function(key) {
+        var alert;
+        if (!key) {
           return;
         }
-        return this.add(alert.type, {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
+        alert = ErrorService.getAlert(key);
+        if (alert) {
+          return this.add(alert.type, {
+            title: alert.title,
+            msg: alert.msg,
+            persist: alert.persist
+          });
+        }
       }
     };
   });
@@ -22881,9 +23335,11 @@ function getURIparam( name ){
               }
               if (promises.length > 0) {
                 return $q.all(promises).then(function() {
+                  $rootScope.$broadcast("basket:updated", mbasket);
                   return deferred.resolve(mbasket);
                 });
               } else {
+                $rootScope.$broadcast("basket:updated", mbasket);
                 return deferred.resolve(mbasket);
               }
             }, function(err) {
@@ -23754,13 +24210,19 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'There are no items in the basket to proceed to checkout.'
+        msg: 'You need to add some items to the basket before you can checkout.'
       }, {
         key: 'MAXIMUM_TICKETS',
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Unfortunately, the maximum number of tickets per person has been reached.'
+        msg: 'Sorry, the maximum number of tickets per person has been reached.'
+      }, {
+        key: 'GIFT_CERTIFICATE_REQUIRED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'A valid Gift Certificate is required to proceed with this booking'
       }, {
         key: 'TIME_SLOT_NOT_SELECTED',
         type: 'warning',
@@ -23778,7 +24240,13 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Sorry, the requested time slot is not available. Please choose a different time.'
+        msg: 'The requested time slot is not available. Please choose a different time.'
+      }, {
+        key: 'TOPUP_SUCCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'Your wallet has been topped up'
       }, {
         key: 'TOPUP_FAILED',
         type: 'warning',
@@ -23808,7 +24276,7 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Sorry, your email or password was not recognised. Please try again.'
+        msg: 'Sorry, your email or password was not recognised. Please try again or reset your password.'
       }, {
         key: 'PASSWORD_RESET_REQ_SUCCESS',
         type: 'success',
@@ -23832,13 +24300,31 @@ function getURIparam( name ){
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Sorry, we couldn\'t update your password. Plese try again.'
+        msg: 'Sorry, we couldn\'t update your password. Please try again.'
       }, {
         key: 'PASSWORD_MISMATCH',
         type: 'warning',
         title: '',
         persist: true,
-        msg: 'Your passwords don\'t match each other.'
+        msg: 'Your passwords don\'t match'
+      }, {
+        key: 'ATTENDEES_CHANGED',
+        type: 'info',
+        title: '',
+        persist: true,
+        msg: 'Your booking has been successfully updated'
+      }, {
+        key: 'PAYMENT_FAILED',
+        type: 'danger',
+        title: '',
+        persist: true,
+        msg: 'We were unable to take payment. Please contact your card issuer or try again using a different card'
+      }, {
+        key: 'ACCOUNT_DISABLED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists."
       }
     ];
     return {
@@ -24584,7 +25070,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage, $fakeStorage) {
+  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage) {
     return {
       companyLogin: function(company, params, form) {
         var deferred;
@@ -24635,7 +25121,7 @@ function getURIparam( name ){
           return function(login) {
             return login.$get('member').then(function(member) {
               member = new BBModel.Member.Member(member);
-              $fakeStorage.setItem("fb_user", true);
+              $sessionStorage.setItem("fb_user", true);
               _this.setLogin(member);
               return deferred.resolve(member);
             }, function(err) {
@@ -24751,8 +25237,7 @@ function getURIparam( name ){
         return deferred.promise;
       },
       FBLogout: function(options) {
-        FB.logout();
-        $fakeStorage.removeItem("fb_user");
+        $sessionStorage.removeItem("fb_user");
         return this.logout(options);
       },
       sendPasswordReset: function(company, params) {
@@ -25301,7 +25786,7 @@ function getURIparam( name ){
           var name;
           name = convertToSnakeCase(question.name);
           return _.each(keys, function(key) {
-            if (name.indexOf(key) >= 0) {
+            if (name.indexOf("_" + key) >= 0 || name.indexOf("_" + key + "_") >= 0 || name.indexOf(key + "_") >= 0) {
               if (defaults[key] && !question.answer) {
                 question.answer = defaults[key];
                 delete defaults[key];
@@ -25814,6 +26299,7 @@ function getURIparam( name ){
         if (!all_events || all_events.length === 0) {
           return [];
         }
+        all_events = _.shuffle(all_events);
         sorted_times = [];
         for (j = 0, len = all_events.length; j < len; j++) {
           ev = all_events[j];
@@ -26415,6 +26901,21 @@ function getURIparam( name ){
     };
   });
 
+  angular.module('BB.Services').factory("BB.Service.external_purchases", function($q, BBModel) {
+    return {
+      promise: false,
+      unwrap: function(items) {
+        var i, j, len, models;
+        models = [];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
+          models.push(new BBModel.ExternalPurchase(i));
+        }
+        return models;
+      }
+    };
+  });
+
 }).call(this);
 
 
@@ -26439,7 +26940,7 @@ function getURIparam( name ){
  */
 
 (function() {
-  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, ErrorService, BBModel, $q, $bbug) {
+  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, BBModel, $q, $bbug) {
     var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient;
     uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
     uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
@@ -26613,10 +27114,10 @@ function getURIparam( name ){
           return false;
         }
         if (form.$error.required) {
-          AlertService.danger(ErrorService.getError('MISSING_POSTCODE'));
+          AlertService.raise('MISSING_POSTCODE');
           return false;
         } else if (form.$error.pattern) {
-          AlertService.danger(ErrorService.getError('INVALID_POSTCODE'));
+          AlertService.raise('INVALID_POSTCODE');
           return false;
         } else {
           deferred = $q.defer();
@@ -26641,7 +27142,7 @@ function getURIparam( name ){
               geocode_result = results[0];
               return deferred.resolve(true);
             } else {
-              AlertService.danger(ErrorService.getError('INVALID_POSTCODE'));
+              AlertService.raise('INVALID_POSTCODE');
               $rootScope.$apply();
               return deferred.reject(false);
             }
@@ -26664,6 +27165,7 @@ function getURIparam( name ){
           return false;
         }
         form.submitted = true;
+        $rootScope.$broadcast("form:validated", form);
         if (form.$invalid && form.raise_alerts && form.alert) {
           AlertService.danger(form.alert);
           return false;
@@ -26954,7 +27456,7 @@ function getURIparam( name ){
       * @name recordCurrentPage
       * @methodOf BB.Models:BBWidget
       * @description
-      * Record current page
+      * Records the current page and determines the current step from either the predefined steps or the steps that have been passed already
       *
       * @returns {string} The returned record step
        */
@@ -27007,7 +27509,7 @@ function getURIparam( name ){
 
       /***
       * @ngdoc method
-      * @name recordCurrentPage
+      * @name recordStep
       * @methodOf BB.Models:BBWidget
       * @description
       * Record step in according of step and title parameters. Calculate percentile complete
@@ -27408,7 +27910,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, ErrorService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $upload, ServiceService, $sessionStorage) {
     var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
     $scope.controller = "Purchase";
     $scope.is_waitlist = false;
@@ -27433,7 +27935,7 @@ function getURIparam( name ){
           msg: $scope.fail_msg
         });
       } else {
-        return AlertService.danger(ErrorService.getAlert('GENERIC'));
+        return AlertService.raise('GENERIC');
       }
     };
     $scope.init = function(options) {
@@ -27782,7 +28284,7 @@ function getURIparam( name ){
         })(this));
       });
     };
-    $scope.delete_all = function() {
+    $scope.deleteAll = function() {
       var modalInstance;
       modalInstance = $modal.open({
         templateUrl: $scope.getPartial("_cancel_modal"),
@@ -27794,7 +28296,7 @@ function getURIparam( name ){
         }
       });
       return modalInstance.result.then(function(purchase) {
-        return PurchaseService.delete_all(purchase).then(function(purchase) {
+        return PurchaseService.deleteAll(purchase).then(function(purchase) {
           $scope.purchase = purchase;
           $scope.bookings = [];
           return $rootScope.$broadcast("booking:cancelled");
@@ -27843,15 +28345,18 @@ function getURIparam( name ){
       item.setSrcBooking(booking);
       return item;
     };
-    return $scope.checkAnswer = function(answer) {
+    $scope.checkAnswer = function(answer) {
       return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
+    };
+    return $scope.changeAttendees = function(route) {
+      return $scope.moveAll(route);
     };
   });
 
   ModalDelete = function($scope, $rootScope, $modalInstance, booking) {
     $scope.controller = "ModalDelete";
     $scope.booking = booking;
-    $scope.confirm_delete = function() {
+    $scope.confirmDelete = function() {
       return $modalInstance.close(booking);
     };
     return $scope.cancel = function() {
@@ -27862,13 +28367,168 @@ function getURIparam( name ){
   ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
     $scope.controller = "ModalDeleteAll";
     $scope.purchase = purchase;
-    $scope.confirm_delete = function() {
+    $scope.confirmDelete = function() {
       return $modalInstance.close(purchase);
     };
     return $scope.cancel = function() {
       return $modalInstance.dismiss("cancel");
     };
   };
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, len, ref;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.booking) {
+          data.booking = params.booking.getPostData();
+        }
+        data.booking_id = data.booking.id;
+        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      deleteAll: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_item: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
+  });
 
 }).call(this);
 
@@ -28024,11 +28684,12 @@ function getURIparam( name ){
         data.describe = this.describe;
         data.duration = this.duration;
         data.end_datetime = this.end_datetime;
-        if (this.event) {
-          data.event_id = this.event.id;
-        }
-        if (this.time && this.time.event_id) {
+        if (this.time && this.time.event_id && !this.isEvent()) {
           data.event_id = this.time.event_id;
+        } else if (this.event) {
+          data.event_id = this.event.id;
+        } else {
+          data.event_id = this.slot_id;
         }
         data.full_describe = this.full_describe;
         data.id = this.id;
@@ -28069,6 +28730,12 @@ function getURIparam( name ){
         }
         if (this.email_admin != null) {
           data.email_admin = this.email_admin;
+        }
+        if (this.first_name) {
+          data.first_name = this.first_name;
+        }
+        if (this.last_name) {
+          data.last_name = this.last_name;
         }
         formatted_survey_answers = [];
         if (this.survey_questions) {
@@ -28129,6 +28796,14 @@ function getURIparam( name ){
 
       Purchase_Booking.prototype.canMove = function() {
         return this.canCancel();
+      };
+
+      Purchase_Booking.prototype.getAttendeeName = function() {
+        return this.first_name + " " + this.last_name;
+      };
+
+      Purchase_Booking.prototype.isEvent = function() {
+        return this.event_chain != null;
       };
 
       return Purchase_Booking;
@@ -28450,7 +29125,7 @@ function getURIparam( name ){
             };
           })(this));
         } else {
-          defer.reject('No client');
+          defer.reject('No member');
         }
         return defer.promise;
       };
@@ -28518,161 +29193,6 @@ function getURIparam( name ){
       return Purchase_Total;
 
     })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, len, ref;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.booking) {
-          data.booking = params.booking.getPostData();
-        }
-        data.booking_id = data.booking.id;
-        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_all: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_item: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
   });
 
 }).call(this);
