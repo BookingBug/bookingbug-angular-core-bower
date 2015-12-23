@@ -2616,7 +2616,7 @@ function getURIparam( name ){
   * @ngdoc directive
   * @name BB.Directives:bbWidget
   * @restrict A
-  * @scope 
+  * @scope
   *   client: '=?'
   *   apiUrl: '@?'
   *   useParent:'='
@@ -3715,15 +3715,21 @@ function getURIparam( name ){
       return add_defer.promise;
     };
     $scope.emptyBasket = function() {
+      var defer;
       if (!$scope.bb.basket.items || ($scope.bb.basket.items && $scope.bb.basket.items.length === 0)) {
         return;
       }
-      return BasketService.empty($scope.bb).then(function(basket) {
+      defer = $q.defer();
+      BasketService.empty($scope.bb).then(function(basket) {
         if ($scope.bb.current_item.id) {
           delete $scope.bb.current_item.id;
         }
-        return $scope.setBasket(basket);
+        $scope.setBasket(basket);
+        return defer.resolve();
+      }, function(err) {
+        return defer.reject();
       });
+      return defer.promise;
     };
     $scope.deleteBasketItem = function(item) {
       return BasketService.deleteItem(item, $scope.bb.company, {
@@ -3850,7 +3856,6 @@ function getURIparam( name ){
               res.$get('member').then(function(member) {
                 if (member.client_type !== 'Contact') {
                   member = LoginService.setLogin(member);
-                  $rootScope.member = member;
                   return $scope.setClient(member);
                 }
               });
@@ -4237,9 +4242,12 @@ function getURIparam( name ){
     $scope.isMemberLoggedIn = function() {
       return LoginService.isLoggedIn();
     };
-    return $scope.scrollTo = function(id) {
+    $scope.scrollTo = function(id) {
       $location.hash(id);
       return $anchorScroll();
+    };
+    return $scope.redirectTo = function(url) {
+      return $window.location.href = url;
     };
   });
 
@@ -4811,13 +4819,14 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('ClientDetails', function($scope, $attrs, $rootScope, ClientDetailsService, ClientService, LoginService, BBModel, ValidatorService, QuestionService, AlertService) {
-    var handleError;
+    var handleError, options;
     $scope.controller = "public.controllers.ClientDetails";
     $scope.notLoaded($scope);
     $scope.validator = ValidatorService;
     $scope.existing_member = false;
     $scope.login_error = false;
-    $scope.suppress_client_create = $attrs.bbSuppressCreate != null;
+    options = $scope.$eval($attrs.bbClientDetails) || {};
+    $scope.suppress_client_create = ($attrs.bbSuppressCreate != null) || options.suppress_client_create;
     $rootScope.connection_started.then((function(_this) {
       return function() {
         if (!$scope.client.valid() && LoginService.isLoggedIn()) {
@@ -6096,13 +6105,14 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService) {
+  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService) {
     var init, initImage, initTickets;
     $scope.controller = "public.controllers.Event";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
     $scope.validator = ValidatorService;
     $scope.event_options = $scope.$eval($attrs.bbEvent) || {};
+    FormDataStoreService.init('ItemDetails', $scope, ['selected_tickets', 'event_options']);
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
         return init($scope.bb.company);
@@ -6112,7 +6122,11 @@ function getURIparam( name ){
     });
     init = function(comp) {
       var promises;
+      if ($scope.bb.stacked_items && $scope.bb.stacked_items.length === 0) {
+        delete $scope.selected_tickets;
+      }
       $scope.event = $scope.bb.current_item.event;
+      $scope.event_options.use_my_details = $scope.event_options.use_my_details == null ? true : $scope.event_options.use_my_details;
       promises = [$scope.current_item.event_group.getImagesPromise(), $scope.event.prepEvent()];
       if ($scope.client) {
         promises.push($scope.getPrePaidsForEvent($scope.client, $scope.event));
@@ -6143,7 +6157,7 @@ function getURIparam( name ){
     * @name selectTickets
     * @methodOf BB.Directives:bbEvent
     * @description
-    * Process the selected tickets - this may mean adding multiple basket items - add them all to the basket
+    * Processes the selected tickets and adds them to the basket
      */
     $scope.selectTickets = function() {
       var base_item, c, i, item, j, len, ref, ref1, ticket;
@@ -6238,6 +6252,7 @@ function getURIparam( name ){
      */
     $scope.setReady = (function(_this) {
       return function() {
+        $scope.bb.current_item.setEvent($scope.event);
         $scope.bb.event_details = {
           name: $scope.event.chain.name,
           image: $scope.event.image,
@@ -6247,7 +6262,11 @@ function getURIparam( name ){
           duration: $scope.event.duration,
           tickets: $scope.event.tickets
         };
-        return $scope.updateBasket();
+        if ($scope.event_options.suppress_basket_update) {
+          return true;
+        } else {
+          return $scope.updateBasket();
+        }
       };
     })(this);
 
@@ -6287,6 +6306,9 @@ function getURIparam( name ){
     };
     return initTickets = function() {
       var i, len, ref, ticket;
+      if ($scope.selected_tickets) {
+        return;
+      }
       $scope.event.tickets[0].qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
       if ($scope.event.tickets.length > 1) {
         ref = $scope.event.tickets.slice(1);
@@ -6527,7 +6549,7 @@ function getURIparam( name ){
       link: function(scope, element, attrs) {
         var options;
         scope.summary = attrs.summary != null;
-        options = scope.$eval(attrs.bbEvents || {});
+        options = scope.$eval(attrs.bbEvents) || {};
         scope.mode = options && options.mode ? options.mode : 0;
         if (scope.summary) {
           scope.mode = 0;
@@ -6536,8 +6558,8 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService) {
-    var buildDynamicFilters, filterEventsWithDynamicFilters, isFullyBooked, sort;
+  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout) {
+    var buildDynamicFilters, filterEventsWithDynamicFilters, sort;
     $scope.controller = "public.controllers.EventList";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
@@ -6545,7 +6567,6 @@ function getURIparam( name ){
     $scope.start_date = moment();
     $scope.end_date = moment().add(1, 'year');
     $scope.filters = {};
-    $scope.price_options = [0, 1000, 2500, 5000];
     $scope.pagination = PaginationService.initialise({
       page_size: 10,
       max_size: 5
@@ -6578,7 +6599,7 @@ function getURIparam( name ){
       if (!$scope.event_group_manually_set && ($scope.current_item.event_group == null)) {
         $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null) ? true : false;
       }
-      if ($scope.current_item.event && $scope.mode !== 0) {
+      if ($scope.bb.current_item.event) {
         event_group = $scope.current_item.event_group;
         $scope.clearBasketItem();
         $scope.emptyBasket();
@@ -6595,7 +6616,7 @@ function getURIparam( name ){
         promises.push($q.when([]));
         $scope.has_company_questions = false;
       }
-      if (!$scope.current_item.event_group) {
+      if (!$scope.current_item.event_group && $scope.bb.company.$has('event_groups')) {
         promises.push($scope.bb.company.getEventGroupsPromise());
       } else {
         promises.push($q.when([]));
@@ -6611,7 +6632,7 @@ function getURIparam( name ){
         promises.push($q.when([]));
       }
       return $q.all(promises).then(function(result) {
-        var company_questions, event_data, event_groups, event_summary;
+        var company_questions, event_data, event_groups, event_groups_collection, event_summary, item, j, len, ref;
         company_questions = result[0];
         event_groups = result[1];
         event_summary = result[2];
@@ -6620,8 +6641,14 @@ function getURIparam( name ){
         if (company_questions) {
           buildDynamicFilters(company_questions);
         }
-        if (event_groups) {
-          $scope.event_groups = _.indexBy(event_groups, 'id');
+        $scope.event_groups = event_groups;
+        event_groups_collection = _.indexBy(event_groups, 'id');
+        if ($scope.items) {
+          ref = $scope.items;
+          for (j = 0, len = ref.length; j < len; j++) {
+            item = ref[j];
+            item.group = event_groups_collection[item.service_id];
+          }
         }
         return $scope.setLoaded($scope);
       }, function(err) {
@@ -6707,9 +6734,9 @@ function getURIparam( name ){
           start_date: $scope.start_date.toISODate(),
           end_date: $scope.end_date.toISODate()
         };
-        EventChainService.query(comp, params).then(function(events) {
+        EventChainService.query(comp, params).then(function(event_chains) {
           $scope.setLoaded($scope);
-          return deferred.resolve($scope.items);
+          return deferred.resolve(event_chains);
         }, function(err) {
           return deferred.reject();
         });
@@ -6747,20 +6774,28 @@ function getURIparam( name ){
       chains = $scope.loadEventChainData(comp);
       $scope.events = {};
       EventService.query(comp, params).then(function(events) {
-        var key, value;
-        events = _.groupBy(events, function(event) {
-          return event.date.toISODate();
-        });
-        for (key in events) {
-          value = events[key];
-          $scope.events[key] = value;
+        var item, j, len, ref;
+        $scope.items = _.flatten(events);
+        ref = $scope.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          item.spaces_left = item.getSpacesLeft();
         }
-        $scope.items = _.flatten(_.toArray($scope.events));
+        $scope.bb.company.getAddressPromise().then(function(address) {
+          var k, len1, ref1, results;
+          ref1 = $scope.items;
+          results = [];
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            item = ref1[k];
+            results.push(item.address = address);
+          }
+          return results;
+        });
         return chains.then(function() {
-          var idate, item, item_dates, j, k, len, len1, ref, x, y;
-          ref = $scope.items;
-          for (j = 0, len = ref.length; j < len; j++) {
-            item = ref[j];
+          var idate, item_dates, k, l, len1, len2, ref1, x, y;
+          ref1 = $scope.items;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            item = ref1[k];
             item.prepEvent();
             if ($scope.mode === 0 && current_event && current_event.self === item.self) {
               item.select();
@@ -6770,8 +6805,8 @@ function getURIparam( name ){
           if ($scope.mode === 1) {
             item_dates = {};
             if (items.length > 0) {
-              for (k = 0, len1 = items.length; k < len1; k++) {
-                item = items[k];
+              for (l = 0, len2 = items.length; l < len2; l++) {
+                item = items[l];
                 item.getDuration();
                 idate = parseInt(item.date.format("YYYYDDDD"));
                 item.idate = idate;
@@ -6806,7 +6841,7 @@ function getURIparam( name ){
               ];
             }
           }
-          isFullyBooked();
+          $scope.isFullyBooked();
           $scope.filtered_items = $scope.items;
           $scope.filterChanged();
           PaginationService.update($scope.pagination, $scope.filtered_items.length);
@@ -6828,7 +6863,7 @@ function getURIparam( name ){
     * @description
     * Verify if the items from event list are be fully booked
      */
-    isFullyBooked = function() {
+    $scope.isFullyBooked = function() {
       var full_events, item, j, len, ref;
       full_events = [];
       ref = $scope.items;
@@ -6854,13 +6889,13 @@ function getURIparam( name ){
      */
     $scope.showDay = function(day) {
       var date, new_date;
-      if (!day || (day && !day.data)) {
+      if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
         return;
       }
+      date = moment.isMoment(day) ? day : day.date;
       if ($scope.selected_day) {
         $scope.selected_day.selected = false;
       }
-      date = day.date;
       if ($scope.event && !$scope.selected_date.isSame(date, 'day')) {
         delete $scope.event;
       }
@@ -6877,7 +6912,9 @@ function getURIparam( name ){
       if (new_date) {
         $scope.selected_date = new_date;
         $scope.filters.date = new_date.toDate();
-        $scope.selected_day = day;
+        $scope.selected_day = moment.isMoment(day) ? {
+          date: new_date
+        } : day;
         $scope.selected_day.selected = true;
       } else {
         delete $scope.selected_date;
@@ -7018,9 +7055,20 @@ function getURIparam( name ){
     * @description
     * Filtering data exchanged from the list of events
      */
-    $scope.filterDateChanged = function() {
-      $scope.filterChanged();
-      return $scope.showDay(moment($scope.filters.date));
+    $scope.filterDateChanged = function(options) {
+      if (options == null) {
+        options = {
+          reset: false
+        };
+      }
+      if ($scope.filters.date) {
+        $scope.showDay(moment($scope.filters.date));
+        if (options.reset === true || ($scope.selected_date == null)) {
+          return $timeout(function() {
+            return delete $scope.filters.date;
+          }, 250);
+        }
+      }
     };
 
     /***
@@ -11493,7 +11541,7 @@ function getURIparam( name ){
 * @scope true
 *
 * @description
-* Loads a summary of the booking and handles Client and BasketItem submission to the API
+* Loads a summary of the booking
 *
 *
  */
@@ -11512,7 +11560,8 @@ function getURIparam( name ){
     $scope.controller = "public.controllers.Summary";
     $rootScope.connection_started.then((function(_this) {
       return function() {
-        return $scope.item = $scope.bb.current_item;
+        $scope.item = $scope.bb.current_item;
+        return $scope.items = $scope.bb.basket.timeItems();
       };
     })(this));
 
@@ -11527,7 +11576,12 @@ function getURIparam( name ){
       return function() {
         var promises;
         $scope.notLoaded($scope);
-        promises = [ClientService.create_or_update($scope.bb.company, $scope.client), $scope.addItemToBasket()];
+        promises = [ClientService.create_or_update($scope.bb.company, $scope.client)];
+        if ($scope.bb.current_item.service) {
+          promises.push($scope.addItemToBasket());
+        } else if ($scope.bb.current_item.event) {
+          promises.push($scope.updateBasket());
+        }
         return $q.all(promises).then(function(result) {
           var client;
           client = result[0];
@@ -13214,507 +13268,6 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter("datetime", function() {
-    return function(datetime, format, show_timezone) {
-      var result;
-      if (show_timezone == null) {
-        show_timezone = true;
-      }
-      if (!datetime) {
-        return;
-      }
-      datetime = moment(datetime);
-      if (!datetime.isValid()) {
-        return;
-      }
-      result = datetime.format(format);
-      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
-        if (datetime._z) {
-          result += datetime.format(" z");
-        } else {
-          result += " UTC" + datetime.format("Z");
-        }
-      }
-      return result;
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-}).call(this);
-
-(function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
     return {
@@ -14062,7 +13615,7 @@ function getURIparam( name ){
       restrict: 'A',
       scope: true,
       link: function(scope, element, attrs) {
-        var checkLoginState, loginToBBWithFBUser, redirectTo, statusChangeCallback;
+        var checkLoginState, loginToBBWithFBUser, statusChangeCallback;
         $rootScope.connection_started.then(function() {
           return checkLoginState();
         });
@@ -14096,9 +13649,6 @@ function getURIparam( name ){
           }, function(err) {
             return AlertService.raise('LOGIN_FAILED');
           });
-        };
-        redirectTo = function(destination) {
-          return $window.location.href = destination;
         };
         return scope.loginFB = function() {
           return FB.login((function(response) {
@@ -14521,28 +14071,35 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('bbCountTicketTypes', function() {
+  app.directive('bbCountTicketTypes', function($rootScope) {
     return {
       restrict: 'A',
+      scope: false,
       link: function(scope, element, attrs) {
-        var counts, i, item, items, len, results;
-        items = scope.$eval(attrs.bbCountTicketTypes);
-        counts = [];
-        results = [];
-        for (i = 0, len = items.length; i < len; i++) {
-          item = items[i];
-          if (item.tickets) {
-            if (counts[item.tickets.name]) {
-              counts[item.tickets.name] += 1;
-            } else {
-              counts[item.tickets.name] = 1;
+        var countTicketTypes;
+        $rootScope.connection_started.then(function() {
+          return countTicketTypes();
+        });
+        scope.$on("basket:updated", function(event, basket) {
+          return countTicketTypes();
+        });
+        return countTicketTypes = function(items) {
+          var counts, i, item, len;
+          items = scope.bb.basket.timeItems();
+          counts = [];
+          for (i = 0, len = items.length; i < len; i++) {
+            item = items[i];
+            if (item.tickets) {
+              if (counts[item.tickets.name]) {
+                counts[item.tickets.name] += item.tickets.qty;
+              } else {
+                counts[item.tickets.name] = item.tickets.qty;
+              }
+              item.number = counts[item.tickets.name];
             }
-            results.push(item.number = counts[item.tickets.name]);
-          } else {
-            results.push(void 0);
           }
-        }
-        return results;
+          return scope.counts = counts;
+        };
       }
     };
   });
@@ -15636,11 +15193,12 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService) {
+  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService) {
     return {
       restrict: 'A',
       template: "<form name=\"login_form\" ng-submit=\"submit(login_form)\" sf-schema=\"schema\"\nsf-form=\"form\" sf-model=\"login_form\" sf-options=\"{feedback: false}\"\nng-if=\"schema && form\"></form>",
       controller: function($scope, $element, $attrs) {
+        var handleLogin;
         $scope.login_form = {};
         $rootScope.connection_started.then(function() {
           var session_member;
@@ -15668,35 +15226,16 @@ function getURIparam( name ){
             });
           }
         });
-        $scope.redirectTo = function(destination) {
-          return $window.location.href = destination;
-        };
-        return $scope.submit = function(form) {
+        $scope.submit = function(form) {
           form['role'] = 'member';
           return $scope.company.$post('login', {}, form).then(function(login) {
             if (login.$has('members')) {
               return login.$get('members').then(function(members) {
-                var auth_token;
-                $rootScope.member = new BBModel.Member.Member(members[0]);
-                auth_token = $rootScope.member.getOption('auth_token');
-                $sessionStorage.setItem("login", $rootScope.member.$toStore());
-                $sessionStorage.setItem("auth_token", auth_token);
-                $scope.setClient($rootScope.member);
-                if ($scope.bb.destination) {
-                  return $scope.redirectTo($scope.bb.destination);
-                } else {
-                  return $scope.decideNextPage();
-                }
+                return handleLogin(members[0]);
               });
             } else if (login.$has('member')) {
               return login.$get('member').then(function(member) {
-                var auth_token;
-                $rootScope.member = new BBModel.Member.Member(member);
-                auth_token = $rootScope.member.getOption('auth_token');
-                $sessionStorage.setItem("login", $rootScope.member.$toStore());
-                $sessionStorage.setItem("auth_token", auth_token);
-                $scope.setClient($rootScope.member);
-                return $scope.decideNextPage();
+                return handleLogin(member);
               });
             }
           }, function(err) {
@@ -15706,6 +15245,15 @@ function getURIparam( name ){
               return AlertService.raise('LOGIN_FAILED');
             }
           });
+        };
+        return handleLogin = function(member) {
+          member = LoginService.setLogin(member);
+          $scope.setClient(member);
+          if ($scope.bb.destination) {
+            return $scope.redirectTo($scope.bb.destination);
+          } else {
+            return $scope.decideNextPage();
+          }
         };
       }
     };
@@ -15719,7 +15267,7 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-      require: '^bbEvents',
+      require: ['^?bbEvents', '^?bbMultiCompanyEvents'],
       templateUrl: function(element, attrs) {
         return PathSvc.directivePartial("_month_picker");
       },
@@ -16375,6 +15923,507 @@ function getURIparam( name ){
 }(window.angular));
 
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        } else {
+          result += " UTC" + datetime.format("Z");
+        }
+      }
+      return result;
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -16400,8 +16449,13 @@ function getURIparam( name ){
     return Address = (function(superClass) {
       extend(Address, superClass);
 
-      function Address() {
-        return Address.__super__.constructor.apply(this, arguments);
+      function Address(data) {
+        Address.__super__.constructor.call(this, data);
+        if (!this.map_url || this.map_url === "") {
+          if (this.lat && this.long) {
+            this.map_url = "https://www.google.com/maps/@" + this.lat + "," + this.long + ",17z";
+          }
+        }
       }
 
 
@@ -17074,6 +17128,40 @@ function getURIparam( name ){
         return titems;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasTimeItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array of time items(all items that are not coupons)
+      *
+      * @returns {array} the newly build array of items
+       */
+
+      Basket.prototype.hasTimeItems = function() {
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (!i.is_coupon && !i.isExternalPurchase()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name basketItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Gets all BasketItem's that are not coupons
+      *
+      * @returns {array} array of basket items
+       */
+
       Basket.prototype.basketItems = function() {
         var bitems, i, j, len, ref;
         bitems = [];
@@ -17086,6 +17174,17 @@ function getURIparam( name ){
         }
         return bitems;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name externalPurchaseItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Gets all external purchases in the basket
+      *
+      * @returns {array} array of external purchases
+       */
 
       Basket.prototype.externalPurchaseItems = function() {
         var eitems, i, j, len, ref;
@@ -19298,14 +19397,46 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name setPrepaidBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a prepaid booking
+      *
+       */
+
       BasketItem.prototype.setPrepaidBooking = function(prepaid_booking) {
         this.prepaid_booking = prepaid_booking;
         return this.pre_paid_booking_id = prepaid_booking.id;
       };
 
+
+      /***
+      * @ngdoc method
+      * @name hasPrepaidBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the basket item has a prepaid booking applied
+      *
+      * @returns {boolean} boolean indicating if the BasketItem has a prepaid booking
+       */
+
       BasketItem.prototype.hasPrepaidBooking = function() {
         return this.pre_paid_booking_id != null;
       };
+
+
+      /***
+      * @ngdoc method
+      * @name getEventId
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get the event id for the BasketItem
+      *
+      * @returns {string} The Event ID
+       */
 
       BasketItem.prototype.getEventId = function() {
         if (this.time && this.time.event_id) {
@@ -19317,8 +19448,38 @@ function getURIparam( name ){
         }
       };
 
+
+      /***
+      * @ngdoc method
+      * @name isExternalPurchase
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the BasketItem is an external purchase
+      *
+      * @returns {boolean}
+       */
+
       BasketItem.prototype.isExternalPurchase = function() {
         return this.external_purchase != null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getName
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Returns the name
+      *
+      * @returns {String}
+       */
+
+      BasketItem.prototype.getName = function(client) {
+        if (this.first_name) {
+          return this.first_name + " " + this.last_name;
+        } else if (client) {
+          return client.getName();
+        }
       };
 
       return BasketItem;
@@ -20625,6 +20786,7 @@ function getURIparam( name ){
         if (this.duration) {
           this.end_datetime = this.date.clone().add(this.duration, 'minutes');
         }
+        this.date_unix = this.date.unix();
       }
 
 
@@ -23166,9 +23328,11 @@ function getURIparam( name ){
               }
               if (promises.length > 0) {
                 return $q.all(promises).then(function() {
+                  $rootScope.$broadcast("basket:updated", mbasket);
                   return deferred.resolve(mbasket);
                 });
               } else {
+                $rootScope.$broadcast("basket:updated", mbasket);
                 return deferred.resolve(mbasket);
               }
             }, function(err) {
@@ -26994,6 +27158,7 @@ function getURIparam( name ){
           return false;
         }
         form.submitted = true;
+        $rootScope.$broadcast("form:validated", form);
         if (form.$invalid && form.raise_alerts && form.alert) {
           AlertService.danger(form.alert);
           return false;
