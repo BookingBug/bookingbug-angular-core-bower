@@ -1171,10 +1171,10 @@ angular
     $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
   ){
 
-
     if ($cookies['Auth-Token']){
       $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
     }
+
     if ($sessionStorage.getItem('auth_token'))
       shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
 
@@ -1444,6 +1444,7 @@ angular
 
       if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
       if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+
       if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
 
       if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
@@ -1457,8 +1458,9 @@ angular
         })
         .then(function(res){
 
-          // copy out the auth token from the header if there was one and make sure the child commands use it
-          if (res.headers('auth-token') && res.status != 304){
+          // copy out the auth token from the header if the response is new resource
+          // Note: we don't want to copy the auth token from 200 success responses as the auth token from cached responses could get saved 
+          if (res.headers('auth-token') && res.status == 201){
             options.auth_token = res.headers('Auth-Token')
             shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
           }
@@ -2958,7 +2960,7 @@ function getURIparam( name ){
     })(this);
     $scope.initWidget2 = (function(_this) {
       return function() {
-        var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
+        var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, options, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
         $scope.init_widget_started = true;
         prms = _this.$init_prms;
         if (prms.query) {
@@ -3029,7 +3031,7 @@ function getURIparam( name ){
         }
         if (prms.clear_member) {
           $scope.bb.clear_member = prms.clear_member;
-          $sessionStorage.removeItem("login");
+          $sessionStorage.removeItem('login');
         }
         if (prms.app_id) {
           $scope.bb.app_id = prms.app_id;
@@ -3144,15 +3146,17 @@ function getURIparam( name ){
           }
           comp_def = $q.defer();
           comp_promise = comp_def.promise;
+          options = {};
+          if ($sessionStorage.getItem('auth_token')) {
+            options.auth_token = $sessionStorage.getItem('auth_token');
+          }
           if ($scope.bb.isAdmin) {
             comp_url = new UriTemplate($scope.bb.api_url + $scope.company_admin_api_path).fillFromObject({
               company_id: company_id,
               category_id: comp_category_id,
               embed: embed_params
             });
-            halClient.$get(comp_url, {
-              "auth_token": $sessionStorage.getItem('auth_token')
-            }).then(function(company) {
+            halClient.$get(comp_url, options).then(function(company) {
               return comp_def.resolve(company);
             }, function(err) {
               comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
@@ -3160,9 +3164,7 @@ function getURIparam( name ){
                 category_id: comp_category_id,
                 embed: embed_params
               });
-              return halClient.$get(comp_url, {
-                "auth_token": $sessionStorage.getItem('auth_token')
-              }).then(function(company) {
+              return halClient.$get(comp_url, options).then(function(company) {
                 return comp_def.resolve(company);
               }, function(err) {
                 return comp_def.reject(err);
@@ -3174,9 +3176,7 @@ function getURIparam( name ){
               category_id: comp_category_id,
               embed: embed_params
             });
-            halClient.$get(comp_url, {
-              "auth_token": $sessionStorage.getItem('auth_token')
-            }).then(function(company) {
+            halClient.$get(comp_url, options).then(function(company) {
               return comp_def.resolve(company);
             }, function(err) {
               return comp_def.reject(err);
@@ -3856,7 +3856,6 @@ function getURIparam( name ){
               res.$get('member').then(function(member) {
                 if (member.client_type !== 'Contact') {
                   member = LoginService.setLogin(member);
-                  $rootScope.member = member;
                   return $scope.setClient(member);
                 }
               });
@@ -6780,7 +6779,7 @@ function getURIparam( name ){
         ref = $scope.items;
         for (j = 0, len = ref.length; j < len; j++) {
           item = ref[j];
-          item.spaces_left = item.num_spaces - item.getNumBooked();
+          item.spaces_left = item.getSpacesLeft();
         }
         $scope.bb.company.getAddressPromise().then(function(address) {
           var k, len1, ref1, results;
@@ -15194,11 +15193,12 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService) {
+  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService) {
     return {
       restrict: 'A',
       template: "<form name=\"login_form\" ng-submit=\"submit(login_form)\" sf-schema=\"schema\"\nsf-form=\"form\" sf-model=\"login_form\" sf-options=\"{feedback: false}\"\nng-if=\"schema && form\"></form>",
       controller: function($scope, $element, $attrs) {
+        var handleLogin;
         $scope.login_form = {};
         $rootScope.connection_started.then(function() {
           var session_member;
@@ -15226,32 +15226,16 @@ function getURIparam( name ){
             });
           }
         });
-        return $scope.submit = function(form) {
+        $scope.submit = function(form) {
           form['role'] = 'member';
           return $scope.company.$post('login', {}, form).then(function(login) {
             if (login.$has('members')) {
               return login.$get('members').then(function(members) {
-                var auth_token;
-                $rootScope.member = new BBModel.Member.Member(members[0]);
-                auth_token = $rootScope.member.getOption('auth_token');
-                $sessionStorage.setItem("login", $rootScope.member.$toStore());
-                $sessionStorage.setItem("auth_token", auth_token);
-                $scope.setClient($rootScope.member);
-                if ($scope.bb.destination) {
-                  return $scope.redirectTo($scope.bb.destination);
-                } else {
-                  return $scope.decideNextPage();
-                }
+                return handleLogin(members[0]);
               });
             } else if (login.$has('member')) {
               return login.$get('member').then(function(member) {
-                var auth_token;
-                $rootScope.member = new BBModel.Member.Member(member);
-                auth_token = $rootScope.member.getOption('auth_token');
-                $sessionStorage.setItem("login", $rootScope.member.$toStore());
-                $sessionStorage.setItem("auth_token", auth_token);
-                $scope.setClient($rootScope.member);
-                return $scope.decideNextPage();
+                return handleLogin(member);
               });
             }
           }, function(err) {
@@ -15261,6 +15245,15 @@ function getURIparam( name ){
               return AlertService.raise('LOGIN_FAILED');
             }
           });
+        };
+        return handleLogin = function(member) {
+          member = LoginService.setLogin(member);
+          $scope.setClient(member);
+          if ($scope.bb.destination) {
+            return $scope.redirectTo($scope.bb.destination);
+          } else {
+            return $scope.decideNextPage();
+          }
         };
       }
     };
