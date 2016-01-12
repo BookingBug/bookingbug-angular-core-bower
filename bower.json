@@ -1,11 +1,24 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "0.0.270",
+  "version": "0.0.276",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
-  "authors": ["Glenn Shoosmith <glenn@bookingbug.com>", "Ed Clements <ed@bookingbug.com>"],
-  "main": ["bookingbug-angular-core.js", "bookingbug-angular-core-templates.js", "bookingbug-angular-core.css"],
+  "authors": [
+    "Glenn Shoosmith <glenn@bookingbug.com>",
+    "Ed Clements <ed@bookingbug.com>"
+  ],
+  "main": [
+    "bookingbug-angular-core.js",
+    "bookingbug-angular-core-templates.js",
+    "bookingbug-angular-core.css"
+  ],
   "license": "MIT",
-  "ignore": ["**/.*", "node_modules", "bower_components", "test", "tests"],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
   "dependencies": {
     "jquery": "~1.11.2",
     "moment": "https://github.com/BookingBug/moment.git#master",
