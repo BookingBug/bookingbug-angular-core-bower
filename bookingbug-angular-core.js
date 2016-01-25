@@ -1112,960 +1112,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-
-angular
-.module('angular-hal', []).provider('data_cache', function() {
- 
-    this.$get = function() {
-      data = [];
-
-      return {
-
-        set: function(key, val)
-        {
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        },
-        delMatching: function(str)
-        {
-          for (var k in data) {      
-            if (k.indexOf(str) != -1)
-              delete data[k]
-          }
-        }
-
-      }
-    };
- 
-})
-.provider('shared_header', function() {
-   this.$get = function() {
-      data = {};
-
-      return {
-
-        set: function(key, val, store)
-        {
-          // also store this in the session store
-          store.setItem(key, val)
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        }
-      }
-    };
-
-})
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', function(
-    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
-  ){
-
-    if ($cookies['Auth-Token']){
-      $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
-    }
-
-    if ($sessionStorage.getItem('auth_token'))
-      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
-
-
-    return {
-      setCache: function(cache) {
-        data_cache = cache
-      },
-      clearCache: function(str) {
-        data_cache.delMatching(str)
-      },
-      createResource: function(store)
-      {
-        if (typeof store === 'string') {
-          store = JSON.parse(store)
-        }
-        resource = store.data
-        resource._links = store.links
-        key = store.links.self.href
-        options = store.options
-        return new BaseResource(key, options, resource)
-      },
-      $get: function(href, options){
-        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
-        return data_cache.set(href, callService('GET', href, options));
-//        return callService('GET', href, options);
-      }//get
-      , $post: function(href, options, data){
-        return callService('POST', href, options, data);
-      }//post
-      , $put: function(href, options, data){
-        return callService('PUT', href, options, data);
-      }//put
-      , $patch: function(href, options, data){
-        return callService('PATCH', href, options, data);
-      }//patch
-      , $del: function(href, options){
-        return callService('DELETE', href, options);
-      }//del
-      , $parse: function(data){
-        return parseHal(data)
-      }//parse
-    };
-
-
-
-    function BaseResource(href, options, data){
-      if(!options) options = {};
-      var links = {};
-      var embedded = data_cache
-      if (data.hasOwnProperty('auth_token')) {
-        options['auth_token'] = data['auth_token'];
-      }
-
-      href = getSelfLink(href, data).href;
-
-      defineHiddenProperty(this, '$href', function(rel, params) {
-        if(!(rel in links)) return null;
-
-        return hrefLink(links[rel], params);
-      });
-      defineHiddenProperty(this, '$has', function(rel) {
-        return rel in links;
-      });
-      defineHiddenProperty(this, '$flush', function(rel, params) {
-        var link = links[rel];
-        return flushLink(link, params);
-      });
-      defineHiddenProperty(this, '$get', function(rel, params){
-        var link = links[rel];
-        return callLink('GET', link, params);
-      });
-      defineHiddenProperty(this, '$post', function(rel, params, data){
-        var link = links[rel];
-        return callLink('POST', link, params, data);
-      });
-      defineHiddenProperty(this, '$put', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PUT', link, params, data);
-      });
-      defineHiddenProperty(this, '$patch', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PATCH', link, params, data);
-      });
-      defineHiddenProperty(this, '$del', function(rel, params){
-        var link = links[rel];
-        return callLink('DELETE', link, params);
-      });
-      defineHiddenProperty(this, '$links', function(){
-        return links
-      });
-      defineHiddenProperty(this, '$toStore', function(){
-        return JSON.stringify({data: this, links: links, options:options})
-      });
-      defineHiddenProperty(this, 'setOption', function(key, value){
-        options[key] = value
-      });
-      defineHiddenProperty(this, 'getOption', function(key){
-        return options[key]
-      });
-      defineHiddenProperty(this, '$link', function(rel){
-        return links[rel]
-      });
-
-      Object.keys(data)
-      .filter(function(key){
-        return !~['_', '$'].indexOf(key[0]);
-      })
-      .forEach(function(key){
-        this[key] = data[key]
-//        Object.defineProperty(this, key, {
-  //        configurable: false
-  //        , enumerable: true
-  //        , value: data[key]
-   //     });
-      }, this)
-      ;
-
-
-      if(data._links) {
-        Object
-        .keys(data._links)
-        .forEach(function(rel){
-          var link = data._links[rel];          
-          link = normalizeLink(href, link);
-          links[rel] = link;
-        }, this)
-        ;
-      }
-
-      if(data._embedded) {
-        Object
-        .keys(data._embedded)
-        .forEach(function(rel){
-          var embedded = data._embedded[rel];
-          var link = getSelfLink(href, embedded);
-          links[rel] = link;
-
-          var resource = createResource(href, options, embedded);
-
-          embedResource(resource);
-
-        }, this);
-      }
-
-      function defineHiddenProperty(target, name, value) {
-        target[name] = value
-//        Object.defineProperty(target, name, {
-//          configurable: false
- //         , enumerable: false
-  //        , value: value
-   //     });
-      }//defineHiddenProperty
-
-
-      function embedResource(resource) {
-        if(angular.isArray(resource)) return resource.map(function(resource){
-          return embedResource(resource);
-        });
-        
-        var href = resource.$href('self');
-
-        embedded.set(href, $q.when(resource));
-      }//embedResource
-
-      function hrefLink(link, params) {
-        var href = link.templated
-        ? new UriTemplate(link.href).fillFromObject(params || {})
-        : link.href
-        ;
-
-        return href;
-      }//hrefLink
-
-      function callLink(method, link, params, data) {
-
-        if (params == null) {
-          params = {};
-        }
-          
-        if(angular.isArray(link)) return $q.all(link.map(function(link){
-          if(method !== 'GET') throw 'method is not supported for arrays';
-
-          return callLink(method, link, params, data);
-        }));
-
-        var linkHref = hrefLink(link, params);
-        if(method === 'GET') {
-          if(embedded.has(linkHref) && !params['no_cache']) {
-            return embedded.get(linkHref);
-          } else {
-            return embedded.set(linkHref, callService(method, linkHref, options, data));
-          }
-        }
-        else {
-          return callService(method, linkHref, options, data);  
-        }
-
-      }//callLink
-
-      function flushLink(link, params) {
-        if(angular.isArray(link)) return link.map(function(link){
-          return flushLink(link, params);
-        });
-
-        var linkHref = hrefLink(link, params);
-        if(embedded.has(linkHref)) embedded.del(linkHref);
-      }//flushLink
-
-    }//Resource
-
-
-
-
-    function createResource(href, options, data){
-      if(angular.isArray(data)) return data.map(function(data){
-        return createResource(href, options, data);
-      });
-
-      var resource = new BaseResource(href, options, data);
-
-      return resource;
-
-    }//createResource
-
-
-    function normalizeLink(baseHref, link){
-      if(angular.isArray(link)) return link.map(function(link){
-        return normalizeLink(baseHref, link);
-      });
-
-      if(link) {
-        if(typeof link === 'string') link = { href: link };
-        link.href = resolveUrl(baseHref, link.href);
-      }
-      else {
-        link = { href: baseHref };      
-      }
-
-      return link;
-    }//normalizeLink
-
-
-    function getSelfLink(baseHref, resource){
-      if(angular.isArray(resource)) return resource.map(function(resource){
-        return getSelfLink(baseHref, resource);
-      });
-
-      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
-    }//getSelfLink
-
-
-
-    function callService(method, href, options, data){
-      if(!options) options = {};
-      headers = {
-        'Authorization': options.authorization
-        , 'Content-Type': 'application/json'
-        , 'Accept': 'application/hal+json,application/json'
-      }
-      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
-      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
-      if (options.auth_token) {
-        $sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token, $sessionStorage);
-      }
-
-      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
-      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
-
-      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
-
-      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
-
-      var resource = (
-        $http({
-          method: method
-          , url: options.transformUrl ? options.transformUrl(href) : href
-          , headers: headers
-          , data: data
-        })
-        .then(function(res){
-
-          // copy out the auth token from the header if the response is new resource
-          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
-          if (res.headers('auth-token') && res.status == 201){
-            options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
-          }
-          switch(res.status){
-            case 200:
-            if(res.data) return createResource(href, options, res.data);
-            return null;
-
-            case 201:
-            if(res.data) return createResource(href, options, res.data);
-            if(res.headers('Content-Location')) return res.headers('Content-Location');
-            return null;
-
-            case 204:
-            return null
-
-            default:
-            return $q.reject(res);
-          }
-        }, function(res)
-        {
-          return $q.reject(res);
-        })
-      );
-
-      return resource;
-    }//callService
-
-    function parseHal(data){
-      var resource = createResource(data._links.self.href, null, data);
-      return resource;
-    }//parseHal
-
-
-
-    function resolveUrl(baseHref, href){
-      var resultHref = '';
-      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
-      var baseHrefMatch = reFullUrl.exec(baseHref);
-      var hrefMatch = reFullUrl.exec(href);
-
-      for(var partIndex = 1; partIndex < 5; partIndex++) {
-        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
-        else resultHref += baseHrefMatch[partIndex]
-      }
-
-      return resultHref;
-    }//resolveUrl
-
-  }
-])//service
-;
-
-angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  '$cookies',
-  function($cookies){
-    function FakeStorage() {};
-    FakeStorage.prototype.setItem = function (key, value) {
-      $cookies[key] = value;
-    };
-    FakeStorage.prototype.getItem = function (key) {
-      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
-    }
-    FakeStorage.prototype.removeItem = function (key) {
-      if ($cookies[key]){
-        delete $cookies[key];
-      }
-    };
-    FakeStorage.prototype.clear = function(){
-      for (var key in $cookies) {
-        if( $cookies.hasOwnProperty(key) )
-        {
-          delete $cookies[key];
-        }
-      }
-    };
-    FakeStorage.prototype.key = function(index){
-      return Object.keys($cookies)[index];
-    };
-    return new FakeStorage();
-  }
-])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-]);
-/**!
- * AngularJS file upload/drop directive with http post and progress
- * @author  Danial  <danial.farid@gmail.com>
- * @version 1.4.0
- */
-(function() {
-  
-var angularFileUpload = angular.module('angularFileUpload', []);
-
-angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
-  function sendHttp(config) {
-    config.method = config.method || 'POST';
-    config.headers = config.headers || {};
-    config.transformRequest = config.transformRequest || function(data, headersGetter) {
-      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-        return data;
-      }
-      return $http.defaults.transformRequest[0](data, headersGetter);
-    };
-
-    if (window.XMLHttpRequest.__isShim) {
-      config.headers['__setXHR_'] = function() {
-        return function(xhr) {
-          if (!xhr) return;
-          config.__XHR = xhr;
-          config.xhrFn && config.xhrFn(xhr);
-          xhr.upload.addEventListener('progress', function(e) {
-            if (config.progress) {
-              $timeout(function() {
-                if(config.progress) config.progress(e);
-              });
-            }
-          }, false);
-          //fix for firefox not firing upload progress end, also IE8-9
-          xhr.upload.addEventListener('load', function(e) {
-            if (e.lengthComputable) {
-              if(config.progress) config.progress(e);
-            }
-          }, false);
-        };
-      };
-    }
-
-    var promise = $http(config);
-
-    promise.progress = function(fn) {
-      config.progress = fn;
-      return promise;
-    };
-    promise.abort = function() {
-      if (config.__XHR) {
-        $timeout(function() {
-          config.__XHR.abort();
-        });
-      }
-      return promise;
-    };
-    promise.xhr = function(fn) {
-      config.xhrFn = fn;
-      return promise;
-    };
-    promise.then = (function(promise, origThen) {
-      return function(s, e, p) {
-        config.progress = p || config.progress;
-        var result = origThen.apply(promise, [s, e, p]);
-        result.abort = promise.abort;
-        result.progress = promise.progress;
-        result.xhr = promise.xhr;
-        result.then = promise.then;
-        return result;
-      };
-    })(promise, promise.then);
-    
-    return promise;
-  }
-
-  this.upload = function(config) {
-    config.headers = config.headers || {};
-    config.headers['Content-Type'] = undefined;
-    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
-    var formData = new FormData();
-    var origTransformRequest = config.transformRequest;
-    var origData = config.data;
-    config.transformRequest = function(formData, headerGetter) {
-      if (origData) {
-        if (config.formDataAppender) {
-          for (var key in origData) {
-            var val = origData[key];
-            config.formDataAppender(formData, key, val);
-          }
-        } else {
-          for (var key in origData) {
-            var val = origData[key];
-            if (typeof origTransformRequest == 'function') {
-              val = origTransformRequest(val, headerGetter);
-            } else {
-              for (var i = 0; i < origTransformRequest.length; i++) {
-                var transformFn = origTransformRequest[i];
-                if (typeof transformFn == 'function') {
-                  val = transformFn(val, headerGetter);
-                }
-              }
-            }
-            formData.append(key, val);
-          }
-        }
-      }
-
-      if (config.file != null) {
-        var fileFormName = config.fileFormDataName || 'file';
-
-        if (Object.prototype.toString.call(config.file) === '[object Array]') {
-          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
-          for (var i = 0; i < config.file.length; i++) {
-            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
-          }
-        } else {
-          formData.append(fileFormName, config.file, config.file.name);
-        }
-      }
-      return formData;
-    };
-
-    config.data = formData;
-
-    return sendHttp(config);
-  };
-
-  this.http = function(config) {
-    return sendHttp(config);
-  }
-}]);
-
-angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    var fn = $parse(attr['ngFileSelect']);
-    elem.bind('change', function(evt) {
-      var files = [], fileList, i;
-      fileList = evt.target.files;
-      if (fileList != null) {
-        for (i = 0; i < fileList.length; i++) {
-          files.push(fileList.item(i));
-        }
-      }
-      $timeout(function() {
-        fn(scope, {
-          $files : files,
-          $event : evt
-        });
-      });
-    });
-    // removed this since it was confusing if the user click on browse and then cancel #181
-//    elem.bind('click', function(){
-//      this.value = null;
-//    });
-    
-    // touch screens
-    if (('ontouchstart' in window) ||
-        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
-      elem.bind('touchend', function(e) {
-        e.preventDefault();
-        e.target.click();
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    if ('draggable' in document.createElement('span')) {
-      var fn = $parse(attr['ngFileDropAvailable']);
-      $timeout(function() {
-        fn(scope);
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {    
-    if ('draggable' in document.createElement('span')) {
-      var cancel = null;
-      var fn = $parse(attr['ngFileDrop']);
-      elem[0].addEventListener("dragover", function(evt) {
-        $timeout.cancel(cancel);
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
-      }, false);
-      elem[0].addEventListener("dragleave", function(evt) {
-        cancel = $timeout(function() {
-          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        });
-      }, false);
-      
-      var processing = 0;
-      function traverseFileTree(files, item) {
-        if (item.isDirectory) {
-          var dirReader = item.createReader();
-          processing++;
-          dirReader.readEntries(function(entries) {
-            for (var i = 0; i < entries.length; i++) {
-              traverseFileTree(files, entries[i]);
-            }
-            processing--;
-          });
-        } else {
-          processing++;
-              item.file(function(file) {
-                processing--;
-                files.push(file);
-              });
-          }
-      }
-      
-      elem[0].addEventListener("drop", function(evt) {
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        var files = [], items = evt.dataTransfer.items;
-        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
-          for (var i = 0; i < items.length; i++) {
-            traverseFileTree(files, items[i].webkitGetAsEntry());
-          }
-        } else {
-          var fileList = evt.dataTransfer.files;
-          if (fileList != null) {
-            for (var i = 0; i < fileList.length; i++) {
-              files.push(fileList.item(i));
-            }
-          }
-        }
-        (function callback(delay) {
-          $timeout(function() {
-            if (!processing) {
-              fn(scope, {
-                $files : files,
-                $event : evt
-              });
-            } else {
-              callback(10);
-            }
-          }, delay || 0)
-        })();
-      }, false);
-    }
-  };
-} ]);
-
-})();
-
-angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
-    data = {};
-
-    jsonData = function(data) {
-        return data && JSON.parse(data);
-    }
-
-    storage = function()
-    {
-      return $sessionStorage
-    } 
-    localSave = function(key, item){
-      storage().setItem(key, item.$toStore())   
-    } 
-    localLoad = function(key){
-      res =  jsonData(storage().getItem(key))
-      if (res)
-      {  
-        r = halClient.createResource(res)
-        def = $q.defer()
-        def.resolve(r)
-        return def.promise
-      }
-      return null
-    } 
-    localDelete = function(key) {
-      storage().removeItem(key)
-    }
-
-    return {
-
-      set: function(key, val)
-      {
-        data[key] = val
-        val.then(function(item){
-          localSave(key, item)
-        })
-        return val
-      },
-      get: function(key)
-      {
-        localLoad(key)
-        if (!data[key])
-          data[key] = localLoad(key)
-        return data[key]
-      },
-      del: function(key)
-      {
-        localDelete(key)
-        delete data[key]
-      },
-      has: function(key)
-      {
-        if (!data[key])
-        { 
-          res = localLoad(key)
-          if (res)
-            data[key] = res
-        }
-        return (key in data)
-      }      
-    }
-
-}]).
- factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
-    function LocalDataFactory(name) {
-      function LocalData(value){
-        this.setStore(value);
-      }
-
-      LocalData.prototype.jsonData = function(data) {
-          return data && JSON.parse(data);
-      }
-
-      LocalData.prototype.storage = function()
-      {
-        return $sessionStorage
-      }  
-
-      LocalData.prototype.localSave = function(item)
-      {
-        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
-      }
-
-
-      LocalData.prototype.localSaveIndex = function(ids)
-      {
-        this.storage().setItem(this.store_name, ids.join(","))
-        this.ids = ids;
-      }
-
-      LocalData.prototype.localLoadIndex = function()
-      {
-        store = this.storage().getItem(this.store_name)
-        records = (store && store.split(",")) || [];
-        return records
-      }
-
-      LocalData.prototype.localLoad = function( id)
-      {
-        return this.jsonData(this.storage().getItem(this.store_name + id))
-      }
-
-      LocalData.prototype.count = function()
-      {
-        return this.ids.length
-      }
-
-      LocalData.prototype.setStore = function(name)
-      {
-        this.store_name = name;
-        this.data_store = []
-        this.ids = this.localLoadIndex();
-        for (a = 0; a < this.ids.length; a++){
-          this.data_store.push(this.localLoad(this.ids[a]));
-        }
-    //    var channel = pusher.subscribe(name);
-    //    var ds = this;
-
-     //   channel.bind('add', function(data) {
-     //     ds.data_store.push(data);
-     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
-     //   });
-
-      }
-
-      LocalData.prototype.update = function(data)
-      {
-        ids = []
-        for (x in data){
-          if (data[x].id){
-           ids.push(data[x].id)
-           this.localSave(data[x])
-         }
-        }
-        this.localSaveIndex(ids)
-      }
-
-      return new LocalData(name)
-
-    };
-
-
-    
-    return LocalDataFactory
-}]);
-
-
-/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
-
-getControllerScope = function(controller, fn){
-  $(document).ready(function(){
-    var $element = $('div[data-ng-controller="' + controller + '"]');
-    var scope = angular.element($element).scope();
-    fn(scope); 
-  });
-}
-
-
-function getURIparam( name ){
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
 (function() {
   'use strict';
 
@@ -2921,7 +1967,7 @@ function getURIparam( name ){
     })(this);
   });
 
-  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll) {
+  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll, $localStorage) {
     var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
@@ -3886,7 +2932,7 @@ function getURIparam( name ){
       restore_basket_defer = $q.defer();
       $scope.quickEmptybasket().then(function() {
         var auth_token, href, params, status, uri;
-        auth_token = $sessionStorage.getItem('auth_token');
+        auth_token = $localStorage.getItem('auth_token') || $sessionStorage.getItem('auth_token');
         href = $scope.bb.api_url + '/api/v1/status{?company_id,affiliate_id,clear_baskets,clear_member}';
         params = {
           company_id: $scope.bb.company_id,
@@ -4252,7 +3298,7 @@ function getURIparam( name ){
       return $scope.bb.isAdmin;
     };
     $scope.isAdminIFrame = function() {
-      var err, location;
+      var err, error, location;
       if (!$scope.bb.isAdmin) {
         return false;
       }
@@ -4263,8 +3309,8 @@ function getURIparam( name ){
         } else {
           return false;
         }
-      } catch (_error) {
-        err = _error;
+      } catch (error) {
+        err = error;
         return false;
       }
     };
@@ -7817,13 +6863,8 @@ function getURIparam( name ){
 
   angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location, AlertService) {
     $scope.controller = "public.controllers.Login";
-    $scope.error = false;
-    $scope.password_updated = false;
-    $scope.password_error = false;
-    $scope.email_sent = false;
-    $scope.success = false;
-    $scope.login_error = false;
     $scope.validator = ValidatorService;
+    $scope.login_form = {};
 
     /***
     * @ngdoc method
@@ -7867,19 +6908,15 @@ function getURIparam( name ){
     * @param {string} password The password use for the login
      */
     $scope.login_with_password = function(email, password) {
-      $scope.login_error = false;
       return LoginService.companyLogin($scope.bb.company, {}, {
         email: email,
         password: password
       }).then((function(_this) {
         return function(member) {
-          $scope.member = new BBModel.Member.Member(member);
-          $scope.success = true;
-          return $scope.login_error = false;
+          return $scope.member = new BBModel.Member.Member(member);
         };
       })(this), (function(_this) {
         return function(err) {
-          $scope.login_error = err;
           return AlertService.raise('LOGIN_FAILED');
         };
       })(this));
@@ -7919,16 +6956,13 @@ function getURIparam( name ){
     * @param {string} email The email address use for the send new password
      */
     $scope.sendPasswordReset = function(email) {
-      $scope.error = false;
       return LoginService.sendPasswordReset($scope.bb.company, {
         email: email,
         custom: true
       }).then(function() {
-        $scope.email_sent = true;
         return AlertService.raise('PASSWORD_RESET_REQ_SUCCESS');
       }, (function(_this) {
         return function(err) {
-          $scope.error = err;
           return AlertService.raise('PASSWORD_RESET_REQ_FAILED');
         };
       })(this));
@@ -7946,19 +6980,16 @@ function getURIparam( name ){
      */
     return $scope.updatePassword = function(new_password, confirm_new_password) {
       AlertService.clear();
-      $scope.password_error = false;
-      $scope.error = false;
       if ($rootScope.member && new_password && confirm_new_password && (new_password === confirm_new_password)) {
         return LoginService.updatePassword($rootScope.member, {
           new_password: new_password,
-          confirm_new_password: confirm_new_password
+          confirm_new_password: confirm_new_password,
+          persist_login: $scope.login_form.persist_login
         }).then((function(_this) {
           return function(member) {
             if (member) {
-              $scope.password_updated = true;
               $scope.setClient(member);
-              AlertService.raise('PASSWORD_RESET_SUCESS');
-              return $rootScope.$emit("login:password_reset");
+              return AlertService.raise('PASSWORD_RESET_SUCESS');
             }
           };
         })(this), (function(_this) {
@@ -7968,7 +6999,6 @@ function getURIparam( name ){
           };
         })(this));
       } else {
-        $scope.password_error = true;
         return AlertService.raise('PASSWORD_MISMATCH');
       }
     };
@@ -13508,511 +12538,960 @@ function getURIparam( name ){
 
 }).call(this);
 
+
+angular
+.module('angular-hal', []).provider('data_cache', function() {
+ 
+    this.$get = function() {
+      data = [];
+
+      return {
+
+        set: function(key, val)
+        {
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        },
+        delMatching: function(str)
+        {
+          for (var k in data) {      
+            if (k.indexOf(str) != -1)
+              delete data[k]
+          }
+        }
+
+      }
+    };
+ 
+})
+.provider('shared_header', function() {
+   this.$get = function() {
+      data = {};
+
+      return {
+
+        set: function(key, val, store)
+        {
+          // also store this in the session store
+          store.setItem(key, val)
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        }
+      }
+    };
+
+})
+.factory('halClient', [
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', function(
+    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
+  ){
+
+    if ($cookies['Auth-Token']){
+      $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
+    }
+
+    if ($sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
+
+
+    return {
+      setCache: function(cache) {
+        data_cache = cache
+      },
+      clearCache: function(str) {
+        data_cache.delMatching(str)
+      },
+      createResource: function(store)
+      {
+        if (typeof store === 'string') {
+          store = JSON.parse(store)
+        }
+        resource = store.data
+        resource._links = store.links
+        key = store.links.self.href
+        options = store.options
+        return new BaseResource(key, options, resource)
+      },
+      $get: function(href, options){
+        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
+        return data_cache.set(href, callService('GET', href, options));
+//        return callService('GET', href, options);
+      }//get
+      , $post: function(href, options, data){
+        return callService('POST', href, options, data);
+      }//post
+      , $put: function(href, options, data){
+        return callService('PUT', href, options, data);
+      }//put
+      , $patch: function(href, options, data){
+        return callService('PATCH', href, options, data);
+      }//patch
+      , $del: function(href, options){
+        return callService('DELETE', href, options);
+      }//del
+      , $parse: function(data){
+        return parseHal(data)
+      }//parse
+    };
+
+
+
+    function BaseResource(href, options, data){
+      if(!options) options = {};
+      var links = {};
+      var embedded = data_cache
+      if (data.hasOwnProperty('auth_token')) {
+        options['auth_token'] = data['auth_token'];
+      }
+
+      href = getSelfLink(href, data).href;
+
+      defineHiddenProperty(this, '$href', function(rel, params) {
+        if(!(rel in links)) return null;
+
+        return hrefLink(links[rel], params);
+      });
+      defineHiddenProperty(this, '$has', function(rel) {
+        return rel in links;
+      });
+      defineHiddenProperty(this, '$flush', function(rel, params) {
+        var link = links[rel];
+        return flushLink(link, params);
+      });
+      defineHiddenProperty(this, '$get', function(rel, params){
+        var link = links[rel];
+        return callLink('GET', link, params);
+      });
+      defineHiddenProperty(this, '$post', function(rel, params, data){
+        var link = links[rel];
+        return callLink('POST', link, params, data);
+      });
+      defineHiddenProperty(this, '$put', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PUT', link, params, data);
+      });
+      defineHiddenProperty(this, '$patch', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PATCH', link, params, data);
+      });
+      defineHiddenProperty(this, '$del', function(rel, params){
+        var link = links[rel];
+        return callLink('DELETE', link, params);
+      });
+      defineHiddenProperty(this, '$links', function(){
+        return links
+      });
+      defineHiddenProperty(this, '$toStore', function(){
+        return JSON.stringify({data: this, links: links, options:options})
+      });
+      defineHiddenProperty(this, 'setOption', function(key, value){
+        options[key] = value
+      });
+      defineHiddenProperty(this, 'getOption', function(key){
+        return options[key]
+      });
+      defineHiddenProperty(this, '$link', function(rel){
+        return links[rel]
+      });
+
+      Object.keys(data)
+      .filter(function(key){
+        return !~['_', '$'].indexOf(key[0]);
+      })
+      .forEach(function(key){
+        this[key] = data[key]
+//        Object.defineProperty(this, key, {
+  //        configurable: false
+  //        , enumerable: true
+  //        , value: data[key]
+   //     });
+      }, this)
+      ;
+
+
+      if(data._links) {
+        Object
+        .keys(data._links)
+        .forEach(function(rel){
+          var link = data._links[rel];          
+          link = normalizeLink(href, link);
+          links[rel] = link;
+        }, this)
+        ;
+      }
+
+      if(data._embedded) {
+        Object
+        .keys(data._embedded)
+        .forEach(function(rel){
+          var embedded = data._embedded[rel];
+          var link = getSelfLink(href, embedded);
+          links[rel] = link;
+
+          var resource = createResource(href, options, embedded);
+
+          embedResource(resource);
+
+        }, this);
+      }
+
+      function defineHiddenProperty(target, name, value) {
+        target[name] = value
+//        Object.defineProperty(target, name, {
+//          configurable: false
+ //         , enumerable: false
+  //        , value: value
+   //     });
+      }//defineHiddenProperty
+
+
+      function embedResource(resource) {
+        if(angular.isArray(resource)) return resource.map(function(resource){
+          return embedResource(resource);
+        });
+        
+        var href = resource.$href('self');
+
+        embedded.set(href, $q.when(resource));
+      }//embedResource
+
+      function hrefLink(link, params) {
+        var href = link.templated
+        ? new UriTemplate(link.href).fillFromObject(params || {})
+        : link.href
+        ;
+
+        return href;
+      }//hrefLink
+
+      function callLink(method, link, params, data) {
+
+        if (params == null) {
+          params = {};
+        }
+          
+        if(angular.isArray(link)) return $q.all(link.map(function(link){
+          if(method !== 'GET') throw 'method is not supported for arrays';
+
+          return callLink(method, link, params, data);
+        }));
+
+        var linkHref = hrefLink(link, params);
+        if(method === 'GET') {
+          if(embedded.has(linkHref) && !params['no_cache']) {
+            return embedded.get(linkHref);
+          } else {
+            return embedded.set(linkHref, callService(method, linkHref, options, data));
+          }
+        }
+        else {
+          return callService(method, linkHref, options, data);  
+        }
+
+      }//callLink
+
+      function flushLink(link, params) {
+        if(angular.isArray(link)) return link.map(function(link){
+          return flushLink(link, params);
+        });
+
+        var linkHref = hrefLink(link, params);
+        if(embedded.has(linkHref)) embedded.del(linkHref);
+      }//flushLink
+
+    }//Resource
+
+
+
+
+    function createResource(href, options, data){
+      if(angular.isArray(data)) return data.map(function(data){
+        return createResource(href, options, data);
+      });
+
+      var resource = new BaseResource(href, options, data);
+
+      return resource;
+
+    }//createResource
+
+
+    function normalizeLink(baseHref, link){
+      if(angular.isArray(link)) return link.map(function(link){
+        return normalizeLink(baseHref, link);
+      });
+
+      if(link) {
+        if(typeof link === 'string') link = { href: link };
+        link.href = resolveUrl(baseHref, link.href);
+      }
+      else {
+        link = { href: baseHref };      
+      }
+
+      return link;
+    }//normalizeLink
+
+
+    function getSelfLink(baseHref, resource){
+      if(angular.isArray(resource)) return resource.map(function(resource){
+        return getSelfLink(baseHref, resource);
+      });
+
+      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
+    }//getSelfLink
+
+
+
+    function callService(method, href, options, data){
+      if(!options) options = {};
+      headers = {
+        'Authorization': options.authorization
+        , 'Content-Type': 'application/json'
+        , 'Accept': 'application/hal+json,application/json'
+      }
+      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
+      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
+      if (options.auth_token) {
+        $sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token, $sessionStorage);
+      }
+
+      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
+      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+
+      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
+
+      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
+
+      var resource = (
+        $http({
+          method: method
+          , url: options.transformUrl ? options.transformUrl(href) : href
+          , headers: headers
+          , data: data
+        })
+        .then(function(res){
+
+          // copy out the auth token from the header if the response is new resource
+          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
+          if (res.headers('auth-token') && res.status == 201){
+            options.auth_token = res.headers('Auth-Token')
+            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
+          }
+          switch(res.status){
+            case 200:
+            if(res.data) return createResource(href, options, res.data);
+            return null;
+
+            case 201:
+            if(res.data) return createResource(href, options, res.data);
+            if(res.headers('Content-Location')) return res.headers('Content-Location');
+            return null;
+
+            case 204:
+            return null
+
+            default:
+            return $q.reject(res);
+          }
+        }, function(res)
+        {
+          return $q.reject(res);
+        })
+      );
+
+      return resource;
+    }//callService
+
+    function parseHal(data){
+      var resource = createResource(data._links.self.href, null, data);
+      return resource;
+    }//parseHal
+
+
+
+    function resolveUrl(baseHref, href){
+      var resultHref = '';
+      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
+      var baseHrefMatch = reFullUrl.exec(baseHref);
+      var hrefMatch = reFullUrl.exec(href);
+
+      for(var partIndex = 1; partIndex < 5; partIndex++) {
+        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
+        else resultHref += baseHrefMatch[partIndex]
+      }
+
+      return resultHref;
+    }//resolveUrl
+
+  }
+])//service
+;
+
+angular.module('ngStorage', [])
+.factory('$fakeStorage', [
+  '$cookies',
+  function($cookies){
+    function FakeStorage() {};
+    FakeStorage.prototype.setItem = function (key, value) {
+      $cookies[key] = value;
+    };
+    FakeStorage.prototype.getItem = function (key) {
+      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
+    }
+    FakeStorage.prototype.removeItem = function (key) {
+      if ($cookies[key]){
+        delete $cookies[key];
+      }
+    };
+    FakeStorage.prototype.clear = function(){
+      for (var key in $cookies) {
+        if( $cookies.hasOwnProperty(key) )
+        {
+          delete $cookies[key];
+        }
+      }
+    };
+    FakeStorage.prototype.key = function(index){
+      return Object.keys($cookies)[index];
+    };
+    return new FakeStorage();
+  }
+])
+.factory('$localStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+])
+.factory('$sessionStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+]);
+/**!
+ * AngularJS file upload/drop directive with http post and progress
+ * @author  Danial  <danial.farid@gmail.com>
+ * @version 1.4.0
+ */
 (function() {
-  var app;
+  
+var angularFileUpload = angular.module('angularFileUpload', []);
 
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
+angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
+  function sendHttp(config) {
+    config.method = config.method || 'POST';
+    config.headers = config.headers || {};
+    config.transformRequest = config.transformRequest || function(data, headersGetter) {
+      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
+        return data;
       }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
+      return $http.defaults.transformRequest[0](data, headersGetter);
     };
-  });
 
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
+    if (window.XMLHttpRequest.__isShim) {
+      config.headers['__setXHR_'] = function() {
+        return function(xhr) {
+          if (!xhr) return;
+          config.__XHR = xhr;
+          config.xhrFn && config.xhrFn(xhr);
+          xhr.upload.addEventListener('progress', function(e) {
+            if (config.progress) {
+              $timeout(function() {
+                if(config.progress) config.progress(e);
+              });
+            }
+          }, false);
+          //fix for firefox not firing upload progress end, also IE8-9
+          xhr.upload.addEventListener('load', function(e) {
+            if (e.lengthComputable) {
+              if(config.progress) config.progress(e);
+            }
+          }, false);
+        };
       };
     }
-  ]);
 
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
+    var promise = $http(config);
+
+    promise.progress = function(fn) {
+      config.progress = fn;
+      return promise;
+    };
+    promise.abort = function() {
+      if (config.__XHR) {
+        $timeout(function() {
+          config.__XHR.abort();
+        });
       }
+      return promise;
     };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    promise.xhr = function(fn) {
+      config.xhrFn = fn;
+      return promise;
     };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
+    promise.then = (function(promise, origThen) {
+      return function(s, e, p) {
+        config.progress = p || config.progress;
+        var result = origThen.apply(promise, [s, e, p]);
+        result.abort = promise.abort;
+        result.progress = promise.progress;
+        result.xhr = promise.xhr;
+        result.then = promise.then;
+        return result;
       };
-    })(this);
-  });
+    })(promise, promise.then);
+    
+    return promise;
+  }
 
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
+  this.upload = function(config) {
+    config.headers = config.headers || {};
+    config.headers['Content-Type'] = undefined;
+    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
+    var formData = new FormData();
+    var origTransformRequest = config.transformRequest;
+    var origData = config.data;
+    config.transformRequest = function(formData, headerGetter) {
+      if (origData) {
+        if (config.formDataAppender) {
+          for (var key in origData) {
+            var val = origData[key];
+            config.formDataAppender(formData, key, val);
+          }
         } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
+          for (var key in origData) {
+            var val = origData[key];
+            if (typeof origTransformRequest == 'function') {
+              val = origTransformRequest(val, headerGetter);
+            } else {
+              for (var i = 0; i < origTransformRequest.length; i++) {
+                var transformFn = origTransformRequest[i];
+                if (typeof transformFn == 'function') {
+                  val = transformFn(val, headerGetter);
+                }
+              }
+            }
+            formData.append(key, val);
+          }
         }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
       }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
 
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
+      if (config.file != null) {
+        var fileFormName = config.fileFormDataName || 'file';
+
+        if (Object.prototype.toString.call(config.file) === '[object Array]') {
+          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
+          for (var i = 0; i < config.file.length; i++) {
+            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
+          }
         } else {
-          return hours + " " + hour_string + "s";
+          formData.append(fileFormName, config.file, config.file.name);
         }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
       }
-      return str;
+      return formData;
     };
-  });
 
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
+    config.data = formData;
 
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
+    return sendHttp(config);
+  };
 
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
+  this.http = function(config) {
+    return sendHttp(config);
+  }
+}]);
 
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
+angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    var fn = $parse(attr['ngFileSelect']);
+    elem.bind('change', function(evt) {
+      var files = [], fileList, i;
+      fileList = evt.target.files;
+      if (fileList != null) {
+        for (i = 0; i < fileList.length; i++) {
+          files.push(fileList.item(i));
+        }
+      }
+      $timeout(function() {
+        fn(scope, {
+          $files : files,
+          $event : evt
+        });
       });
-    };
-  });
+    });
+    // removed this since it was confusing if the user click on browse and then cancel #181
+//    elem.bind('click', function(){
+//      this.value = null;
+//    });
+    
+    // touch screens
+    if (('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
+      elem.bind('touchend', function(e) {
+        e.preventDefault();
+        e.target.click();
+      });
+    }
+  };
+} ]);
 
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
+angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    if ('draggable' in document.createElement('span')) {
+      var fn = $parse(attr['ngFileDropAvailable']);
+      $timeout(function() {
+        fn(scope);
+      });
+    }
+  };
+} ]);
 
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter('datetime', function(SettingsService) {
-    return function(date, format) {
-      var cc, datestrings;
-      if (date && moment.isMoment(date)) {
-        datestrings = {
-          datetime_us: 'MM/DD/YYYY, h:mm a',
-          datetime_uk: 'DD/MM/YYYY, HH:MM',
-          date_us: 'MM/DD/YYYY',
-          date_uk: 'DD/MM/YYYY',
-          time_us: 'h:mm a',
-          time_uk: 'HH:MM'
-        };
-        cc = SettingsService.getCountryCode();
-        if (cc !== "us") {
-          cc = "uk";
-        }
-        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
-          return date.format(datestrings[format + "_" + cc]);
-        } else if (format) {
-          return date.format(format);
+angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {    
+    if ('draggable' in document.createElement('span')) {
+      var cancel = null;
+      var fn = $parse(attr['ngFileDrop']);
+      elem[0].addEventListener("dragover", function(evt) {
+        $timeout.cancel(cancel);
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
+      }, false);
+      elem[0].addEventListener("dragleave", function(evt) {
+        cancel = $timeout(function() {
+          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        });
+      }, false);
+      
+      var processing = 0;
+      function traverseFileTree(files, item) {
+        if (item.isDirectory) {
+          var dirReader = item.createReader();
+          processing++;
+          dirReader.readEntries(function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+              traverseFileTree(files, entries[i]);
+            }
+            processing--;
+          });
         } else {
-          return date.format(datestrings["date_" + cc]);
-        }
-      } else {
-
+          processing++;
+              item.file(function(file) {
+                processing--;
+                files.push(file);
+              });
+          }
       }
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
+      
+      elem[0].addEventListener("drop", function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        var files = [], items = evt.dataTransfer.items;
+        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+          for (var i = 0; i < items.length; i++) {
+            traverseFileTree(files, items[i].webkitGetAsEntry());
+          }
         } else {
-          return "";
+          var fileList = evt.dataTransfer.files;
+          if (fileList != null) {
+            for (var i = 0; i < fileList.length; i++) {
+              files.push(fileList.item(i));
+            }
+          }
         }
-      };
-    })(this);
-  });
+        (function callback(delay) {
+          $timeout(function() {
+            if (!processing) {
+              fn(scope, {
+                $files : files,
+                $event : evt
+              });
+            } else {
+              callback(10);
+            }
+          }, delay || 0)
+        })();
+      }, false);
+    }
+  };
+} ]);
 
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
+})();
+// THIS DOESN'T APPEAR TO BE USED?
+angular.module('ngLocalData', ['angular-hal']).
+ factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
+    data = {};
+
+    jsonData = function(data) {
+        return data && JSON.parse(data);
+    }
+
+    storage = function()
+    {
+      return $sessionStorage
+    } 
+    localSave = function(key, item){
+      storage().setItem(key, item.$toStore())   
+    } 
+    localLoad = function(key){
+      res =  jsonData(storage().getItem(key))
+      if (res)
+      {  
+        r = halClient.createResource(res)
+        def = $q.defer()
+        def.resolve(r)
+        return def.promise
       }
-    };
-  });
+      return null
+    } 
+    localDelete = function(key) {
+      storage().removeItem(key)
+    }
 
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
+    return {
+
+      set: function(key, val)
+      {
+        data[key] = val
+        val.then(function(item){
+          localSave(key, item)
+        })
+        return val
+      },
+      get: function(key)
+      {
+        localLoad(key)
+        if (!data[key])
+          data[key] = localLoad(key)
+        return data[key]
+      },
+      del: function(key)
+      {
+        localDelete(key)
+        delete data[key]
+      },
+      has: function(key)
+      {
+        if (!data[key])
+        { 
+          res = localLoad(key)
+          if (res)
+            data[key] = res
         }
-      };
-    })(this);
-  });
+        return (key in data)
+      }      
+    }
 
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
+}]).
+ factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
+    function LocalDataFactory(name) {
+      function LocalData(value){
+        this.setStore(value);
       }
+
+      LocalData.prototype.jsonData = function(data) {
+          return data && JSON.parse(data);
+      }
+
+      LocalData.prototype.storage = function()
+      {
+        return $sessionStorage
+      }  
+
+      LocalData.prototype.localSave = function(item)
+      {
+        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
+      }
+
+
+      LocalData.prototype.localSaveIndex = function(ids)
+      {
+        this.storage().setItem(this.store_name, ids.join(","))
+        this.ids = ids;
+      }
+
+      LocalData.prototype.localLoadIndex = function()
+      {
+        store = this.storage().getItem(this.store_name)
+        records = (store && store.split(",")) || [];
+        return records
+      }
+
+      LocalData.prototype.localLoad = function( id)
+      {
+        return this.jsonData(this.storage().getItem(this.store_name + id))
+      }
+
+      LocalData.prototype.count = function()
+      {
+        return this.ids.length
+      }
+
+      LocalData.prototype.setStore = function(name)
+      {
+        this.store_name = name;
+        this.data_store = []
+        this.ids = this.localLoadIndex();
+        for (a = 0; a < this.ids.length; a++){
+          this.data_store.push(this.localLoad(this.ids[a]));
+        }
+    //    var channel = pusher.subscribe(name);
+    //    var ds = this;
+
+     //   channel.bind('add', function(data) {
+     //     ds.data_store.push(data);
+     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
+     //   });
+
+      }
+
+      LocalData.prototype.update = function(data)
+      {
+        ids = []
+        for (x in data){
+          if (data[x].id){
+           ids.push(data[x].id)
+           this.localSave(data[x])
+         }
+        }
+        this.localSaveIndex(ids)
+      }
+
+      return new LocalData(name)
+
     };
+
+
+    
+    return LocalDataFactory
+}]);
+
+
+/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
+
+getControllerScope = function(controller, fn){
+  $(document).ready(function(){
+    var $element = $('div[data-ng-controller="' + controller + '"]');
+    var scope = angular.element($element).scope();
+    fn(scope); 
   });
+}
 
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
 
-}).call(this);
-
+function getURIparam( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
 (function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
@@ -14195,12 +13674,12 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, ie8orLess;
+    var e, error, ie8orLess;
     ie8orLess = false;
     try {
       ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       ie8orLess = false;
     }
     return {
@@ -15997,11 +15476,7 @@ function getURIparam( name ){
         $scope.login_form = {};
         $scope.validator = ValidatorService;
         $rootScope.connection_started.then(function() {
-          var session_member;
-          if ($sessionStorage.getItem("login")) {
-            session_member = $sessionStorage.getItem("login");
-            session_member = halClient.createResource(session_member);
-            $rootScope.member = new BBModel.Member.Member(session_member);
+          if (LoginService.checkLogin()) {
             $scope.setClient($rootScope.member);
             if ($scope.bb.destination) {
               return $scope.redirectTo($scope.bb.destination);
@@ -16043,7 +15518,7 @@ function getURIparam( name ){
           });
         };
         return handleLogin = function(member) {
-          member = LoginService.setLogin(member);
+          member = LoginService.setLogin(member, $scope.login_form.persist_login);
           $scope.setClient(member);
           if ($scope.bb.destination) {
             return $scope.redirectTo($scope.bb.destination);
@@ -16431,7 +15906,7 @@ function getURIparam( name ){
   angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
       check = document.createElement('style');
       if (typeof check.sheet !== 'undefined') {
         DOMStyle = 'sheet';
@@ -16452,8 +15927,8 @@ function getURIparam( name ){
       testStyle = testSheet[DOMRules][0];
       try {
         testStyle.selectorText = 'd';
-      } catch (_error) {
-        e = _error;
+      } catch (error) {
+        e = error;
       }
       changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
       check.parentNode.removeChild(check);
@@ -16703,6 +16178,511 @@ function getURIparam( name ){
     };
   });
 }(window.angular));
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter('datetime', function(SettingsService) {
+    return function(date, format) {
+      var cc, datestrings;
+      if (date && moment.isMoment(date)) {
+        datestrings = {
+          datetime_us: 'MM/DD/YYYY, h:mm a',
+          datetime_uk: 'DD/MM/YYYY, HH:MM',
+          date_us: 'MM/DD/YYYY',
+          date_uk: 'DD/MM/YYYY',
+          time_us: 'h:mm a',
+          time_uk: 'HH:MM'
+        };
+        cc = SettingsService.getCountryCode();
+        if (cc !== "us") {
+          cc = "uk";
+        }
+        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
+          return date.format(datestrings[format + "_" + cc]);
+        } else if (format) {
+          return date.format(format);
+        } else {
+          return date.format(datestrings["date_" + cc]);
+        }
+      } else {
+
+      }
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
 
 (function() {
   'use strict';
@@ -25295,11 +25275,11 @@ function getURIparam( name ){
         _.each(listenerArr, function(item, index) {
           var func;
           func = $rootScope.$on(item[1], function() {
-            var e;
+            var e, error;
             try {
               return cpage[2][item[0]] = 'data:destroyed';
-            } catch (_error) {
-              e = _error;
+            } catch (error) {
+              e = error;
               return log(e);
             }
           });
@@ -25596,7 +25576,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage) {
+  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage, $localStorage) {
     return {
       companyLogin: function(company, params, form) {
         var deferred;
@@ -25709,19 +25689,18 @@ function getURIparam( name ){
       },
       isLoggedIn: function() {
         this.checkLogin();
-        if ($rootScope.member && (!$rootScope.user || $rootScope.user === void 0)) {
-          return true;
-        } else {
-          return false;
-        }
+        return $rootScope.member && (!$rootScope.user || $rootScope.user === void 0);
       },
-      setLogin: function(member) {
+      setLogin: function(member, persist) {
         var auth_token;
         auth_token = member.getOption('auth_token');
         member = new BBModel.Member.Member(member);
         $sessionStorage.setItem("login", member.$toStore());
         $sessionStorage.setItem("auth_token", auth_token);
         $rootScope.member = member;
+        if (persist) {
+          $localStorage.setItem("auth_token", auth_token);
+        }
         return member;
       },
       member: function() {
@@ -25731,11 +25710,15 @@ function getURIparam( name ){
       checkLogin: function() {
         var member;
         if ($rootScope.member) {
-          return;
+          return true;
         }
         member = $sessionStorage.getItem("login");
         if (member) {
-          return $rootScope.member = halClient.createResource(member);
+          member = halClient.createResource(member);
+          $rootScope.member = new BBModel.Member.Member(member);
+          return true;
+        } else {
+          return false;
         }
       },
       logout: function(options) {
@@ -25745,14 +25728,12 @@ function getURIparam( name ){
         options || (options = {});
         options['root'] || (options['root'] = "");
         url = options['root'] + "/api/v1/logout";
-        $sessionStorage.removeItem("login");
-        $sessionStorage.removeItem('auth_token');
         $sessionStorage.clear();
+        $localStorage.clear();
         halClient.$del(url, options, {}).then((function(_this) {
           return function(logout) {
-            $sessionStorage.removeItem("login");
-            $sessionStorage.removeItem('auth_token');
             $sessionStorage.clear();
+            $localStorage.clear();
             return deferred.resolve(true);
           };
         })(this), (function(_this) {
@@ -25788,7 +25769,7 @@ function getURIparam( name ){
           member.$post('update_password', {}, params).then((function(_this) {
             return function(login) {
               return login.$get('member').then(function(member) {
-                _this.setLogin(member);
+                _this.setLogin(member, params.persist_login);
                 return deferred.resolve(member);
               }, function(err) {
                 return deferred.reject(err);
