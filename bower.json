@@ -43,7 +43,7 @@
     "ng-idle": "~0.3.5",
     "underscore": "~1.7.0",
     "sprintf": "~1.0.2",
-    "angular-bootstrap": "https://github.com/BookingBug/bootstrap-bower.git#a865a01d271f934a0bb93b2d2f9e43274e1074bf",
+    "angular-bootstrap": "https://github.com/BookingBug/bootstrap-bower.git#9d4bddba44e7fdac45317c505e68804369028b38",
     "angular-google-maps": "~2.0.15",
     "angular-rangeslider": "~0.0.13",
     "angular-filter": "~0.5.4",
