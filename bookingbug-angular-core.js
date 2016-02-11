@@ -7948,6 +7948,7 @@ function getURIparam( name ){
           return function(member) {
             if (member) {
               $scope.setClient(member);
+              $scope.password_updated = true;
               return AlertService.raise('PASSWORD_RESET_SUCESS');
             }
           };
@@ -10312,6 +10313,229 @@ function getURIparam( name ){
 
     /***
     * @ngdoc method
+    * @name checkReady
+    * @methodOf BB.Directives:bbPage
+    * @description
+    * Check the page ready
+     */
+    $scope.checkReady = function() {
+      var checkread, i, len, ready_list, v;
+      ready_list = isScopeReady($scope);
+      checkread = $q.defer();
+      $scope.$checkingReady = checkread.promise;
+      ready_list = ready_list.filter(function(v) {
+        return !((typeof v === 'boolean') && v);
+      });
+      if (!ready_list || ready_list.length === 0) {
+        checkread.resolve();
+        return true;
+      }
+      for (i = 0, len = ready_list.length; i < len; i++) {
+        v = ready_list[i];
+        if ((typeof value === 'boolean') || !v) {
+          checkread.reject();
+          return false;
+        }
+      }
+      $scope.notLoaded($scope);
+      $q.all(ready_list).then(function() {
+        $scope.setLoaded($scope);
+        return checkread.resolve();
+      }, function(err) {
+        return $scope.setLoaded($scope);
+      });
+      return true;
+    };
+
+    /***
+    * @ngdoc method
+    * @name routeReady
+    * @methodOf BB.Directives:bbPage
+    * @description
+    * Check the page route ready
+    *
+    * @param {string=} route A specific route to load
+     */
+    return $scope.routeReady = function(route) {
+      if (!$scope.$checkingReady) {
+        return $scope.decideNextPage(route);
+      } else {
+        return $scope.$checkingReady.then((function(_this) {
+          return function() {
+            return $scope.decideNextPage(route);
+          };
+        })(this));
+      }
+    };
+  };
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPage
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of page for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+   */
+
+  angular.module('BB.Directives').directive('bbPage', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'PageController'
+    };
+  });
+
+  angular.module('BB.Controllers').controller('PageController', BBBasicPageCtrl);
+
+  angular.module('BB.Services').value("PageControllerService", BBBasicPageCtrl);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of payments for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+    var error, getHost, linker, sendLoadEvent;
+    error = function(scope, message) {
+      return scope.error(message);
+    };
+    getHost = function(url) {
+      var a;
+      a = document.createElement('a');
+      a.href = url;
+      return a['protocol'] + '//' + a['host'];
+    };
+    sendLoadEvent = function(element, origin, scope) {
+      var custom_stylesheet, payload, referrer;
+      referrer = $location.protocol() + "://" + $location.host();
+      if ($location.port()) {
+        referrer += ":" + $location.port();
+      }
+      if (scope.payment_options.custom_stylesheet) {
+        custom_stylesheet = scope.payment_options.custom_stylesheet;
+      }
+      payload = JSON.stringify({
+        'type': 'load',
+        'message': referrer,
+        'custom_partial_url': scope.bb.custom_partial_url,
+        'custom_stylesheet': custom_stylesheet,
+        'scroll_offset': SettingsService.getScrollOffset()
+      });
+      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+    };
+    linker = function(scope, element, attributes) {
+      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+      element.find('iframe').bind('load', (function(_this) {
+        return function(event) {
+          var origin, url;
+          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+            url = scope.bb.total.$href('new_payment');
+          }
+          origin = getHost(url);
+          sendLoadEvent(element, origin, scope);
+          return scope.$apply(function() {
+            return scope.callSetLoaded();
+          });
+        };
+      })(this));
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          var data;
+          if (angular.isObject(event.data)) {
+            data = event.data;
+          } else if (!event.data.match(/iFrameSizer/)) {
+            data = JSON.parse(event.data);
+          }
+          return scope.$apply(function() {
+            if (data) {
+              switch (data.type) {
+                case "submitting":
+                  return scope.callNotLoaded();
+                case "error":
+                  scope.$emit("payment:failed");
+                  scope.callNotLoaded();
+                  AlertService.raise('PAYMENT_FAILED');
+                  return document.getElementsByTagName("iframe")[0].src += '';
+                case "payment_complete":
+                  scope.callSetLoaded();
+                  return scope.paymentDone();
+              }
+            }
+          });
+        };
+      })(this), false);
+    };
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: linker
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if ($scope.total) {
+          $scope.bb.total = $scope.total;
+        }
+        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+        }
+      };
+    })(this));
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call not loaded
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
     * @name callSetLoaded
     * @methodOf BB.Directives:bbPayment
     * @description
@@ -11335,7 +11559,9 @@ function getURIparam( name ){
             for (j = 0, len = items.length; j < len; j++) {
               item = items[j];
               if (item.self === $scope.booking_item.defaultService().self || (item.name === $scope.booking_item.defaultService().name && !item.deleted)) {
-                $scope.selectItem(item, $scope.nextRoute);
+                $scope.selectItem(item, $scope.nextRoute, {
+                  skip_step: true
+                });
               }
             }
           }
@@ -14628,7 +14854,7 @@ function getURIparam( name ){
                   ref1 = question.options;
                   for (i = 0, len1 = ref1.length; i < len1; i++) {
                     itemx = ref1[i];
-                    html += "<option data_id='" + itemx.id + "' value='" + itemx.name + "'>" + itemx.display_name + "</option>";
+                    html += "<option data_id='" + itemx.id + "' value='" + (itemx.name.replace(/'/g, "&apos;")) + "'>" + itemx.display_name + "</option>";
                   }
                   html += "</select>";
                 } else if (question.detail_type === "text_area") {
@@ -18634,7 +18860,7 @@ function getURIparam( name ){
                   a = _.find(_this.questions, function(c) {
                     return c.id === q.id;
                   });
-                  if (a && q.answer === void 0) {
+                  if (a && q.answer === void 0 || a !== q.answer) {
                     q.answer = a.answer;
                   }
                 }
