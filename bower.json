@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "0.0.291",
+  "version": "0.0.301",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -43,7 +43,7 @@
     "ng-idle": "~0.3.5",
     "underscore": "~1.7.0",
     "sprintf": "~1.0.2",
-    "angular-bootstrap": "https://github.com/BookingBug/bootstrap-bower.git#774d6a295da0813aac23cd1cf6e9ca396a461232",
+    "angular-bootstrap": "https://github.com/BookingBug/bootstrap-bower.git#9d4bddba44e7fdac45317c505e68804369028b38",
     "angular-google-maps": "~2.0.15",
     "angular-rangeslider": "~0.0.13",
     "angular-filter": "~0.5.4",
