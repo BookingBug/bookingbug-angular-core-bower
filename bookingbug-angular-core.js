@@ -19,7 +19,7 @@
   app.constant('UriTemplate', window.UriTemplate);
 
   app.config(function($locationProvider, $httpProvider, $provide, ie8HttpBackendProvider) {
-    var int, lowercase, msie;
+    var int, lowercase, msie, regexp, result, webkit;
     $httpProvider.defaults.headers.common = {
       'App-Id': 'f6b16c23',
       'App-Key': 'f0bc4f65f4fbfe7b4b3b7264b655f5eb'
@@ -38,7 +38,12 @@
     if (isNaN(msie)) {
       msie = int((/trident\/.*; rv:(\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
     }
-    if (msie && msie < 10) {
+    regexp = /Safari\/([\d.]+)/;
+    result = regexp.exec(navigator.userAgent);
+    if (result) {
+      webkit = parseFloat(result[1]);
+    }
+    if ((msie && msie <= 9) || (webkit && webkit < 537)) {
       return $provide.provider({
         $httpBackend: ie8HttpBackendProvider
       });
@@ -109,16 +114,20 @@
 angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackendProvider() {
 
   this.$get = ['$browser', '$window', '$document', '$sniffer', function ie8HttpBackendFactory($browser, $window, $document, $sniffer) {
-    var msie = $sniffer.msie
-    var params = [$browser, createXhr, $browser.defer, $window.angular.callbacks, $document[0], $window.location.protocol.replace(':', ''), msie];
+    var params = [$browser, createXhr, $browser.defer, $window.angular.callbacks, $document[0], $window.location.protocol.replace(':', ''), $sniffer];
     var param4ie = params.concat([createHttpBackend.apply(this,params)]);
     return (ieCreateHttpBackend && ieCreateHttpBackend.apply(this, param4ie)) ||
       createHttpBackend.apply(this, params);
   }];
 
 
-  function ieCreateHttpBackend ($browser, XHR, $browserDefer, callbacks, rawDocument, locationProtocol, msie, xhr) {
-    if (!msie || msie > 9) return null;
+  function ieCreateHttpBackend ($browser, XHR, $browserDefer, callbacks, rawDocument, locationProtocol, sniffer, xhr) {
+
+    if ((sniffer.msie && sniffer.msie <= 9) || (sniffer.webkit && sniffer.webkit < 537)) {
+      //console.log("create backend");
+    } else {
+      return null;
+    }
  
     var getHostName = function (path) {
       var a = document.createElement('a');
@@ -502,6 +511,9 @@ var NO_JQUERY = {};
              if (("postMessage" in target) && !o.hash) {
                  pm._bind();
                  target.postMessage(JSON.stringify(msg), o.origin || '*');
+             } else if (("postMessage" in target.contentWindow) && !o.hash) {
+                pm._bind();
+                target.contentWindow.postMessage(JSON.stringify(msg), o.origin || '*');
              }
              else {
                  pm.hash._bind();
@@ -1112,511 +1124,958 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
+
+angular
+.module('angular-hal', []).provider('data_cache', function() {
+ 
+    this.$get = function() {
+      data = [];
+
+      return {
+
+        set: function(key, val)
+        {
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        },
+        delMatching: function(str)
+        {
+          for (var k in data) {      
+            if (k.indexOf(str) != -1)
+              delete data[k]
+          }
+        }
+
+      }
+    };
+ 
+})
+.provider('shared_header', function() {
+   this.$get = function() {
+      data = {};
+
+      return {
+
+        set: function(key, val, store)
+        {
+          // also store this in the session store
+          store.setItem(key, val)
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        }
+      }
+    };
+
+})
+.factory('halClient', [
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', function(
+    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
+  ){
+
+    if ($sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
+    else if ($cookies['Auth-Token'] && !shared_header.has('auth_token')){
+      shared_header.set('auth_token', $cookies['Auth-Token'], $sessionStorage)
+    }
+
+    return {
+      setCache: function(cache) {
+        data_cache = cache
+      },
+      clearCache: function(str) {
+        data_cache.delMatching(str)
+      },
+      createResource: function(store)
+      {
+        if (typeof store === 'string') {
+          store = JSON.parse(store)
+        }
+        resource = store.data
+        resource._links = store.links
+        key = store.links.self.href
+        options = store.options
+        return new BaseResource(key, options, resource)
+      },
+      $get: function(href, options){
+        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
+        return data_cache.set(href, callService('GET', href, options));
+//        return callService('GET', href, options);
+      }//get
+      , $post: function(href, options, data){
+        return callService('POST', href, options, data);
+      }//post
+      , $put: function(href, options, data){
+        return callService('PUT', href, options, data);
+      }//put
+      , $patch: function(href, options, data){
+        return callService('PATCH', href, options, data);
+      }//patch
+      , $del: function(href, options){
+        return callService('DELETE', href, options);
+      }//del
+      , $parse: function(data){
+        return parseHal(data)
+      }//parse
+    };
+
+
+
+    function BaseResource(href, options, data){
+      if(!options) options = {};
+      var links = {};
+      var embedded = data_cache
+      if (data.hasOwnProperty('auth_token')) {
+        options['auth_token'] = data['auth_token'];
+      }
+
+      href = getSelfLink(href, data).href;
+
+      defineHiddenProperty(this, '$href', function(rel, params) {
+        if(!(rel in links)) return null;
+
+        return hrefLink(links[rel], params);
+      });
+      defineHiddenProperty(this, '$has', function(rel) {
+        return rel in links;
+      });
+      defineHiddenProperty(this, '$flush', function(rel, params) {
+        var link = links[rel];
+        return flushLink(link, params);
+      });
+      defineHiddenProperty(this, '$get', function(rel, params){
+        var link = links[rel];
+        return callLink('GET', link, params);
+      });
+      defineHiddenProperty(this, '$post', function(rel, params, data){
+        var link = links[rel];
+        return callLink('POST', link, params, data);
+      });
+      defineHiddenProperty(this, '$put', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PUT', link, params, data);
+      });
+      defineHiddenProperty(this, '$patch', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PATCH', link, params, data);
+      });
+      defineHiddenProperty(this, '$del', function(rel, params){
+        var link = links[rel];
+        return callLink('DELETE', link, params);
+      });
+      defineHiddenProperty(this, '$links', function(){
+        return links
+      });
+      defineHiddenProperty(this, '$toStore', function(){
+        return JSON.stringify({data: this, links: links, options:options})
+      });
+      defineHiddenProperty(this, 'setOption', function(key, value){
+        options[key] = value
+      });
+      defineHiddenProperty(this, 'getOption', function(key){
+        return options[key]
+      });
+      defineHiddenProperty(this, '$link', function(rel){
+        return links[rel]
+      });
+
+      Object.keys(data)
+      .filter(function(key){
+        return !~['_', '$'].indexOf(key[0]);
+      })
+      .forEach(function(key){
+        this[key] = data[key]
+//        Object.defineProperty(this, key, {
+  //        configurable: false
+  //        , enumerable: true
+  //        , value: data[key]
+   //     });
+      }, this)
+      ;
+
+
+      if(data._links) {
+        Object
+        .keys(data._links)
+        .forEach(function(rel){
+          var link = data._links[rel];          
+          link = normalizeLink(href, link);
+          links[rel] = link;
+        }, this)
+        ;
+      }
+
+      if(data._embedded) {
+        Object
+        .keys(data._embedded)
+        .forEach(function(rel){
+          var embedded = data._embedded[rel];
+          var link = getSelfLink(href, embedded);
+          links[rel] = link;
+
+          var resource = createResource(href, options, embedded);
+
+          embedResource(resource);
+
+        }, this);
+      }
+
+      function defineHiddenProperty(target, name, value) {
+        target[name] = value
+//        Object.defineProperty(target, name, {
+//          configurable: false
+ //         , enumerable: false
+  //        , value: value
+   //     });
+      }//defineHiddenProperty
+
+
+      function embedResource(resource) {
+        if(angular.isArray(resource)) return resource.map(function(resource){
+          return embedResource(resource);
+        });
+        
+        var href = resource.$href('self');
+
+        embedded.set(href, $q.when(resource));
+      }//embedResource
+
+      function hrefLink(link, params) {
+        var href = link.templated
+        ? new UriTemplate(link.href).fillFromObject(params || {})
+        : link.href
+        ;
+
+        return href;
+      }//hrefLink
+
+      function callLink(method, link, params, data) {
+
+        if (params == null) {
+          params = {};
+        }
+          
+        if(angular.isArray(link)) return $q.all(link.map(function(link){
+          if(method !== 'GET') throw 'method is not supported for arrays';
+
+          return callLink(method, link, params, data);
+        }));
+
+        var linkHref = hrefLink(link, params);
+        if(method === 'GET') {
+          if(embedded.has(linkHref) && !params['no_cache']) {
+            return embedded.get(linkHref);
+          } else {
+            return embedded.set(linkHref, callService(method, linkHref, options, data));
+          }
+        }
+        else {
+          return callService(method, linkHref, options, data);  
+        }
+
+      }//callLink
+
+      function flushLink(link, params) {
+        if(angular.isArray(link)) return link.map(function(link){
+          return flushLink(link, params);
+        });
+
+        var linkHref = hrefLink(link, params);
+        if(embedded.has(linkHref)) embedded.del(linkHref);
+      }//flushLink
+
+    }//Resource
+
+
+
+
+    function createResource(href, options, data){
+      if(angular.isArray(data)) return data.map(function(data){
+        return createResource(href, options, data);
+      });
+
+      var resource = new BaseResource(href, options, data);
+
+      return resource;
+
+    }//createResource
+
+
+    function normalizeLink(baseHref, link){
+      if(angular.isArray(link)) return link.map(function(link){
+        return normalizeLink(baseHref, link);
+      });
+
+      if(link) {
+        if(typeof link === 'string') link = { href: link };
+        link.href = resolveUrl(baseHref, link.href);
+      }
+      else {
+        link = { href: baseHref };      
+      }
+
+      return link;
+    }//normalizeLink
+
+
+    function getSelfLink(baseHref, resource){
+      if(angular.isArray(resource)) return resource.map(function(resource){
+        return getSelfLink(baseHref, resource);
+      });
+
+      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
+    }//getSelfLink
+
+
+
+    function callService(method, href, options, data){
+      if(!options) options = {};
+      headers = {
+        'Authorization': options.authorization
+        , 'Content-Type': 'application/json'
+        , 'Accept': 'application/hal+json,application/json'
+      }
+      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
+      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
+      if (options.auth_token) {
+        $sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token, $sessionStorage);
+      }
+
+      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
+      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+
+      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
+
+      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
+
+      var resource = (
+        $http({
+          method: method
+          , url: options.transformUrl ? options.transformUrl(href) : href
+          , headers: headers
+          , data: data
+        })
+        .then(function(res){
+
+          // copy out the auth token from the header if the response is new resource
+          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
+          if (res.headers('auth-token') && res.status == 201){
+            options.auth_token = res.headers('Auth-Token')
+            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
+          }
+          switch(res.status){
+            case 200:
+            if(res.data) return createResource(href, options, res.data);
+            return null;
+
+            case 201:
+            if(res.data) return createResource(href, options, res.data);
+            if(res.headers('Content-Location')) return res.headers('Content-Location');
+            return null;
+
+            case 204:
+            return null
+
+            default:
+            return $q.reject(res);
+          }
+        }, function(res)
+        {
+          return $q.reject(res);
+        })
+      );
+
+      return resource;
+    }//callService
+
+    function parseHal(data){
+      var resource = createResource(data._links.self.href, null, data);
+      return resource;
+    }//parseHal
+
+
+
+    function resolveUrl(baseHref, href){
+      var resultHref = '';
+      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
+      var baseHrefMatch = reFullUrl.exec(baseHref);
+      var hrefMatch = reFullUrl.exec(href);
+
+      for(var partIndex = 1; partIndex < 5; partIndex++) {
+        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
+        else resultHref += baseHrefMatch[partIndex]
+      }
+
+      return resultHref;
+    }//resolveUrl
+
+  }
+])//service
+;
+
+angular.module('ngStorage', [])
+.factory('$fakeStorage', [
+  '$cookies',
+  function($cookies){
+    function FakeStorage() {};
+    FakeStorage.prototype.setItem = function (key, value) {
+      $cookies[key] = value;
+    };
+    FakeStorage.prototype.getItem = function (key) {
+      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
+    }
+    FakeStorage.prototype.removeItem = function (key) {
+      if ($cookies[key]){
+        delete $cookies[key];
+      }
+    };
+    FakeStorage.prototype.clear = function(){
+      for (var key in $cookies) {
+        if( $cookies.hasOwnProperty(key) )
+        {
+          delete $cookies[key];
+        }
+      }
+    };
+    FakeStorage.prototype.key = function(index){
+      return Object.keys($cookies)[index];
+    };
+    return new FakeStorage();
+  }
+])
+.factory('$localStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+])
+.factory('$sessionStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+]);
+/**!
+ * AngularJS file upload/drop directive with http post and progress
+ * @author  Danial  <danial.farid@gmail.com>
+ * @version 1.4.0
+ */
 (function() {
-  var app;
+  
+var angularFileUpload = angular.module('angularFileUpload', []);
 
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
+angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
+  function sendHttp(config) {
+    config.method = config.method || 'POST';
+    config.headers = config.headers || {};
+    config.transformRequest = config.transformRequest || function(data, headersGetter) {
+      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
+        return data;
       }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
+      return $http.defaults.transformRequest[0](data, headersGetter);
     };
-  });
 
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
+    if (window.XMLHttpRequest.__isShim) {
+      config.headers['__setXHR_'] = function() {
+        return function(xhr) {
+          if (!xhr) return;
+          config.__XHR = xhr;
+          config.xhrFn && config.xhrFn(xhr);
+          xhr.upload.addEventListener('progress', function(e) {
+            if (config.progress) {
+              $timeout(function() {
+                if(config.progress) config.progress(e);
+              });
+            }
+          }, false);
+          //fix for firefox not firing upload progress end, also IE8-9
+          xhr.upload.addEventListener('load', function(e) {
+            if (e.lengthComputable) {
+              if(config.progress) config.progress(e);
+            }
+          }, false);
+        };
       };
     }
-  ]);
 
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
+    var promise = $http(config);
+
+    promise.progress = function(fn) {
+      config.progress = fn;
+      return promise;
+    };
+    promise.abort = function() {
+      if (config.__XHR) {
+        $timeout(function() {
+          config.__XHR.abort();
+        });
       }
+      return promise;
     };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    promise.xhr = function(fn) {
+      config.xhrFn = fn;
+      return promise;
     };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
+    promise.then = (function(promise, origThen) {
+      return function(s, e, p) {
+        config.progress = p || config.progress;
+        var result = origThen.apply(promise, [s, e, p]);
+        result.abort = promise.abort;
+        result.progress = promise.progress;
+        result.xhr = promise.xhr;
+        result.then = promise.then;
+        return result;
       };
-    })(this);
-  });
+    })(promise, promise.then);
+    
+    return promise;
+  }
 
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
+  this.upload = function(config) {
+    config.headers = config.headers || {};
+    config.headers['Content-Type'] = undefined;
+    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
+    var formData = new FormData();
+    var origTransformRequest = config.transformRequest;
+    var origData = config.data;
+    config.transformRequest = function(formData, headerGetter) {
+      if (origData) {
+        if (config.formDataAppender) {
+          for (var key in origData) {
+            var val = origData[key];
+            config.formDataAppender(formData, key, val);
+          }
         } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
+          for (var key in origData) {
+            var val = origData[key];
+            if (typeof origTransformRequest == 'function') {
+              val = origTransformRequest(val, headerGetter);
+            } else {
+              for (var i = 0; i < origTransformRequest.length; i++) {
+                var transformFn = origTransformRequest[i];
+                if (typeof transformFn == 'function') {
+                  val = transformFn(val, headerGetter);
+                }
+              }
+            }
+            formData.append(key, val);
+          }
         }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
       }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
 
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
+      if (config.file != null) {
+        var fileFormName = config.fileFormDataName || 'file';
+
+        if (Object.prototype.toString.call(config.file) === '[object Array]') {
+          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
+          for (var i = 0; i < config.file.length; i++) {
+            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
+          }
         } else {
-          return hours + " " + hour_string + "s";
+          formData.append(fileFormName, config.file, config.file.name);
         }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
       }
-      return str;
+      return formData;
     };
-  });
 
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
+    config.data = formData;
 
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
+    return sendHttp(config);
+  };
 
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
+  this.http = function(config) {
+    return sendHttp(config);
+  }
+}]);
 
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
+angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    var fn = $parse(attr['ngFileSelect']);
+    elem.bind('change', function(evt) {
+      var files = [], fileList, i;
+      fileList = evt.target.files;
+      if (fileList != null) {
+        for (i = 0; i < fileList.length; i++) {
+          files.push(fileList.item(i));
+        }
+      }
+      $timeout(function() {
+        fn(scope, {
+          $files : files,
+          $event : evt
+        });
       });
-    };
-  });
+    });
+    // removed this since it was confusing if the user click on browse and then cancel #181
+//    elem.bind('click', function(){
+//      this.value = null;
+//    });
+    
+    // touch screens
+    if (('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
+      elem.bind('touchend', function(e) {
+        e.preventDefault();
+        e.target.click();
+      });
+    }
+  };
+} ]);
 
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
+angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {
+    if ('draggable' in document.createElement('span')) {
+      var fn = $parse(attr['ngFileDropAvailable']);
+      $timeout(function() {
+        fn(scope);
+      });
+    }
+  };
+} ]);
 
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter('datetime', function(SettingsService) {
-    return function(date, format) {
-      var cc, datestrings;
-      if (date && moment.isMoment(date)) {
-        datestrings = {
-          datetime_us: 'MM/DD/YYYY, h:mm a',
-          datetime_uk: 'DD/MM/YYYY, HH:MM',
-          date_us: 'MM/DD/YYYY',
-          date_uk: 'DD/MM/YYYY',
-          time_us: 'h:mm a',
-          time_uk: 'HH:MM'
-        };
-        cc = SettingsService.getCountryCode();
-        if (cc !== "us") {
-          cc = "uk";
-        }
-        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
-          return date.format(datestrings[format + "_" + cc]);
-        } else if (format) {
-          return date.format(format);
+angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
+  return function(scope, elem, attr) {    
+    if ('draggable' in document.createElement('span')) {
+      var cancel = null;
+      var fn = $parse(attr['ngFileDrop']);
+      elem[0].addEventListener("dragover", function(evt) {
+        $timeout.cancel(cancel);
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
+      }, false);
+      elem[0].addEventListener("dragleave", function(evt) {
+        cancel = $timeout(function() {
+          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        });
+      }, false);
+      
+      var processing = 0;
+      function traverseFileTree(files, item) {
+        if (item.isDirectory) {
+          var dirReader = item.createReader();
+          processing++;
+          dirReader.readEntries(function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+              traverseFileTree(files, entries[i]);
+            }
+            processing--;
+          });
         } else {
-          return date.format(datestrings["date_" + cc]);
-        }
-      } else {
-
+          processing++;
+              item.file(function(file) {
+                processing--;
+                files.push(file);
+              });
+          }
       }
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
+      
+      elem[0].addEventListener("drop", function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
+        var files = [], items = evt.dataTransfer.items;
+        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+          for (var i = 0; i < items.length; i++) {
+            traverseFileTree(files, items[i].webkitGetAsEntry());
+          }
         } else {
-          return "";
+          var fileList = evt.dataTransfer.files;
+          if (fileList != null) {
+            for (var i = 0; i < fileList.length; i++) {
+              files.push(fileList.item(i));
+            }
+          }
         }
-      };
-    })(this);
-  });
+        (function callback(delay) {
+          $timeout(function() {
+            if (!processing) {
+              fn(scope, {
+                $files : files,
+                $event : evt
+              });
+            } else {
+              callback(10);
+            }
+          }, delay || 0)
+        })();
+      }, false);
+    }
+  };
+} ]);
 
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
+})();
+// THIS DOESN'T APPEAR TO BE USED?
+angular.module('ngLocalData', ['angular-hal']).
+ factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
+    data = {};
+
+    jsonData = function(data) {
+        return data && JSON.parse(data);
+    }
+
+    storage = function()
+    {
+      return $sessionStorage
+    } 
+    localSave = function(key, item){
+      storage().setItem(key, item.$toStore())   
+    } 
+    localLoad = function(key){
+      res =  jsonData(storage().getItem(key))
+      if (res)
+      {  
+        r = halClient.createResource(res)
+        def = $q.defer()
+        def.resolve(r)
+        return def.promise
       }
-    };
-  });
+      return null
+    } 
+    localDelete = function(key) {
+      storage().removeItem(key)
+    }
 
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
+    return {
+
+      set: function(key, val)
+      {
+        data[key] = val
+        val.then(function(item){
+          localSave(key, item)
+        })
+        return val
+      },
+      get: function(key)
+      {
+        localLoad(key)
+        if (!data[key])
+          data[key] = localLoad(key)
+        return data[key]
+      },
+      del: function(key)
+      {
+        localDelete(key)
+        delete data[key]
+      },
+      has: function(key)
+      {
+        if (!data[key])
+        { 
+          res = localLoad(key)
+          if (res)
+            data[key] = res
         }
-      };
-    })(this);
-  });
+        return (key in data)
+      }      
+    }
 
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
+}]).
+ factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
+    function LocalDataFactory(name) {
+      function LocalData(value){
+        this.setStore(value);
       }
+
+      LocalData.prototype.jsonData = function(data) {
+          return data && JSON.parse(data);
+      }
+
+      LocalData.prototype.storage = function()
+      {
+        return $sessionStorage
+      }  
+
+      LocalData.prototype.localSave = function(item)
+      {
+        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
+      }
+
+
+      LocalData.prototype.localSaveIndex = function(ids)
+      {
+        this.storage().setItem(this.store_name, ids.join(","))
+        this.ids = ids;
+      }
+
+      LocalData.prototype.localLoadIndex = function()
+      {
+        store = this.storage().getItem(this.store_name)
+        records = (store && store.split(",")) || [];
+        return records
+      }
+
+      LocalData.prototype.localLoad = function( id)
+      {
+        return this.jsonData(this.storage().getItem(this.store_name + id))
+      }
+
+      LocalData.prototype.count = function()
+      {
+        return this.ids.length
+      }
+
+      LocalData.prototype.setStore = function(name)
+      {
+        this.store_name = name;
+        this.data_store = []
+        this.ids = this.localLoadIndex();
+        for (a = 0; a < this.ids.length; a++){
+          this.data_store.push(this.localLoad(this.ids[a]));
+        }
+    //    var channel = pusher.subscribe(name);
+    //    var ds = this;
+
+     //   channel.bind('add', function(data) {
+     //     ds.data_store.push(data);
+     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
+     //   });
+
+      }
+
+      LocalData.prototype.update = function(data)
+      {
+        ids = []
+        for (x in data){
+          if (data[x].id){
+           ids.push(data[x].id)
+           this.localSave(data[x])
+         }
+        }
+        this.localSaveIndex(ids)
+      }
+
+      return new LocalData(name)
+
     };
+
+
+    
+    return LocalDataFactory
+}]);
+
+
+/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
+
+getControllerScope = function(controller, fn){
+  $(document).ready(function(){
+    var $element = $('div[data-ng-controller="' + controller + '"]');
+    var scope = angular.element($element).scope();
+    fn(scope); 
   });
+}
 
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
 
-}).call(this);
-
+function getURIparam( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
 (function() {
   'use strict';
 
@@ -2542,9 +3001,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
         _this.$init_prms = prms;
         con_started = $q.defer();
         $rootScope.connection_started = con_started.promise;
-        if ((!$sniffer.msie || $sniffer.msie > 9) || !first_call) {
-          $scope.initWidget2();
-        } else {
+        if ((($sniffer.webkit && $sniffer.webkit < 537) || ($sniffer.msie && $sniffer.msie <= 9)) && first_call) {
           if ($scope.bb.api_url) {
             url = document.createElement('a');
             url.href = $scope.bb.api_url;
@@ -2562,6 +3019,8 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
               }
             });
           }
+        } else {
+          $scope.initWidget2();
         }
       };
     })(this);
@@ -3808,7 +4267,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
       return $scope.bb.isAdmin;
     };
     $scope.isAdminIFrame = function() {
-      var err, location;
+      var err, error, location;
       if (!$scope.bb.isAdmin) {
         return false;
       }
@@ -3819,8 +4278,8 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
         } else {
           return false;
         }
-      } catch (_error) {
-        err = _error;
+      } catch (error) {
+        err = error;
         return false;
       }
     };
@@ -7138,6 +7597,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
       var params;
       confirming = true;
       $scope.item || ($scope.item = $scope.bb.current_item);
+      $scope.item.moved_booking = false;
       $scope.item.setAskedQuestions();
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
@@ -7152,6 +7612,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
               $scope.purchase = purchase;
               $scope.setLoaded($scope);
               $scope.item.move_done = true;
+              $scope.item.moved_booking = true;
               $rootScope.$broadcast("booking:moved");
               $scope.decideNextPage(route);
               return $scope.showMoveMessage(bookings[0].datetime);
@@ -9643,229 +10104,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     * @ngdoc method
     * @name checkReady
     * @methodOf BB.Directives:bbPage
-    * @description
-    * Check the page ready
-     */
-    $scope.checkReady = function() {
-      var checkread, i, len, ready_list, v;
-      ready_list = isScopeReady($scope);
-      checkread = $q.defer();
-      $scope.$checkingReady = checkread.promise;
-      ready_list = ready_list.filter(function(v) {
-        return !((typeof v === 'boolean') && v);
-      });
-      if (!ready_list || ready_list.length === 0) {
-        checkread.resolve();
-        return true;
-      }
-      for (i = 0, len = ready_list.length; i < len; i++) {
-        v = ready_list[i];
-        if ((typeof value === 'boolean') || !v) {
-          checkread.reject();
-          return false;
-        }
-      }
-      $scope.notLoaded($scope);
-      $q.all(ready_list).then(function() {
-        $scope.setLoaded($scope);
-        return checkread.resolve();
-      }, function(err) {
-        return $scope.setLoaded($scope);
-      });
-      return true;
-    };
-
-    /***
-    * @ngdoc method
-    * @name routeReady
-    * @methodOf BB.Directives:bbPage
-    * @description
-    * Check the page route ready
-    *
-    * @param {string=} route A specific route to load
-     */
-    return $scope.routeReady = function(route) {
-      if (!$scope.$checkingReady) {
-        return $scope.decideNextPage(route);
-      } else {
-        return $scope.$checkingReady.then((function(_this) {
-          return function() {
-            return $scope.decideNextPage(route);
-          };
-        })(this));
-      }
-    };
-  };
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPage
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of page for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-   */
-
-  angular.module('BB.Directives').directive('bbPage', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'PageController'
-    };
-  });
-
-  angular.module('BB.Controllers').controller('PageController', BBBasicPageCtrl);
-
-  angular.module('BB.Services').value("PageControllerService", BBBasicPageCtrl);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of payments for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
-    var error, getHost, linker, sendLoadEvent;
-    error = function(scope, message) {
-      return scope.error(message);
-    };
-    getHost = function(url) {
-      var a;
-      a = document.createElement('a');
-      a.href = url;
-      return a['protocol'] + '//' + a['host'];
-    };
-    sendLoadEvent = function(element, origin, scope) {
-      var custom_stylesheet, payload, referrer;
-      referrer = $location.protocol() + "://" + $location.host();
-      if ($location.port()) {
-        referrer += ":" + $location.port();
-      }
-      if (scope.payment_options.custom_stylesheet) {
-        custom_stylesheet = scope.payment_options.custom_stylesheet;
-      }
-      payload = JSON.stringify({
-        'type': 'load',
-        'message': referrer,
-        'custom_partial_url': scope.bb.custom_partial_url,
-        'custom_stylesheet': custom_stylesheet,
-        'scroll_offset': SettingsService.getScrollOffset()
-      });
-      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-    };
-    linker = function(scope, element, attributes) {
-      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-      element.find('iframe').bind('load', (function(_this) {
-        return function(event) {
-          var origin, url;
-          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-            url = scope.bb.total.$href('new_payment');
-          }
-          origin = getHost(url);
-          sendLoadEvent(element, origin, scope);
-          return scope.$apply(function() {
-            return scope.callSetLoaded();
-          });
-        };
-      })(this));
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          var data;
-          if (angular.isObject(event.data)) {
-            data = event.data;
-          } else if (!event.data.match(/iFrameSizer/)) {
-            data = JSON.parse(event.data);
-          }
-          return scope.$apply(function() {
-            if (data) {
-              switch (data.type) {
-                case "submitting":
-                  return scope.callNotLoaded();
-                case "error":
-                  scope.$emit("payment:failed");
-                  scope.callNotLoaded();
-                  AlertService.raise('PAYMENT_FAILED');
-                  return document.getElementsByTagName("iframe")[0].src += '';
-                case "payment_complete":
-                  scope.callSetLoaded();
-                  return scope.paymentDone();
-              }
-            }
-          });
-        };
-      })(this), false);
-    };
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: linker
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if ($scope.total) {
-          $scope.bb.total = $scope.total;
-        }
-        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-        }
-      };
-    })(this));
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call not loaded
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
     * @description
     * Check the page ready
      */
@@ -13277,960 +13515,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-
-angular
-.module('angular-hal', []).provider('data_cache', function() {
- 
-    this.$get = function() {
-      data = [];
-
-      return {
-
-        set: function(key, val)
-        {
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        },
-        delMatching: function(str)
-        {
-          for (var k in data) {      
-            if (k.indexOf(str) != -1)
-              delete data[k]
-          }
-        }
-
-      }
-    };
- 
-})
-.provider('shared_header', function() {
-   this.$get = function() {
-      data = {};
-
-      return {
-
-        set: function(key, val, store)
-        {
-          // also store this in the session store
-          store.setItem(key, val)
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        }
-      }
-    };
-
-})
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', function(
-    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage
-  ){
-
-    if ($cookies['Auth-Token']){
-      $sessionStorage.setItem('auth_token', $cookies['Auth-Token'])
-    }
-
-    if ($sessionStorage.getItem('auth_token'))
-      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
-
-
-    return {
-      setCache: function(cache) {
-        data_cache = cache
-      },
-      clearCache: function(str) {
-        data_cache.delMatching(str)
-      },
-      createResource: function(store)
-      {
-        if (typeof store === 'string') {
-          store = JSON.parse(store)
-        }
-        resource = store.data
-        resource._links = store.links
-        key = store.links.self.href
-        options = store.options
-        return new BaseResource(key, options, resource)
-      },
-      $get: function(href, options){
-        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
-        return data_cache.set(href, callService('GET', href, options));
-//        return callService('GET', href, options);
-      }//get
-      , $post: function(href, options, data){
-        return callService('POST', href, options, data);
-      }//post
-      , $put: function(href, options, data){
-        return callService('PUT', href, options, data);
-      }//put
-      , $patch: function(href, options, data){
-        return callService('PATCH', href, options, data);
-      }//patch
-      , $del: function(href, options){
-        return callService('DELETE', href, options);
-      }//del
-      , $parse: function(data){
-        return parseHal(data)
-      }//parse
-    };
-
-
-
-    function BaseResource(href, options, data){
-      if(!options) options = {};
-      var links = {};
-      var embedded = data_cache
-      if (data.hasOwnProperty('auth_token')) {
-        options['auth_token'] = data['auth_token'];
-      }
-
-      href = getSelfLink(href, data).href;
-
-      defineHiddenProperty(this, '$href', function(rel, params) {
-        if(!(rel in links)) return null;
-
-        return hrefLink(links[rel], params);
-      });
-      defineHiddenProperty(this, '$has', function(rel) {
-        return rel in links;
-      });
-      defineHiddenProperty(this, '$flush', function(rel, params) {
-        var link = links[rel];
-        return flushLink(link, params);
-      });
-      defineHiddenProperty(this, '$get', function(rel, params){
-        var link = links[rel];
-        return callLink('GET', link, params);
-      });
-      defineHiddenProperty(this, '$post', function(rel, params, data){
-        var link = links[rel];
-        return callLink('POST', link, params, data);
-      });
-      defineHiddenProperty(this, '$put', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PUT', link, params, data);
-      });
-      defineHiddenProperty(this, '$patch', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PATCH', link, params, data);
-      });
-      defineHiddenProperty(this, '$del', function(rel, params){
-        var link = links[rel];
-        return callLink('DELETE', link, params);
-      });
-      defineHiddenProperty(this, '$links', function(){
-        return links
-      });
-      defineHiddenProperty(this, '$toStore', function(){
-        return JSON.stringify({data: this, links: links, options:options})
-      });
-      defineHiddenProperty(this, 'setOption', function(key, value){
-        options[key] = value
-      });
-      defineHiddenProperty(this, 'getOption', function(key){
-        return options[key]
-      });
-      defineHiddenProperty(this, '$link', function(rel){
-        return links[rel]
-      });
-
-      Object.keys(data)
-      .filter(function(key){
-        return !~['_', '$'].indexOf(key[0]);
-      })
-      .forEach(function(key){
-        this[key] = data[key]
-//        Object.defineProperty(this, key, {
-  //        configurable: false
-  //        , enumerable: true
-  //        , value: data[key]
-   //     });
-      }, this)
-      ;
-
-
-      if(data._links) {
-        Object
-        .keys(data._links)
-        .forEach(function(rel){
-          var link = data._links[rel];          
-          link = normalizeLink(href, link);
-          links[rel] = link;
-        }, this)
-        ;
-      }
-
-      if(data._embedded) {
-        Object
-        .keys(data._embedded)
-        .forEach(function(rel){
-          var embedded = data._embedded[rel];
-          var link = getSelfLink(href, embedded);
-          links[rel] = link;
-
-          var resource = createResource(href, options, embedded);
-
-          embedResource(resource);
-
-        }, this);
-      }
-
-      function defineHiddenProperty(target, name, value) {
-        target[name] = value
-//        Object.defineProperty(target, name, {
-//          configurable: false
- //         , enumerable: false
-  //        , value: value
-   //     });
-      }//defineHiddenProperty
-
-
-      function embedResource(resource) {
-        if(angular.isArray(resource)) return resource.map(function(resource){
-          return embedResource(resource);
-        });
-        
-        var href = resource.$href('self');
-
-        embedded.set(href, $q.when(resource));
-      }//embedResource
-
-      function hrefLink(link, params) {
-        var href = link.templated
-        ? new UriTemplate(link.href).fillFromObject(params || {})
-        : link.href
-        ;
-
-        return href;
-      }//hrefLink
-
-      function callLink(method, link, params, data) {
-
-        if (params == null) {
-          params = {};
-        }
-          
-        if(angular.isArray(link)) return $q.all(link.map(function(link){
-          if(method !== 'GET') throw 'method is not supported for arrays';
-
-          return callLink(method, link, params, data);
-        }));
-
-        var linkHref = hrefLink(link, params);
-        if(method === 'GET') {
-          if(embedded.has(linkHref) && !params['no_cache']) {
-            return embedded.get(linkHref);
-          } else {
-            return embedded.set(linkHref, callService(method, linkHref, options, data));
-          }
-        }
-        else {
-          return callService(method, linkHref, options, data);  
-        }
-
-      }//callLink
-
-      function flushLink(link, params) {
-        if(angular.isArray(link)) return link.map(function(link){
-          return flushLink(link, params);
-        });
-
-        var linkHref = hrefLink(link, params);
-        if(embedded.has(linkHref)) embedded.del(linkHref);
-      }//flushLink
-
-    }//Resource
-
-
-
-
-    function createResource(href, options, data){
-      if(angular.isArray(data)) return data.map(function(data){
-        return createResource(href, options, data);
-      });
-
-      var resource = new BaseResource(href, options, data);
-
-      return resource;
-
-    }//createResource
-
-
-    function normalizeLink(baseHref, link){
-      if(angular.isArray(link)) return link.map(function(link){
-        return normalizeLink(baseHref, link);
-      });
-
-      if(link) {
-        if(typeof link === 'string') link = { href: link };
-        link.href = resolveUrl(baseHref, link.href);
-      }
-      else {
-        link = { href: baseHref };      
-      }
-
-      return link;
-    }//normalizeLink
-
-
-    function getSelfLink(baseHref, resource){
-      if(angular.isArray(resource)) return resource.map(function(resource){
-        return getSelfLink(baseHref, resource);
-      });
-
-      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
-    }//getSelfLink
-
-
-
-    function callService(method, href, options, data){
-      if(!options) options = {};
-      headers = {
-        'Authorization': options.authorization
-        , 'Content-Type': 'application/json'
-        , 'Accept': 'application/hal+json,application/json'
-      }
-      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
-      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
-      if (options.auth_token) {
-        $sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token, $sessionStorage);
-      }
-
-      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
-      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
-
-      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
-
-      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
-
-      var resource = (
-        $http({
-          method: method
-          , url: options.transformUrl ? options.transformUrl(href) : href
-          , headers: headers
-          , data: data
-        })
-        .then(function(res){
-
-          // copy out the auth token from the header if the response is new resource
-          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
-          if (res.headers('auth-token') && res.status == 201){
-            options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
-          }
-          switch(res.status){
-            case 200:
-            if(res.data) return createResource(href, options, res.data);
-            return null;
-
-            case 201:
-            if(res.data) return createResource(href, options, res.data);
-            if(res.headers('Content-Location')) return res.headers('Content-Location');
-            return null;
-
-            case 204:
-            return null
-
-            default:
-            return $q.reject(res);
-          }
-        }, function(res)
-        {
-          return $q.reject(res);
-        })
-      );
-
-      return resource;
-    }//callService
-
-    function parseHal(data){
-      var resource = createResource(data._links.self.href, null, data);
-      return resource;
-    }//parseHal
-
-
-
-    function resolveUrl(baseHref, href){
-      var resultHref = '';
-      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
-      var baseHrefMatch = reFullUrl.exec(baseHref);
-      var hrefMatch = reFullUrl.exec(href);
-
-      for(var partIndex = 1; partIndex < 5; partIndex++) {
-        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
-        else resultHref += baseHrefMatch[partIndex]
-      }
-
-      return resultHref;
-    }//resolveUrl
-
-  }
-])//service
-;
-
-angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  '$cookies',
-  function($cookies){
-    function FakeStorage() {};
-    FakeStorage.prototype.setItem = function (key, value) {
-      $cookies[key] = value;
-    };
-    FakeStorage.prototype.getItem = function (key) {
-      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
-    }
-    FakeStorage.prototype.removeItem = function (key) {
-      if ($cookies[key]){
-        delete $cookies[key];
-      }
-    };
-    FakeStorage.prototype.clear = function(){
-      for (var key in $cookies) {
-        if( $cookies.hasOwnProperty(key) )
-        {
-          delete $cookies[key];
-        }
-      }
-    };
-    FakeStorage.prototype.key = function(index){
-      return Object.keys($cookies)[index];
-    };
-    return new FakeStorage();
-  }
-])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-]);
-/**!
- * AngularJS file upload/drop directive with http post and progress
- * @author  Danial  <danial.farid@gmail.com>
- * @version 1.4.0
- */
-(function() {
-  
-var angularFileUpload = angular.module('angularFileUpload', []);
-
-angularFileUpload.service('$upload', ['$http', '$timeout', function($http, $timeout) {
-  function sendHttp(config) {
-    config.method = config.method || 'POST';
-    config.headers = config.headers || {};
-    config.transformRequest = config.transformRequest || function(data, headersGetter) {
-      if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-        return data;
-      }
-      return $http.defaults.transformRequest[0](data, headersGetter);
-    };
-
-    if (window.XMLHttpRequest.__isShim) {
-      config.headers['__setXHR_'] = function() {
-        return function(xhr) {
-          if (!xhr) return;
-          config.__XHR = xhr;
-          config.xhrFn && config.xhrFn(xhr);
-          xhr.upload.addEventListener('progress', function(e) {
-            if (config.progress) {
-              $timeout(function() {
-                if(config.progress) config.progress(e);
-              });
-            }
-          }, false);
-          //fix for firefox not firing upload progress end, also IE8-9
-          xhr.upload.addEventListener('load', function(e) {
-            if (e.lengthComputable) {
-              if(config.progress) config.progress(e);
-            }
-          }, false);
-        };
-      };
-    }
-
-    var promise = $http(config);
-
-    promise.progress = function(fn) {
-      config.progress = fn;
-      return promise;
-    };
-    promise.abort = function() {
-      if (config.__XHR) {
-        $timeout(function() {
-          config.__XHR.abort();
-        });
-      }
-      return promise;
-    };
-    promise.xhr = function(fn) {
-      config.xhrFn = fn;
-      return promise;
-    };
-    promise.then = (function(promise, origThen) {
-      return function(s, e, p) {
-        config.progress = p || config.progress;
-        var result = origThen.apply(promise, [s, e, p]);
-        result.abort = promise.abort;
-        result.progress = promise.progress;
-        result.xhr = promise.xhr;
-        result.then = promise.then;
-        return result;
-      };
-    })(promise, promise.then);
-    
-    return promise;
-  }
-
-  this.upload = function(config) {
-    config.headers = config.headers || {};
-    config.headers['Content-Type'] = undefined;
-    config.transformRequest = config.transformRequest || $http.defaults.transformRequest;
-    var formData = new FormData();
-    var origTransformRequest = config.transformRequest;
-    var origData = config.data;
-    config.transformRequest = function(formData, headerGetter) {
-      if (origData) {
-        if (config.formDataAppender) {
-          for (var key in origData) {
-            var val = origData[key];
-            config.formDataAppender(formData, key, val);
-          }
-        } else {
-          for (var key in origData) {
-            var val = origData[key];
-            if (typeof origTransformRequest == 'function') {
-              val = origTransformRequest(val, headerGetter);
-            } else {
-              for (var i = 0; i < origTransformRequest.length; i++) {
-                var transformFn = origTransformRequest[i];
-                if (typeof transformFn == 'function') {
-                  val = transformFn(val, headerGetter);
-                }
-              }
-            }
-            formData.append(key, val);
-          }
-        }
-      }
-
-      if (config.file != null) {
-        var fileFormName = config.fileFormDataName || 'file';
-
-        if (Object.prototype.toString.call(config.file) === '[object Array]') {
-          var isFileFormNameString = Object.prototype.toString.call(fileFormName) === '[object String]'; 
-          for (var i = 0; i < config.file.length; i++) {
-            formData.append(isFileFormNameString ? fileFormName + i : fileFormName[i], config.file[i], config.file[i].name);
-          }
-        } else {
-          formData.append(fileFormName, config.file, config.file.name);
-        }
-      }
-      return formData;
-    };
-
-    config.data = formData;
-
-    return sendHttp(config);
-  };
-
-  this.http = function(config) {
-    return sendHttp(config);
-  }
-}]);
-
-angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    var fn = $parse(attr['ngFileSelect']);
-    elem.bind('change', function(evt) {
-      var files = [], fileList, i;
-      fileList = evt.target.files;
-      if (fileList != null) {
-        for (i = 0; i < fileList.length; i++) {
-          files.push(fileList.item(i));
-        }
-      }
-      $timeout(function() {
-        fn(scope, {
-          $files : files,
-          $event : evt
-        });
-      });
-    });
-    // removed this since it was confusing if the user click on browse and then cancel #181
-//    elem.bind('click', function(){
-//      this.value = null;
-//    });
-    
-    // touch screens
-    if (('ontouchstart' in window) ||
-        (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) {
-      elem.bind('touchend', function(e) {
-        e.preventDefault();
-        e.target.click();
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {
-    if ('draggable' in document.createElement('span')) {
-      var fn = $parse(attr['ngFileDropAvailable']);
-      $timeout(function() {
-        fn(scope);
-      });
-    }
-  };
-} ]);
-
-angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', function($parse, $timeout) {
-  return function(scope, elem, attr) {    
-    if ('draggable' in document.createElement('span')) {
-      var cancel = null;
-      var fn = $parse(attr['ngFileDrop']);
-      elem[0].addEventListener("dragover", function(evt) {
-        $timeout.cancel(cancel);
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.addClass(attr['ngFileDragOverClass'] || "dragover");
-      }, false);
-      elem[0].addEventListener("dragleave", function(evt) {
-        cancel = $timeout(function() {
-          elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        });
-      }, false);
-      
-      var processing = 0;
-      function traverseFileTree(files, item) {
-        if (item.isDirectory) {
-          var dirReader = item.createReader();
-          processing++;
-          dirReader.readEntries(function(entries) {
-            for (var i = 0; i < entries.length; i++) {
-              traverseFileTree(files, entries[i]);
-            }
-            processing--;
-          });
-        } else {
-          processing++;
-              item.file(function(file) {
-                processing--;
-                files.push(file);
-              });
-          }
-      }
-      
-      elem[0].addEventListener("drop", function(evt) {
-        evt.stopPropagation();
-        evt.preventDefault();
-        elem.removeClass(attr['ngFileDragOverClass'] || "dragover");
-        var files = [], items = evt.dataTransfer.items;
-        if (items && items.length > 0 && items[0].webkitGetAsEntry) {
-          for (var i = 0; i < items.length; i++) {
-            traverseFileTree(files, items[i].webkitGetAsEntry());
-          }
-        } else {
-          var fileList = evt.dataTransfer.files;
-          if (fileList != null) {
-            for (var i = 0; i < fileList.length; i++) {
-              files.push(fileList.item(i));
-            }
-          }
-        }
-        (function callback(delay) {
-          $timeout(function() {
-            if (!processing) {
-              fn(scope, {
-                $files : files,
-                $event : evt
-              });
-            } else {
-              callback(10);
-            }
-          }, delay || 0)
-        })();
-      }, false);
-    }
-  };
-} ]);
-
-})();
-// THIS DOESN'T APPEAR TO BE USED?
-angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
-    data = {};
-
-    jsonData = function(data) {
-        return data && JSON.parse(data);
-    }
-
-    storage = function()
-    {
-      return $sessionStorage
-    } 
-    localSave = function(key, item){
-      storage().setItem(key, item.$toStore())   
-    } 
-    localLoad = function(key){
-      res =  jsonData(storage().getItem(key))
-      if (res)
-      {  
-        r = halClient.createResource(res)
-        def = $q.defer()
-        def.resolve(r)
-        return def.promise
-      }
-      return null
-    } 
-    localDelete = function(key) {
-      storage().removeItem(key)
-    }
-
-    return {
-
-      set: function(key, val)
-      {
-        data[key] = val
-        val.then(function(item){
-          localSave(key, item)
-        })
-        return val
-      },
-      get: function(key)
-      {
-        localLoad(key)
-        if (!data[key])
-          data[key] = localLoad(key)
-        return data[key]
-      },
-      del: function(key)
-      {
-        localDelete(key)
-        delete data[key]
-      },
-      has: function(key)
-      {
-        if (!data[key])
-        { 
-          res = localLoad(key)
-          if (res)
-            data[key] = res
-        }
-        return (key in data)
-      }      
-    }
-
-}]).
- factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
-    function LocalDataFactory(name) {
-      function LocalData(value){
-        this.setStore(value);
-      }
-
-      LocalData.prototype.jsonData = function(data) {
-          return data && JSON.parse(data);
-      }
-
-      LocalData.prototype.storage = function()
-      {
-        return $sessionStorage
-      }  
-
-      LocalData.prototype.localSave = function(item)
-      {
-        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
-      }
-
-
-      LocalData.prototype.localSaveIndex = function(ids)
-      {
-        this.storage().setItem(this.store_name, ids.join(","))
-        this.ids = ids;
-      }
-
-      LocalData.prototype.localLoadIndex = function()
-      {
-        store = this.storage().getItem(this.store_name)
-        records = (store && store.split(",")) || [];
-        return records
-      }
-
-      LocalData.prototype.localLoad = function( id)
-      {
-        return this.jsonData(this.storage().getItem(this.store_name + id))
-      }
-
-      LocalData.prototype.count = function()
-      {
-        return this.ids.length
-      }
-
-      LocalData.prototype.setStore = function(name)
-      {
-        this.store_name = name;
-        this.data_store = []
-        this.ids = this.localLoadIndex();
-        for (a = 0; a < this.ids.length; a++){
-          this.data_store.push(this.localLoad(this.ids[a]));
-        }
-    //    var channel = pusher.subscribe(name);
-    //    var ds = this;
-
-     //   channel.bind('add', function(data) {
-     //     ds.data_store.push(data);
-     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
-     //   });
-
-      }
-
-      LocalData.prototype.update = function(data)
-      {
-        ids = []
-        for (x in data){
-          if (data[x].id){
-           ids.push(data[x].id)
-           this.localSave(data[x])
-         }
-        }
-        this.localSaveIndex(ids)
-      }
-
-      return new LocalData(name)
-
-    };
-
-
-    
-    return LocalDataFactory
-}]);
-
-
-/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
-
-getControllerScope = function(controller, fn){
-  $(document).ready(function(){
-    var $element = $('div[data-ng-controller="' + controller + '"]');
-    var scope = angular.element($element).scope();
-    fn(scope); 
-  });
-}
-
-
-function getURIparam( name ){
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
 (function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
@@ -14413,12 +13697,12 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, ie8orLess;
+    var e, error, ie8orLess;
     ie8orLess = false;
     try {
       ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       ie8orLess = false;
     }
     return {
@@ -15104,43 +14388,6 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('apiUrl', function($rootScope, $compile, $sniffer, $timeout, $window) {
-    return {
-      restrict: 'A',
-      replace: true,
-      compile: function(tElem, tAttrs) {
-        return {
-          pre: function(scope, element, attrs) {
-            var src, url;
-            $rootScope.bb || ($rootScope.bb = {});
-            $rootScope.bb.api_url = attrs.apiUrl;
-            url = document.createElement('a');
-            url.href = attrs.apiUrl;
-            if (($sniffer.msie && $sniffer.msie < 10) && url.host !== $window.location.host) {
-              if (url.protocol[url.protocol.length - 1] === ':') {
-                src = url.protocol + "//" + url.host + "/ClientProxy.html";
-              } else {
-                src = url.protocol + "://" + url.host + "/ClientProxy.html";
-              }
-              $rootScope.iframe_proxy_ready = false;
-              $window.iframeLoaded = function() {
-                $rootScope.iframe_proxy_ready = true;
-                return $rootScope.$broadcast('iframe_proxy_ready', {
-                  iframe_proxy_ready: true
-                });
-              };
-              return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;' onload='iframeLoaded()'></iframe>"))(scope, (function(_this) {
-                return function(cloned, scope) {
-                  return element.append(cloned);
-                };
-              })(this));
-            }
-          }
-        };
-      }
-    };
-  });
-
   app.directive('bbApiUrl', function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
     return {
       restrict: 'A',
@@ -15155,7 +14402,7 @@ function getURIparam( name ){
             $rootScope.bb.api_url = scope.apiUrl;
             url = document.createElement('a');
             url.href = scope.apiUrl;
-            if ($sniffer.msie && $sniffer.msie < 10) {
+            if (($sniffer.msie && $sniffer.msie <= 9) || ($sniffer.webkit && $sniffer.webkit < 537)) {
               if (!(url.host === '' || url.host === $location.host() || url.host === (($location.host()) + ":" + ($location.port())))) {
                 if (url.protocol[url.protocol.length - 1] === ':') {
                   src = url.protocol + "//" + url.host + "/ClientProxy.html";
@@ -15163,14 +14410,14 @@ function getURIparam( name ){
                   src = url.protocol + "://" + url.host + "/ClientProxy.html";
                 }
                 $rootScope.iframe_proxy_ready = false;
-                $window.iframeLoaded = function() {
-                  $rootScope.iframe_proxy_ready = true;
-                  return $rootScope.$broadcast('iframe_proxy_ready', {
-                    iframe_proxy_ready: true
-                  });
-                };
-                return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;' onload='iframeLoaded()'></iframe>"))(scope, (function(_this) {
+                return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;'></iframe>"))(scope, (function(_this) {
                   return function(cloned, scope) {
+                    cloned.bind("load", function() {
+                      $rootScope.iframe_proxy_ready = true;
+                      return $rootScope.$broadcast('iframe_proxy_ready', {
+                        iframe_proxy_ready: true
+                      });
+                    });
                     return element.append(cloned);
                   };
                 })(this));
@@ -15319,9 +14566,7 @@ function getURIparam( name ){
         return {
           pre: function(scope, element, attrs) {
             var adminRequired, date_format, date_format_2;
-            console.log(attrs);
             adminRequired = attrs.bbAdminRequired != null ? true : false;
-            console.log(adminRequired);
             date_format = 'DD/MM/YYYY';
             date_format_2 = 'dd/MM/yyyy';
             if ((attrs.bbDateFormat != null) && attrs.bbDateFormat === 'US') {
@@ -15329,7 +14574,7 @@ function getURIparam( name ){
               date_format_2 = 'MM/dd/yyyy';
             }
             return scope.$watch(attrs.bbQuestion, function(question) {
-              var e, html, i, index, itemx, j, lastName, len1, len2, name, placeholder, ref, ref1;
+              var e, html, i, index, itemx, j, k, lastName, len1, len2, len3, name, placeholder, ref, ref1, ref2;
               if (question) {
                 html = '';
                 lastName = '';
@@ -15386,6 +14631,14 @@ function getURIparam( name ){
                   html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
                 } else if (question.detail_type === "check-price") {
                   html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
+                } else if (question.detail_type === "radio-price") {
+                  html = '<div class="radio-group">';
+                  ref2 = question.options;
+                  for (k = 0, len3 = ref2.length; k < len3; k++) {
+                    itemx = ref2[k];
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
+                  }
+                  html += "</div>";
                 } else if (question.detail_type === "date") {
                   html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
                 } else {
@@ -16252,72 +15505,73 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB').directive('bbMemberLogin', function($log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, PathSvc, ValidatorService) {
+  angular.module('BB').directive('bbMemberLogin', function(PathSvc) {
     return {
       restrict: 'A',
-      templateUrl: function(element, attrs) {
+      controller: 'MemberLogin',
+      templateUrl: function(elem, attrs) {
         if (attrs.bbCustomLoginForm != null) {
           return PathSvc.directivePartial("_member_login_form");
         } else {
           return PathSvc.directivePartial("_member_login_schema_form");
         }
-      },
-      controller: function($scope, $element, $attrs) {
-        var handleLogin;
-        $scope.login_form = {};
-        $scope.validator = ValidatorService;
-        $rootScope.connection_started.then(function() {
-          if (LoginService.checkLogin()) {
-            $scope.setClient($rootScope.member);
-            if ($scope.bb.destination) {
-              return $scope.redirectTo($scope.bb.destination);
-            } else {
-              $scope.setLoaded($scope);
-              return $scope.decideNextPage();
-            }
-          } else {
-            return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
-              return root.$get("new_login").then(function(new_login) {
-                $scope.form = new_login.form;
-                return $scope.schema = new_login.schema;
-              }, function(err) {
-                return console.log('err ', err);
-              });
-            }, function(err) {
-              return console.log('err ', err);
-            });
-          }
-        });
-        $scope.submit = function(form) {
-          form['role'] = 'member';
-          return $scope.company.$post('login', {}, form).then(function(login) {
-            if (login.$has('members')) {
-              return login.$get('members').then(function(members) {
-                return handleLogin(members[0]);
-              });
-            } else if (login.$has('member')) {
-              return login.$get('member').then(function(member) {
-                return handleLogin(member);
-              });
-            }
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
+    $scope.login_form = {};
+    $scope.validator = ValidatorService;
+    $rootScope.connection_started.then(function() {
+      if (LoginService.checkLogin()) {
+        $scope.setClient($rootScope.member);
+        if ($scope.bb.destination) {
+          return $scope.redirectTo($scope.bb.destination);
+        } else {
+          $scope.setLoaded($scope);
+          return $scope.decideNextPage();
+        }
+      } else {
+        return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
+          return root.$get("new_login").then(function(new_login) {
+            $scope.form = new_login.form;
+            return $scope.schema = new_login.schema;
           }, function(err) {
-            if (err.data.error === "Account has been disabled") {
-              return AlertService.raise('ACCOUNT_DISABLED');
-            } else {
-              return AlertService.raise('LOGIN_FAILED');
-            }
+            return console.log('err ', err);
           });
-        };
-        return handleLogin = function(member) {
-          member = LoginService.setLogin(member, $scope.login_form.persist_login);
-          $scope.setClient(member);
-          if ($scope.bb.destination) {
-            return $scope.redirectTo($scope.bb.destination);
-          } else {
-            $scope.skipThisStep();
-            return $scope.decideNextPage();
-          }
-        };
+        }, function(err) {
+          return console.log('err ', err);
+        });
+      }
+    });
+    $scope.submit = function(form) {
+      form['role'] = 'member';
+      return $scope.company.$post('login', {}, form).then(function(login) {
+        if (login.$has('members')) {
+          return login.$get('members').then(function(members) {
+            return $scope.handleLogin(members[0]);
+          });
+        } else if (login.$has('member')) {
+          return login.$get('member').then(function(member) {
+            return $scope.handleLogin(member);
+          });
+        }
+      }, function(err) {
+        if (err.data.error === "Account has been disabled") {
+          return AlertService.raise('ACCOUNT_DISABLED');
+        } else {
+          return AlertService.raise('LOGIN_FAILED');
+        }
+      });
+    };
+    return $scope.handleLogin = function(member) {
+      member = LoginService.setLogin(member, $scope.login_form.persist_login);
+      $scope.setClient(member);
+      if ($scope.bb.destination) {
+        return $scope.redirectTo($scope.bb.destination);
+      } else {
+        $scope.skipThisStep();
+        return $scope.decideNextPage();
       }
     };
   });
@@ -16699,7 +15953,7 @@ function getURIparam( name ){
   angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
       check = document.createElement('style');
       if (typeof check.sheet !== 'undefined') {
         DOMStyle = 'sheet';
@@ -16720,8 +15974,8 @@ function getURIparam( name ){
       testStyle = testSheet[DOMRules][0];
       try {
         testStyle.selectorText = 'd';
-      } catch (_error) {
-        e = _error;
+      } catch (error) {
+        e = error;
       }
       changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
       check.parentNode.removeChild(check);
@@ -16971,6 +16225,511 @@ function getURIparam( name ){
     };
   });
 }(window.angular));
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter('datetime', function(SettingsService) {
+    return function(date, format) {
+      var cc, datestrings;
+      if (date && moment.isMoment(date)) {
+        datestrings = {
+          datetime_us: 'MM/DD/YYYY, h:mm a',
+          datetime_uk: 'DD/MM/YYYY, HH:MM',
+          date_us: 'MM/DD/YYYY',
+          date_uk: 'DD/MM/YYYY',
+          time_us: 'h:mm a',
+          time_uk: 'HH:MM'
+        };
+        cc = SettingsService.getCountryCode();
+        if (cc !== "us") {
+          cc = "uk";
+        }
+        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
+          return date.format(datestrings[format + "_" + cc]);
+        } else if (format) {
+          return date.format(format);
+        } else {
+          return date.format(datestrings["date_" + cc]);
+        }
+      } else {
+
+      }
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
 
 (function() {
   'use strict';
@@ -18832,7 +18591,7 @@ function getURIparam( name ){
         }
         this.event_chain = event_chain;
         this.base_price = parseFloat(event_chain.price);
-        if (this.price !== this.base_price) {
+        if ((this.price != null) && this.price !== this.base_price) {
           this.setPrice(this.price);
         } else {
           this.setPrice(this.base_price);
@@ -20701,7 +20460,6 @@ function getURIparam( name ){
         x.address5 = this.address5;
         x.postcode = this.postcode;
         x.country = this.country;
-        x.phone = this.phone;
         x.email = this.email;
         x.id = this.id;
         x.comp_ref = this.comp_ref;
@@ -20716,6 +20474,12 @@ function getURIparam( name ){
         }
         if (this.default_company_id) {
           x.default_company_id = this.default_company_id;
+        }
+        if (this.phone) {
+          x.phone = this.phone;
+          if (this.phone_prefix) {
+            x.phone_prefix = this.phone_prefix;
+          }
         }
         if (this.mobile) {
           this.remove_prefix();
@@ -20806,7 +20570,7 @@ function getURIparam( name ){
       * @name fullMobile
       * @methodOf BB.Models:Address
       * @description
-      * Full mobile phone number of the client 
+      * Full mobile phone number of the client
       *
       * @returns {object} The returned full mobile number
        */
@@ -21501,7 +21265,7 @@ function getURIparam( name ){
 
       function Event(data) {
         Event.__super__.constructor.call(this, data);
-        this.getDate();
+        this.date = moment.parseZone(this.datetime);
         this.time = new BBModel.TimeSlot({
           time: DateTimeUlititiesService.convertMomentToTime(this.date)
         });
@@ -21584,44 +21348,6 @@ function getURIparam( name ){
 
       /***
       * @ngdoc method
-      * @name getDate
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the date of the event
-      *
-      * @returns {date} The returned date
-       */
-
-      Event.prototype.getDate = function() {
-        if (this.date) {
-          return this.date;
-        }
-        this.date = moment(this._data.datetime);
-        return this.date;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name dateString
-      * @methodOf BB.Models:Event
-      * @description
-      * Get date string of the event
-      *
-      * @returns {string} The returned date string
-       */
-
-      Event.prototype.dateString = function(str) {
-        var date;
-        date = this.date();
-        if (date) {
-          return date.format(str);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
       * @name getDuration
       * @methodOf BB.Models:Event
       * @description
@@ -21644,89 +21370,6 @@ function getURIparam( name ){
           })(this));
         }
         return defer.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getDescription
-      * @methodOf BB.Models:Event
-      * @description
-      * Get duration of the event
-      *
-      * @returns {object} The returned description
-       */
-
-      Event.prototype.getDescription = function() {
-        return this.getChain().description;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getColour
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the colour 
-      *
-      * @returns {string} The returned colour
-       */
-
-      Event.prototype.getColour = function() {
-        if (this.getGroup()) {
-          return this.getGroup().colour;
-        } else {
-          return "#FFFFFF";
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPounds
-      * @methodOf BB.Models:Event
-      * @description
-      * Get pounts 
-      *
-      * @returns {integer} The returned pounts
-       */
-
-      Event.prototype.getPounds = function() {
-        if (this.chain) {
-          return Math.floor(this.getPrice()).toFixed(0);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPrice
-      * @methodOf BB.Models:Event
-      * @description
-      * Get price 
-      *
-      * @returns {integer} The returned price
-       */
-
-      Event.prototype.getPrice = function() {
-        return 0;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPence
-      * @methodOf BB.Models:Event
-      * @description
-      * Get price 
-      *
-      * @returns {integer} The returned pence
-       */
-
-      Event.prototype.getPence = function() {
-        if (this.chain) {
-          return (this.getPrice() % 1).toFixed(2).slice(-2);
-        }
       };
 
 
@@ -25610,11 +25253,11 @@ function getURIparam( name ){
         _.each(listenerArr, function(item, index) {
           var func;
           func = $rootScope.$on(item[1], function() {
-            var e;
+            var e, error;
             try {
               return cpage[2][item[0]] = 'data:destroyed';
-            } catch (_error) {
-              e = _error;
+            } catch (error) {
+              e = error;
               return log(e);
             }
           });
@@ -26964,6 +26607,22 @@ function getURIparam( name ){
         return deferred.promise;
       }
     };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').config(function($provide) {
+    return $provide.decorator('$sniffer', function($delegate) {
+      var regexp, result, webkit_version;
+      regexp = /Safari\/([\d.]+)/;
+      result = regexp.exec(navigator.userAgent);
+      webkit_version = result ? parseFloat(result[1]) : null;
+      _.extend($delegate, {
+        webkit: webkit_version
+      });
+      return $delegate;
+    });
   });
 
 }).call(this);
@@ -29515,6 +29174,161 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, len, ref;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.booking) {
+          data.booking = params.booking.getPostData();
+        }
+        data.booking_id = data.booking.id;
+        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      deleteAll: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_item: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -29538,6 +29352,7 @@ function getURIparam( name ){
         if (this.time_zone) {
           this.end_datetime.tz(this.time_zone);
         }
+        this.min_cancellation_time = moment(this.min_cancellation_time);
       }
 
       Purchase_Booking.prototype.getGroup = function() {
@@ -30174,161 +29989,6 @@ function getURIparam( name ){
       return Purchase_Total;
 
     })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, len, ref;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.booking) {
-          data.booking = params.booking.getPostData();
-        }
-        data.booking_id = data.booking.id;
-        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      deleteAll: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_item: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
   });
 
 }).call(this);
