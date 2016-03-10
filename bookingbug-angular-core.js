@@ -928,19 +928,19 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     }
 
     Base.prototype.checkItem = function(item) {
-      var call, existingItem, index, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
       if (!this.matchesParams(item)) {
         this.deleteItem(item);
         return true;
       } else {
-        _ref = this.items;
-        for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
-          existingItem = _ref[index];
+        ref = this.items;
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          existingItem = ref[index];
           if (item.self === existingItem.self) {
             this.items[index] = item;
-            _ref1 = this.callbacks;
-            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-              call = _ref1[_j];
+            ref1 = this.callbacks;
+            for (j = 0, len2 = ref1.length; j < len2; j++) {
+              call = ref1[j];
               call[1](item, "update");
             }
             return true;
@@ -948,29 +948,29 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
         }
       }
       this.items.push(item);
-      _ref2 = this.callbacks;
-      _results = [];
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        call = _ref2[_k];
-        _results.push(call[1](item, "add"));
+      ref2 = this.callbacks;
+      results = [];
+      for (k = 0, len3 = ref2.length; k < len3; k++) {
+        call = ref2[k];
+        results.push(call[1](item, "add"));
       }
-      return _results;
+      return results;
     };
 
     Base.prototype.deleteItem = function(item) {
-      var call, len, _i, _len, _ref, _results;
+      var call, i, len, len1, ref, results;
       len = this.items.length;
       this.items = this.items.filter(function(x) {
         return x.self !== item.self;
       });
       if (this.items.length !== len) {
-        _ref = this.callbacks;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          call = _ref[_i];
-          _results.push(call[1](item, "delete"));
+        ref = this.callbacks;
+        results = [];
+        for (i = 0, len1 = ref.length; i < len1; i++) {
+          call = ref[i];
+          results.push(call[1](item, "delete"));
         }
-        return _results;
+        return results;
       }
     };
 
@@ -979,10 +979,10 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     };
 
     Base.prototype.addCallback = function(obj, fn) {
-      var call, _i, _len, _ref;
-      _ref = this.callbacks;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        call = _ref[_i];
+      var call, i, len1, ref;
+      ref = this.callbacks;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        call = ref[i];
         if (call[0] === obj) {
           return;
         }
@@ -1012,29 +1012,29 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     };
 
     BaseCollections.prototype.checkItems = function(item) {
-      var col, _i, _len, _ref, _results;
-      _ref = this.collections;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        col = _ref[_i];
-        _results.push(col.checkItem(item));
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.checkItem(item));
       }
-      return _results;
+      return results;
     };
 
     BaseCollections.prototype.deleteItems = function(item) {
-      var col, _i, _len, _ref, _results;
-      _ref = this.collections;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        col = _ref[_i];
-        _results.push(col.deleteItem(item));
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.deleteItem(item));
       }
-      return _results;
+      return results;
     };
 
     BaseCollections.prototype.find = function(prms) {
-      var clean_params, col, jprms, key, val, _i, _len, _ref;
+      var clean_params, col, i, jprms, key, len1, ref, val;
       clean_params = {};
       for (key in prms) {
         val = prms[key];
@@ -1047,9 +1047,9 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
         }
       }
       jprms = JSON.stringify(clean_params);
-      _ref = this.collections;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        col = _ref[_i];
+      ref = this.collections;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
         if (jprms === col.jparams) {
           return col;
         }
@@ -1067,11 +1067,11 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 }).call(this);
 
 (function() {
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
-  window.Collection.Day = (function(_super) {
-    __extends(Day, _super);
+  window.Collection.Day = (function(superClass) {
+    extend(Day, superClass);
 
     function Day() {
       return Day.__super__.constructor.apply(this, arguments);
@@ -1096,11 +1096,11 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 }).call(this);
 
 (function() {
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
-  window.Collection.Space = (function(_super) {
-    __extends(Space, _super);
+  window.Collection.Space = (function(superClass) {
+    extend(Space, superClass);
 
     function Space() {
       return Space.__super__.constructor.apply(this, arguments);
@@ -2192,7 +2192,7 @@ function getURIparam( name ){
     * Set this data as ready
      */
     setData = function() {
-      var key, slot, _i, _len, _ref, _ref1;
+      var i, key, len, ref, ref1, slot;
       $scope.accordian_slots = [];
       $scope.is_open = $scope.is_open || false;
       $scope.has_availability = $scope.has_availability || false;
@@ -2206,17 +2206,17 @@ function getURIparam( name ){
       }
       if ($scope.source_slots) {
         if (angular.isArray($scope.source_slots)) {
-          _ref = $scope.source_slots;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            slot = _ref[_i];
+          ref = $scope.source_slots;
+          for (i = 0, len = ref.length; i < len; i++) {
+            slot = ref[i];
             if (slot.time >= $scope.start_time && slot.time < $scope.end_time && slot.avail === 1) {
               $scope.accordian_slots.push(slot);
             }
           }
         } else {
-          _ref1 = $scope.source_slots;
-          for (key in _ref1) {
-            slot = _ref1[key];
+          ref1 = $scope.source_slots;
+          for (key in ref1) {
+            slot = ref1[key];
             if (slot.time >= $scope.start_time && slot.time < $scope.end_time && slot.avail === 1) {
               $scope.accordian_slots.push(slot);
             }
@@ -2237,7 +2237,7 @@ function getURIparam( name ){
     * @param {string} slot The slot of range group
      */
     updateAvailability = function(day, slot) {
-      var _i, _len, _ref;
+      var i, len, ref;
       $scope.selected_slot = null;
       if ($scope.accordian_slots) {
         $scope.has_availability = hasAvailability();
@@ -2247,9 +2247,9 @@ function getURIparam( name ){
           $scope.selected_slot = slot;
         }
       } else {
-        _ref = $scope.accordian_slots;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          slot = _ref[_i];
+        ref = $scope.accordian_slots;
+        for (i = 0, len = ref.length; i < len; i++) {
+          slot = ref[i];
           if (slot.selected) {
             $scope.selected_slot = slot;
             break;
@@ -2278,13 +2278,13 @@ function getURIparam( name ){
     * Verify if availability of accordian slots have a slot
      */
     hasAvailability = function() {
-      var slot, _i, _len, _ref;
+      var i, len, ref, slot;
       if (!$scope.accordian_slots) {
         return false;
       }
-      _ref = $scope.accordian_slots;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        slot = _ref[_i];
+      ref = $scope.accordian_slots;
+      for (i = 0, len = ref.length; i < len; i++) {
+        slot = ref[i];
         if (slot.availability() > 0) {
           return true;
         }
@@ -2618,16 +2618,16 @@ function getURIparam( name ){
         * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
          */
         $scope.changeAttendees = function() {
-          var client, client_promises, deferred, item, _i, _len, _ref;
+          var client, client_promises, deferred, i, item, len, ref;
           if (!$scope.bb.current_item.ready || !$scope.bb.moving_purchase) {
             return false;
           }
           deferred = $q.defer();
           $scope.notLoaded($scope);
           client_promises = [];
-          _ref = $scope.items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          ref = $scope.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             if (item.attendee_changed) {
               client = new BBModel.Client();
               client.first_name = item.first_name;
@@ -2638,10 +2638,10 @@ function getURIparam( name ){
             }
           }
           $q.all(client_promises).then(function(result) {
-            var index, _j, _len1, _ref1;
-            _ref1 = $scope.items;
-            for (index = _j = 0, _len1 = _ref1.length; _j < _len1; index = ++_j) {
-              item = _ref1[index];
+            var index, j, len1, ref1;
+            ref1 = $scope.items;
+            for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
+              item = ref1[index];
               if (result[index] && result[index].id) {
                 item.client_id = result[index].id;
               }
@@ -2744,10 +2744,10 @@ function getURIparam( name ){
     * @param {object} prms The parameter
      */
     updatePartials = function(scope, element, prms) {
-      var i, _i, _len, _ref;
-      _ref = element.children();
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        i = _ref[_i];
+      var i, j, len, ref;
+      ref = element.children();
+      for (j = 0, len = ref.length; j < len; j++) {
+        i = ref[j];
         if ($bbug(i).hasClass('custom_partial')) {
           $bbug(i).remove();
         }
@@ -2793,26 +2793,26 @@ function getURIparam( name ){
           var non_style, style, tag;
           custom.addClass('custom_partial');
           style = (function() {
-            var _i, _len, _results;
-            _results = [];
-            for (_i = 0, _len = custom.length; _i < _len; _i++) {
-              tag = custom[_i];
+            var j, len, results;
+            results = [];
+            for (j = 0, len = custom.length; j < len; j++) {
+              tag = custom[j];
               if (tag.tagName === "STYLE") {
-                _results.push(tag);
+                results.push(tag);
               }
             }
-            return _results;
+            return results;
           })();
           non_style = (function() {
-            var _i, _len, _results;
-            _results = [];
-            for (_i = 0, _len = custom.length; _i < _len; _i++) {
-              tag = custom[_i];
+            var j, len, results;
+            results = [];
+            for (j = 0, len = custom.length; j < len; j++) {
+              tag = custom[j];
               if (tag.tagName !== "STYLE") {
-                _results.push(tag);
+                results.push(tag);
               }
             }
-            return _results;
+            return results;
           })();
           $bbug("#widget_" + prms.design_id).html(non_style);
           element.append(style);
@@ -2932,7 +2932,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll, $localStorage) {
-    var con_started, first_call, restoreBasket, setupDefaults, widget_started, _base, _base1;
+    var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
     $scope.bb = new BBWidget();
@@ -2953,9 +2953,9 @@ function getURIparam( name ){
       }
     }
     if ($location.port() !== 80 && $location.port() !== 443) {
-      (_base = $scope.bb).api_url || (_base.api_url = $location.protocol() + "://" + $location.host() + ":" + $location.port());
+      (base = $scope.bb).api_url || (base.api_url = $location.protocol() + "://" + $location.host() + ":" + $location.port());
     } else {
-      (_base1 = $scope.bb).api_url || (_base1.api_url = $location.protocol() + "://" + $location.host());
+      (base1 = $scope.bb).api_url || (base1.api_url = $location.protocol() + "://" + $location.host());
     }
     $scope.bb.stacked_items = [];
     first_call = true;
@@ -3026,13 +3026,13 @@ function getURIparam( name ){
     })(this);
     $scope.initWidget2 = (function(_this) {
       return function() {
-        var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, options, params, prms, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v, _ref;
+        var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, options, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
         $scope.init_widget_started = true;
         prms = _this.$init_prms;
         if (prms.query) {
-          _ref = prms.query;
-          for (k in _ref) {
-            v = _ref[k];
+          ref = prms.query;
+          for (k in ref) {
+            v = ref[k];
             prms[k] = QueryStringService(v);
           }
         }
@@ -3324,9 +3324,9 @@ function getURIparam( name ){
         $scope.isLoaded = false;
         return $q.all(setup_promises).then(function() {
           return $q.all(setup_promises2).then(function() {
-            var clear_prom, def_clear, _base2;
+            var base2, clear_prom, def_clear;
             if (!$scope.bb.basket) {
-              (_base2 = $scope.bb).basket || (_base2.basket = new BBModel.Basket(null, $scope.bb));
+              (base2 = $scope.bb).basket || (base2.basket = new BBModel.Basket(null, $scope.bb));
             }
             if (!$scope.client) {
               $scope.clearClient();
@@ -3374,15 +3374,15 @@ function getURIparam( name ){
     })(this);
     setupDefaults = (function(_this) {
       return function(company_id) {
-        var category, clinic, def, event, event_chain, event_group, k, person, resource, service, v, _ref;
+        var category, clinic, def, event, event_chain, event_group, k, person, ref, resource, service, v;
         def = $q.defer();
         if (first_call || ($scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id)) {
           $scope.bb.orginal_company_id = company_id;
           $scope.bb.default_setup_promises = [];
           if ($scope.bb.item_defaults.query) {
-            _ref = $scope.bb.item_defaults.query;
-            for (k in _ref) {
-              v = _ref[k];
+            ref = $scope.bb.item_defaults.query;
+            for (k in ref) {
+              v = ref[k];
               $scope.bb.item_defaults[k] = QueryStringService(v);
             }
           }
@@ -3725,10 +3725,10 @@ function getURIparam( name ){
         bb: $scope.bb
       };
       BasketService.updateBasket($scope.bb.company, params).then(function(basket) {
-        var item, _i, _len, _ref;
-        _ref = basket.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        var item, j, len, ref;
+        ref = basket.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           item.storeDefaults($scope.bb.item_defaults);
           item.reserve_without_questions = $scope.bb.reserve_without_questions;
         }
@@ -3803,17 +3803,17 @@ function getURIparam( name ){
       });
     };
     $scope.deleteBasketItems = function(items) {
-      var item, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = items.length; _i < _len; _i++) {
-        item = items[_i];
-        _results.push(BasketService.deleteItem(item, $scope.bb.company, {
+      var item, j, len, results;
+      results = [];
+      for (j = 0, len = items.length; j < len; j++) {
+        item = items[j];
+        results.push(BasketService.deleteItem(item, $scope.bb.company, {
           bb: $scope.bb
         }).then(function(basket) {
           return $scope.setBasket(basket);
         }));
       }
-      return _results;
+      return results;
     };
     $scope.clearBasketItem = function() {
       var def;
@@ -3936,29 +3936,29 @@ function getURIparam( name ){
                   if (basket) {
                     basket = new BBModel.Basket(basket, $scope.bb);
                     return basket.$get('items').then(function(items) {
-                      var i, promises, _i, _len;
+                      var i, j, len, promises;
                       items = (function() {
-                        var _i, _len, _results;
-                        _results = [];
-                        for (_i = 0, _len = items.length; _i < _len; _i++) {
-                          i = items[_i];
-                          _results.push(new BBModel.BasketItem(i));
+                        var j, len, results;
+                        results = [];
+                        for (j = 0, len = items.length; j < len; j++) {
+                          i = items[j];
+                          results.push(new BBModel.BasketItem(i));
                         }
-                        return _results;
+                        return results;
                       })();
-                      for (_i = 0, _len = items.length; _i < _len; _i++) {
-                        i = items[_i];
+                      for (j = 0, len = items.length; j < len; j++) {
+                        i = items[j];
                         basket.addItem(i);
                       }
                       $scope.setBasket(basket);
                       promises = [].concat.apply([], (function() {
-                        var _j, _len1, _results;
-                        _results = [];
-                        for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-                          i = items[_j];
-                          _results.push(i.promises);
+                        var l, len1, results;
+                        results = [];
+                        for (l = 0, len1 = items.length; l < len1; l++) {
+                          i = items[l];
+                          results.push(i.promises);
                         }
-                        return _results;
+                        return results;
                       })());
                       return $q.all(promises).then(function() {
                         if (basket.items.length > 0) {
@@ -4049,7 +4049,7 @@ function getURIparam( name ){
       }
     };
     $scope.loadStep = function(step) {
-      var prev_step, st, _i, _len, _ref;
+      var j, len, prev_step, ref, st;
       if (step === $scope.bb.current_step) {
         return;
       }
@@ -4067,14 +4067,16 @@ function getURIparam( name ){
           $scope.bb.stacked_items = [];
         }
         $scope.bb.current_item.loadStep(st.current_item);
-        $scope.bb.steps.splice(step, $scope.bb.steps.length - step);
+        if ($scope.bb.steps.length > 1) {
+          $scope.bb.steps.splice(step, $scope.bb.steps.length - step);
+        }
         $scope.bb.current_step = step;
         $scope.showPage(prev_step.page, true);
       }
       if ($scope.bb.allSteps) {
-        _ref = $scope.bb.allSteps;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          step = _ref[_i];
+        ref = $scope.bb.allSteps;
+        for (j = 0, len = ref.length; j < len; j++) {
+          step = ref[j];
           step.active = false;
           step.passed = step.number < $scope.bb.current_step;
         }
@@ -4100,6 +4102,9 @@ function getURIparam( name ){
       step_to_load = 0;
       while (past_steps[0]) {
         last_step = past_steps.pop();
+        if (!last_step) {
+          break;
+        }
         if (!last_step.skipped) {
           step_to_load = last_step.number;
           break;
@@ -4115,21 +4120,26 @@ function getURIparam( name ){
       return $scope.loadStep(step_to_load);
     };
     $scope.loadStepByPageName = function(page_name) {
-      var step, _i, _len, _ref;
-      _ref = $scope.bb.allSteps;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        step = _ref[_i];
+      var j, len, ref, step;
+      ref = $scope.bb.allSteps;
+      for (j = 0, len = ref.length; j < len; j++) {
+        step = ref[j];
         if (step.page === page_name) {
           return $scope.loadStep(step.number);
         }
       }
       return $scope.loadStep(1);
     };
-    $scope.restart = function() {
+    $scope.reset = function() {
       $rootScope.$broadcast('clear:formData');
       $rootScope.$broadcast('widget:restart');
       $scope.setLastSelectedDate(null);
+      $scope.client = new BBModel.Client();
       $scope.bb.last_step_reached = false;
+      return $scope.bb.steps.splice(1);
+    };
+    $scope.restart = function() {
+      $scope.reset();
       return $scope.loadStep(1);
     };
     $scope.setRoute = function(rdata) {
@@ -4267,7 +4277,7 @@ function getURIparam( name ){
       return $scope.bb.isAdmin;
     };
     $scope.isAdminIFrame = function() {
-      var err, location;
+      var err, error, location;
       if (!$scope.bb.isAdmin) {
         return false;
       }
@@ -4278,8 +4288,8 @@ function getURIparam( name ){
         } else {
           return false;
         }
-      } catch (_error) {
-        err = _error;
+      } catch (error) {
+        err = error;
         return false;
       }
     };
@@ -4372,26 +4382,26 @@ function getURIparam( name ){
     $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
     $scope.bb.basket.setSettings($scope.$eval($attrs.bbBasketList || {}));
     $rootScope.connection_started.then(function() {
-      var basket_item, params, promises, _i, _len, _ref;
+      var basket_item, i, len, params, promises, ref;
       if ($scope.client) {
         $scope.bb.basket.setClient($scope.client);
       }
       if ($scope.client.$has('pre_paid_bookings') && $scope.bb.basket.timeItems().length > 0) {
         $scope.notLoaded($scope);
         promises = [];
-        _ref = $scope.bb.basket.timeItems();
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          basket_item = _ref[_i];
+        ref = $scope.bb.basket.timeItems();
+        for (i = 0, len = ref.length; i < len; i++) {
+          basket_item = ref[i];
           params = {
             event_id: basket_item.getEventId()
           };
           promises.push($scope.client.getPrePaidBookingsPromise(params));
         }
         return $q.all(promises).then(function(result) {
-          var index, prepaid_bookings, _j, _len1, _ref1;
-          _ref1 = $scope.bb.basket.timeItems();
-          for (index = _j = 0, _len1 = _ref1.length; _j < _len1; index = ++_j) {
-            basket_item = _ref1[index];
+          var index, j, len1, prepaid_bookings, ref1;
+          ref1 = $scope.bb.basket.timeItems();
+          for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
+            basket_item = ref1[index];
             prepaid_bookings = result[index];
             if ($scope.bb.basket.settings && $scope.bb.basket.settings.auto_use_prepaid_bookings && prepaid_bookings.length > 0) {
               basket_item.setPrepaidBooking(prepaid_bookings[0]);
@@ -4483,10 +4493,10 @@ function getURIparam( name ){
           coupon: coupon
         };
         return BasketService.applyCoupon($scope.bb.company, params).then(function(basket) {
-          var item, _i, _len, _ref;
-          _ref = basket.items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          var i, item, len, ref;
+          ref = basket.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             item.storeDefaults($scope.bb.item_defaults);
             item.reserve_without_questions = $scope.bb.reserve_without_questions;
           }
@@ -4532,10 +4542,10 @@ function getURIparam( name ){
           };
         }
         return BasketService.applyDeal($scope.bb.company, params).then(function(basket) {
-          var item, _i, _len, _ref;
-          _ref = basket.items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          var i, item, len, ref;
+          ref = basket.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             item.storeDefaults($scope.bb.item_defaults);
             item.reserve_without_questions = $scope.bb.reserve_without_questions;
           }
@@ -4571,10 +4581,10 @@ function getURIparam( name ){
           deal_code_id: deal_code.id
         };
         return BasketService.removeDeal($scope.bb.company, params).then(function(basket) {
-          var item, _i, _len, _ref;
-          _ref = basket.items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          var i, item, len, ref;
+          ref = basket.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             item.storeDefaults($scope.bb.item_defaults);
             item.reserve_without_questions = $scope.bb.reserve_without_questions;
           }
@@ -4855,6 +4865,8 @@ function getURIparam( name ){
             if (!$scope.options.disable_confirmation) {
               $scope.skipThisStep();
               $scope.decideNextPage();
+            } else {
+              $scope.reset();
             }
           }
           $scope.checkoutSuccess = true;
@@ -5168,10 +5180,10 @@ function getURIparam( name ){
     * @param {integer} id The id question
      */
     $scope.getQuestion = function(id) {
-      var question, _i, _len, _ref;
-      _ref = $scope.client_details.questions;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        question = _ref[_i];
+      var i, len, question, ref;
+      ref = $scope.client_details.questions;
+      for (i = 0, len = ref.length; i < len; i++) {
+        question = ref[i];
         if (question.id === id) {
           return question;
         }
@@ -5400,17 +5412,17 @@ function getURIparam( name ){
     * @param {string} center Geolocation parameter
      */
     return $scope.getNearestCompany = (function(_this) {
-      return function(_arg) {
-        var R, a, c, center, chLat, chLon, company, d, dLat, dLon, distances, lat1, lat2, latlong, lon1, lon2, pi, rLat1, rLat2, _i, _len, _ref;
-        center = _arg.center;
+      return function(arg) {
+        var R, a, c, center, chLat, chLon, company, d, dLat, dLon, distances, i, lat1, lat2, latlong, len, lon1, lon2, pi, rLat1, rLat2, ref;
+        center = arg.center;
         pi = Math.PI;
         R = 6371;
         distances = [];
         lat1 = center.lat();
         lon1 = center.lng();
-        _ref = $scope.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          company = _ref[_i];
+        ref = $scope.items;
+        for (i = 0, len = ref.length; i < len; i++) {
+          company = ref[i];
           if (company.address.lat && company.address.long && company.live) {
             latlong = new google.maps.LatLng(company.address.lat, company.address.long);
             lat2 = latlong.lat();
@@ -5830,16 +5842,16 @@ function getURIparam( name ){
             'month': date.format("MMYY"),
             client: $scope.client
           }).then(function(days) {
-            var d, day, w, week, weeks, _i, _j, _k, _len;
+            var d, day, i, j, k, len, w, week, weeks;
             $scope.days = days;
-            for (_i = 0, _len = days.length; _i < _len; _i++) {
-              day = days[_i];
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
               $scope.day_data[day.string_date] = day;
             }
             weeks = [];
-            for (w = _j = 0; _j <= 5; w = ++_j) {
+            for (w = j = 0; j <= 5; w = ++j) {
               week = [];
-              for (d = _k = 0; _k <= 6; d = ++_k) {
+              for (d = k = 0; k <= 6; d = ++k) {
                 week.push(days[w * 7 + d]);
               }
               weeks.push(week);
@@ -5877,10 +5889,10 @@ function getURIparam( name ){
             edate: edate.toISODate(),
             client: $scope.client
           }).then(function(days) {
-            var day, _i, _len;
+            var day, i, len;
             $scope.days = days;
-            for (_i = 0, _len = days.length; _i < _len; _i++) {
-              day = days[_i];
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
               $scope.day_data[day.string_date] = day;
             }
             return $scope.setLoaded($scope);
@@ -6120,27 +6132,27 @@ function getURIparam( name ){
     });
     $scope.loadData = (function(_this) {
       return function() {
-        var d, duration, id, initial_duration, service, _i, _len, _ref;
+        var d, duration, i, id, initial_duration, len, ref, service;
         id = $scope.bb.company_id;
         service = $scope.bb.current_item.service;
         if (service && !$scope.durations) {
           $scope.durations = (function() {
-            var _i, _len, _ref, _results;
-            _ref = _.zip(service.durations, service.prices);
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              d = _ref[_i];
-              _results.push({
+            var i, len, ref, results;
+            ref = _.zip(service.durations, service.prices);
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              d = ref[i];
+              results.push({
                 value: d[0],
                 price: d[1]
               });
             }
-            return _results;
+            return results;
           })();
           initial_duration = $scope.$eval($attrs.bbInitialDuration);
-          _ref = $scope.durations;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            duration = _ref[_i];
+          ref = $scope.durations;
+          for (i = 0, len = ref.length; i < len; i++) {
+            duration = ref[i];
             if ($scope.bb.current_item.duration && duration.value === $scope.bb.current_item.duration) {
               $scope.duration = duration;
             } else if (initial_duration && initial_duration === duration.value) {
@@ -6311,17 +6323,17 @@ function getURIparam( name ){
     * Processes the selected tickets and adds them to the basket
      */
     $scope.selectTickets = function() {
-      var base_item, c, item, ticket, _i, _j, _len, _ref, _ref1;
+      var base_item, c, i, item, j, len, ref, ref1, ticket;
       $scope.notLoaded($scope);
       $scope.bb.emptyStackedItems();
       base_item = $scope.current_item;
-      _ref = $scope.event.tickets;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        ticket = _ref[_i];
+      ref = $scope.event.tickets;
+      for (i = 0, len = ref.length; i < len; i++) {
+        ticket = ref[i];
         if (ticket.qty) {
           switch ($scope.event.chain.ticket_type) {
             case "single_space":
-              for (c = _j = 1, _ref1 = ticket.qty; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; c = 1 <= _ref1 ? ++_j : --_j) {
+              for (c = j = 1, ref1 = ticket.qty; 1 <= ref1 ? j <= ref1 : j >= ref1; c = 1 <= ref1 ? ++j : --j) {
                 item = new BBModel.BasketItem();
                 angular.extend(item, base_item);
                 delete item.id;
@@ -6351,14 +6363,14 @@ function getURIparam( name ){
           $scope.selected_tickets = true;
           $scope.stopTicketWatch();
           $scope.tickets = (function() {
-            var _k, _len1, _ref2, _results;
-            _ref2 = $scope.bb.basket.items;
-            _results = [];
-            for (_k = 0, _len1 = _ref2.length; _k < _len1; _k++) {
-              item = _ref2[_k];
-              _results.push(item.tickets);
+            var k, len1, ref2, results;
+            ref2 = $scope.bb.basket.items;
+            results = [];
+            for (k = 0, len1 = ref2.length; k < len1; k++) {
+              item = ref2[k];
+              results.push(item.tickets);
             }
-            return _results;
+            return results;
           })();
           return $scope.$watch('bb.basket.items', function(items, olditems) {
             $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
@@ -6456,15 +6468,15 @@ function getURIparam( name ){
       }
     };
     return initTickets = function() {
-      var ticket, _i, _len, _ref;
+      var i, len, ref, ticket;
       if ($scope.selected_tickets) {
         return;
       }
       $scope.event.tickets[0].qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
       if ($scope.event.tickets.length > 1) {
-        _ref = $scope.event.tickets.slice(1);
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          ticket = _ref[_i];
+        ref = $scope.event.tickets.slice(1);
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
           ticket.qty = 0;
         }
       }
@@ -6544,7 +6556,7 @@ function getURIparam( name ){
       $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
       ppromise = comp.getEventGroupsPromise();
       return ppromise.then(function(items) {
-        var filterItems, item, _i, _j, _len, _len1;
+        var filterItems, i, item, j, len, len1;
         filterItems = $attrs.filterServices === 'false' ? false : true;
         if (filterItems) {
           if ($scope.booking_item.service_ref && !$scope.show_all) {
@@ -6567,16 +6579,16 @@ function getURIparam( name ){
           setEventGroupItem(items);
         }
         if ($scope.booking_item.defaultService()) {
-          for (_i = 0, _len = items.length; _i < _len; _i++) {
-            item = items[_i];
+          for (i = 0, len = items.length; i < len; i++) {
+            item = items[i];
             if (item.self === $scope.booking_item.defaultService().self) {
               $scope.selectItem(item, $scope.nextRoute);
             }
           }
         }
         if ($scope.booking_item.event_group) {
-          for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-            item = items[_j];
+          for (j = 0, len1 = items.length; j < len1; j++) {
+            item = items[j];
             item.selected = false;
             if (item.self === $scope.booking_item.event_group.self) {
               $scope.event_group = item;
@@ -6786,7 +6798,7 @@ function getURIparam( name ){
         promises.push($q.when([]));
       }
       return $q.all(promises).then(function(result) {
-        var company_questions, event_data, event_groups, event_groups_collection, event_summary, item, _i, _len, _ref;
+        var company_questions, event_data, event_groups, event_groups_collection, event_summary, item, j, len, ref;
         company_questions = result[0];
         event_groups = result[1];
         event_summary = result[2];
@@ -6798,9 +6810,9 @@ function getURIparam( name ){
         $scope.event_groups = event_groups;
         event_groups_collection = _.indexBy(event_groups, 'id');
         if ($scope.items) {
-          _ref = $scope.items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          ref = $scope.items;
+          for (j = 0, len = ref.length; j < len; j++) {
+            item = ref[j];
             item.group = event_groups_collection[item.service_id];
           }
         }
@@ -6835,11 +6847,11 @@ function getURIparam( name ){
         params.event_chain_id = $scope.bb.item_defaults.event_chain;
       }
       EventService.summary(comp, params).then(function(items) {
-        var d, item, item_dates, _i, _len;
+        var d, item, item_dates, j, len;
         if (items && items.length > 0) {
           item_dates = [];
-          for (_i = 0, _len = items.length; _i < _len; _i++) {
-            item = items[_i];
+          for (j = 0, len = items.length; j < len; j++) {
+            item = items[j];
             d = moment(item);
             item_dates.push({
               date: d,
@@ -6931,28 +6943,28 @@ function getURIparam( name ){
       chains = $scope.loadEventChainData(comp);
       $scope.events = {};
       EventService.query(comp, params).then(function(events) {
-        var item, _i, _len, _ref;
+        var item, j, len, ref;
         $scope.items = _.flatten(events);
-        _ref = $scope.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = $scope.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           item.spaces_left = item.getSpacesLeft();
         }
         $scope.bb.company.getAddressPromise().then(function(address) {
-          var _j, _len1, _ref1, _results;
-          _ref1 = $scope.items;
-          _results = [];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            item = _ref1[_j];
-            _results.push(item.address = address);
+          var k, len1, ref1, results;
+          ref1 = $scope.items;
+          results = [];
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            item = ref1[k];
+            results.push(item.address = address);
           }
-          return _results;
+          return results;
         });
         return chains.then(function() {
-          var idate, item_dates, x, y, _j, _k, _len1, _len2, _ref1;
-          _ref1 = $scope.items;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            item = _ref1[_j];
+          var idate, item_dates, k, l, len1, len2, ref1, x, y;
+          ref1 = $scope.items;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            item = ref1[k];
             item.prepEvent();
             if ($scope.mode === 0 && current_event && current_event.self === item.self) {
               item.select();
@@ -6962,8 +6974,8 @@ function getURIparam( name ){
           if ($scope.mode === 1) {
             item_dates = {};
             if (items.length > 0) {
-              for (_k = 0, _len2 = items.length; _k < _len2; _k++) {
-                item = items[_k];
+              for (l = 0, len2 = items.length; l < len2; l++) {
+                item = items[l];
                 item.getDuration();
                 idate = parseInt(item.date.format("YYYYDDDD"));
                 item.idate = idate;
@@ -7021,11 +7033,11 @@ function getURIparam( name ){
     * Verify if the items from event list are be fully booked
      */
     $scope.isFullyBooked = function() {
-      var full_events, item, _i, _len, _ref;
+      var full_events, item, j, len, ref;
       full_events = [];
-      _ref = $scope.items;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        item = _ref[_i];
+      ref = $scope.items;
+      for (j = 0, len = ref.length; j < len; j++) {
+        item = ref[j];
         if (item.num_spaces === item.spaces_booked) {
           full_events.push(item);
         }
@@ -7093,7 +7105,7 @@ function getURIparam( name ){
      */
     $scope.selectItem = (function(_this) {
       return function(item, route) {
-        var i, _i, _len, _ref;
+        var i, j, len, ref;
         if (!((item.getSpacesLeft() <= 0 && $scope.bb.company.settings.has_waitlists) || item.hasSpace())) {
           return false;
         }
@@ -7108,9 +7120,9 @@ function getURIparam( name ){
           return false;
         } else {
           if ($scope.bb.moving_purchase) {
-            _ref = $scope.bb.basket.items;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              i = _ref[_i];
+            ref = $scope.bb.basket.items;
+            for (j = 0, len = ref.length; j < len; j++) {
+              i = ref[j];
               i.setEvent(item);
             }
           }
@@ -7156,24 +7168,24 @@ function getURIparam( name ){
       return result;
     };
     filterEventsWithDynamicFilters = function(item) {
-      var dynamic_filter, filter, i, name, result, type, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      var dynamic_filter, filter, i, j, k, l, len, len1, len2, len3, m, name, ref, ref1, ref2, ref3, result, type;
       if (!$scope.has_company_questions || !$scope.dynamic_filters) {
         return true;
       }
       result = true;
-      _ref = $scope.dynamic_filters.question_types;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        type = _ref[_i];
+      ref = $scope.dynamic_filters.question_types;
+      for (j = 0, len = ref.length; j < len; j++) {
+        type = ref[j];
         if (type === 'check') {
-          _ref1 = $scope.dynamic_filters['check'];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            dynamic_filter = _ref1[_j];
+          ref1 = $scope.dynamic_filters['check'];
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            dynamic_filter = ref1[k];
             name = dynamic_filter.name.parameterise('_');
             filter = false;
             if (item.chain && item.chain.extra[name]) {
-              _ref2 = item.chain.extra[name];
-              for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-                i = _ref2[_k];
+              ref2 = item.chain.extra[name];
+              for (l = 0, len2 = ref2.length; l < len2; l++) {
+                i = ref2[l];
                 filter = ($scope.dynamic_filters.values[dynamic_filter.name] && i === $scope.dynamic_filters.values[dynamic_filter.name].name) || ($scope.dynamic_filters.values[dynamic_filter.name] == null);
                 if (filter) {
                   break;
@@ -7185,9 +7197,9 @@ function getURIparam( name ){
             result = result && filter;
           }
         } else {
-          _ref3 = $scope.dynamic_filters[type];
-          for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-            dynamic_filter = _ref3[_l];
+          ref3 = $scope.dynamic_filters[type];
+          for (m = 0, len3 = ref3.length; m < len3; m++) {
+            dynamic_filter = ref3[m];
             name = dynamic_filter.name.parameterise('_');
             filter = ($scope.dynamic_filters.values[dynamic_filter.name] && item.chain.extra[name] === $scope.dynamic_filters.values[dynamic_filter.name].name) || ($scope.dynamic_filters.values[dynamic_filter.name] == null);
             result = result && filter;
@@ -7335,23 +7347,23 @@ function getURIparam( name ){
             date: sday.toISOString(),
             edate: eday.toISOString()
           }).then(function(res) {
-            var day, _i, _len, _ref, _results;
-            _ref = res.days;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              day = _ref[_i];
+            var day, i, len, ref, results;
+            ref = res.days;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              day = ref[i];
               if (day.spaces > 0 && !$scope.earliest_day) {
                 $scope.earliest_day = moment(day.date);
                 if (day.first) {
-                  _results.push($scope.earliest_day.add(day.first, "minutes"));
+                  results.push($scope.earliest_day.add(day.first, "minutes"));
                 } else {
-                  _results.push(void 0);
+                  results.push(void 0);
                 }
               } else {
-                _results.push(void 0);
+                results.push(void 0);
               }
             }
-            return _results;
+            return results;
           });
         });
       };
@@ -7626,12 +7638,12 @@ function getURIparam( name ){
           });
         } else {
           return PurchaseBookingService.update($scope.item).then(function(booking) {
-            var b, oldb, _i, _j, _len, _ref;
+            var _i, b, i, len, oldb, ref;
             b = new BBModel.Purchase.Booking(booking);
             if ($scope.bb.purchase) {
-              _ref = $scope.bb.purchase.bookings;
-              for (_i = _j = 0, _len = _ref.length; _j < _len; _i = ++_j) {
-                oldb = _ref[_i];
+              ref = $scope.bb.purchase.bookings;
+              for (_i = i = 0, len = ref.length; i < len; _i = ++i) {
+                oldb = ref[_i];
                 if (oldb.id === b.id) {
                   $scope.bb.purchase.bookings[_i] = b;
                 }
@@ -7696,10 +7708,10 @@ function getURIparam( name ){
     * @param {integer} id The id of the question
      */
     $scope.getQuestion = function(id) {
-      var question, _j, _len, _ref;
-      _ref = $scope.item_details.questions;
-      for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-        question = _ref[_j];
+      var i, len, question, ref;
+      ref = $scope.item_details.questions;
+      for (i = 0, len = ref.length; i < len; i++) {
+        question = ref[i];
         if (question.id === id) {
           return question;
         }
@@ -7719,12 +7731,12 @@ function getURIparam( name ){
       if ($scope.item.ready) {
         $scope.notLoaded($scope);
         return PurchaseBookingService.update($scope.item).then(function(booking) {
-          var b, oldb, _i, _j, _len, _ref;
+          var _i, b, i, len, oldb, ref;
           b = new BBModel.Purchase.Booking(booking);
           if ($scope.bookings) {
-            _ref = $scope.bookings;
-            for (_i = _j = 0, _len = _ref.length; _j < _len; _i = ++_j) {
-              oldb = _ref[_i];
+            ref = $scope.bookings;
+            for (_i = i = 0, len = ref.length; i < len; _i = ++i) {
+              oldb = ref[_i];
               if (oldb.id === b.id) {
                 $scope.bookings[_i] = b;
               }
@@ -8051,7 +8063,7 @@ function getURIparam( name ){
     });
     webshim.polyfill("geolocation");
     $rootScope.connection_started.then(function() {
-      var comp, key, latlong, value, _i, _len, _ref, _ref1;
+      var comp, i, key, latlong, len, ref, ref1, value;
       if (!$scope.selectedStore) {
         $scope.setLoaded($scope);
       }
@@ -8076,9 +8088,9 @@ function getURIparam( name ){
         $scope.companies = [$scope.bb.company];
       }
       $scope.mapBounds = new google.maps.LatLngBounds();
-      _ref = $scope.companies;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        comp = _ref[_i];
+      ref = $scope.companies;
+      for (i = 0, len = ref.length; i < len; i++) {
+        comp = ref[i];
         if (comp.address && comp.address.lat && comp.address.long) {
           latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
           $scope.mapBounds.extend(latlong);
@@ -8094,9 +8106,9 @@ function getURIparam( name ){
         }
       };
       if (options && options.map_options) {
-        _ref1 = options.map_options;
-        for (key in _ref1) {
-          value = _ref1[key];
+        ref1 = options.map_options;
+        for (key in ref1) {
+          value = ref1[key];
           $scope.mapOptions[key] = value;
         }
       }
@@ -8105,10 +8117,10 @@ function getURIparam( name ){
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
     $scope.map_init.then(function() {
-      var comp, latlong, marker, _i, _len, _ref;
-      _ref = $scope.companies;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        comp = _ref[_i];
+      var comp, i, latlong, len, marker, ref;
+      ref = $scope.companies;
+      for (i = 0, len = ref.length; i < len; i++) {
+        comp = ref[i];
         if (comp.address && comp.address.lat && comp.address.long) {
           latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
           marker = new google.maps.Marker({
@@ -8330,16 +8342,16 @@ function getURIparam( name ){
     * @param {array} latlong Using for determinate the closest markers
      */
     $scope.showClosestMarkers = function(latlong) {
-      var R, a, c, chLat, chLon, d, dLat, dLon, distances, distances_kilometres, iconPath, index, item, items, k, lat1, lat2, localBounds, lon1, lon2, marker, pi, rLat1, rLat2, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+      var R, a, c, chLat, chLon, d, dLat, dLon, distances, distances_kilometres, i, iconPath, index, item, items, j, k, l, lat1, lat2, len, len1, len2, localBounds, lon1, lon2, marker, pi, rLat1, rLat2, ref, ref1;
       pi = Math.PI;
       R = 6371;
       distances = [];
       distances_kilometres = [];
       lat1 = latlong.lat();
       lon1 = latlong.lng();
-      _ref = $scope.mapMarkers;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        marker = _ref[_i];
+      ref = $scope.mapMarkers;
+      for (i = 0, len = ref.length; i < len; i++) {
+        marker = ref[i];
         lat2 = marker.position.lat();
         lon2 = marker.position.lng();
         chLat = lat2 - lat1;
@@ -8365,8 +8377,8 @@ function getURIparam( name ){
           distances_kilometres.push(marker);
         }
         items = [distances, distances_kilometres];
-        for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-          item = items[_j];
+        for (j = 0, len1 = items.length; j < len1; j++) {
+          item = items[j];
           item.sort(function(a, b) {
             a.distance - b.distance;
             return a.distance_kilometres - b.distance_kilometres;
@@ -8377,9 +8389,9 @@ function getURIparam( name ){
       localBounds = new google.maps.LatLngBounds();
       localBounds.extend(latlong);
       index = 1;
-      _ref1 = $scope.shownMarkers;
-      for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-        marker = _ref1[_k];
+      ref1 = $scope.shownMarkers;
+      for (l = 0, len2 = ref1.length; l < len2; l++) {
+        marker = ref1[l];
         if ($scope.numberedPin) {
           iconPath = $window.sprintf($scope.numberedPin, index);
           marker.setIcon(iconPath);
@@ -8512,12 +8524,12 @@ function getURIparam( name ){
       return new google.maps.Geocoder().geocode({
         'latLng': latlng
       }, function(results, status) {
-        var ac, _i, _len, _ref;
+        var ac, i, len, ref;
         if (results.length > 0 && status === 'OK') {
           $scope.geocoder_result = results[0];
-          _ref = $scope.geocoder_result.address_components;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            ac = _ref[_i];
+          ref = $scope.geocoder_result.address_components;
+          for (i = 0, len = ref.length; i < len; i++) {
+            ac = ref[i];
             if (ac.types.indexOf("route") >= 0) {
               $scope.reverse_geocode_address = ac.long_name;
             }
@@ -8597,21 +8609,21 @@ function getURIparam( name ){
         }
       };
       checkClientDefaults = function() {
-        var membership_level, _i, _len, _ref, _results;
+        var i, len, membership_level, ref, results;
         if (!$scope.bb.client_defaults.membership_ref) {
           return;
         }
-        _ref = $scope.membership_levels;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          membership_level = _ref[_i];
+        ref = $scope.membership_levels;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          membership_level = ref[i];
           if (membership_level.name === $scope.bb.client_defaults.membership_ref) {
-            _results.push($scope.selectMemberLevel(membership_level));
+            results.push($scope.selectMemberLevel(membership_level));
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       };
       $scope.setReady = function() {
         if (!$scope.client.member_level_id) {
@@ -8656,7 +8668,7 @@ function getURIparam( name ){
   * @property {array} items An array of items service
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  var __hasProp = {}.hasOwnProperty;
+  var hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Directives').directive('bbMultiServiceSelect', function() {
     return {
@@ -8701,16 +8713,16 @@ function getURIparam( name ){
         promises.push($scope.company.getCompanyQuestionsPromise());
       }
       return $q.all(promises).then(function(result) {
-        var item, stacked_item, _i, _j, _len, _len1, _ref, _ref1;
+        var item, j, k, len, len1, ref, ref1, stacked_item;
         $scope.company_questions = result[1];
         initialiseCategories(result[0]);
         if ($scope.bb.stacked_items && $scope.bb.stacked_items.length > 0) {
-          _ref = $scope.bb.stacked_items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            stacked_item = _ref[_i];
-            _ref1 = $scope.items;
-            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-              item = _ref1[_j];
+          ref = $scope.bb.stacked_items;
+          for (j = 0, len = ref.length; j < len; j++) {
+            stacked_item = ref[j];
+            ref1 = $scope.items;
+            for (k = 0, len1 = ref1.length; k < len1; k++) {
+              item = ref1[k];
               if (item.self === stacked_item.service.self) {
                 stacked_item.service = item;
                 stacked_item.service.selected = true;
@@ -8739,13 +8751,13 @@ function getURIparam( name ){
     * Check item defaults
      */
     checkItemDefaults = function() {
-      var service, _i, _len, _ref;
+      var j, len, ref, service;
       if (!$scope.bb.item_defaults.service) {
         return;
       }
-      _ref = $scope.items;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        service = _ref[_i];
+      ref = $scope.items;
+      for (j = 0, len = ref.length; j < len; j++) {
+        service = ref[j];
         if (service.self === $scope.bb.item_defaults.service.self) {
           $scope.addItem(service);
           return;
@@ -8763,10 +8775,10 @@ function getURIparam( name ){
     * @param {array} categories The categories of service
      */
     initialiseCategories = function(categories) {
-      var all_categories, category, category_details, category_id, grouped_sub_categories, grouped_sub_category, key, services, sub_categories, sub_category, value, _i, _j, _len, _len1, _results;
+      var all_categories, category, category_details, category_id, grouped_sub_categories, grouped_sub_category, j, k, key, len, len1, results, services, sub_categories, sub_category, value;
       if ($scope.options.ordered_categories) {
-        for (_i = 0, _len = categories.length; _i < _len; _i++) {
-          category = categories[_i];
+        for (j = 0, len = categories.length; j < len; j++) {
+          category = categories[j];
           category.order = parseInt(category.name.slice(0, 2));
           category.name = category.name.slice(3);
         }
@@ -8785,21 +8797,21 @@ function getURIparam( name ){
       }
       categories = {};
       for (key in all_categories) {
-        if (!__hasProp.call(all_categories, key)) continue;
+        if (!hasProp.call(all_categories, key)) continue;
         value = all_categories[key];
         if (value.length > 0) {
           categories[key] = value;
         }
       }
       $scope.categories = [];
-      _results = [];
+      results = [];
       for (category_id in categories) {
         services = categories[category_id];
         category = {};
         grouped_sub_categories = [];
         if (sub_categories) {
-          for (_j = 0, _len1 = sub_categories.length; _j < _len1; _j++) {
-            sub_category = sub_categories[_j];
+          for (k = 0, len1 = sub_categories.length; k < len1; k++) {
+            sub_category = sub_categories[k];
             grouped_sub_category = {
               name: sub_category,
               services: _.filter(services, function(service) {
@@ -8827,15 +8839,15 @@ function getURIparam( name ){
         }
         $scope.categories.push(category);
         if ($scope.selected_category_name && $scope.selected_category_name === category_details.name) {
-          _results.push($scope.selected_category = $scope.categories[$scope.categories.length - 1]);
+          results.push($scope.selected_category = $scope.categories[$scope.categories.length - 1]);
         } else if ($scope.bb.item_defaults.category && $scope.bb.item_defaults.category.name === category_details.name && !$scope.selected_category) {
           $scope.selected_category = $scope.categories[$scope.categories.length - 1];
-          _results.push($scope.selected_category_name = $scope.selected_category.name);
+          results.push($scope.selected_category_name = $scope.selected_category.name);
         } else {
-          _results.push(void 0);
+          results.push(void 0);
         }
       }
-      return _results;
+      return results;
     };
 
     /***
@@ -8882,7 +8894,7 @@ function getURIparam( name ){
     * @param {date} duration The duration
      */
     $scope.addItem = function(item, duration) {
-      var i, iitem, _i, _len, _ref, _results;
+      var i, iitem, j, len, ref, results;
       if ($scope.bb.stacked_items.length < $scope.options.max_services) {
         $scope.bb.clearStackedItemsDateTime();
         item.selected = true;
@@ -8902,14 +8914,14 @@ function getURIparam( name ){
           });
         }
       } else {
-        _ref = $scope.items;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        ref = $scope.items;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           i.popover = "Sorry, you can only book a maximum of " + $scope.options.max_services + " treatments";
-          _results.push(i.popoverText = i.popover);
+          results.push(i.popoverText = i.popover);
         }
-        return _results;
+        return results;
       }
     };
 
@@ -8924,7 +8936,7 @@ function getURIparam( name ){
     * @params {array} options The options remove
      */
     $scope.removeItem = function(item, options) {
-      var i, _i, _len, _ref, _results;
+      var i, j, len, ref, results;
       item.selected = false;
       if (options && options.type === 'BasketItem') {
         $scope.bb.deleteStackedItem(item);
@@ -8933,18 +8945,18 @@ function getURIparam( name ){
       }
       $scope.bb.clearStackedItemsDateTime();
       $rootScope.$broadcast("multi_service_select:item_removed");
-      _ref = $scope.items;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        i = _ref[_i];
+      ref = $scope.items;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        i = ref[j];
         if (i.self === item.self) {
           i.selected = false;
           break;
         } else {
-          _results.push(void 0);
+          results.push(void 0);
         }
       }
-      return _results;
+      return results;
     };
 
     /***
@@ -9103,7 +9115,7 @@ function getURIparam( name ){
   * @property {object} selected_date The selected date from multi time range list
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  var __hasProp = {}.hasOwnProperty;
+  var hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Directives').directive('bbTimeRangeStacked', function() {
     return {
@@ -9272,14 +9284,14 @@ function getURIparam( name ){
     * Update the hidden status
      */
     updateHideStatus = function() {
-      var day, key, _ref, _results;
-      _ref = $scope.days;
-      _results = [];
-      for (key in _ref) {
-        day = _ref[key];
-        _results.push($scope.days[key].hide = !day.date.isSame($scope.selected_day, 'day'));
+      var day, key, ref, results;
+      ref = $scope.days;
+      results = [];
+      for (key in ref) {
+        day = ref[key];
+        results.push($scope.days[key].hide = !day.date.isSame($scope.selected_day, 'day'));
       }
-      return _results;
+      return results;
     };
 
     /***
@@ -9326,7 +9338,7 @@ function getURIparam( name ){
     * @param {object} slot The slot of day in multi time range list
      */
     $scope.highlightSlot = function(day, slot) {
-      var item, _j, _len, _ref;
+      var i, item, len, ref;
       if (day && slot && slot.availability() > 0) {
         $scope.bb.clearStackedItemsDateTime();
         if ($scope.selected_slot) {
@@ -9338,9 +9350,9 @@ function getURIparam( name ){
         $scope.selected_date = day.date.toDate();
         $scope.$broadcast('slotChanged', day, slot);
         while (slot) {
-          _ref = $scope.bb.stacked_items;
-          for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-            item = _ref[_j];
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             if (item.service.self === slot.service.self && !item.date && !item.time) {
               item.setDate(day);
               item.setTime(slot);
@@ -9362,7 +9374,7 @@ function getURIparam( name ){
     * Load the time data
      */
     $scope.loadData = function() {
-      var edate, grouped_items, items, pslots, _j, _len;
+      var edate, grouped_items, i, items, len, pslots;
       $scope.notLoaded($scope);
       if ($scope.request && $scope.request.start.twix($scope.request.end).contains($scope.selected_day)) {
         updateHideStatus();
@@ -9381,8 +9393,8 @@ function getURIparam( name ){
         return item.service.id;
       });
       grouped_items = _.toArray(grouped_items);
-      for (_j = 0, _len = grouped_items.length; _j < _len; _j++) {
-        items = grouped_items[_j];
+      for (i = 0, len = grouped_items.length; i < len; i++) {
+        items = grouped_items[i];
         pslots.push(TimeService.query({
           company: $scope.bb.company,
           cItem: items[0],
@@ -9393,30 +9405,30 @@ function getURIparam( name ){
         }));
       }
       return $q.all(pslots).then(function(res) {
-        var day, item, k, slots, times, v, _i, _k, _l, _len1, _len2, _ref;
+        var _i, day, item, j, k, l, len1, len2, ref, slots, times, v;
         $scope.data_valid = true;
         $scope.days = {};
-        for (_i = _k = 0, _len1 = grouped_items.length; _k < _len1; _i = ++_k) {
+        for (_i = j = 0, len1 = grouped_items.length; j < len1; _i = ++j) {
           items = grouped_items[_i];
           slots = res[_i];
           if (!slots || slots.length === 0) {
             $scope.data_valid = false;
           }
-          for (_l = 0, _len2 = items.length; _l < _len2; _l++) {
-            item = items[_l];
+          for (l = 0, len2 = items.length; l < len2; l++) {
+            item = items[l];
             spliceExistingDateTimes(item, slots);
             item.slots = {};
             for (day in slots) {
-              if (!__hasProp.call(slots, day)) continue;
+              if (!hasProp.call(slots, day)) continue;
               times = slots[day];
               item.slots[day] = _.indexBy(times, 'time');
             }
           }
         }
         if ($scope.data_valid) {
-          _ref = res[0];
-          for (k in _ref) {
-            v = _ref[k];
+          ref = res[0];
+          for (k in ref) {
+            v = ref[k];
             $scope.days[k] = {
               date: moment(k)
             };
@@ -9471,27 +9483,27 @@ function getURIparam( name ){
     * Set the enabled slots
      */
     setEnabledSlots = function() {
-      var day, day_data, isSlotValid, slot, time, _ref, _results;
-      _ref = $scope.days;
-      _results = [];
-      for (day in _ref) {
-        day_data = _ref[day];
+      var day, day_data, isSlotValid, ref, results, slot, time;
+      ref = $scope.days;
+      results = [];
+      for (day in ref) {
+        day_data = ref[day];
         day_data.slots = {};
         if ($scope.bb.stacked_items.length > 1) {
-          _results.push((function() {
-            var _ref1, _results1;
-            _ref1 = $scope.bb.stacked_items[0].slots[day];
-            _results1 = [];
-            for (time in _ref1) {
-              slot = _ref1[time];
+          results.push((function() {
+            var ref1, results1;
+            ref1 = $scope.bb.stacked_items[0].slots[day];
+            results1 = [];
+            for (time in ref1) {
+              slot = ref1[time];
               slot = angular.copy(slot);
               isSlotValid = function(slot) {
-                var duration, index, next, valid, _j, _ref2;
+                var duration, i, index, next, ref2, valid;
                 valid = false;
                 time = slot.time;
                 duration = $scope.bb.stacked_items[0].service.duration;
                 next = time + duration;
-                for (index = _j = 1, _ref2 = $scope.bb.stacked_items.length - 1; 1 <= _ref2 ? _j <= _ref2 : _j >= _ref2; index = 1 <= _ref2 ? ++_j : --_j) {
+                for (index = i = 1, ref2 = $scope.bb.stacked_items.length - 1; 1 <= ref2 ? i <= ref2 : i >= ref2; index = 1 <= ref2 ? ++i : --i) {
                   if (!_.isEmpty($scope.bb.stacked_items[index].slots[day]) && $scope.bb.stacked_items[index].slots[day][next]) {
                     slot.next = angular.copy($scope.bb.stacked_items[index].slots[day][next]);
                     slot = slot.next;
@@ -9503,27 +9515,27 @@ function getURIparam( name ){
                 return true;
               };
               if (isSlotValid(slot)) {
-                _results1.push(day_data.slots[slot.time] = slot);
+                results1.push(day_data.slots[slot.time] = slot);
               } else {
-                _results1.push(void 0);
+                results1.push(void 0);
               }
             }
-            return _results1;
+            return results1;
           })());
         } else {
-          _results.push((function() {
-            var _ref1, _results1;
-            _ref1 = $scope.bb.stacked_items[0].slots[day];
-            _results1 = [];
-            for (time in _ref1) {
-              slot = _ref1[time];
-              _results1.push(day_data.slots[slot.time] = slot);
+          results.push((function() {
+            var ref1, results1;
+            ref1 = $scope.bb.stacked_items[0].slots[day];
+            results1 = [];
+            for (time in ref1) {
+              slot = ref1[time];
+              results1.push(day_data.slots[slot.time] = slot);
             }
-            return _results1;
+            return results1;
           })());
         }
       }
-      return _results;
+      return results;
     };
 
     /***
@@ -9568,13 +9580,13 @@ function getURIparam( name ){
     * @param {object} options The options
      */
     $scope.confirm = function(route, options) {
-      var booking, different, found, item, prom, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2;
+      var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
       if (options == null) {
         options = {};
       }
-      _ref = $scope.bb.stacked_items;
-      for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-        item = _ref[_j];
+      ref = $scope.bb.stacked_items;
+      for (i = 0, len = ref.length; i < len; i++) {
+        item = ref[i];
         if (!item.time) {
           AlertService.add("danger", {
             msg: "Select a time to continue your booking"
@@ -9584,13 +9596,13 @@ function getURIparam( name ){
       }
       if (($scope.bb.moving_booking != null) && ($scope.bb.moving_booking.bookings != null)) {
         different = false;
-        _ref1 = $scope.bb.moving_booking.bookings;
-        for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
-          booking = _ref1[_k];
+        ref1 = $scope.bb.moving_booking.bookings;
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          booking = ref1[j];
           found = false;
-          _ref2 = $scope.bb.stacked_items;
-          for (_l = 0, _len2 = _ref2.length; _l < _len2; _l++) {
-            item = _ref2[_l];
+          ref2 = $scope.bb.stacked_items;
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            item = ref2[l];
             if (booking.getDateString() === item.date.string_date && booking.getTimeInMins() === item.time.time && booking.category_name === item.category_name) {
               found = true;
             }
@@ -9617,30 +9629,30 @@ function getURIparam( name ){
         });
         prom.then(function(purchase) {
           purchase.getBookingsPromise().then(function(bookings) {
-            var oldb, _i, _len3, _m, _results;
-            _results = [];
-            for (_m = 0, _len3 = bookings.length; _m < _len3; _m++) {
-              booking = bookings[_m];
+            var _i, len3, m, oldb, results;
+            results = [];
+            for (m = 0, len3 = bookings.length; m < len3; m++) {
+              booking = bookings[m];
               if ($scope.bookings) {
-                _results.push((function() {
-                  var _len4, _n, _ref3, _results1;
-                  _ref3 = $scope.bookings;
-                  _results1 = [];
-                  for (_i = _n = 0, _len4 = _ref3.length; _n < _len4; _i = ++_n) {
-                    oldb = _ref3[_i];
+                results.push((function() {
+                  var len4, n, ref3, results1;
+                  ref3 = $scope.bookings;
+                  results1 = [];
+                  for (_i = n = 0, len4 = ref3.length; n < len4; _i = ++n) {
+                    oldb = ref3[_i];
                     if (oldb.id === booking.id) {
-                      _results1.push($scope.bookings[_i] = booking);
+                      results1.push($scope.bookings[_i] = booking);
                     } else {
-                      _results1.push(void 0);
+                      results1.push(void 0);
                     }
                   }
-                  return _results1;
+                  return results1;
                 })());
               } else {
-                _results.push(void 0);
+                results.push(void 0);
               }
             }
-            return _results;
+            return results;
           });
           $scope.setLoaded($scope);
           $scope.bb.current_item.move_done = true;
@@ -9863,13 +9875,13 @@ function getURIparam( name ){
      */
     $scope.loadDay = (function(_this) {
       return function() {
-        var item, pslots, _j, _len, _ref;
+        var i, item, len, pslots, ref;
         $scope.timeSlots = [];
         $scope.notLoaded($scope);
         pslots = [];
-        _ref = $scope.stackedItems;
-        for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-          item = _ref[_j];
+        ref = $scope.stackedItems;
+        for (i = 0, len = ref.length; i < len; i++) {
+          item = ref[i];
           pslots.push(TimeService.query({
             company: $scope.bb.company,
             cItem: item,
@@ -9878,13 +9890,13 @@ function getURIparam( name ){
           }));
         }
         return $q.all(pslots).then(function(res) {
-          var earliest, latest, next_earliest, next_latest, slot, _i, _k, _l, _len1, _len2, _len3, _len4, _len5, _m, _n, _o, _ref1, _ref2, _ref3, _ref4, _ref5, _results;
+          var _i, earliest, j, k, l, latest, len1, len2, len3, len4, len5, m, n, next_earliest, next_latest, ref1, ref2, ref3, ref4, ref5, results, slot;
           $scope.setLoaded($scope);
           $scope.data_valid = true;
           $scope.timeSlots = [];
-          _ref1 = $scope.stackedItems;
-          for (_i = _k = 0, _len1 = _ref1.length; _k < _len1; _i = ++_k) {
-            item = _ref1[_i];
+          ref1 = $scope.stackedItems;
+          for (_i = j = 0, len1 = ref1.length; j < len1; _i = ++j) {
+            item = ref1[_i];
             item.slots = res[_i];
             if (!item.slots || item.slots.length === 0) {
               $scope.data_valid = false;
@@ -9894,13 +9906,13 @@ function getURIparam( name ){
           if ($scope.data_valid) {
             $scope.timeSlots = res;
             earliest = null;
-            _ref2 = $scope.stackedItems;
-            for (_l = 0, _len2 = _ref2.length; _l < _len2; _l++) {
-              item = _ref2[_l];
+            ref2 = $scope.stackedItems;
+            for (k = 0, len2 = ref2.length; k < len2; k++) {
+              item = ref2[k];
               next_earliest = null;
-              _ref3 = item.slots;
-              for (_m = 0, _len3 = _ref3.length; _m < _len3; _m++) {
-                slot = _ref3[_m];
+              ref3 = item.slots;
+              for (l = 0, len3 = ref3.length; l < len3; l++) {
+                slot = ref3[l];
                 if (earliest && slot.time < earliest) {
                   slot.disable();
                 } else if (!next_earliest) {
@@ -9910,23 +9922,23 @@ function getURIparam( name ){
               earliest = next_earliest;
             }
             latest = null;
-            _ref4 = $scope.bb.stacked_items.slice(0).reverse();
-            _results = [];
-            for (_n = 0, _len4 = _ref4.length; _n < _len4; _n++) {
-              item = _ref4[_n];
+            ref4 = $scope.bb.stacked_items.slice(0).reverse();
+            results = [];
+            for (m = 0, len4 = ref4.length; m < len4; m++) {
+              item = ref4[m];
               next_latest = null;
-              _ref5 = item.slots;
-              for (_o = 0, _len5 = _ref5.length; _o < _len5; _o++) {
-                slot = _ref5[_o];
+              ref5 = item.slots;
+              for (n = 0, len5 = ref5.length; n < len5; n++) {
+                slot = ref5[n];
                 if (latest && slot.time > latest) {
                   slot.disable();
                 } else {
                   next_latest = slot.time - item.service.duration;
                 }
               }
-              _results.push(latest = next_latest);
+              results.push(latest = next_latest);
             }
-            return _results;
+            return results;
           }
         }, function(err) {
           return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
@@ -9946,10 +9958,10 @@ function getURIparam( name ){
      */
     $scope.selectSlot = (function(_this) {
       return function(sel_item, slot) {
-        var count, current, item, latest, next, slots, time, _j, _k, _l, _len, _len1, _len2, _ref, _ref1;
-        _ref = $scope.stackedItems;
-        for (count = _j = 0, _len = _ref.length; _j < _len; count = ++_j) {
-          item = _ref[count];
+        var count, current, i, item, j, k, latest, len, len1, len2, next, ref, ref1, slots, time;
+        ref = $scope.stackedItems;
+        for (count = i = 0, len = ref.length; i < len; count = ++i) {
+          item = ref[count];
           if (count === sel_item.order) {
             item.setDate(new BBModel.Day({
               date: $scope.sel_date.format(),
@@ -9970,9 +9982,9 @@ function getURIparam( name ){
                     spaces: 1
                   }));
                   item.setTime(null);
-                  _ref1 = item.slots;
-                  for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
-                    slot = _ref1[_k];
+                  ref1 = item.slots;
+                  for (j = 0, len1 = ref1.length; j < len1; j++) {
+                    slot = ref1[j];
                     if (slot.time < latest) {
                       item.setTime(slot);
                     }
@@ -9990,8 +10002,8 @@ function getURIparam( name ){
             }));
             if (slots) {
               item.setTime(null);
-              for (_l = 0, _len2 = slots.length; _l < _len2; _l++) {
-                slot = slots[_l];
+              for (k = 0, len2 = slots.length; k < len2; k++) {
+                slot = slots[k];
                 if (slot.time >= next && !item.time) {
                   item.setTime(slot);
                   next = slot.time + item.service.duration;
@@ -10017,34 +10029,34 @@ function getURIparam( name ){
      */
     $scope.hasAvailability = (function(_this) {
       return function(slots, start_time, end_time) {
-        var slot, _j, _k, _l, _len, _len1, _len2, _len3, _m;
+        var i, j, k, l, len, len1, len2, len3, slot;
         if (!slots) {
           return false;
         }
         if (start_time && end_time) {
-          for (_j = 0, _len = slots.length; _j < _len; _j++) {
-            slot = slots[_j];
+          for (i = 0, len = slots.length; i < len; i++) {
+            slot = slots[i];
             if (slot.time >= start_time && slot.time < end_time && slot.availability() > 0) {
               return true;
             }
           }
         } else if (end_time) {
-          for (_k = 0, _len1 = slots.length; _k < _len1; _k++) {
-            slot = slots[_k];
+          for (j = 0, len1 = slots.length; j < len1; j++) {
+            slot = slots[j];
             if (slot.time < end_time && slot.availability() > 0) {
               return true;
             }
           }
         } else if (start_time) {
-          for (_l = 0, _len2 = slots.length; _l < _len2; _l++) {
-            slot = slots[_l];
+          for (k = 0, len2 = slots.length; k < len2; k++) {
+            slot = slots[k];
             if (slot.time >= start_time && slot.availability() > 0) {
               return true;
             }
           }
         } else {
-          for (_m = 0, _len3 = slots.length; _m < _len3; _m++) {
-            slot = slots[_m];
+          for (l = 0, len3 = slots.length; l < len3; l++) {
+            slot = slots[l];
             if (slot.availability() > 0) {
               return true;
             }
@@ -10070,7 +10082,7 @@ function getURIparam( name ){
     $scope.validator = ValidatorService;
     isScopeReady = (function(_this) {
       return function(cscope) {
-        var child, children, ready, ready_list, _i, _len;
+        var child, children, i, len, ready, ready_list;
         ready_list = [];
         children = [];
         child = cscope.$$childHead;
@@ -10085,8 +10097,8 @@ function getURIparam( name ){
             return -1;
           }
         });
-        for (_i = 0, _len = children.length; _i < _len; _i++) {
-          child = children[_i];
+        for (i = 0, len = children.length; i < len; i++) {
+          child = children[i];
           ready = isScopeReady(child);
           if (angular.isArray(ready)) {
             Array.prototype.push.apply(ready_list, ready);
@@ -10109,7 +10121,7 @@ function getURIparam( name ){
     * Check the page ready
      */
     $scope.checkReady = function() {
-      var checkread, ready_list, v, _i, _len;
+      var checkread, i, len, ready_list, v;
       ready_list = isScopeReady($scope);
       checkread = $q.defer();
       $scope.$checkingReady = checkread.promise;
@@ -10120,8 +10132,8 @@ function getURIparam( name ){
         checkread.resolve();
         return true;
       }
-      for (_i = 0, _len = ready_list.length; _i < _len; _i++) {
-        v = ready_list[_i];
+      for (i = 0, len = ready_list.length; i < len; i++) {
+        v = ready_list[i];
         if ((typeof value === 'boolean') || !v) {
           checkread.reject();
           return false;
@@ -10231,23 +10243,23 @@ function getURIparam( name ){
         $document.domain = "bookingbug.com";
         return $http.get(custom_partial_url).then(function(custom_templates) {
           return $compile(custom_templates.data)(scope, function(custom, scope) {
-            var custom_form, e, _i, _len;
-            for (_i = 0, _len = custom.length; _i < _len; _i++) {
-              e = custom[_i];
+            var custom_form, e, i, len;
+            for (i = 0, len = custom.length; i < len; i++) {
+              e = custom[i];
               if (e.tagName === "STYLE") {
                 element.after(e.outerHTML);
               }
             }
             custom_form = (function() {
-              var _j, _len1, _results;
-              _results = [];
-              for (_j = 0, _len1 = custom.length; _j < _len1; _j++) {
-                e = custom[_j];
+              var j, len1, results;
+              results = [];
+              for (j = 0, len1 = custom.length; j < len1; j++) {
+                e = custom[j];
                 if (e.id === 'payment_form') {
-                  _results.push(e);
+                  results.push(e);
                 }
               }
-              return _results;
+              return results;
             })();
             if (custom_form && custom_form[0]) {
               return $compile(custom_form[0].innerHTML)(scope, function(compiled_form, scope) {
@@ -10666,23 +10678,23 @@ function getURIparam( name ){
         wait: ppromise,
         item: 'person'
       }).then(function(items) {
-        var i, promises, _i, _len;
+        var i, j, len, promises;
         if (bi.group) {
           items = items.filter(function(x) {
             return !x.group_id || x.group_id === bi.group;
           });
         }
         promises = [];
-        for (_i = 0, _len = items.length; _i < _len; _i++) {
-          i = items[_i];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
           promises.push(i.promise);
         }
         return $q.all(promises).then((function(_this) {
           return function(res) {
-            var people, _j, _len1;
+            var k, len1, people;
             people = [];
-            for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-              i = items[_j];
+            for (k = 0, len1 = items.length; k < len1; k++) {
+              i = items[k];
               people.push(i.item);
               if (bi && bi.person && bi.person.self === i.item.self) {
                 $scope.person = i.item;
@@ -10746,12 +10758,12 @@ function getURIparam( name ){
      */
     getItemFromPerson = (function(_this) {
       return function(person) {
-        var item, _i, _len, _ref;
+        var item, j, len, ref;
         if (person instanceof PersonModel) {
           if ($scope.bookable_items) {
-            _ref = $scope.bookable_items;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              item = _ref[_i];
+            ref = $scope.bookable_items;
+            for (j = 0, len = ref.length; j < len; j++) {
+              item = ref[j];
               if (item.item.self === person.self) {
                 return item;
               }
@@ -11060,22 +11072,22 @@ function getURIparam( name ){
           item: 'resource'
         };
         return ItemService.query(params).then(function(items) {
-          var i, promises, _i, _len;
+          var i, j, len, promises;
           promises = [];
           if ($scope.bb.current_item.group) {
             items = items.filter(function(x) {
               return !x.group_id || x.group_id === $scope.bb.current_item.group;
             });
           }
-          for (_i = 0, _len = items.length; _i < _len; _i++) {
-            i = items[_i];
+          for (j = 0, len = items.length; j < len; j++) {
+            i = items[j];
             promises.push(i.promise);
           }
           return $q.all(promises).then(function(res) {
-            var resources, _j, _len1;
+            var k, len1, resources;
             resources = [];
-            for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-              i = items[_j];
+            for (k = 0, len1 = items.length; k < len1; k++) {
+              i = items[k];
               resources.push(i.item);
               if ($scope.bb.current_item && $scope.bb.current_item.resource && $scope.bb.current_item.resource.self === i.item.self) {
                 $scope.resource = i.item;
@@ -11117,12 +11129,12 @@ function getURIparam( name ){
      */
     getItemFromResource = (function(_this) {
       return function(resource) {
-        var item, _i, _len, _ref;
+        var item, j, len, ref;
         if (resource instanceof ResourceModel) {
           if ($scope.bookable_items) {
-            _ref = $scope.bookable_items;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              item = _ref[_i];
+            ref = $scope.bookable_items;
+            for (j = 0, len = ref.length; j < len; j++) {
+              item = ref[j];
               if (item.item.self === resource.self) {
                 return item;
               }
@@ -11313,7 +11325,7 @@ function getURIparam( name ){
       ppromise = comp.getServicesPromise();
       ppromise.then((function(_this) {
         return function(items) {
-          var filterItems, item, _i, _j, _len, _len1;
+          var filterItems, item, j, k, len, len1;
           if ($scope.hide_disabled) {
             items = items.filter(function(x) {
               return !x.disabled && !x.deleted;
@@ -11349,8 +11361,8 @@ function getURIparam( name ){
             setServiceItem(items);
           }
           if ($scope.booking_item.defaultService()) {
-            for (_i = 0, _len = items.length; _i < _len; _i++) {
-              item = items[_i];
+            for (j = 0, len = items.length; j < len; j++) {
+              item = items[j];
               if (item.self === $scope.booking_item.defaultService().self || (item.name === $scope.booking_item.defaultService().name && !item.deleted)) {
                 $scope.selectItem(item, $scope.nextRoute, {
                   skip_step: true
@@ -11359,8 +11371,8 @@ function getURIparam( name ){
             }
           }
           if ($scope.booking_item.service) {
-            for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-              item = items[_j];
+            for (k = 0, len1 = items.length; k < len1; k++) {
+              item = items[k];
               item.selected = false;
               if (item.self === $scope.booking_item.service.self) {
                 $scope.service = item;
@@ -11385,7 +11397,7 @@ function getURIparam( name ){
           item: 'service'
         }).then((function(_this) {
           return function(items) {
-            var i, item, services, _i, _len;
+            var i, item, j, len, services;
             if ($scope.booking_item.service_ref) {
               items = items.filter(function(x) {
                 return x.api_ref === $scope.booking_item.service_ref;
@@ -11402,18 +11414,18 @@ function getURIparam( name ){
               });
             }
             services = (function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = items.length; _i < _len; _i++) {
-                i = items[_i];
+              var j, len, results;
+              results = [];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 if (i.item != null) {
-                  _results.push(i.item);
+                  results.push(i.item);
                 }
               }
-              return _results;
+              return results;
             })();
-            for (_i = 0, _len = services.length; _i < _len; _i++) {
-              item = services[_i];
+            for (j = 0, len = services.length; j < len; j++) {
+              item = services[j];
               if (item.listed_durations && item.listed_durations.length === 1) {
                 item.display_name = item.name + ' - ' + $filter('time_period')(item.duration);
               } else {
@@ -11553,15 +11565,15 @@ function getURIparam( name ){
       }
       $scope.service_array = [];
       $scope.custom_array = function(match) {
-        var item, _i, _len, _ref;
+        var item, j, len, ref;
         if (!match) {
           return false;
         }
         if ($scope.options.custom_filter) {
           match = match.toLowerCase();
-          _ref = service.extra[$scope.options.custom_filter];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          ref = service.extra[$scope.options.custom_filter];
+          for (j = 0, len = ref.length; j < len; j++) {
+            item = ref[j];
             item = item.toLowerCase();
             if (item === match) {
               $scope.show_custom_array = true;
@@ -11972,13 +11984,13 @@ function getURIparam( name ){
           });
         }
         return $scope.purchase.getBookingsPromise().then(function(bookings) {
-          var address, booking, params, pretty_address, _i, _len, _ref, _results;
+          var address, booking, i, len, params, pretty_address, ref, results;
           params = {};
           $scope.bookings = bookings;
-          _ref = $scope.bookings;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            booking = _ref[_i];
+          ref = $scope.bookings;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
             if (booking.datetime) {
               booking.pretty_date = moment(booking.datetime).format("dddd, MMMM Do YYYY");
             }
@@ -11990,20 +12002,20 @@ function getURIparam( name ){
             if ($rootScope.user) {
               params.admin_only = true;
             }
-            _results.push(booking.$get("survey_questions", params).then(function(details) {
+            results.push(booking.$get("survey_questions", params).then(function(details) {
               var item_details;
               item_details = new BBModel.ItemDetails(details);
               booking.survey_questions = item_details.survey_questions;
               return booking.getSurveyAnswersPromise().then(function(answers) {
-                var answer, question, _j, _k, _len1, _len2, _ref1, _ref2;
+                var answer, j, k, len1, len2, question, ref1, ref2;
                 booking.survey_answers = answers;
-                _ref1 = booking.survey_questions;
-                for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                  question = _ref1[_j];
+                ref1 = booking.survey_questions;
+                for (j = 0, len1 = ref1.length; j < len1; j++) {
+                  question = ref1[j];
                   if (booking.survey_answers) {
-                    _ref2 = booking.survey_answers;
-                    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-                      answer = _ref2[_k];
+                    ref2 = booking.survey_answers;
+                    for (k = 0, len2 = ref2.length; k < len2; k++) {
+                      answer = ref2[k];
                       if (answer.question_text === question.name && answer.value) {
                         question.answer = answer.value;
                       }
@@ -12014,7 +12026,7 @@ function getURIparam( name ){
               });
             }));
           }
-          return _results;
+          return results;
         }, function(err) {
           $scope.setLoaded($scope);
           return failMsg();
@@ -12123,30 +12135,30 @@ function getURIparam( name ){
      */
     $scope.submitSurvey = (function(_this) {
       return function(form) {
-        var booking, params, _i, _len, _ref, _results;
+        var booking, i, len, params, ref, results;
         if (!ValidatorService.validateForm(form)) {
           return;
         }
-        _ref = $scope.bookings;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          booking = _ref[_i];
+        ref = $scope.bookings;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          booking = ref[i];
           booking.checkReady();
           if (booking.ready) {
             $scope.notLoaded($scope);
             booking.client_id = $scope.client.id;
             params = booking;
-            _results.push(PurchaseBookingService.addSurveyAnswersToBooking(params).then(function(booking) {
+            results.push(PurchaseBookingService.addSurveyAnswersToBooking(params).then(function(booking) {
               $scope.setLoaded($scope);
               return $scope.completed = true;
             }, function(err) {
               return $scope.setLoaded($scope);
             }));
           } else {
-            _results.push($scope.decideNextPage(route));
+            results.push($scope.decideNextPage(route));
           }
         }
-        return _results;
+        return results;
       };
     })(this);
 
@@ -12604,18 +12616,18 @@ function getURIparam( name ){
             return $scope.setLoaded($scope);
           });
           return pslots.then(function(data) {
-            var dtimes, found_time, pad, s, t, v, _i, _j, _k, _len, _len1, _len2, _ref;
+            var dtimes, found_time, i, j, k, len, len1, len2, pad, ref, s, t, v;
             $scope.slots = data;
             $scope.$broadcast('slotsUpdated');
             if ($scope.add_padding && data.length > 0) {
               dtimes = {};
-              for (_i = 0, _len = data.length; _i < _len; _i++) {
-                s = data[_i];
+              for (i = 0, len = data.length; i < len; i++) {
+                s = data[i];
                 dtimes[s.time] = 1;
               }
-              _ref = $scope.add_padding;
-              for (v = _j = 0, _len1 = _ref.length; _j < _len1; v = ++_j) {
-                pad = _ref[v];
+              ref = $scope.add_padding;
+              for (v = j = 0, len1 = ref.length; j < len1; v = ++j) {
+                pad = ref[v];
                 if (!dtimes[pad]) {
                   data.splice(v, 0, new BBModel.TimeSlot({
                     time: pad,
@@ -12626,8 +12638,8 @@ function getURIparam( name ){
             }
             if (($scope.data_source.requested_time || $scope.data_source.time) && $scope.selected_date.isSame($scope.data_source.date.date)) {
               found_time = false;
-              for (_k = 0, _len2 = data.length; _k < _len2; _k++) {
-                t = data[_k];
+              for (k = 0, len2 = data.length; k < len2; k++) {
+                t = data[k];
                 if (t.time === $scope.data_source.requested_time) {
                   $scope.data_source.requestedTimeUnavailable();
                   $scope.selectSlot(t);
@@ -12717,13 +12729,13 @@ function getURIparam( name ){
     $scope.end_time = 0;
     $scope.init = (function(_this) {
       return function(start_time, end_time, options) {
-        var slot, _i, _len, _ref;
+        var i, len, ref, slot;
         $scope.start_time = start_time;
         $scope.end_time = end_time;
         $scope.collaspe_when_time_selected = options && !options.collaspe_when_time_selected ? false : true;
-        _ref = $scope.slots;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          slot = _ref[_i];
+        ref = $scope.slots;
+        for (i = 0, len = ref.length; i < len; i++) {
+          slot = ref[i];
           if (slot.time >= start_time && slot.time < end_time) {
             $scope.accordian_slots.push(slot);
           }
@@ -12752,13 +12764,13 @@ function getURIparam( name ){
     })(this);
     hasAvailability = (function(_this) {
       return function() {
-        var slot, _i, _len, _ref;
+        var i, len, ref, slot;
         if (!$scope.accordian_slots) {
           return false;
         }
-        _ref = $scope.accordian_slots;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          slot = _ref[_i];
+        ref = $scope.accordian_slots;
+        for (i = 0, len = ref.length; i < len; i++) {
+          slot = ref[i];
           if (slot.availability() > 0) {
             return true;
           }
@@ -12773,11 +12785,11 @@ function getURIparam( name ){
     })(this));
     return $scope.$on('slotsUpdated', (function(_this) {
       return function(event) {
-        var slot, _i, _len, _ref;
+        var i, len, ref, slot;
         $scope.accordian_slots = [];
-        _ref = $scope.slots;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          slot = _ref[_i];
+        ref = $scope.slots;
+        for (i = 0, len = ref.length; i < len; i++) {
+          slot = ref[i];
           if (slot.time >= $scope.start_time && slot.time < $scope.end_time) {
             $scope.accordian_slots.push(slot);
           }
@@ -13203,14 +13215,14 @@ function getURIparam( name ){
           return $scope.setLoaded($scope);
         });
         return promise.then(function(datetime_arr) {
-          var d, day, dtimes, pad, pair, slot, time_slots, v, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _results;
+          var d, day, dtimes, i, j, k, len, len1, len2, pad, pair, ref, ref1, results, slot, time_slots, v;
           $scope.days = [];
-          _ref = _.sortBy(_.pairs(datetime_arr), function(pair) {
+          ref = _.sortBy(_.pairs(datetime_arr), function(pair) {
             return pair[0];
           });
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            pair = _ref[_i];
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            pair = ref[i];
             d = pair[0];
             time_slots = pair[1];
             day = {
@@ -13231,14 +13243,14 @@ function getURIparam( name ){
             }
             if ($scope.add_padding && time_slots.length > 0) {
               dtimes = {};
-              for (_j = 0, _len1 = time_slots.length; _j < _len1; _j++) {
-                slot = time_slots[_j];
+              for (j = 0, len1 = time_slots.length; j < len1; j++) {
+                slot = time_slots[j];
                 dtimes[slot.time] = 1;
                 slot.date = day.date.format('DD-MM-YY');
               }
-              _ref1 = $scope.add_padding;
-              for (v = _k = 0, _len2 = _ref1.length; _k < _len2; v = ++_k) {
-                pad = _ref1[v];
+              ref1 = $scope.add_padding;
+              for (v = k = 0, len2 = ref1.length; k < len2; v = ++k) {
+                pad = ref1[v];
                 if (!dtimes[pad]) {
                   time_slots.splice(v, 0, new BBModel.TimeSlot({
                     time: pad,
@@ -13247,9 +13259,9 @@ function getURIparam( name ){
                 }
               }
             }
-            _results.push(checkRequestedTime(day, time_slots));
+            results.push(checkRequestedTime(day, time_slots));
           }
-          return _results;
+          return results;
         }, function(err) {
           return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
         });
@@ -13269,12 +13281,12 @@ function getURIparam( name ){
     * @param {date} time_losts The time slots
      */
     checkRequestedTime = function(day, time_slots) {
-      var current_item, found_time, slot, _i, _len;
+      var current_item, found_time, i, len, slot;
       current_item = $scope.bb.current_item;
       if ((current_item.requested_time || current_item.time) && current_item.requested_date && day.date.isSame(current_item.requested_date)) {
         found_time = false;
-        for (_i = 0, _len = time_slots.length; _i < _len; _i++) {
-          slot = time_slots[_i];
+        for (i = 0, len = time_slots.length; i < len; i++) {
+          slot = time_slots[i];
           if (slot.time === current_item.requested_time) {
             current_item.requestedTimeUnavailable();
             $scope.selectSlot(day, slot);
@@ -13477,7 +13489,7 @@ function getURIparam( name ){
         $scope.bb.payment_status = null;
         id = QueryStringService('purchase_id');
         if (id && !$scope.bb.total) {
-          return PurchaseService.query({
+          PurchaseService.query({
             url_root: $scope.bb.api_url,
             purchase_id: id
           }).then(function(total) {
@@ -13491,9 +13503,10 @@ function getURIparam( name ){
           $scope.total = $scope.bb.total;
           $scope.setLoaded($scope);
           if ($scope.total.paid === $scope.total.total_price) {
-            return $scope.$emit("checkout:success", $scope.total);
+            $scope.$emit("checkout:success", $scope.total);
           }
         }
+        return $scope.reset();
       };
     })(this), function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
@@ -13512,511 +13525,6 @@ function getURIparam( name ){
         return true;
       };
     })(this);
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  app.filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  app.filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  app.filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  app.filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  app.filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  app.filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  app.filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  app.filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  app.filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  app.filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  app.filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  app.filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  app.filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  app.filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, seperator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        return val + " " + min_string + "s";
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (seperator.length > 0) {
-          str += " " + seperator;
-        }
-        str += " " + mins + " " + min_string + "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, seperator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      seperator = options && options.seperator ? options.seperator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + seperator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  app.filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  app.filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  app.filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  app.filter("us_tel", function() {
-    return function(tel) {
-      var city, country, number, value;
-      if (!tel) {
-        return "";
-      }
-      value = tel.toString().trim().replace(/^\+/, "");
-      if (value.match(/[^0-9]/)) {
-        return tel;
-      }
-      country = void 0;
-      city = void 0;
-      number = void 0;
-      switch (value.length) {
-        case 10:
-          country = 1;
-          city = value.slice(0, 3);
-          number = value.slice(3);
-          break;
-        case 11:
-          country = value[0];
-          city = value.slice(1, 4);
-          number = value.slice(4);
-          break;
-        case 12:
-          country = value.slice(0, 3);
-          city = value.slice(3, 5);
-          number = value.slice(5);
-          break;
-        default:
-          return tel;
-      }
-      if (country === 1) {
-        country = "";
-      }
-      number = number.slice(0, 3) + "-" + number.slice(3);
-      return (country + city + "-" + number).trim();
-    };
-  });
-
-  app.filter("uk_local_number", function() {
-    return function(tel) {
-      if (!tel) {
-        return "";
-      }
-      return tel.replace(/\+44 \(0\)/, '0');
-    };
-  });
-
-  app.filter('datetime', function(SettingsService) {
-    return function(date, format) {
-      var cc, datestrings;
-      if (date && moment.isMoment(date)) {
-        datestrings = {
-          datetime_us: 'MM/DD/YYYY, h:mm a',
-          datetime_uk: 'DD/MM/YYYY, HH:MM',
-          date_us: 'MM/DD/YYYY',
-          date_uk: 'DD/MM/YYYY',
-          time_us: 'h:mm a',
-          time_uk: 'HH:MM'
-        };
-        cc = SettingsService.getCountryCode();
-        if (cc !== "us") {
-          cc = "uk";
-        }
-        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
-          return date.format(datestrings[format + "_" + cc]);
-        } else if (format) {
-          return date.format(format);
-        } else {
-          return date.format(datestrings["date_" + cc]);
-        }
-      } else {
-
-      }
-    };
-  });
-
-  app.filter('range', function() {
-    return function(input, min, max) {
-      var i, _i, _ref, _ref1;
-      for (i = _i = _ref = parseInt(min), _ref1 = parseInt(max); _ref <= _ref1 ? _i <= _ref1 : _i >= _ref1; i = _ref <= _ref1 ? ++_i : --_i) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  app.filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  app.filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  app.filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  app.filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  app.filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
   });
 
 }).call(this);
@@ -14102,11 +13610,11 @@ function getURIparam( name ){
           return checkMinSpend();
         };
         return checkMinSpend = function() {
-          var item, price, _i, _len, _ref;
+          var i, item, len1, price, ref;
           price = 0;
-          _ref = $scope.bb.stacked_items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len1 = ref.length; i < len1; i++) {
+            item = ref[i];
             price += item.service.price;
           }
           if (price >= $scope.min_spend) {
@@ -14203,12 +13711,12 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, ie8orLess;
+    var e, error, ie8orLess;
     ie8orLess = false;
     try {
       ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       ie8orLess = false;
     }
     return {
@@ -14712,11 +14220,11 @@ function getURIparam( name ){
         options = scope.$eval(attrs.bbPadWithZeros) || {};
         how_many = options.how_many || 2;
         padNumber = function(value) {
-          var index, padding, _i, _ref;
+          var i, index, padding, ref;
           value = String(value);
           if (value && value.length < how_many) {
             padding = "";
-            for (index = _i = 1, _ref = how_many - value.length; 1 <= _ref ? _i <= _ref : _i >= _ref; index = 1 <= _ref ? ++_i : --_i) {
+            for (index = i = 1, ref = how_many - value.length; 1 <= ref ? i <= ref : i >= ref; index = 1 <= ref ? ++i : --i) {
               padding += "0";
             }
             value = padding.concat(value);
@@ -14734,18 +14242,18 @@ function getURIparam( name ){
       controller: function($scope, $element, $attrs) {
         $scope.inputs = [];
         $scope.resetForm = function(options) {
-          var input, _i, _len, _ref, _results;
+          var i, input, len, ref, results;
           if (options && options.clear_submitted) {
             $scope[$attrs.name].submitted = false;
           }
-          _ref = $scope.inputs;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            input = _ref[_i];
+          ref = $scope.inputs;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            input = ref[i];
             input.getter.assign($scope, null);
-            _results.push(input.controller.$setPristine());
+            results.push(input.controller.$setPristine());
           }
-          return _results;
+          return results;
         };
         return {
           registerInput: function(input, ctrl) {
@@ -14854,11 +14362,11 @@ function getURIparam( name ){
           return countTicketTypes();
         });
         return countTicketTypes = function(items) {
-          var counts, item, _i, _len;
+          var counts, i, item, len;
           items = scope.bb.basket.timeItems();
           counts = [];
-          for (_i = 0, _len = items.length; _i < _len; _i++) {
-            item = items[_i];
+          for (i = 0, len = items.length; i < len; i++) {
+            item = items[i];
             if (item.tickets) {
               if (counts[item.tickets.name]) {
                 counts[item.tickets.name] += item.tickets.qty;
@@ -15080,7 +14588,7 @@ function getURIparam( name ){
               date_format_2 = 'MM/dd/yyyy';
             }
             return scope.$watch(attrs.bbQuestion, function(question) {
-              var e, html, index, itemx, lastName, name, placeholder, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+              var e, html, i, index, itemx, j, k, lastName, len1, len2, len3, name, placeholder, ref, ref1, ref2;
               if (question) {
                 html = '';
                 lastName = '';
@@ -15112,9 +14620,9 @@ function getURIparam( name ){
                   html = scope.idmaps[index].html;
                 } else if (question.detail_type === "select" || question.detail_type === "select-price") {
                   html = "<select ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'>";
-                  _ref = question.options;
-                  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                    itemx = _ref[_i];
+                  ref = question.options;
+                  for (i = 0, len1 = ref.length; i < len1; i++) {
+                    itemx = ref[i];
                     html += "<option data_id='" + itemx.id + "' value='" + (itemx.name.replace(/'/g, "&apos;")) + "'>" + itemx.display_name + "</option>";
                   }
                   html += "</select>";
@@ -15122,9 +14630,9 @@ function getURIparam( name ){
                   html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
                 } else if (question.detail_type === "radio") {
                   html = '<div class="radio-group">';
-                  _ref1 = question.options;
-                  for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                    itemx = _ref1[_j];
+                  ref1 = question.options;
+                  for (j = 0, len2 = ref1.length; j < len2; j++) {
+                    itemx = ref1[j];
                     html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
                   }
                   html += "</div>";
@@ -15139,9 +14647,9 @@ function getURIparam( name ){
                   html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
                 } else if (question.detail_type === "radio-price") {
                   html = '<div class="radio-group">';
-                  _ref2 = question.options;
-                  for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-                    itemx = _ref2[_k];
+                  ref2 = question.options;
+                  for (k = 0, len3 = ref2.length; k < len3; k++) {
+                    itemx = ref2[k];
                     html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
                   }
                   html += "</div>";
@@ -15172,12 +14680,12 @@ function getURIparam( name ){
       terminal: true,
       priority: 1000,
       link: function(scope, element, attrs) {
-        var block, child, def, id, idmaps, index, _i, _len, _ref;
+        var block, child, def, i, id, idmaps, index, len1, ref;
         idmaps = {};
         def = null;
-        _ref = element.children();
-        for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
-          child = _ref[index];
+        ref = element.children();
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          child = ref[index];
           id = $(child).attr("bb-question-id");
           block = false;
           if ($(child).attr("bb-replace-block")) {
@@ -15411,20 +14919,20 @@ function getURIparam( name ){
             return this.input_groups[name].inputs.push(input);
           },
           validateInputGroup: function(name) {
-            var input, is_valid, _i, _j, _len, _len1, _ref, _ref1;
+            var i, input, is_valid, j, len1, len2, ref, ref1;
             is_valid = false;
-            _ref = this.input_groups[name].inputs;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              input = _ref[_i];
+            ref = this.input_groups[name].inputs;
+            for (i = 0, len1 = ref.length; i < len1; i++) {
+              input = ref[i];
               is_valid = input.$modelValue;
               if (is_valid) {
                 break;
               }
             }
             if (is_valid === !this.input_groups[name].valid) {
-              _ref1 = this.input_groups[name].inputs;
-              for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                input = _ref1[_j];
+              ref1 = this.input_groups[name].inputs;
+              for (j = 0, len2 = ref1.length; j < len2; j++) {
+                input = ref1[j];
                 input.$setValidity(input.$name, is_valid);
               }
               return this.input_groups[name].valid = is_valid;
@@ -15432,12 +14940,12 @@ function getURIparam( name ){
           }
         };
         return $element.on("submit", function() {
-          var input_group, _results;
-          _results = [];
+          var input_group, results;
+          results = [];
           for (input_group in $scope.input_manger.input_groups) {
-            _results.push($scope.input_manger.validateInputGroup(input_group));
+            results.push($scope.input_manger.validateInputGroup(input_group));
           }
-          return _results;
+          return results;
         });
       }
     };
@@ -15487,22 +14995,22 @@ function getURIparam( name ){
         var id;
         id = parseInt(attrs.bbQuestionLink);
         return scope.$watch("question_set", function(newval, oldval) {
-          var q, _i, _len, _ref, _results;
+          var i, len1, q, ref, results;
           if (newval) {
-            _ref = scope.question_set;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              q = _ref[_i];
+            ref = scope.question_set;
+            results = [];
+            for (i = 0, len1 = ref.length; i < len1; i++) {
+              q = ref[i];
               if (q.id === id) {
                 scope.question = q;
                 element.attr('ng-model', "question.answer");
                 element.attr('bb-question-link', null);
-                _results.push($compile(element)(scope));
+                results.push($compile(element)(scope));
               } else {
-                _results.push(void 0);
+                results.push(void 0);
               }
             }
-            return _results;
+            return results;
           }
         });
       }
@@ -15784,14 +15292,14 @@ function getURIparam( name ){
       restrict: 'A',
       scope: true,
       link: function(scope, element, attrs) {
-        var slot, slots, _i, _len;
+        var i, len, slot, slots;
         slots = scope.$eval(attrs.slots);
         if (!slots) {
           return;
         }
         scope.grouped_slots = [];
-        for (_i = 0, _len = slots.length; _i < _len; _i++) {
-          slot = slots[_i];
+        for (i = 0, len = slots.length; i < len; i++) {
+          slot = slots[i];
           if (slot.time >= scope.$eval(attrs.startTime) && slot.time < scope.$eval(attrs.endTime)) {
             scope.grouped_slots.push(slot);
           }
@@ -15879,15 +15387,15 @@ function getURIparam( name ){
       controller: function($scope, $rootScope) {
         $scope.questions = {};
         return $rootScope.$on("item_details:loaded", function() {
-          var item, question, _i, _j, _len, _len1, _ref, _ref1;
-          _ref = $scope.bb.stacked_items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          var i, item, j, len, len1, question, ref, ref1;
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             if (item.item_details && item.item_details.questions) {
               item.item_details.hide_questions = false;
-              _ref1 = item.item_details.questions;
-              for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                question = _ref1[_j];
+              ref1 = item.item_details.questions;
+              for (j = 0, len1 = ref1.length; j < len1; j++) {
+                question = ref1[j];
                 if ($scope.questions[question.id]) {
                   item.setCloneAnswers($scope.questions[question.id].item);
                   item.item_details.hide_questions = true;
@@ -16111,10 +15619,10 @@ function getURIparam( name ){
       },
       controller: function($scope) {
         $scope.processDates = function(dates) {
-          var cur_month, d, date, datehash, day, day_data, diff, last_date, m, month, months, w, week, _i, _j, _k, _l, _len, _ref;
+          var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
           datehash = {};
-          for (_i = 0, _len = dates.length; _i < _len; _i++) {
-            date = dates[_i];
+          for (i = 0, len = dates.length; i < len; i++) {
+            date = dates[i];
             datehash[date.date.format("DDMMYY")] = date;
             if (!$scope.first_available_day && date.spaces > 0) {
               $scope.first_available_day = date.date;
@@ -16130,17 +15638,17 @@ function getURIparam( name ){
           diff = diff > 0 ? diff + 1 : 1;
           $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
           months = [];
-          for (m = _j = 1, _ref = $scope.num_months; 1 <= _ref ? _j <= _ref : _j >= _ref; m = 1 <= _ref ? ++_j : --_j) {
+          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
             date = cur_month.clone().startOf('week');
             month = {
               weeks: []
             };
             month.index = m - 1;
-            for (w = _k = 1; _k <= 6; w = ++_k) {
+            for (w = k = 1; k <= 6; w = ++k) {
               week = {
                 days: []
               };
-              for (d = _l = 1; _l <= 7; d = ++_l) {
+              for (d = l = 1; l <= 7; d = ++l) {
                 if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
                   month.start_date = date.clone();
                 }
@@ -16188,19 +15696,19 @@ function getURIparam( name ){
             event: {
               init: function(event, slick) {
                 return $timeout(function() {
-                  var _len1, _m, _ref1, _results;
+                  var len1, n, ref1, results;
                   if ($scope.selected_day != null) {
-                    _ref1 = $scope.months;
-                    _results = [];
-                    for (_m = 0, _len1 = _ref1.length; _m < _len1; _m++) {
-                      m = _ref1[_m];
+                    ref1 = $scope.months;
+                    results = [];
+                    for (n = 0, len1 = ref1.length; n < len1; n++) {
+                      m = ref1[n];
                       if (m.start_date.month() === $scope.selected_day.date.month()) {
-                        _results.push(slick.slickGoTo(m.index));
+                        results.push(slick.slickGoTo(m.index));
                       } else {
-                        _results.push(void 0);
+                        results.push(void 0);
                       }
                     }
-                    return _results;
+                    return results;
                   }
                 });
               }
@@ -16296,20 +15804,20 @@ function getURIparam( name ){
       });
     };
     setClassAndValue = function(scope, element, attributes) {
-      var c, i, inputs, main_tag, _i, _len, _ref, _results;
+      var c, i, inputs, j, len, main_tag, ref, results;
       switch (scope.link_type) {
         case 'button_form':
           inputs = element.find("input");
           main_tag = ((function() {
-            var _i, _len, _results;
-            _results = [];
-            for (_i = 0, _len = inputs.length; _i < _len; _i++) {
-              i = inputs[_i];
+            var j, len, results;
+            results = [];
+            for (j = 0, len = inputs.length; j < len; j++) {
+              i = inputs[j];
               if ($(i).attr('type') === 'submit') {
-                _results.push(i);
+                results.push(i);
               }
             }
-            return _results;
+            return results;
           })())[0];
           if (attributes.value) {
             $(main_tag).attr('value', attributes.value);
@@ -16320,14 +15828,14 @@ function getURIparam( name ){
           main_tag = element.find("a")[0];
       }
       if (attributes["class"]) {
-        _ref = attributes["class"].split(" ");
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          c = _ref[_i];
+        ref = attributes["class"].split(" ");
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          c = ref[j];
           $(main_tag).addClass(c);
-          _results.push($(element).removeClass(c));
+          results.push($(element).removeClass(c));
         }
-        return _results;
+        return results;
       }
     };
     linker = function(scope, element, attributes) {
@@ -16463,7 +15971,7 @@ function getURIparam( name ){
   angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
       check = document.createElement('style');
       if (typeof check.sheet !== 'undefined') {
         DOMStyle = 'sheet';
@@ -16484,8 +15992,8 @@ function getURIparam( name ){
       testStyle = testSheet[DOMRules][0];
       try {
         testStyle.selectorText = 'd';
-      } catch (_error) {
-        e = _error;
+      } catch (error) {
+        e = error;
       }
       changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
       check.parentNode.removeChild(check);
@@ -16498,7 +16006,7 @@ function getURIparam( name ){
     })();
     scopeIt = (function(_this) {
       return function(element) {
-        var allRules, glue, id, idCounter, index, par, rule, selector, sheet, styleNode, styleRule, _results;
+        var allRules, glue, id, idCounter, index, par, results, rule, selector, sheet, styleNode, styleRule;
         styleNode = element[0];
         idCounter = 0;
         sheet = styleNode[_this.compat.sheet];
@@ -16516,7 +16024,7 @@ function getURIparam( name ){
           }
           par = par.parentNode;
         }
-        _results = [];
+        results = [];
         while (index--) {
           rule = allRules[index];
           if (rule.selectorText) {
@@ -16524,7 +16032,7 @@ function getURIparam( name ){
               selector = glue + ' ' + rule.selectorText.split(',').join(', ' + glue);
               selector = selector.replace(/[\ ]+:root/gi, '');
               if (_this.compat.changeSelectorTextAllowed) {
-                _results.push(rule.selectorText = selector);
+                results.push(rule.selectorText = selector);
               } else {
                 if (!rule.type || 1 === rule.type) {
                   styleRule = rule.style.cssText;
@@ -16535,25 +16043,25 @@ function getURIparam( name ){
                       sheet.deleteRule(index);
                     }
                     if (sheet.addRule) {
-                      _results.push(sheet.addRule(selector, styleRule));
+                      results.push(sheet.addRule(selector, styleRule));
                     } else {
-                      _results.push(sheet.insertRule(selector + '{' + styleRule + '}', index));
+                      results.push(sheet.insertRule(selector + '{' + styleRule + '}', index));
                     }
                   } else {
-                    _results.push(void 0);
+                    results.push(void 0);
                   }
                 } else {
-                  _results.push(void 0);
+                  results.push(void 0);
                 }
               }
             } else {
-              _results.push(void 0);
+              results.push(void 0);
             }
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       };
     })(this);
     return {
@@ -16599,9 +16107,9 @@ function getURIparam( name ){
           return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
         };
         getCurrentSize = function() {
-          var element, _i, _len;
-          for (_i = 0, _len = markers.length; _i < _len; _i++) {
-            element = markers[_i];
+          var element, i, len;
+          for (i = 0, len = markers.length; i < len; i++) {
+            element = markers[i];
             if (isVisible(element)) {
               return element.className.slice(8, 11);
             }
@@ -16737,6 +16245,511 @@ function getURIparam( name ){
 }(window.angular));
 
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  app.filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  app.filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  app.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  app.filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  app.filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  app.filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  app.filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  app.filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  app.filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  app.filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  app.filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  app.filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  app.filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  app.filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, seperator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      seperator = options && angular.isString(options.seperator) ? options.seperator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        return val + " " + min_string + "s";
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (seperator.length > 0) {
+          str += " " + seperator;
+        }
+        str += " " + mins + " " + min_string + "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  app.filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  app.filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  app.filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  app.filter("us_tel", function() {
+    return function(tel) {
+      var city, country, number, value;
+      if (!tel) {
+        return "";
+      }
+      value = tel.toString().trim().replace(/^\+/, "");
+      if (value.match(/[^0-9]/)) {
+        return tel;
+      }
+      country = void 0;
+      city = void 0;
+      number = void 0;
+      switch (value.length) {
+        case 10:
+          country = 1;
+          city = value.slice(0, 3);
+          number = value.slice(3);
+          break;
+        case 11:
+          country = value[0];
+          city = value.slice(1, 4);
+          number = value.slice(4);
+          break;
+        case 12:
+          country = value.slice(0, 3);
+          city = value.slice(3, 5);
+          number = value.slice(5);
+          break;
+        default:
+          return tel;
+      }
+      if (country === 1) {
+        country = "";
+      }
+      number = number.slice(0, 3) + "-" + number.slice(3);
+      return (country + city + "-" + number).trim();
+    };
+  });
+
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
+      }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter('datetime', function(SettingsService) {
+    return function(date, format) {
+      var cc, datestrings;
+      if (date && moment.isMoment(date)) {
+        datestrings = {
+          datetime_us: 'MM/DD/YYYY, h:mm a',
+          datetime_uk: 'DD/MM/YYYY, HH:MM',
+          date_us: 'MM/DD/YYYY',
+          date_uk: 'DD/MM/YYYY',
+          time_us: 'h:mm a',
+          time_uk: 'HH:MM'
+        };
+        cc = SettingsService.getCountryCode();
+        if (cc !== "us") {
+          cc = "uk";
+        }
+        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
+          return date.format(datestrings[format + "_" + cc]);
+        } else if (format) {
+          return date.format(format);
+        } else {
+          return date.format(datestrings["date_" + cc]);
+        }
+      } else {
+
+      }
+    };
+  });
+
+  app.filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  app.filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  app.filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  app.filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  app.filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  app.filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -16754,13 +16767,13 @@ function getURIparam( name ){
   * @property {string} postcode The Postcode/Zipcode
   * @property {string} country The country
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("AddressModel", function($q, BBModel, BaseModel) {
     var Address;
-    return Address = (function(_super) {
-      __extends(Address, _super);
+    return Address = (function(superClass) {
+      extend(Address, superClass);
 
       function Address(data) {
         Address.__super__.constructor.call(this, data);
@@ -16951,13 +16964,13 @@ function getURIparam( name ){
   * @property {string} reference The reference of the affiliated company
   * @property {integer} country_code Country code of the affiliated company
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("AffiliateModel", function($q, BBModel, BaseModel) {
     var Affiliate;
-    return Affiliate = (function(_super) {
-      __extends(Affiliate, _super);
+    return Affiliate = (function(superClass) {
+      extend(Affiliate, superClass);
 
       function Affiliate(data) {
         Affiliate.__super__.constructor.call(this, data);
@@ -17014,13 +17027,13 @@ function getURIparam( name ){
   *
   * @property {string} question The question that the answer belongs to
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("AnswerModel", function($q, BBModel, BaseModel, $bbug) {
     var Answer;
-    return Answer = (function(_super) {
-      __extends(Answer, _super);
+    return Answer = (function(superClass) {
+      extend(Answer, superClass);
 
       function Answer(data) {
         Answer.__super__.constructor.call(this, data);
@@ -17065,60 +17078,60 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
-    var admin_models, afuncs, funcs, member_models, mfuncs, model, models, pfuncs, purchase_models, _fn, _fn1, _fn2, _fn3, _i, _j, _k, _l, _len, _len1, _len2, _len3;
+    var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
     models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase'];
     funcs = {};
-    _fn = (function(_this) {
+    fn = (function(_this) {
       return function(model) {
         return funcs[model] = function(p1, p2) {
           return new ($injector.get(model + "Model"))(p1, p2);
         };
       };
     })(this);
-    for (_i = 0, _len = models.length; _i < _len; _i++) {
-      model = models[_i];
-      _fn(model);
+    for (i = 0, len = models.length; i < len; i++) {
+      model = models[i];
+      fn(model);
     }
     purchase_models = ['Booking', 'Total', 'CourseBooking'];
     pfuncs = {};
-    _fn1 = (function(_this) {
+    fn1 = (function(_this) {
       return function(model) {
         return pfuncs[model] = function(init) {
           return new ($injector.get("Purchase." + model + "Model"))(init);
         };
       };
     })(this);
-    for (_j = 0, _len1 = purchase_models.length; _j < _len1; _j++) {
-      model = purchase_models[_j];
-      _fn1(model);
+    for (j = 0, len1 = purchase_models.length; j < len1; j++) {
+      model = purchase_models[j];
+      fn1(model);
     }
     funcs['Purchase'] = pfuncs;
     member_models = ['Member', 'Booking', 'PrePaidBooking', 'Wallet', 'WalletLog', 'Purchase', 'PurchaseItem', 'WalletPurchaseBand'];
     mfuncs = {};
-    _fn2 = (function(_this) {
+    fn2 = (function(_this) {
       return function(model) {
         return mfuncs[model] = function(init) {
           return new ($injector.get("Member." + model + "Model"))(init);
         };
       };
     })(this);
-    for (_k = 0, _len2 = member_models.length; _k < _len2; _k++) {
-      model = member_models[_k];
-      _fn2(model);
+    for (k = 0, len2 = member_models.length; k < len2; k++) {
+      model = member_models[k];
+      fn2(model);
     }
     funcs['Member'] = mfuncs;
     admin_models = ['Booking', 'Slot', 'User', 'Administrator', 'Schedule', 'Address', 'Resource', 'Person', 'Service', 'Login', 'EventChain', 'EventGroup', 'Event', 'Queuer', 'ClientQueue', 'Clinic'];
     afuncs = {};
-    _fn3 = (function(_this) {
+    fn3 = (function(_this) {
       return function(model) {
         return afuncs[model] = function(init) {
           return new ($injector.get("Admin." + model + "Model"))(init);
         };
       };
     })(this);
-    for (_l = 0, _len3 = admin_models.length; _l < _len3; _l++) {
-      model = admin_models[_l];
-      _fn3(model);
+    for (l = 0, len3 = admin_models.length; l < len3; l++) {
+      model = admin_models[l];
+      fn3(model);
     }
     funcs['Admin'] = afuncs;
     return funcs;
@@ -17133,7 +17146,7 @@ function getURIparam( name ){
       }
 
       Base.prototype.updateModel = function(data) {
-        var link, links, m, n, name, obj, _results;
+        var link, links, m, n, name, obj, results;
         if (data) {
           this._data = data;
         }
@@ -17148,11 +17161,11 @@ function getURIparam( name ){
           links = this.$links();
           this.__linkedData = {};
           this.__linkedPromises = {};
-          _results = [];
+          results = [];
           for (link in links) {
             obj = links[link];
             name = this._snakeToCamel("get_" + link);
-            _results.push((function(_this) {
+            results.push((function(_this) {
               return function(link, obj, name) {
                 if (!_this[name]) {
                   _this[name] = function() {
@@ -17167,7 +17180,7 @@ function getURIparam( name ){
               };
             })(this)(link, obj, name));
           }
-          return _results;
+          return results;
         }
       };
 
@@ -17319,13 +17332,13 @@ function getURIparam( name ){
   * @property {integer} total_due_price Total price of the basket after applying discounts
   * @property {array} items Array of items that are in the basket
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("BasketModel", function($q, BBModel, BaseModel) {
     var Basket;
-    return Basket = (function(_super) {
-      __extends(Basket, _super);
+    return Basket = (function(superClass) {
+      extend(Basket, superClass);
 
       function Basket(data, scope) {
         if (scope && scope.isAdmin) {
@@ -17351,10 +17364,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.addItem = function(item) {
-        var i, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (i === item) {
             return;
           }
@@ -17426,11 +17439,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.timeItems = function() {
-        var i, titems, _i, _len, _ref;
+        var i, j, len, ref, titems;
         titems = [];
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (i.isTimeItem()) {
             titems.push(i);
           }
@@ -17450,10 +17463,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.hasTimeItems = function() {
-        var i, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (i.isTimeItem()) {
             return true;
           }
@@ -17473,11 +17486,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.basketItems = function() {
-        var bitems, i, _i, _len, _ref;
+        var bitems, i, j, len, ref;
         bitems = [];
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (!i.is_coupon) {
             bitems.push(i);
           }
@@ -17497,11 +17510,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.externalPurchaseItems = function() {
-        var eitems, i, _i, _len, _ref;
+        var eitems, i, j, len, ref;
         eitems = [];
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (i.isExternalPurchase()) {
             eitems.push(i);
           }
@@ -17521,11 +17534,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.couponItems = function() {
-        var citems, i, _i, _len, _ref;
+        var citems, i, j, len, ref;
         citems = [];
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (i.is_coupon) {
             citems.push(i);
           }
@@ -17611,7 +17624,7 @@ function getURIparam( name ){
        */
 
       Basket.prototype.getPostData = function() {
-        var item, post, _i, _len, _ref;
+        var item, j, len, post, ref;
         post = {
           client: this.client.getPostData(),
           settings: this.settings,
@@ -17621,9 +17634,9 @@ function getURIparam( name ){
         post.parent_client_id = this.parent_client_id;
         post.take_from_wallet = this.take_from_wallet;
         post.items = [];
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           post.items.push(item.getPostData());
         }
         return post;
@@ -17641,11 +17654,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.dueTotal = function() {
-        var item, total, _i, _len, _ref;
+        var item, j, len, ref, total;
         total = this.totalPrice();
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.isWaitlist()) {
             total -= item.price;
           }
@@ -17683,12 +17696,12 @@ function getURIparam( name ){
        */
 
       Basket.prototype.questionPrice = function(options) {
-        var item, price, unready, _i, _len, _ref;
+        var item, j, len, price, ref, unready;
         unready = options && options.unready;
         price = 0;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if ((!item.ready && unready) || !unready) {
             price += item.questionPrice();
           }
@@ -17708,12 +17721,12 @@ function getURIparam( name ){
        */
 
       Basket.prototype.totalPrice = function(options) {
-        var item, price, unready, _i, _len, _ref;
+        var item, j, len, price, ref, unready;
         unready = options && options.unready;
         price = 0;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if ((!item.ready && unready) || !unready) {
             price += item.totalPrice();
           }
@@ -17748,11 +17761,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.fullPrice = function() {
-        var item, price, _i, _len, _ref;
+        var item, j, len, price, ref;
         price = 0;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           price += item.fullPrice();
         }
         return price;
@@ -17770,10 +17783,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.hasCoupon = function() {
-        var item, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.is_coupon) {
             return true;
           }
@@ -17808,11 +17821,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.totalDuration = function() {
-        var duration, item, _i, _len, _ref;
+        var duration, item, j, len, ref;
         duration = 0;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.service && item.service.listed_duration) {
             duration += item.service.listed_duration;
           }
@@ -17832,10 +17845,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.containsDeal = function() {
-        var item, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.deal_id) {
             return true;
           }
@@ -17855,10 +17868,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.hasDeal = function() {
-        var item, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.deal_codes && item.deal_codes.length > 0) {
             return true;
           }
@@ -17894,11 +17907,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.totalDeals = function() {
-        var deal, value, _i, _len, _ref;
+        var deal, j, len, ref, value;
         value = 0;
-        _ref = this.getDealCodes();
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          deal = _ref[_i];
+        ref = this.getDealCodes();
+        for (j = 0, len = ref.length; j < len; j++) {
+          deal = ref[j];
           value += deal.value;
         }
         return value;
@@ -17916,11 +17929,11 @@ function getURIparam( name ){
        */
 
       Basket.prototype.totalDealPaid = function() {
-        var item, total_cert_paid, _i, _len, _ref;
+        var item, j, len, ref, total_cert_paid;
         total_cert_paid = 0;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.certificate_paid) {
             total_cert_paid += item.certificate_paid;
           }
@@ -17955,10 +17968,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.hasWaitlistItem = function() {
-        var item, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.isWaitlist()) {
             return true;
           }
@@ -17978,10 +17991,10 @@ function getURIparam( name ){
        */
 
       Basket.prototype.hasExternalPurchase = function() {
-        var item, _i, _len, _ref;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.isExternalPurchase()) {
             return true;
           }
@@ -18036,20 +18049,20 @@ function getURIparam( name ){
   * @property {integer} status Status of the items
   *
    */
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug) {
     var BasketItem;
-    return BasketItem = (function(_super) {
-      __extends(BasketItem, _super);
+    return BasketItem = (function(superClass) {
+      extend(BasketItem, superClass);
 
       function BasketItem(data, bb) {
-        this.fullPrice = __bind(this.fullPrice, this);
-        this.totalPrice = __bind(this.totalPrice, this);
-        this.getQty = __bind(this.getQty, this);
-        this.questionPrice = __bind(this.questionPrice, this);
+        this.fullPrice = bind(this.fullPrice, this);
+        this.totalPrice = bind(this.totalPrice, this);
+        this.getQty = bind(this.getQty, this);
+        this.questionPrice = bind(this.questionPrice, this);
         var chain, comp, per, res, serv, t;
         BasketItem.__super__.constructor.call(this, data);
         this.ready = false;
@@ -18103,17 +18116,17 @@ function getURIparam( name ){
           if (data.$has("answers")) {
             data.$get("answers").then((function(_this) {
               return function(answers) {
-                var a, _i, _len, _results;
+                var a, i, len, results;
                 data.questions = [];
-                _results = [];
-                for (_i = 0, _len = answers.length; _i < _len; _i++) {
-                  a = answers[_i];
-                  _results.push(data.questions.push({
+                results = [];
+                for (i = 0, len = answers.length; i < len; i++) {
+                  a = answers[i];
+                  results.push(data.questions.push({
                     id: a.question_id,
                     answer: a.value
                   }));
                 }
-                return _results;
+                return results;
               };
             })(this));
           }
@@ -18619,13 +18632,13 @@ function getURIparam( name ){
           this.promises.push(prom);
           return prom.then((function(_this) {
             return function(details) {
-              var a, q, _i, _len, _ref;
+              var a, i, len, q, ref;
               _this.item_details = new BBModel.ItemDetails(details);
               _this.has_questions = _this.item_details.hasQuestions;
               if (_this.questions) {
-                _ref = _this.item_details.questions;
-                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                  q = _ref[_i];
+                ref = _this.item_details.questions;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  q = ref[i];
                   a = _.find(_this.questions, function(c) {
                     return c.id === q.id;
                   });
@@ -19098,14 +19111,14 @@ function getURIparam( name ){
        */
 
       BasketItem.prototype.getPostData = function() {
-        var data, m_question, o_question, _i, _j, _len, _len1, _ref, _ref1;
+        var data, i, j, len, len1, m_question, o_question, ref, ref1;
         if (this.cloneAnswersItem) {
-          _ref = this.cloneAnswersItem.item_details.questions;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            o_question = _ref[_i];
-            _ref1 = this.item_details.questions;
-            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-              m_question = _ref1[_j];
+          ref = this.cloneAnswersItem.item_details.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            o_question = ref[i];
+            ref1 = this.item_details.questions;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              m_question = ref1[j];
               if (m_question.id === o_question.id) {
                 m_question.answer = o_question.answer;
                 this.setAskedQuestions();
@@ -19921,13 +19934,13 @@ function getURIparam( name ){
   * @property {string} promise The promise
   * @property {string} item Bookable item
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("BookableItemModel", function($q, BBModel, BaseModel) {
     var BookableItem;
-    return BookableItem = (function(_super) {
-      __extends(BookableItem, _super);
+    return BookableItem = (function(superClass) {
+      extend(BookableItem, superClass);
 
       BookableItem.prototype.item = null;
 
@@ -19940,13 +19953,13 @@ function getURIparam( name ){
         this.promise = this._data.$get('item');
         this.promise.then((function(_this) {
           return function(val) {
-            var m, n, _ref, _ref1, _ref2;
+            var m, n, ref, ref1, ref2;
             if (val.type === "person") {
               _this.item = new BBModel.Person(val);
               if (_this.item) {
-                _ref = _this.item._data;
-                for (n in _ref) {
-                  m = _ref[n];
+                ref = _this.item._data;
+                for (n in ref) {
+                  m = ref[n];
                   if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
                     _this[n] = m;
                   }
@@ -19958,9 +19971,9 @@ function getURIparam( name ){
             } else if (val.type === "resource") {
               _this.item = new BBModel.Resource(val);
               if (_this.item) {
-                _ref1 = _this.item._data;
-                for (n in _ref1) {
-                  m = _ref1[n];
+                ref1 = _this.item._data;
+                for (n in ref1) {
+                  m = ref1[n];
                   if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
                     _this[n] = m;
                   }
@@ -19972,9 +19985,9 @@ function getURIparam( name ){
             } else if (val.type === "service") {
               _this.item = new BBModel.Service(val);
               if (_this.item) {
-                _ref2 = _this.item._data;
-                for (n in _ref2) {
-                  m = _ref2[n];
+                ref2 = _this.item._data;
+                for (n in ref2) {
+                  m = ref2[n];
                   if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
                     _this[n] = m;
                   }
@@ -20005,13 +20018,13 @@ function getURIparam( name ){
   * @description
   * Representation of a BulkPurchase Object
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("BulkPurchaseModel", function($q, BBModel, BaseModel) {
     var BulkPurchase;
-    return BulkPurchase = (function(_super) {
-      __extends(BulkPurchase, _super);
+    return BulkPurchase = (function(superClass) {
+      extend(BulkPurchase, superClass);
 
       function BulkPurchase() {
         return BulkPurchase.__super__.constructor.apply(this, arguments);
@@ -20034,13 +20047,13 @@ function getURIparam( name ){
   * @description
   * Representation of an BussinessQuestion Object
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("BusinessQuestionModel", function($q, $filter, BBModel, BaseModel) {
     var BusinessQuestion;
-    return BusinessQuestion = (function(_super) {
-      __extends(BusinessQuestion, _super);
+    return BusinessQuestion = (function(superClass) {
+      extend(BusinessQuestion, superClass);
 
       function BusinessQuestion(data) {
         BusinessQuestion.__super__.constructor.call(this, data);
@@ -20063,13 +20076,13 @@ function getURIparam( name ){
   * @description
   * Representation of a Category Object
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("CategoryModel", function($q, BBModel, BaseModel) {
     var Category;
-    return Category = (function(_super) {
-      __extends(Category, _super);
+    return Category = (function(superClass) {
+      extend(Category, superClass);
 
       function Category() {
         return Category.__super__.constructor.apply(this, arguments);
@@ -20108,13 +20121,13 @@ function getURIparam( name ){
   * @property {array} answers Answers of the client
   * @property {boolean} deleted Verify if the client account is deleted or not
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
     var Client;
-    return Client = (function(_super) {
-      __extends(Client, _super);
+    return Client = (function(superClass) {
+      extend(Client, superClass);
 
       function Client(data) {
         Client.__super__.constructor.apply(this, arguments);
@@ -20236,21 +20249,21 @@ function getURIparam( name ){
        */
 
       Client.prototype.pre_fill_answers = function(details) {
-        var q, _i, _len, _ref, _results;
+        var i, len, q, ref, results;
         if (!this.default_answers) {
           return;
         }
-        _ref = details.questions;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          q = _ref[_i];
+        ref = details.questions;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
           if (this.default_answers[q.name]) {
-            _results.push(q.answer = this.default_answers[q.name]);
+            results.push(q.answer = this.default_answers[q.name]);
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       };
 
 
@@ -20450,7 +20463,7 @@ function getURIparam( name ){
        */
 
       Client.prototype.getPostData = function() {
-        var q, x, _i, _len, _ref;
+        var i, len, q, ref, x;
         x = {};
         x.first_name = this.first_name;
         x.last_name = this.last_name;
@@ -20493,9 +20506,9 @@ function getURIparam( name ){
         }
         if (this.questions) {
           x.questions = [];
-          _ref = this.questions;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            q = _ref[_i];
+          ref = this.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
             x.questions.push(q.getPostData());
           }
         }
@@ -20629,13 +20642,13 @@ function getURIparam( name ){
             return collection.$get('pre_paid_bookings').then(function(prepaids) {
               var prepaid;
               return defer.resolve((function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = prepaids.length; _i < _len; _i++) {
-                  prepaid = prepaids[_i];
-                  _results.push(new BBModel.PrePaidBooking(prepaid));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = prepaids.length; i < len; i++) {
+                  prepaid = prepaids[i];
+                  results.push(new BBModel.PrePaidBooking(prepaid));
                 }
-                return _results;
+                return results;
               })());
             }, function(err) {
               return defer.reject(err);
@@ -20669,22 +20682,22 @@ function getURIparam( name ){
   * @property {array} questions Questions of the client
   * @property {integer} company_id The company id of the client company
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ClientDetailsModel", function($q, BBModel, BaseModel) {
     var ClientDetails;
-    return ClientDetails = (function(_super) {
-      __extends(ClientDetails, _super);
+    return ClientDetails = (function(superClass) {
+      extend(ClientDetails, superClass);
 
       function ClientDetails(data) {
-        var q, _i, _len, _ref;
+        var i, len, q, ref;
         ClientDetails.__super__.constructor.apply(this, arguments);
         this.questions = [];
         if (this._data) {
-          _ref = data.questions;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            q = _ref[_i];
+          ref = data.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
             this.questions.push(new BBModel.Question(q));
           }
         }
@@ -20703,10 +20716,10 @@ function getURIparam( name ){
        */
 
       ClientDetails.prototype.getPostData = function(questions) {
-        var data, q, _i, _len;
+        var data, i, len, q;
         data = [];
-        for (_i = 0, _len = questions.length; _i < _len; _i++) {
-          q = questions[_i];
+        for (i = 0, len = questions.length; i < len; i++) {
+          q = questions[i];
           data.push({
             answer: q.answer,
             id: q.id,
@@ -20728,23 +20741,23 @@ function getURIparam( name ){
        */
 
       ClientDetails.prototype.setAnswers = function(answers) {
-        var a, ahash, q, _i, _j, _len, _len1, _ref, _results;
+        var a, ahash, i, j, len, len1, q, ref, results;
         ahash = {};
-        for (_i = 0, _len = answers.length; _i < _len; _i++) {
-          a = answers[_i];
+        for (i = 0, len = answers.length; i < len; i++) {
+          a = answers[i];
           ahash[a.question_id] = a;
         }
-        _ref = this.questions;
-        _results = [];
-        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-          q = _ref[_j];
+        ref = this.questions;
+        results = [];
+        for (j = 0, len1 = ref.length; j < len1; j++) {
+          q = ref[j];
           if (ahash[q.id]) {
-            _results.push(q.answer = ahash[q.id].answer);
+            results.push(q.answer = ahash[q.id].answer);
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       };
 
       return ClientDetails;
@@ -20781,13 +20794,13 @@ function getURIparam( name ){
   * @property {string} end The clinic end
   * @property {string} title The title
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
     var Clinic;
-    return Clinic = (function(_super) {
-      __extends(Clinic, _super);
+    return Clinic = (function(superClass) {
+      extend(Clinic, superClass);
 
       function Clinic(data) {
         Clinic.__super__.constructor.call(this, data);
@@ -20881,32 +20894,32 @@ function getURIparam( name ){
   * @property {array} companies An array of child companies if this is a parent company
   * @property {string} timezone The timezone for the business
    */
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("CompanyModel", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
     var Company;
-    return Company = (function(_super) {
-      __extends(Company, _super);
+    return Company = (function(superClass) {
+      extend(Company, superClass);
 
       function Company(data) {
-        this.getPusherChannel = __bind(this.getPusherChannel, this);
-        this.pusherSubscribe = __bind(this.pusherSubscribe, this);
-        var all_companies, c, child, comp, _i, _j, _len, _len1, _ref, _ref1;
+        this.getPusherChannel = bind(this.getPusherChannel, this);
+        this.pusherSubscribe = bind(this.pusherSubscribe, this);
+        var all_companies, c, child, comp, i, j, len, len1, ref1, ref2;
         Company.__super__.constructor.call(this, data);
         if (this.companies) {
           all_companies = [];
           this.child_companies = [];
-          _ref = this.companies;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            comp = _ref[_i];
+          ref1 = this.companies;
+          for (i = 0, len = ref1.length; i < len; i++) {
+            comp = ref1[i];
             c = new BBModel.Company(halClient.$parse(comp));
             this.child_companies.push(c);
             if (c.companies) {
-              _ref1 = c.companies;
-              for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                child = _ref1[_j];
+              ref2 = c.companies;
+              for (j = 0, len1 = ref2.length; j < len1; j++) {
+                child = ref2[j];
                 all_companies.push(child);
               }
             } else {
@@ -20960,13 +20973,13 @@ function getURIparam( name ){
        */
 
       Company.prototype.findChildCompany = function(id) {
-        var c, cname, name, _i, _j, _len, _len1, _ref, _ref1;
+        var c, cname, i, j, len, len1, name, ref1, ref2;
         if (!this.companies) {
           return null;
         }
-        _ref = this.companies;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          c = _ref[_i];
+        ref1 = this.companies;
+        for (i = 0, len = ref1.length; i < len; i++) {
+          c = ref1[i];
           if (c.id === parseInt(id)) {
             return c;
           }
@@ -20976,9 +20989,9 @@ function getURIparam( name ){
         }
         if (typeof id === "string") {
           name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-          _ref1 = this.companies;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            c = _ref1[_j];
+          ref2 = this.companies;
+          for (j = 0, len1 = ref2.length; j < len1; j++) {
+            c = ref2[j];
             cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
             if (name === cname) {
               return c;
@@ -21113,13 +21126,13 @@ function getURIparam( name ){
   * @description
   * Representation of an CompanySettings Object
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("CompanySettingsModel", function($q, BBModel, BaseModel) {
     var CompanySettings;
-    return CompanySettings = (function(_super) {
-      __extends(CompanySettings, _super);
+    return CompanySettings = (function(superClass) {
+      extend(CompanySettings, superClass);
 
       function CompanySettings() {
         return CompanySettings.__super__.constructor.apply(this, arguments);
@@ -21145,13 +21158,13 @@ function getURIparam( name ){
   * @property {string} string_date The string date
   * @property {date} date Second The date
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("DayModel", function($q, BBModel, BaseModel) {
     var Day;
-    return Day = (function(_super) {
-      __extends(Day, _super);
+    return Day = (function(superClass) {
+      extend(Day, superClass);
 
       function Day(data) {
         Day.__super__.constructor.apply(this, arguments);
@@ -21224,13 +21237,13 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("DealModel", function($q, BBModel, BaseModel) {
     var Deal;
-    return Deal = (function(_super) {
-      __extends(Deal, _super);
+    return Deal = (function(superClass) {
+      extend(Deal, superClass);
 
       function Deal() {
         return Deal.__super__.constructor.apply(this, arguments);
@@ -21260,13 +21273,13 @@ function getURIparam( name ){
  */
 
 (function() {
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUlititiesService) {
     var Event;
-    return Event = (function(_super) {
-      __extends(Event, _super);
+    return Event = (function(superClass) {
+      extend(Event, superClass);
 
       function Event(data) {
         Event.__super__.constructor.call(this, data);
@@ -21520,13 +21533,13 @@ function getURIparam( name ){
               });
             }
             return _this.chain.getTickets().then(function(tickets) {
-              var ticket, _i, _len, _ref;
+              var i, len, ref, ticket;
               _this.tickets = tickets;
               _this.price_range = {};
               if (tickets && tickets.length > 0) {
-                _ref = _this.tickets;
-                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                  ticket = _ref[_i];
+                ref = _this.tickets;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  ticket = ref[i];
                   if (!_this.price_range.from || (_this.price_range.from && ticket.price < _this.price_range.from)) {
                     _this.price_range.from = ticket.price;
                   }
@@ -21559,18 +21572,18 @@ function getURIparam( name ){
        */
 
       Event.prototype.updatePrice = function() {
-        var ticket, _i, _len, _ref, _results;
-        _ref = this.tickets;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          ticket = _ref[_i];
+        var i, len, ref, results, ticket;
+        ref = this.tickets;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
           if (ticket.pre_paid_booking_id) {
-            _results.push(ticket.price = 0);
+            results.push(ticket.price = 0);
           } else {
-            _results.push(ticket.price = ticket.old_price);
+            results.push(ticket.price = ticket.old_price);
           }
         }
-        return _results;
+        return results;
       };
 
       return Event;
@@ -21600,15 +21613,15 @@ function getURIparam( name ){
   * @property {string} ticket_type Type of the ticket
   * @property {boolean} course Verify is couse exist or not
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel) {
     var EventChain;
-    return EventChain = (function(_super) {
+    return EventChain = (function(superClass) {
       var setCapacityView;
 
-      __extends(EventChain, _super);
+      extend(EventChain, superClass);
 
       function EventChain(data) {
         EventChain.__super__.constructor.apply(this, arguments);
@@ -21669,10 +21682,10 @@ function getURIparam( name ){
           if (this.$has('ticket_sets')) {
             this.$get('ticket_sets').then((function(_this) {
               return function(tickets) {
-                var ticket, _i, _len;
+                var i, len, ticket;
                 _this.tickets = [];
-                for (_i = 0, _len = tickets.length; _i < _len; _i++) {
-                  ticket = tickets[_i];
+                for (i = 0, len = tickets.length; i < len; i++) {
+                  ticket = tickets[i];
                   _this.tickets.push(new BBModel.EventTicket(ticket));
                 }
                 _this.adjustTicketsForRemaining();
@@ -21708,15 +21721,15 @@ function getURIparam( name ){
        */
 
       EventChain.prototype.adjustTicketsForRemaining = function() {
-        var _i, _len, _ref, _results;
+        var i, len, ref, results;
         if (this.tickets) {
-          _ref = this.tickets;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            this.ticket = _ref[_i];
-            _results.push(this.ticket.max_spaces = this.spaces);
+          ref = this.tickets;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            this.ticket = ref[i];
+            results.push(this.ticket.max_spaces = this.spaces);
           }
-          return _results;
+          return results;
         }
       };
 
@@ -21760,13 +21773,13 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("EventCollectionModel", function($q, BBModel, BaseModel) {
     var EventCollection;
-    return EventCollection = (function(_super) {
-      __extends(EventCollection, _super);
+    return EventCollection = (function(superClass) {
+      extend(EventCollection, superClass);
 
       function EventCollection() {
         return EventCollection.__super__.constructor.apply(this, arguments);
@@ -21792,13 +21805,13 @@ function getURIparam( name ){
   * @property {integer} total_entries The total of entries in  event groupst
   * @property {array} event_chains An array with items of the event
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("EventGroupModel", function($q, BBModel, BaseModel) {
     var EventGroup;
-    return EventGroup = (function(_super) {
-      __extends(EventGroup, _super);
+    return EventGroup = (function(superClass) {
+      extend(EventGroup, superClass);
 
       function EventGroup() {
         return EventGroup.__super__.constructor.apply(this, arguments);
@@ -21832,13 +21845,13 @@ function getURIparam( name ){
   * @property {integer} total_entries The total of entries in  event groupst
   * @property {array} event_chains An array with items of the event
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("EventSequenceModel", function($q, BBModel, BaseModel) {
     var EventSequence;
-    return EventSequence = (function(_super) {
-      __extends(EventSequence, _super);
+    return EventSequence = (function(superClass) {
+      extend(EventSequence, superClass);
 
       function EventSequence() {
         return EventSequence.__super__.constructor.apply(this, arguments);
@@ -21875,13 +21888,13 @@ function getURIparam( name ){
   * @property {string} qty The quantity of the event ticket
   * @property {string} totalQty The total quantity of the event ticket
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("EventTicketModel", function($q, BBModel, BaseModel) {
     var EventTicket;
-    return EventTicket = (function(_super) {
-      __extends(EventTicket, _super);
+    return EventTicket = (function(superClass) {
+      extend(EventTicket, superClass);
 
       function EventTicket(data) {
         var ms;
@@ -21928,7 +21941,7 @@ function getURIparam( name ){
        */
 
       EventTicket.prototype.getRange = function(cap) {
-        var c, _i, _ref, _ref1, _results;
+        var c, i, ref, ref1, results;
         if (cap) {
           c = cap;
           if (this.counts_as) {
@@ -21939,9 +21952,9 @@ function getURIparam( name ){
           }
         }
         return [0].concat((function() {
-          _results = [];
-          for (var _i = _ref = this.min_num_bookings, _ref1 = this.max; _ref <= _ref1 ? _i <= _ref1 : _i >= _ref1; _ref <= _ref1 ? _i++ : _i--){ _results.push(_i); }
-          return _results;
+          results = [];
+          for (var i = ref = this.min_num_bookings, ref1 = this.max; ref <= ref1 ? i <= ref1 : i >= ref1; ref <= ref1 ? i++ : i--){ results.push(i); }
+          return results;
         }).apply(this));
       };
 
@@ -21978,16 +21991,16 @@ function getURIparam( name ){
        */
 
       EventTicket.prototype.getMax = function(cap, ev) {
-        var c, live_max, ticket, used, _i, _len, _ref;
+        var c, i, len, live_max, ref, ticket, used;
         if (ev == null) {
           ev = null;
         }
         live_max = this.max;
         if (ev) {
           used = 0;
-          _ref = ev.tickets;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            ticket = _ref[_i];
+          ref = ev.tickets;
+          for (i = 0, len = ref.length; i < len; i++) {
+            ticket = ref[i];
             used += ticket.totalQty();
           }
           if (this.qty) {
@@ -22059,13 +22072,13 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ExternalPurchaseModel", function($q, BBModel, BaseModel) {
     var ExternalPurchase;
-    return ExternalPurchase = (function(_super) {
-      __extends(ExternalPurchase, _super);
+    return ExternalPurchase = (function(superClass) {
+      extend(ExternalPurchase, superClass);
 
       function ExternalPurchase() {
         return ExternalPurchase.__super__.constructor.apply(this, arguments);
@@ -22090,13 +22103,13 @@ function getURIparam( name ){
   *
   * @property {array} iamges An array with event images
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ImageModel", function($q, $filter, BBModel, BaseModel) {
     var Image;
-    return Image = (function(_super) {
-      __extends(Image, _super);
+    return Image = (function(superClass) {
+      extend(Image, superClass);
 
       function Image(data) {
         Image.__super__.constructor.call(this, data);
@@ -22126,16 +22139,16 @@ function getURIparam( name ){
   * @property {string} hasSurveyQuestions Has survey questions about the item details
   * @property {string} checkConditionalQuestions Check conditional questions about the item details
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ItemDetailsModel", function($q, BBModel, BaseModel, $bbug, QuestionService) {
     var ItemDetails;
-    return ItemDetails = (function(_super) {
-      __extends(ItemDetails, _super);
+    return ItemDetails = (function(superClass) {
+      extend(ItemDetails, superClass);
 
       function ItemDetails(data) {
-        var q, _i, _len, _ref;
+        var i, len, q, ref;
         this._data = data;
         if (this._data) {
           this.self = this._data.$href("self");
@@ -22143,9 +22156,9 @@ function getURIparam( name ){
         this.questions = [];
         this.survey_questions = [];
         if (data) {
-          _ref = data.questions;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            q = _ref[_i];
+          ref = data.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
             if (q.outcome === false) {
               if (data.currency_code) {
                 q.currency_code = data.currency_code;
@@ -22172,13 +22185,13 @@ function getURIparam( name ){
        */
 
       ItemDetails.prototype.questionPrice = function(qty) {
-        var price, q, _i, _len, _ref;
+        var i, len, price, q, ref;
         qty || (qty = 1);
         this.checkConditionalQuestions();
         price = 0;
-        _ref = this.questions;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          q = _ref[_i];
+        ref = this.questions;
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
           price += q.selectedPriceQty(qty);
         }
         return price;
@@ -22211,11 +22224,11 @@ function getURIparam( name ){
        */
 
       ItemDetails.prototype.getPostData = function() {
-        var data, q, _i, _len, _ref;
+        var data, i, len, q, ref;
         data = [];
-        _ref = this.questions;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          q = _ref[_i];
+        ref = this.questions;
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
           if (q.currentlyShown) {
             data.push(q.getPostData());
           }
@@ -22235,15 +22248,15 @@ function getURIparam( name ){
        */
 
       ItemDetails.prototype.setAnswers = function(answers) {
-        var a, ahash, q, _i, _j, _len, _len1, _ref;
+        var a, ahash, i, j, len, len1, q, ref;
         ahash = {};
-        for (_i = 0, _len = answers.length; _i < _len; _i++) {
-          a = answers[_i];
+        for (i = 0, len = answers.length; i < len; i++) {
+          a = answers[i];
           ahash[a.id] = a;
         }
-        _ref = this.questions;
-        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-          q = _ref[_j];
+        ref = this.questions;
+        for (j = 0, len1 = ref.length; j < len1; j++) {
+          q = ref[j];
           if (ahash[q.id]) {
             q.answer = ahash[q.id].answer;
           }
@@ -22277,13 +22290,13 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
     var MembershipLevel;
-    return MembershipLevel = (function(_super) {
-      __extends(MembershipLevel, _super);
+    return MembershipLevel = (function(superClass) {
+      extend(MembershipLevel, superClass);
 
       function MembershipLevel() {
         return MembershipLevel.__super__.constructor.apply(this, arguments);
@@ -22306,13 +22319,13 @@ function getURIparam( name ){
   * @description
   * Representation of a PackageItem Object
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("PackageItemModel", function($q, BBModel, BaseModel) {
     var PackageItem;
-    return PackageItem = (function(_super) {
-      __extends(PackageItem, _super);
+    return PackageItem = (function(superClass) {
+      extend(PackageItem, superClass);
 
       function PackageItem() {
         return PackageItem.__super__.constructor.apply(this, arguments);
@@ -22341,13 +22354,13 @@ function getURIparam( name ){
   * @property {boolean} disabled Verify if person is disabled or not
   * @property {integer} order The person order
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
     var Person;
-    return Person = (function(_super) {
-      __extends(Person, _super);
+    return Person = (function(superClass) {
+      extend(Person, superClass);
 
       function Person() {
         return Person.__super__.constructor.apply(this, arguments);
@@ -22370,13 +22383,13 @@ function getURIparam( name ){
  */
 
 (function() {
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("PrePaidBookingModel", function($q, BBModel, BaseModel) {
     var PrePaidBooking;
-    return PrePaidBooking = (function(_super) {
-      __extends(PrePaidBooking, _super);
+    return PrePaidBooking = (function(superClass) {
+      extend(PrePaidBooking, superClass);
 
       function PrePaidBooking(data) {
         PrePaidBooking.__super__.constructor.call(this, data);
@@ -22413,13 +22426,13 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
     var Product;
-    return Product = (function(_super) {
-      __extends(Product, _super);
+    return Product = (function(superClass) {
+      extend(Product, superClass);
 
       function Product() {
         return Product.__super__.constructor.apply(this, arguments);
@@ -22445,13 +22458,13 @@ function getURIparam( name ){
   * @property {float} price Price of the purchase item
   * @property {float} paid Purchase item paid
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("PurchaseItemModel", function($q, BBModel, BaseModel) {
     var PurchaseItem;
-    return PurchaseItem = (function(_super) {
-      __extends(PurchaseItem, _super);
+    return PurchaseItem = (function(superClass) {
+      extend(PurchaseItem, superClass);
 
       function PurchaseItem(data) {
         PurchaseItem.__super__.constructor.call(this, data);
@@ -22539,13 +22552,13 @@ function getURIparam( name ){
   * @property {float} tax_payable_on_price The tax payable on price of the item
   * @property {float} due_now The due now
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("PurchaseTotalModel", function($q, BBModel, BaseModel) {
     var PurchaseTotal;
-    return PurchaseTotal = (function(_super) {
-      __extends(PurchaseTotal, _super);
+    return PurchaseTotal = (function(superClass) {
+      extend(PurchaseTotal, superClass);
 
       function PurchaseTotal(data) {
         var cprom;
@@ -22554,13 +22567,13 @@ function getURIparam( name ){
         this.purchase_items = [];
         this.promise.then((function(_this) {
           return function(items) {
-            var item, _i, _len, _results;
-            _results = [];
-            for (_i = 0, _len = items.length; _i < _len; _i++) {
-              item = items[_i];
-              _results.push(_this.purchase_items.push(new BBModel.PurchaseItem(item)));
+            var i, item, len, results;
+            results = [];
+            for (i = 0, len = items.length; i < len; i++) {
+              item = items[i];
+              results.push(_this.purchase_items.push(new BBModel.PurchaseItem(item)));
             }
-            return _results;
+            return results;
           };
         })(this));
         if (this._data.$has('client')) {
@@ -22657,16 +22670,16 @@ function getURIparam( name ){
   * @property {integer} company_id The company id
   * @property {array} question An array with questions
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("QuestionModel", function($q, $filter, BBModel, BaseModel) {
     var Question;
-    return Question = (function(_super) {
-      __extends(Question, _super);
+    return Question = (function(superClass) {
+      extend(Question, superClass);
 
       function Question(data) {
-        var currency, option, _i, _len, _ref;
+        var currency, i, len, option, ref;
         Question.__super__.constructor.call(this, data);
         if (this.price) {
           this.price = parseFloat(this.price);
@@ -22675,9 +22688,9 @@ function getURIparam( name ){
           this.answer = this._data["default"];
         }
         if (this._data.options) {
-          _ref = this._data.options;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            option = _ref[_i];
+          ref = this._data.options;
+          for (i = 0, len = ref.length; i < len; i++) {
+            option = ref[i];
             if (option.is_default) {
               this.answer = option.name;
             }
@@ -22723,16 +22736,16 @@ function getURIparam( name ){
        */
 
       Question.prototype.selectedPrice = function() {
-        var option, _i, _len, _ref;
+        var i, len, option, ref;
         if (!this.hasPrice()) {
           return 0;
         }
         if (this.detail_type === "check-price") {
           return (this.answer ? this.price : 0);
         }
-        _ref = this._data.options;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          option = _ref[_i];
+        ref = this._data.options;
+        for (i = 0, len = ref.length; i < len; i++) {
+          option = ref[i];
           if (this.answer === option.name) {
             return option.price;
           }
@@ -22773,13 +22786,13 @@ function getURIparam( name ){
        */
 
       Question.prototype.getAnswerId = function() {
-        var o, _i, _len, _ref;
+        var i, len, o, ref;
         if (!this.answer || !this.options || this.options.length === 0) {
           return null;
         }
-        _ref = this.options;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          o = _ref[_i];
+        ref = this.options;
+        for (i = 0, len = ref.length; i < len; i++) {
+          o = ref[i];
           if (this.answer === o.name) {
             return o.id;
           }
@@ -22868,13 +22881,13 @@ function getURIparam( name ){
   * @property {boolean} deleted Verify if resources is deleted or not
   * @property {boolean} disabled Verify if resources is disabled or not
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ResourceModel", function($q, BBModel, BaseModel) {
     var Resource;
-    return Resource = (function(_super) {
-      __extends(Resource, _super);
+    return Resource = (function(superClass) {
+      extend(Resource, superClass);
 
       function Resource() {
         return Resource.__super__.constructor.apply(this, arguments);
@@ -22906,18 +22919,18 @@ function getURIparam( name ){
   * @property {integer} min_bookings The minimum number of bookings
   * @property {integer} max_booings The maximum number of bookings
    */
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("ServiceModel", function($q, BBModel, BaseModel) {
     var Service;
-    return Service = (function(_super) {
-      __extends(Service, _super);
+    return Service = (function(superClass) {
+      extend(Service, superClass);
 
       function Service(data) {
-        this.days_array = __bind(this.days_array, this);
-        this.getCategoryPromise = __bind(this.getCategoryPromise, this);
+        this.days_array = bind(this.days_array, this);
+        this.getCategoryPromise = bind(this.getCategoryPromise, this);
         Service.__super__.constructor.apply(this, arguments);
         if (this.prices && this.prices.length > 0) {
           this.price = this.prices[0];
@@ -22947,10 +22960,10 @@ function getURIparam( name ){
        */
 
       Service.prototype.getPriceByDuration = function(dur) {
-        var d, i, _i, _len, _ref;
-        _ref = this.durations;
-        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-          d = _ref[i];
+        var d, i, j, len, ref;
+        ref = this.durations;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          d = ref[i];
           if (d === dur) {
             return this.prices[i];
           }
@@ -22994,9 +23007,9 @@ function getURIparam( name ){
        */
 
       Service.prototype.days_array = function() {
-        var arr, str, x, _i, _ref, _ref1;
+        var arr, j, ref, ref1, str, x;
         arr = [];
-        for (x = _i = _ref = this.min_bookings, _ref1 = this.max_bookings; _ref <= _ref1 ? _i <= _ref1 : _i >= _ref1; x = _ref <= _ref1 ? ++_i : --_i) {
+        for (x = j = ref = this.min_bookings, ref1 = this.max_bookings; ref <= ref1 ? j <= ref1 : j >= ref1; x = ref <= ref1 ? ++j : --j) {
           str = "" + x + " day";
           if (x > 1) {
             str += "s";
@@ -23029,13 +23042,13 @@ function getURIparam( name ){
   * @property {integer} total_entries The The total entries of the slot
   * @property {array} slots An array with slots
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("SlotModel", function($q, BBModel, BaseModel) {
     var Slot;
-    return Slot = (function(_super) {
-      __extends(Slot, _super);
+    return Slot = (function(superClass) {
+      extend(Slot, superClass);
 
       function Slot(data) {
         Slot.__super__.constructor.call(this, data);
@@ -23059,13 +23072,13 @@ function getURIparam( name ){
   * @description
   * Representation of an Space Object
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("SpaceModel", function($q, BBModel, BaseModel) {
     var Space;
-    return Space = (function(_super) {
-      __extends(Space, _super);
+    return Space = (function(superClass) {
+      extend(Space, superClass);
 
       function Space() {
         return Space.__super__.constructor.apply(this, arguments);
@@ -23091,13 +23104,13 @@ function getURIparam( name ){
   * @property {integer} company_id The company id
   * @property {array} questions An array with questions
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("SurveyQuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
     var SurveyQuestion;
-    return SurveyQuestion = (function(_super) {
-      __extends(SurveyQuestion, _super);
+    return SurveyQuestion = (function(superClass) {
+      extend(SurveyQuestion, superClass);
 
       function SurveyQuestion() {
         return SurveyQuestion.__super__.constructor.apply(this, arguments);
@@ -23133,13 +23146,13 @@ function getURIparam( name ){
   * @property {string} availability The availability of time slot
   * @property {string} avail The avail of time slot
    */
-  var __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel, DateTimeUlititiesService) {
     var TimeSlot;
-    return TimeSlot = (function(_super) {
-      __extends(TimeSlot, _super);
+    return TimeSlot = (function(superClass) {
+      extend(TimeSlot, superClass);
 
       function TimeSlot(data, service) {
         TimeSlot.__super__.constructor.call(this, data);
@@ -23477,9 +23490,9 @@ function getURIparam( name ){
       return title;
     };
     return alertService = {
-      add: function(type, _arg) {
+      add: function(type, arg) {
         var alert, msg, persist, title;
-        title = _arg.title, msg = _arg.msg, persist = _arg.persist;
+        title = arg.title, msg = arg.msg, persist = arg.persist;
         if (persist == null) {
           persist = true;
         }
@@ -23686,10 +23699,10 @@ function getURIparam( name ){
               company.$flush('basket');
               mbasket = new BBModel.Basket(basket, params.bb);
               return basket.$get('items').then(function(items) {
-                var i, item, promises, _i, _len;
+                var i, item, j, len, promises;
                 promises = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  i = items[_i];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
                   item = new BBModel.BasketItem(i, params.bb);
                   mbasket.addItem(item);
                   promises = promises.concat(item.promises);
@@ -23724,10 +23737,10 @@ function getURIparam( name ){
             company.$flush('basket');
             mbasket = new BBModel.Basket(basket, params.bb);
             return basket.$get('items').then(function(items) {
-              var i, item, promises, _i, _len;
+              var i, item, j, len, promises;
               promises = [];
-              for (_i = 0, _len = items.length; _i < _len; _i++) {
-                i = items[_i];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 item = new BBModel.BasketItem(i, params.bb);
                 mbasket.addItem(item);
                 promises = promises.concat(item.promises);
@@ -23750,15 +23763,15 @@ function getURIparam( name ){
         return deferred.promise;
       },
       updateBasket: function(company, params) {
-        var data, deferred, item, lnk, xdata, _i, _len, _ref;
+        var data, deferred, item, j, len, lnk, ref, xdata;
         deferred = $q.defer();
         data = {
           entire_basket: true,
           items: []
         };
-        _ref = params.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = params.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.book_link) {
             lnk = item.book_link;
           }
@@ -23776,10 +23789,10 @@ function getURIparam( name ){
             company.$flush('basket');
             mbasket = new BBModel.Basket(basket, params.bb);
             return basket.$get('items').then(function(items) {
-              var i, promises, _j, _len1;
+              var i, k, len1, promises;
               promises = [];
-              for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-                i = items[_j];
+              for (k = 0, len1 = items.length; k < len1; k++) {
+                i = items[k];
                 item = new BBModel.BasketItem(i, params.bb);
                 mbasket.addItem(item);
                 promises = promises.concat(item.promises);
@@ -23804,10 +23817,10 @@ function getURIparam( name ){
         return deferred.promise;
       },
       checkPrePaid: function(item, pre_paid_bookings) {
-        var booking, valid_pre_paid, _i, _len;
+        var booking, j, len, valid_pre_paid;
         valid_pre_paid = null;
-        for (_i = 0, _len = pre_paid_bookings.length; _i < _len; _i++) {
-          booking = pre_paid_bookings[_i];
+        for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
+          booking = pre_paid_bookings[j];
           if (booking.checkValidity(item)) {
             valid_pre_paid = booking;
             break;
@@ -23825,13 +23838,13 @@ function getURIparam( name ){
             basket = new BBModel.Basket(basket, params.bb);
             if (basket.$has('items')) {
               basket.$get('items').then(function(items) {
-                var item, _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  item = items[_i];
-                  _results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
+                var item, j, len, results;
+                results = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  item = items[j];
+                  results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
                 }
-                return _results;
+                return results;
               });
             }
             return deferred.resolve(basket);
@@ -23857,13 +23870,13 @@ function getURIparam( name ){
               basket = new BBModel.Basket(basket, params.bb);
               if (basket.$has('items')) {
                 basket.$get('items').then(function(items) {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = items.length; _i < _len; _i++) {
-                    item = items[_i];
-                    _results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
+                  var j, len, results;
+                  results = [];
+                  for (j = 0, len = items.length; j < len; j++) {
+                    item = items[j];
+                    results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
                   }
-                  return _results;
+                  return results;
                 });
               }
               return deferred.resolve(basket);
@@ -23942,14 +23955,14 @@ function getURIparam( name ){
           basket._data.setOption('auth_token', $rootScope.member._data.getOption('auth_token'));
           data = {
             items: (function() {
-              var _i, _len, _ref, _results;
-              _ref = basket.items;
-              _results = [];
-              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                item = _ref[_i];
-                _results.push(item._data);
+              var j, len, ref, results;
+              ref = basket.items;
+              results = [];
+              for (j = 0, len = ref.length; j < len; j++) {
+                item = ref[j];
+                results.push(item._data);
               }
-              return _results;
+              return results;
             })()
           };
           basket.$post('checkout', params, data).then(function(total) {
@@ -23978,10 +23991,10 @@ function getURIparam( name ){
             company.$flush('basket');
             mbasket = new BBModel.Basket(basket, params.bb);
             return basket.$get('items').then(function(items) {
-              var i, item, promises, _i, _len;
+              var i, item, j, len, promises;
               promises = [];
-              for (_i = 0, _len = items.length; _i < _len; _i++) {
-                i = items[_i];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 item = new BBModel.BasketItem(i, params.bb);
                 mbasket.addItem(item);
                 promises = promises.concat(item.promises);
@@ -24021,9 +24034,9 @@ function getURIparam( name ){
               basket = new BBModel.Basket(basket, params.bb);
               if (basket.$has('items')) {
                 return basket.$get('items').then(function(items) {
-                  var item, _i, _len;
-                  for (_i = 0, _len = items.length; _i < _len; _i++) {
-                    item = items[_i];
+                  var item, j, len;
+                  for (j = 0, len = items.length; j < len; j++) {
+                    item = items[j];
                     basket.addItem(new BBModel.BasketItem(item, params.bb));
                   }
                   return deferred.resolve(basket);
@@ -24073,13 +24086,13 @@ function getURIparam( name ){
             return resource.$get('bulk_purchases').then(function(bulk_purchases) {
               var i;
               return deferred.resolve((function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = bulk_purchases.length; _i < _len; _i++) {
-                  i = bulk_purchases[_i];
-                  _results.push(new BBModel.BulkPurchase(i));
+                var j, len, results;
+                results = [];
+                for (j = 0, len = bulk_purchases.length; j < len; j++) {
+                  i = bulk_purchases[j];
+                  results.push(new BBModel.BulkPurchase(i));
                 }
-                return _results;
+                return results;
               })());
             });
           }, (function(_this) {
@@ -24107,9 +24120,9 @@ function getURIparam( name ){
           company.$get('named_categories').then((function(_this) {
             return function(resource) {
               return resource.$get('categories').then(function(items) {
-                var cat, categories, i, _i, _j, _len;
+                var _i, cat, categories, i, j, len;
                 categories = [];
-                for (_i = _j = 0, _len = items.length; _j < _len; _i = ++_j) {
+                for (_i = j = 0, len = items.length; j < len; _i = ++j) {
                   i = items[_i];
                   cat = new BBModel.Category(i);
                   cat.order || (cat.order = _i);
@@ -24253,13 +24266,13 @@ function getURIparam( name ){
             return collection.$get('clinics').then(function(clinics) {
               var s;
               clinics = (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = clinics.length; _i < _len; _i++) {
-                  s = clinics[_i];
-                  _results.push(new BBModel.Clinic(s));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = clinics.length; i < len; i++) {
+                  s = clinics[i];
+                  results.push(new BBModel.Clinic(s));
                 }
-                return _results;
+                return results;
               })();
               return defer.resolve(clinics);
             }, function(err) {
@@ -24304,10 +24317,10 @@ function getURIparam( name ){
           company.$get('companies').then((function(_this) {
             return function(resource) {
               return resource.$get('companies').then(function(items) {
-                var companies, i, _i, _len;
+                var companies, i, j, len;
                 companies = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  i = items[_i];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
                   companies.push(new BBModel.Company(i));
                 }
                 return deferred.resolve(companies);
@@ -24335,14 +24348,14 @@ function getURIparam( name ){
         company.$get('booking_text').then((function(_this) {
           return function(emb) {
             return emb.$get('booking_text').then(function(details) {
-              var detail, link, msgs, name, _i, _len, _ref;
+              var detail, i, len, link, msgs, name, ref;
               msgs = [];
-              for (_i = 0, _len = details.length; _i < _len; _i++) {
-                detail = details[_i];
+              for (i = 0, len = details.length; i < len; i++) {
+                detail = details[i];
                 if (detail.message_type === "Booking") {
-                  _ref = basketItem.parts_links;
-                  for (name in _ref) {
-                    link = _ref[name];
+                  ref = basketItem.parts_links;
+                  for (name in ref) {
+                    link = ref[name];
                     if (detail.$href('item') === link) {
                       if (msgs.indexOf(detail.message) === -1) {
                         msgs.push(detail.message);
@@ -24430,11 +24443,11 @@ function getURIparam( name ){
           }
           prms.cItem.days_link.$get('days', extra).then((function(_this) {
             return function(found) {
-              var afound, days, i, _i, _len;
+              var afound, days, i, j, len;
               afound = found.days;
               days = [];
-              for (_i = 0, _len = afound.length; _i < _len; _i++) {
-                i = afound[_i];
+              for (j = 0, len = afound.length; j < len; j++) {
+                i = afound[j];
                 if (i.type === prms.item) {
                   days.push(new BBModel.Day(i));
                 }
@@ -24470,13 +24483,13 @@ function getURIparam( name ){
               return resource.$get('deals').then(function(deals) {
                 var deal;
                 deals = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = deals.length; _i < _len; _i++) {
-                    deal = deals[_i];
-                    _results.push(new BBModel.Deal(deal));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = deals.length; i < len; i++) {
+                    deal = deals[i];
+                    results.push(new BBModel.Deal(deal));
                   }
-                  return _results;
+                  return results;
                 })();
                 return deferred.resolve(deals);
               });
@@ -24890,13 +24903,13 @@ function getURIparam( name ){
               return resource.$get('events', params).then(function(events) {
                 var event;
                 events = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = events.length; _i < _len; _i++) {
-                    event = events[_i];
-                    _results.push(new BBModel.Event(event));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = events.length; i < len; i++) {
+                    event = events[i];
+                    results.push(new BBModel.Event(event));
                   }
-                  return _results;
+                  return results;
                 })();
                 return deferred.resolve(events);
               });
@@ -24995,13 +25008,13 @@ function getURIparam( name ){
               return resource.$get('event_chains', params).then(function(event_chains) {
                 var event_chain;
                 event_chains = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = event_chains.length; _i < _len; _i++) {
-                    event_chain = event_chains[_i];
-                    _results.push(new BBModel.EventChain(event_chain));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_chains.length; i < len; i++) {
+                    event_chain = event_chains[i];
+                    results.push(new BBModel.EventChain(event_chain));
                   }
-                  return _results;
+                  return results;
                 })();
                 return deferred.resolve(event_chains);
               });
@@ -25033,13 +25046,13 @@ function getURIparam( name ){
               return resource.$get('event_groups', params).then(function(event_groups) {
                 var event_group;
                 event_groups = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = event_groups.length; _i < _len; _i++) {
-                    event_group = event_groups[_i];
-                    _results.push(new BBModel.EventGroup(event_group));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_groups.length; i < len; i++) {
+                    event_group = event_groups[i];
+                    results.push(new BBModel.EventGroup(event_group));
                   }
-                  return _results;
+                  return results;
                 })();
                 return deferred.resolve(event_groups);
               });
@@ -25071,13 +25084,13 @@ function getURIparam( name ){
               return resource.$get('event_sequences', params).then(function(event_sequences) {
                 var event_sequence;
                 event_sequences = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = event_sequences.length; _i < _len; _i++) {
-                    event_sequence = event_sequences[_i];
-                    _results.push(new BBModel.EventSequence(event_sequence));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_sequences.length; i < len; i++) {
+                    event_sequence = event_sequences[i];
+                    results.push(new BBModel.EventSequence(event_sequence));
                   }
-                  return _results;
+                  return results;
                 })();
                 return deferred.resolve(event_sequences);
               });
@@ -25133,9 +25146,9 @@ function getURIparam( name ){
       }
     };
     resetValuesOnScope = function(scope, props) {
-      var prop, setter, _i, _len;
-      for (_i = 0, _len = props.length; _i < _len; _i++) {
-        prop = props[_i];
+      var i, len, prop, setter;
+      for (i = 0, len = props.length; i < len; i++) {
+        prop = props[i];
         prop = $parse(prop);
         setter = prop.assign;
         setter(scope, null);
@@ -25177,7 +25190,7 @@ function getURIparam( name ){
       }
     };
     storeFormData = function() {
-      var key, ndata, prop, props, scope, step, val, _i, _len;
+      var i, key, len, ndata, prop, props, scope, step, val;
       log('formDataStore ->', dataStore);
       for (key in dataStore) {
         step = dataStore[key];
@@ -25188,8 +25201,8 @@ function getURIparam( name ){
         if (!ndata) {
           ndata = step[2] = {};
         }
-        for (_i = 0, _len = props.length; _i < _len; _i++) {
-          prop = props[_i];
+        for (i = 0, len = props.length; i < len; i++) {
+          prop = props[i];
           val = ndata[prop];
           if (val === 'data:destroyed') {
             ndata[prop] = null;
@@ -25229,11 +25242,11 @@ function getURIparam( name ){
       }
     };
     checkRegisteredWidgets = function(scope) {
-      var isRegistered, rscope, _i, _len;
+      var i, isRegistered, len, rscope;
       isRegistered = false;
       scope = getParentScope(scope);
-      for (_i = 0, _len = registeredWidgetArr.length; _i < _len; _i++) {
-        rscope = registeredWidgetArr[_i];
+      for (i = 0, len = registeredWidgetArr.length; i < len; i++) {
+        rscope = registeredWidgetArr[i];
         if (rscope === scope) {
           isRegistered = true;
         }
@@ -25261,11 +25274,11 @@ function getURIparam( name ){
         _.each(listenerArr, function(item, index) {
           var func;
           func = $rootScope.$on(item[1], function() {
-            var e;
+            var e, error;
             try {
               return cpage[2][item[0]] = 'data:destroyed';
-            } catch (_error) {
-              e = _error;
+            } catch (error) {
+              e = error;
               return log(e);
             }
           });
@@ -25459,23 +25472,23 @@ function getURIparam( name ){
             var resource;
             resource = resources[0];
             return resource.$get('items').then(function(found) {
-              var m, matching, v, wlist, _i, _len;
+              var i, len, m, matching, v, wlist;
               matching = [];
               wlist = [];
-              for (_i = 0, _len = found.length; _i < _len; _i++) {
-                v = found[_i];
+              for (i = 0, len = found.length; i < len; i++) {
+                v = found[i];
                 if (v.type === prms.item) {
                   matching.push(new BBModel.BookableItem(v));
                 }
               }
               return $q.all((function() {
-                var _j, _len1, _results;
-                _results = [];
-                for (_j = 0, _len1 = matching.length; _j < _len1; _j++) {
-                  m = matching[_j];
-                  _results.push(m.ready.promise);
+                var j, len1, results;
+                results = [];
+                for (j = 0, len1 = matching.length; j < len1; j++) {
+                  m = matching[j];
+                  results.push(m.ready.promise);
                 }
-                return _results;
+                return results;
               })()).then(function() {
                 return deferred.resolve(matching);
               });
@@ -25785,13 +25798,13 @@ function getURIparam( name ){
             return function(membership_levels) {
               var level, levels;
               levels = (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = membership_levels.length; _i < _len; _i++) {
-                  level = membership_levels[_i];
-                  _results.push(new BBModel.MembershipLevel(level));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = membership_levels.length; i < len; i++) {
+                  level = membership_levels[i];
+                  results.push(new BBModel.MembershipLevel(level));
                 }
-                return _results;
+                return results;
               })();
               return deferred.resolve(levels);
             };
@@ -26041,13 +26054,13 @@ function getURIparam( name ){
             return resource.$get('packages').then(function(package_items) {
               var i;
               return deferred.resolve((function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = package_items.length; _i < _len; _i++) {
-                  i = package_items[_i];
-                  _results.push(new BBModel.PackageItem(i));
+                var j, len, results;
+                results = [];
+                for (j = 0, len = package_items.length; j < len; j++) {
+                  i = package_items[j];
+                  results.push(new BBModel.PackageItem(i));
                 }
-                return _results;
+                return results;
               })());
             });
           }, function(err) {
@@ -26065,13 +26078,13 @@ function getURIparam( name ){
           package_item.$get('services').then(function(services) {
             var s;
             return deferred.resolve((function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = services.length; _i < _len; _i++) {
-                s = services[_i];
-                _results.push(new BBModel.Service(s));
+              var j, len, results;
+              results = [];
+              for (j = 0, len = services.length; j < len; j++) {
+                s = services[j];
+                results.push(new BBModel.Service(s));
               }
-              return _results;
+              return results;
             })());
           }, (function(_this) {
             return function(err) {
@@ -26133,10 +26146,10 @@ function getURIparam( name ){
           company.$get('people').then((function(_this) {
             return function(resource) {
               return resource.$get('people').then(function(items) {
-                var i, people, _i, _len;
+                var i, j, len, people;
                 people = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  i = items[_i];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
                   people.push(new BBModel.Person(i));
                 }
                 return deferred.resolve(people);
@@ -26195,10 +26208,10 @@ function getURIparam( name ){
           company.$get('products').then((function(_this) {
             return function(resource) {
               return resource.$get('products').then(function(items) {
-                var i, resources, _i, _len;
+                var i, j, len, resources;
                 resources = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  i = items[_i];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
                   resources.push(new BBModel.Product(i));
                 }
                 return deferred.resolve(resources);
@@ -26248,7 +26261,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Services').factory('QueryStringService', function($window) {
     return function(keyName) {
-      var hash, hashes, href, isNum, val, varObj, _i, _len;
+      var hash, hashes, href, i, isNum, len, val, varObj;
       varObj = {};
       href = $window.location.href;
       if (href.indexOf('?') < 0) {
@@ -26270,8 +26283,8 @@ function getURIparam( name ){
         }
         return true;
       };
-      for (_i = 0, _len = hashes.length; _i < _len; _i++) {
-        hash = hashes[_i];
+      for (i = 0, len = hashes.length; i < len; i++) {
+        hash = hashes[i];
         hash = hash.split('=');
         val = hash[1];
         if (isNum(val)) {
@@ -26359,11 +26372,11 @@ function getURIparam( name ){
       }
     };
     addAnswersByName = function(obj, keys) {
-      var key, type, _i, _len;
+      var i, key, len, type;
       type = Object.prototype.toString.call(obj).slice(8, -1);
       if (type === 'Object' && angular.isArray(keys)) {
-        for (_i = 0, _len = keys.length; _i < _len; _i++) {
-          key = keys[_i];
+        for (i = 0, len = keys.length; i < len; i++) {
+          key = keys[i];
           if (defaults[key] && !obj[key]) {
             obj[key] = defaults[key];
             delete defaults[key];
@@ -26372,30 +26385,30 @@ function getURIparam( name ){
       }
     };
     addAnswersFromDefaults = function(questions, answers) {
-      var name, question, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = questions.length; _i < _len; _i++) {
-        question = questions[_i];
+      var i, len, name, question, results;
+      results = [];
+      for (i = 0, len = questions.length; i < len; i++) {
+        question = questions[i];
         name = question.help_text;
         if (answers[name]) {
           question.answer = answers[name];
         }
         if (answers[question.id + '']) {
-          _results.push(question.answer = answers[question.id + '']);
+          results.push(question.answer = answers[question.id + '']);
         } else {
-          _results.push(void 0);
+          results.push(void 0);
         }
       }
-      return _results;
+      return results;
     };
     storeDefaults = function(obj) {
       return angular.extend(defaults, obj.bb_setup || {});
     };
     checkConditionalQuestions = function(questions) {
-      var a, ans, cond, found, q, v, _i, _len, _ref, _results;
-      _results = [];
-      for (_i = 0, _len = questions.length; _i < _len; _i++) {
-        q = questions[_i];
+      var a, ans, cond, found, i, len, q, ref, results, v;
+      results = [];
+      for (i = 0, len = questions.length; i < len; i++) {
+        q = questions[i];
         if (q.settings && q.settings.conditional_question) {
           cond = findByQuestionId(questions, parseInt(q.settings.conditional_question));
           if (cond) {
@@ -26404,9 +26417,9 @@ function getURIparam( name ){
             if ($bbug.isEmptyObject(q.settings.conditional_answers) && cond.detail_type === "check" && !cond.answer) {
               found = true;
             }
-            _ref = q.settings.conditional_answers;
-            for (a in _ref) {
-              v = _ref[a];
+            ref = q.settings.conditional_answers;
+            for (a in ref) {
+              v = ref[a];
               if (a[0] === 'c' && parseInt(v) === 1 && cond.answer) {
                 found = true;
               } else if (parseInt(a) === ans && parseInt(v) === 1) {
@@ -26414,23 +26427,23 @@ function getURIparam( name ){
               }
             }
             if (found) {
-              _results.push(q.showElement());
+              results.push(q.showElement());
             } else {
-              _results.push(q.hideElement());
+              results.push(q.hideElement());
             }
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         } else {
-          _results.push(void 0);
+          results.push(void 0);
         }
       }
-      return _results;
+      return results;
     };
     findByQuestionId = function(questions, qid) {
-      var q, _i, _len;
-      for (_i = 0, _len = questions.length; _i < _len; _i++) {
-        q = questions[_i];
+      var i, len, q;
+      for (i = 0, len = questions.length; i < len; i++) {
+        q = questions[i];
         if (q.id === qid) {
           return q;
         }
@@ -26487,10 +26500,10 @@ function getURIparam( name ){
           company.$get('resources').then((function(_this) {
             return function(resource) {
               return resource.$get('resources').then(function(items) {
-                var i, resources, _i, _len;
+                var i, j, len, resources;
                 resources = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  i = items[_i];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
                   resources.push(new BBModel.Resource(i));
                 }
                 return deferred.resolve(resources);
@@ -26521,10 +26534,10 @@ function getURIparam( name ){
           company.$get('services').then((function(_this) {
             return function(resource) {
               return resource.$get('services').then(function(items) {
-                var i, services, _i, _len;
+                var i, j, len, services;
                 services = [];
-                for (_i = 0, _len = items.length; _i < _len; _i++) {
-                  i = items[_i];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
                   services.push(new BBModel.Service(i));
                 }
                 return deferred.resolve(services);
@@ -26595,13 +26608,13 @@ function getURIparam( name ){
               return resource.$get('slots', params).then(function(slots) {
                 var slot;
                 slots = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = slots.length; _i < _len; _i++) {
-                    slot = slots[_i];
-                    _results.push(new BBModel.Slot(slot));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = slots.length; i < len; i++) {
+                    slot = slots[i];
+                    results.push(new BBModel.Slot(slot));
                   }
-                  return _results;
+                  return results;
                 })();
                 return deferred.resolve(slots);
               });
@@ -26648,10 +26661,10 @@ function getURIparam( name ){
             company.$get('spaces').then((function(_this) {
               return function(resource) {
                 return resource.$get('spaces').then(function(items) {
-                  var i, spaces, _i, _len;
+                  var i, j, len, spaces;
                   spaces = [];
-                  for (_i = 0, _len = items.length; _i < _len; _i++) {
-                    i = items[_i];
+                  for (j = 0, len = items.length; j < len; j++) {
+                    i = items[j];
                     spaces.push(new BBModel.Space(i));
                   }
                   return deferred.resolve(spaces);
@@ -26812,10 +26825,10 @@ function getURIparam( name ){
               var times;
               if (results.$has('date_links')) {
                 return results.$get('date_links').then(function(all_days) {
-                  var all_days_def, date_times, day, _fn, _i, _len;
+                  var all_days_def, date_times, day, fn, j, len;
                   date_times = {};
                   all_days_def = [];
-                  _fn = function(day) {
+                  fn = function(day) {
                     var times;
                     day.elink = $q.defer();
                     all_days_def.push(day.elink.promise);
@@ -26842,9 +26855,9 @@ function getURIparam( name ){
                       return day.elink.resolve();
                     }
                   };
-                  for (_i = 0, _len = all_days.length; _i < _len; _i++) {
-                    day = all_days[_i];
-                    _fn(day);
+                  for (j = 0, len = all_days.length; j < len; j++) {
+                    day = all_days[j];
+                    fn(day);
                   }
                   return $q.all(all_days_def).then(function() {
                     return deferred.resolve(date_times);
@@ -26880,18 +26893,18 @@ function getURIparam( name ){
         return deferred.promise;
       },
       merge_times: function(all_events, service, item) {
-        var date_times, ev, i, sorted_times, times, _i, _j, _k, _len, _len1, _len2, _ref;
+        var date_times, ev, i, j, k, l, len, len1, len2, ref, sorted_times, times;
         if (!all_events || all_events.length === 0) {
           return [];
         }
         all_events = _.shuffle(all_events);
         sorted_times = [];
-        for (_i = 0, _len = all_events.length; _i < _len; _i++) {
-          ev = all_events[_i];
+        for (j = 0, len = all_events.length; j < len; j++) {
+          ev = all_events[j];
           if (ev.times) {
-            _ref = ev.times;
-            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-              i = _ref[_j];
+            ref = ev.times;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              i = ref[k];
               if (!sorted_times[i.time] || sorted_times[i.time].avail === 0 || (Math.floor(Math.random() * all_events.length) === 0 && i.avail > 0)) {
                 i.event_id = ev.event_id;
                 sorted_times[i.time] = i;
@@ -26905,8 +26918,8 @@ function getURIparam( name ){
         }
         times = [];
         date_times = {};
-        for (_k = 0, _len2 = sorted_times.length; _k < _len2; _k++) {
-          i = sorted_times[_k];
+        for (l = 0, len2 = sorted_times.length; l < len2; l++) {
+          i = sorted_times[l];
           if (i) {
             times.push(new BBModel.TimeSlot(i, service));
           }
@@ -26937,13 +26950,13 @@ function getURIparam( name ){
           return collection.$get('slots').then(function(slots) {
             var s;
             slots = (function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = slots.length; _i < _len; _i++) {
-                s = slots[_i];
-                _results.push(new BBModel.TimeSlot(s));
+              var i, len, results;
+              results = [];
+              for (i = 0, len = slots.length; i < len; i++) {
+                s = slots[i];
+                results.push(new BBModel.TimeSlot(s));
               }
-              return _results;
+              return results;
             })();
             return defer.resolve(slots);
           }, function(err) {
@@ -26984,10 +26997,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('people').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.Person(i));
             }
             return deferred.resolve(models);
@@ -27018,10 +27031,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('resources').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.Resource(i));
             }
             return deferred.resolve(models);
@@ -27052,22 +27065,22 @@ function getURIparam( name ){
         deferred = $q.defer();
         if (angular.isArray(resource)) {
           models = (function() {
-            var _j, _len, _results;
-            _results = [];
-            for (_j = 0, _len = resource.length; _j < _len; _j++) {
-              service = resource[_j];
-              _results.push(new BBModel.Service(service));
+            var j, len, results;
+            results = [];
+            for (j = 0, len = resource.length; j < len; j++) {
+              service = resource[j];
+              results.push(new BBModel.Service(service));
             }
-            return _results;
+            return results;
           })();
           deferred.resolve(models);
         } else {
           resource.$get('services').then((function(_this) {
             return function(items) {
-              var i, _j, _len;
+              var i, j, len;
               models = [];
-              for (_j = 0, _len = items.length; _j < _len; _j++) {
-                i = items[_j];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 models.push(new BBModel.Service(i));
               }
               return deferred.resolve(models);
@@ -27099,10 +27112,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('package_items').then((function(_this) {
           return function(package_items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = package_items.length; _j < _len; _j++) {
-              i = package_items[_j];
+            for (j = 0, len = package_items.length; j < len; j++) {
+              i = package_items[j];
               models.push(new BBModel.PackageItem(i));
             }
             return deferred.resolve(models);
@@ -27133,22 +27146,22 @@ function getURIparam( name ){
         deferred = $q.defer();
         if (angular.isArray(resource)) {
           models = (function() {
-            var _j, _len, _results;
-            _results = [];
-            for (_j = 0, _len = resource.length; _j < _len; _j++) {
-              bulk_purchase = resource[_j];
-              _results.push(new BBModel.BulkPurchase(bulk_purchase));
+            var j, len, results;
+            results = [];
+            for (j = 0, len = resource.length; j < len; j++) {
+              bulk_purchase = resource[j];
+              results.push(new BBModel.BulkPurchase(bulk_purchase));
             }
-            return _results;
+            return results;
           })();
           deferred.resolve(models);
         } else {
           resource.$get('bulk_purchases').then((function(_this) {
             return function(bulk_purchases) {
-              var i, _j, _len;
+              var i, j, len;
               models = [];
-              for (_j = 0, _len = bulk_purchases.length; _j < _len; _j++) {
-                i = bulk_purchases[_j];
+              for (j = 0, len = bulk_purchases.length; j < len; j++) {
+                i = bulk_purchases[j];
                 models.push(new BBModel.BulkPurchase(i));
               }
               return deferred.resolve(models);
@@ -27180,10 +27193,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('event_groups').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.EventGroup(i));
             }
             return deferred.resolve(models);
@@ -27230,10 +27243,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('categories').then((function(_this) {
           return function(items) {
-            var cat, i, models, _j, _len;
+            var cat, i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               cat = new BBModel.Category(i);
               cat.order || (cat.order = _i);
               models.push(cat);
@@ -27266,10 +27279,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('clients').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.Client(i));
             }
             return deferred.resolve(models);
@@ -27292,10 +27305,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('clients').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.Client(i));
             }
             return deferred.resolve(models);
@@ -27313,38 +27326,38 @@ function getURIparam( name ){
   angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel) {
     return {
       unwrap: function(resource) {
-        var defer, i, _j, _k, _len, _len1, _ref, _results, _results1;
+        var defer, i, j, k, len, len1, ref, results, results1;
         if (resource.questions) {
-          _ref = resource.questions;
-          _results = [];
-          for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-            i = _ref[_j];
-            _results.push(new BBModel.Question(i));
+          ref = resource.questions;
+          results = [];
+          for (j = 0, len = ref.length; j < len; j++) {
+            i = ref[j];
+            results.push(new BBModel.Question(i));
           }
-          return _results;
+          return results;
         } else if (resource.$has('questions')) {
           defer = $q.defer();
           resource.$get('questions').then(function(items) {
             return defer.resolve((function() {
-              var _k, _len1, _results1;
-              _results1 = [];
-              for (_k = 0, _len1 = items.length; _k < _len1; _k++) {
-                i = items[_k];
-                _results1.push(new BBModel.Question(i));
+              var k, len1, results1;
+              results1 = [];
+              for (k = 0, len1 = items.length; k < len1; k++) {
+                i = items[k];
+                results1.push(new BBModel.Question(i));
               }
-              return _results1;
+              return results1;
             })());
           }, function(err) {
             return defer.reject(err);
           });
           return defer.promise;
         } else {
-          _results1 = [];
-          for (_k = 0, _len1 = resource.length; _k < _len1; _k++) {
-            i = resource[_k];
-            _results1.push(new BBModel.Question(i));
+          results1 = [];
+          for (k = 0, len1 = resource.length; k < len1; k++) {
+            i = resource[k];
+            results1.push(new BBModel.Question(i));
           }
-          return _results1;
+          return results1;
         }
       }
     };
@@ -27362,19 +27375,19 @@ function getURIparam( name ){
     return {
       promise: false,
       unwrap: function(items) {
-        var answers, i, models, _j, _len;
+        var answers, i, j, len, models;
         models = [];
-        for (_j = 0, _len = items.length; _j < _len; _j++) {
-          i = items[_j];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
           models.push(new BBModel.Answer(i));
         }
         answers = {
           answers: models,
           getAnswer: function(question) {
-            var a, _k, _len1, _ref;
-            _ref = this.answers;
-            for (_k = 0, _len1 = _ref.length; _k < _len1; _k++) {
-              a = _ref[_k];
+            var a, k, len1, ref;
+            ref = this.answers;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              a = ref[k];
               if (a.question_text === question || a.question_id === question) {
                 return a.value;
               }
@@ -27389,13 +27402,13 @@ function getURIparam( name ){
   angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel) {
     return {
       unwrap: function(items) {
-        var i, _j, _len, _results;
-        _results = [];
-        for (_j = 0, _len = items.length; _j < _len; _j++) {
-          i = items[_j];
-          _results.push(new BBModel.Admin.User(i));
+        var i, j, len, results;
+        results = [];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
+          results.push(new BBModel.Admin.User(i));
         }
-        return _results;
+        return results;
       }
     };
   });
@@ -27424,10 +27437,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('company_questions').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.BusinessQuestion(i));
             }
             return deferred.resolve(models);
@@ -27458,10 +27471,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('images').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.Image(i));
             }
             return deferred.resolve(models);
@@ -27484,10 +27497,10 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('bookings').then((function(_this) {
           return function(items) {
-            var i, models, _j, _len;
+            var i, j, len, models;
             models = [];
-            for (_j = 0, _len = items.length; _j < _len; _j++) {
-              i = items[_j];
+            for (j = 0, len = items.length; j < len; j++) {
+              i = items[j];
               models.push(new BBModel.Member.Booking(i));
             }
             return deferred.resolve(models);
@@ -27526,9 +27539,9 @@ function getURIparam( name ){
         deferred = $q.defer();
         resource.$get('products').then((function(_this) {
           return function(items) {
-            var cat, i, index, models, _j, _len;
+            var cat, i, index, j, len, models;
             models = [];
-            for (index = _j = 0, _len = items.length; _j < _len; index = ++_j) {
+            for (index = j = 0, len = items.length; j < len; index = ++j) {
               i = items[index];
               cat = new BBModel.Product(i);
               cat.order || (cat.order = index);
@@ -27562,22 +27575,22 @@ function getURIparam( name ){
         deferred = $q.defer();
         if (angular.isArray(resource)) {
           models = (function() {
-            var _j, _len, _results;
-            _results = [];
-            for (_j = 0, _len = resource.length; _j < _len; _j++) {
-              pre_paid_booking = resource[_j];
-              _results.push(new BBModel.PrePaidBooking(pre_paid_booking));
+            var j, len, results;
+            results = [];
+            for (j = 0, len = resource.length; j < len; j++) {
+              pre_paid_booking = resource[j];
+              results.push(new BBModel.PrePaidBooking(pre_paid_booking));
             }
-            return _results;
+            return results;
           })();
           deferred.resolve(models);
         } else {
           resource.$get('pre_paid_bookings').then((function(_this) {
             return function(items) {
-              var i, _j, _len;
+              var i, j, len;
               models = [];
-              for (_j = 0, _len = items.length; _j < _len; _j++) {
-                i = items[_j];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 models.push(new BBModel.PrePaidBooking(i));
               }
               return deferred.resolve(models);
@@ -27609,22 +27622,22 @@ function getURIparam( name ){
         deferred = $q.defer();
         if (angular.isArray(resource)) {
           models = (function() {
-            var _j, _len, _results;
-            _results = [];
-            for (_j = 0, _len = resource.length; _j < _len; _j++) {
-              external_purchase = resource[_j];
-              _results.push(new BBModel.ExternalPurchase(external_purchase));
+            var j, len, results;
+            results = [];
+            for (j = 0, len = resource.length; j < len; j++) {
+              external_purchase = resource[j];
+              results.push(new BBModel.ExternalPurchase(external_purchase));
             }
-            return _results;
+            return results;
           })();
           deferred.resolve(models);
         } else {
           resource.$get('external_purchases').then((function(_this) {
             return function(items) {
-              var i, _j, _len;
+              var i, j, len;
               models = [];
-              for (_j = 0, _len = items.length; _j < _len; _j++) {
-                i = items[_j];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 models.push(new BBModel.ExternalPurchase(i));
               }
               return deferred.resolve(models);
@@ -27656,22 +27669,22 @@ function getURIparam( name ){
         deferred = $q.defer();
         if (angular.isArray(resource)) {
           models = (function() {
-            var _j, _len, _results;
-            _results = [];
-            for (_j = 0, _len = resource.length; _j < _len; _j++) {
-              purchase_item = resource[_j];
-              _results.push(new BBModel.PurchaseItem(purchase_item));
+            var j, len, results;
+            results = [];
+            for (j = 0, len = resource.length; j < len; j++) {
+              purchase_item = resource[j];
+              results.push(new BBModel.PurchaseItem(purchase_item));
             }
-            return _results;
+            return results;
           })();
           deferred.resolve(models);
         } else {
           resource.$get('purchase_items').then((function(_this) {
             return function(items) {
-              var i, _j, _len;
+              var i, j, len;
               models = [];
-              for (_j = 0, _len = items.length; _j < _len; _j++) {
-                i = items[_j];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
                 models.push(new BBModel.PurchaseItem(i));
               }
               return deferred.resolve(models);
@@ -27973,17 +27986,17 @@ function getURIparam( name ){
           return true;
         }
       }
-    };
 
-    /***
-     * @ngdoc method
-     * @name resetForm
-     * @methodOf BB.Services:Validator
-     * @description
-     * Reset the form in according with form parameter
-     *
-     * @returns {boolean} Checks if this is reset or not
-     */
+      /***
+       * @ngdoc method
+       * @name resetForm
+       * @methodOf BB.Services:Validator
+       * @description
+       * Reset the form in according with form parameter
+       *
+       * @returns {boolean} Checks if this is reset or not
+       */
+    };
   });
 
   ({
@@ -28004,15 +28017,15 @@ function getURIparam( name ){
       * @returns {boolean} Checks if this is reset or not
      */
     resetForms: function(forms) {
-      var form, _i, _len, _results;
+      var form, i, len, results1;
       if (forms && $bbug.isArray(forms)) {
-        _results = [];
-        for (_i = 0, _len = forms.length; _i < _len; _i++) {
-          form = forms[_i];
+        results1 = [];
+        for (i = 0, len = forms.length; i < len; i++) {
+          form = forms[i];
           form.submitted = false;
-          _results.push(form.$setPristine());
+          results1.push(form.$setPristine());
         }
-        return _results;
+        return results1;
       }
     }
   });
@@ -28039,26 +28052,26 @@ function getURIparam( name ){
   * @property {boolean} isAdm,in Verify if user is admin
   * @property {string} payment_status The payment status
    */
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope) {
     var Widget;
     return Widget = (function() {
       function Widget() {
-        this.clearAddress = __bind(this.clearAddress, this);
-        this.emptyStackedItems = __bind(this.emptyStackedItems, this);
-        this.deleteStackedItemByService = __bind(this.deleteStackedItemByService, this);
-        this.removeItemFromStack = __bind(this.removeItemFromStack, this);
-        this.deleteStackedItem = __bind(this.deleteStackedItem, this);
-        this.sortStackedItems = __bind(this.sortStackedItems, this);
-        this.setStackedItems = __bind(this.setStackedItems, this);
-        this.stackItem = __bind(this.stackItem, this);
-        this.waitForRoutes = __bind(this.waitForRoutes, this);
-        this.setBasicRoute = __bind(this.setBasicRoute, this);
-        this.setRoute = __bind(this.setRoute, this);
-        this.calculatePercentageComplete = __bind(this.calculatePercentageComplete, this);
-        this.recordStep = __bind(this.recordStep, this);
-        this.recordCurrentPage = __bind(this.recordCurrentPage, this);
+        this.clearAddress = bind(this.clearAddress, this);
+        this.emptyStackedItems = bind(this.emptyStackedItems, this);
+        this.deleteStackedItemByService = bind(this.deleteStackedItemByService, this);
+        this.removeItemFromStack = bind(this.removeItemFromStack, this);
+        this.deleteStackedItem = bind(this.deleteStackedItem, this);
+        this.sortStackedItems = bind(this.sortStackedItems, this);
+        this.setStackedItems = bind(this.setStackedItems, this);
+        this.stackItem = bind(this.stackItem, this);
+        this.waitForRoutes = bind(this.waitForRoutes, this);
+        this.setBasicRoute = bind(this.setBasicRoute, this);
+        this.setRoute = bind(this.setRoute, this);
+        this.calculatePercentageComplete = bind(this.calculatePercentageComplete, this);
+        this.recordStep = bind(this.recordStep, this);
+        this.recordCurrentPage = bind(this.recordCurrentPage, this);
         this.uid = _.uniqueId('bbwidget_');
         this.page_suffix = "";
         this.steps = [];
@@ -28257,15 +28270,15 @@ function getURIparam( name ){
        */
 
       Widget.prototype.recordCurrentPage = function() {
-        var match, step, title, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+        var j, k, l, len, len1, len2, match, ref, ref1, ref2, step, title;
         if (!this.current_step) {
           this.current_step = 0;
         }
         match = false;
         if (this.allSteps) {
-          _ref = this.allSteps;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            step = _ref[_i];
+          ref = this.allSteps;
+          for (j = 0, len = ref.length; j < len; j++) {
+            step = ref[j];
             if (step.page === this.current_page) {
               this.current_step = step.number;
               match = true;
@@ -28273,9 +28286,9 @@ function getURIparam( name ){
           }
         }
         if (!match) {
-          _ref1 = this.steps;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            step = _ref1[_j];
+          ref1 = this.steps;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            step = ref1[k];
             if (step && step.page === this.current_page) {
               this.current_step = step.number;
               match = true;
@@ -28287,9 +28300,9 @@ function getURIparam( name ){
         }
         title = "";
         if (this.allSteps) {
-          _ref2 = this.allSteps;
-          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-            step = _ref2[_k];
+          ref2 = this.allSteps;
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            step = ref2[l];
             step.active = false;
             step.passed = step.number < this.current_step;
           }
@@ -28313,7 +28326,7 @@ function getURIparam( name ){
        */
 
       Widget.prototype.recordStep = function(step, title) {
-        var _i, _len, _ref;
+        var j, len, ref;
         this.steps[step - 1] = {
           url: this.updateRoute(this.current_page),
           current_item: this.current_item.getStep(),
@@ -28323,9 +28336,9 @@ function getURIparam( name ){
           stacked_length: this.stacked_items.length
         };
         BreadcrumbService.setCurrentStep(step);
-        _ref = this.steps;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          step = _ref[_i];
+        ref = this.steps;
+        for (j = 0, len = ref.length; j < len; j++) {
+          step = ref[j];
           if (step) {
             step.passed = step.number < this.current_step;
             step.active = step.number === this.current_step;
@@ -28366,13 +28379,13 @@ function getURIparam( name ){
        */
 
       Widget.prototype.setRoute = function(rdata) {
-        var i, route, step, _i, _j, _len, _len1, _ref;
+        var i, j, k, len, len1, ref, route, step;
         this.allSteps.length = 0;
         this.nextSteps = {};
         if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
           this.firstStep = rdata[0].page;
         }
-        for (i = _i = 0, _len = rdata.length; _i < _len; i = ++_i) {
+        for (i = j = 0, len = rdata.length; j < len; i = ++j) {
           step = rdata[i];
           if (step.disable_breadcrumbs) {
             this.disableGoingBackAtStep = i + 1;
@@ -28387,9 +28400,9 @@ function getURIparam( name ){
           });
           if (step.when) {
             this.routeSteps || (this.routeSteps = {});
-            _ref = step.when;
-            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-              route = _ref[_j];
+            ref = step.when;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              route = ref[k];
               this.routeSteps[route] = step.page;
             }
           }
@@ -28411,10 +28424,10 @@ function getURIparam( name ){
        */
 
       Widget.prototype.setBasicRoute = function(routes) {
-        var i, step, _i, _len;
+        var i, j, len, step;
         this.nextSteps = {};
         this.firstStep = routes[0];
-        for (i = _i = 0, _len = routes.length; _i < _len; i = ++_i) {
+        for (i = j = 0, len = routes.length; j < len; i = ++j) {
           step = routes[i];
           this.nextSteps[step] = routes[i + 1];
         }
@@ -28484,19 +28497,19 @@ function getURIparam( name ){
        */
 
       Widget.prototype.sortStackedItems = function() {
-        var arr, item, _i, _len, _ref;
+        var arr, item, j, len, ref;
         arr = [];
-        _ref = this.stacked_items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           arr = arr.concat(item.promises);
         }
         return $q.all(arr)['finally']((function(_this) {
           return function() {
             return _this.stacked_items = _this.stacked_items.sort(function(a, b) {
-              var _ref1, _ref2;
+              var ref1, ref2;
               if (a.time && b.time) {
-                return (_ref1 = a.time.time > b.time.time) != null ? _ref1 : {
+                return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
                   1: -1
                 };
               } else if (a.service.category && !b.service.category) {
@@ -28506,7 +28519,7 @@ function getURIparam( name ){
               } else if (!b.service.category && !a.service.category) {
                 return 1;
               } else {
-                return (_ref2 = a.service.category.order > b.service.category.order) != null ? _ref2 : {
+                return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
                   1: -1
                 };
               }
@@ -28566,10 +28579,10 @@ function getURIparam( name ){
        */
 
       Widget.prototype.deleteStackedItemByService = function(item) {
-        var i, _i, _len, _ref;
-        _ref = this.stacked_items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        var i, j, len, ref;
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           if (i && i.service && i.service.self === item.self && i.id) {
             BasketService.deleteItem(i, this.company, {
               bb: this
@@ -28608,11 +28621,11 @@ function getURIparam( name ){
        */
 
       Widget.prototype.pushStackToBasket = function() {
-        var i, _i, _len, _ref;
+        var i, j, len, ref;
         this.basket || (this.basket = new new BBModel.Basket(null, this));
-        _ref = this.stacked_items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
           this.basket.addItem(i);
         }
         return this.emptyStackedItems();
@@ -28630,11 +28643,11 @@ function getURIparam( name ){
        */
 
       Widget.prototype.totalStackedItemsDuration = function() {
-        var duration, item, _i, _len, _ref;
+        var duration, item, j, len, ref;
         duration = 0;
-        _ref = this.stacked_items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
           if (item.service && item.service.listed_duration) {
             duration += item.service.listed_duration;
           }
@@ -28654,14 +28667,14 @@ function getURIparam( name ){
        */
 
       Widget.prototype.clearStackedItemsDateTime = function() {
-        var item, _i, _len, _ref, _results;
-        _ref = this.stacked_items;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
-          _results.push(item.clearDateTime());
+        var item, j, len, ref, results;
+        ref = this.stacked_items;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          results.push(item.clearDateTime());
         }
-        return _results;
+        return results;
       };
 
 
@@ -28811,7 +28824,7 @@ function getURIparam( name ){
                 $scope.bb.purchase = purchase;
                 $scope.price = !($scope.purchase.price === 0);
                 $scope.purchase.getBookingsPromise().then(function(bookings) {
-                  var booking, _i, _len, _ref, _results;
+                  var booking, i, len, ref, results;
                   $scope.bookings = bookings;
                   if (bookings[0]) {
                     bookings[0].getCompanyPromise().then(function(company) {
@@ -28824,15 +28837,15 @@ function getURIparam( name ){
                   $scope.setLoaded($scope);
                   checkIfMoveBooking(bookings);
                   checkIfWaitlistBookings(bookings);
-                  _ref = $scope.bookings;
-                  _results = [];
-                  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                    booking = _ref[_i];
-                    _results.push(booking.getAnswersPromise().then(function(answers) {
+                  ref = $scope.bookings;
+                  results = [];
+                  for (i = 0, len = ref.length; i < len; i++) {
+                    booking = ref[i];
+                    results.push(booking.getAnswersPromise().then(function(answers) {
                       return booking.answers = answers;
                     }));
                   }
-                  return _results;
+                  return results;
                 }, function(err) {
                   $scope.setLoaded($scope);
                   return failMsg();
@@ -28878,15 +28891,15 @@ function getURIparam( name ){
       }
       if (id) {
         move_booking = (function() {
-          var _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = bookings.length; _i < _len; _i++) {
-            b = bookings[_i];
+          var i, len, results;
+          results = [];
+          for (i = 0, len = bookings.length; i < len; i++) {
+            b = bookings[i];
             if (b.id === id) {
-              _results.push(b);
+              results.push(b);
             }
           }
-          return _results;
+          return results;
         })();
         if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
           return $scope.move(move_booking[0]);
@@ -28896,15 +28909,15 @@ function getURIparam( name ){
     checkIfWaitlistBookings = function(bookings) {
       var booking;
       return $scope.waitlist_bookings = (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = bookings.length; _i < _len; _i++) {
-          booking = bookings[_i];
+        var i, len, results;
+        results = [];
+        for (i = 0, len = bookings.length; i < len; i++) {
+          booking = bookings[i];
           if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-            _results.push(booking);
+            results.push(booking);
           }
         }
-        return _results;
+        return results;
       })();
     };
     loginRequired = (function(_this) {
@@ -28996,7 +29009,7 @@ function getURIparam( name ){
       return $timeout((function(_this) {
         return function() {
           return $rootScope.connection_started.then(function() {
-            var booking, new_item, proms, _i, _len, _ref;
+            var booking, i, len, new_item, proms, ref;
             proms = [];
             if ($scope.bookings.length === 1) {
               $scope.bb.moving_booking = $scope.bookings[0];
@@ -29011,9 +29024,9 @@ function getURIparam( name ){
               $scope.bb.moving_purchase = $scope.purchase;
             }
             $scope.quickEmptybasket();
-            _ref = $scope.bookings;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              booking = _ref[_i];
+            ref = $scope.bookings;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
               new_item = new BBModel.BasketItem(booking, $scope.bb);
               new_item.setSrcBooking(booking);
               new_item.ready = false;
@@ -29050,16 +29063,16 @@ function getURIparam( name ){
         return $scope.purchase.getBookingsPromise().then(function(bookings) {
           $scope.bookings = bookings;
           $scope.waitlist_bookings = (function() {
-            var _i, _len, _ref, _results;
-            _ref = $scope.bookings;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              booking = _ref[_i];
+            var i, len, ref, results;
+            ref = $scope.bookings;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
               if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-                _results.push(booking);
+                results.push(booking);
               }
             }
-            return _results;
+            return results;
           })();
           if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
             $scope.make_payment = true;
@@ -29190,18 +29203,18 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("Purchase.BookingModel", function($q, $window, BBModel, BaseModel, $bbug) {
     var Purchase_Booking;
-    return Purchase_Booking = (function(_super) {
-      __extends(Purchase_Booking, _super);
+    return Purchase_Booking = (function(superClass) {
+      extend(Purchase_Booking, superClass);
 
       function Purchase_Booking(data) {
-        this.getSurveyAnswersPromise = __bind(this.getSurveyAnswersPromise, this);
-        this.getAnswersPromise = __bind(this.getAnswersPromise, this);
+        this.getSurveyAnswersPromise = bind(this.getSurveyAnswersPromise, this);
+        this.getAnswersPromise = bind(this.getAnswersPromise, this);
         Purchase_Booking.__super__.constructor.call(this, data);
         this.ready = false;
         this.datetime = moment.parseZone(this.datetime);
@@ -29265,13 +29278,13 @@ function getURIparam( name ){
               return function(answers) {
                 var a;
                 _this.answers = (function() {
-                  var _i, _len, _results;
-                  _results = [];
-                  for (_i = 0, _len = answers.length; _i < _len; _i++) {
-                    a = answers[_i];
-                    _results.push(new BBModel.Answer(a));
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = answers.length; i < len; i++) {
+                    a = answers[i];
+                    results.push(new BBModel.Answer(a));
                   }
-                  return _results;
+                  return results;
                 })();
                 return defer.resolve(_this.answers);
               };
@@ -29294,13 +29307,13 @@ function getURIparam( name ){
             return function(survey_answers) {
               var a;
               _this.survey_answers = (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = survey_answers.length; _i < _len; _i++) {
-                  a = survey_answers[_i];
-                  _results.push(new BBModel.Answer(a));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = survey_answers.length; i < len; i++) {
+                  a = survey_answers[i];
+                  results.push(new BBModel.Answer(a));
                 }
-                return _results;
+                return results;
               })();
               return defer.resolve(_this.survey_answers);
             };
@@ -29312,11 +29325,11 @@ function getURIparam( name ){
       };
 
       Purchase_Booking.prototype.answer = function(q) {
-        var a, _i, _len, _ref;
+        var a, i, len, ref;
         if (this.answers != null) {
-          _ref = this.answers;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            a = _ref[_i];
+          ref = this.answers;
+          for (i = 0, len = ref.length; i < len; i++) {
+            a = ref[i];
             if (a.name && a.name === q) {
               return a.answer;
             }
@@ -29331,7 +29344,7 @@ function getURIparam( name ){
       };
 
       Purchase_Booking.prototype.getPostData = function() {
-        var data, formatted_survey_answers, q, _i, _len, _ref;
+        var data, formatted_survey_answers, i, len, q, ref;
         data = {};
         data.attended = this.attended;
         data.client_id = this.client_id;
@@ -29398,9 +29411,9 @@ function getURIparam( name ){
         formatted_survey_answers = [];
         if (this.survey_questions) {
           data.survey_questions = this.survey_questions;
-          _ref = this.survey_questions;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            q = _ref[_i];
+          ref = this.survey_questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
             formatted_survey_answers.push({
               value: q.answer,
               outcome: q.outcome,
@@ -29472,17 +29485,17 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("Purchase.CourseBookingModel", function($q, BBModel, BaseModel) {
     var Purchase_Course_Booking;
-    return Purchase_Course_Booking = (function(_super) {
-      __extends(Purchase_Course_Booking, _super);
+    return Purchase_Course_Booking = (function(superClass) {
+      extend(Purchase_Course_Booking, superClass);
 
       function Purchase_Course_Booking(data) {
-        this.getBookings = __bind(this.getBookings, this);
+        this.getBookings = bind(this.getBookings, this);
         Purchase_Course_Booking.__super__.constructor.call(this, data);
       }
 
@@ -29497,13 +29510,13 @@ function getURIparam( name ){
             return function(bookings) {
               var b;
               _this.bookings = (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = bookings.length; _i < _len; _i++) {
-                  b = bookings[_i];
-                  _results.push(new BBModel.Purchase.Booking(b));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  b = bookings[i];
+                  results.push(new BBModel.Purchase.Booking(b));
                 }
-                return _results;
+                return results;
               })();
               _this.bookings.sort(function(a, b) {
                 return a.datetime.unix() - b.datetime.unix();
@@ -29527,26 +29540,26 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __hasProp = {}.hasOwnProperty;
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   angular.module('BB.Models').factory("Purchase.TotalModel", function($q, $window, BBModel, BaseModel, $sce) {
     var Purchase_Total;
-    return Purchase_Total = (function(_super) {
-      __extends(Purchase_Total, _super);
+    return Purchase_Total = (function(superClass) {
+      extend(Purchase_Total, superClass);
 
       function Purchase_Total(data) {
-        this.getConfirmMessages = __bind(this.getConfirmMessages, this);
-        this.getMember = __bind(this.getMember, this);
-        this.getClient = __bind(this.getClient, this);
-        this.getMessages = __bind(this.getMessages, this);
-        this.getDeals = __bind(this.getDeals, this);
-        this.getProducts = __bind(this.getProducts, this);
-        this.getPackages = __bind(this.getPackages, this);
-        this.getCourseBookingsPromise = __bind(this.getCourseBookingsPromise, this);
-        this.getBookingsPromise = __bind(this.getBookingsPromise, this);
-        this.getItems = __bind(this.getItems, this);
+        this.getConfirmMessages = bind(this.getConfirmMessages, this);
+        this.getMember = bind(this.getMember, this);
+        this.getClient = bind(this.getClient, this);
+        this.getMessages = bind(this.getMessages, this);
+        this.getDeals = bind(this.getDeals, this);
+        this.getProducts = bind(this.getProducts, this);
+        this.getPackages = bind(this.getPackages, this);
+        this.getCourseBookingsPromise = bind(this.getCourseBookingsPromise, this);
+        this.getBookingsPromise = bind(this.getBookingsPromise, this);
+        this.getItems = bind(this.getItems, this);
         Purchase_Total.__super__.constructor.call(this, data);
         this.getItems().then((function(_this) {
           return function(items) {
@@ -29606,13 +29619,13 @@ function getURIparam( name ){
             return function(bookings) {
               var b;
               _this.bookings = (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = bookings.length; _i < _len; _i++) {
-                  b = bookings[_i];
-                  _results.push(new BBModel.Purchase.Booking(b));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  b = bookings[i];
+                  results.push(new BBModel.Purchase.Booking(b));
                 }
-                return _results;
+                return results;
               })();
               _this.bookings.sort(function(a, b) {
                 return a.datetime.unix() - b.datetime.unix();
@@ -29637,13 +29650,13 @@ function getURIparam( name ){
             return function(bookings) {
               var b;
               _this.course_bookings = (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = bookings.length; _i < _len; _i++) {
-                  b = bookings[_i];
-                  _results.push(new BBModel.Purchase.CourseBooking(b));
+                var i, len, results;
+                results = [];
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  b = bookings[i];
+                  results.push(new BBModel.Purchase.CourseBooking(b));
                 }
-                return _results;
+                return results;
               })();
               return $q.all(_.map(_this.course_bookings, function(b) {
                 return b.getBookings();
@@ -29719,29 +29732,29 @@ function getURIparam( name ){
         var bt, defer;
         defer = $q.defer();
         booking_texts = (function() {
-          var _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = booking_texts.length; _i < _len; _i++) {
-            bt = booking_texts[_i];
+          var i, len, results;
+          results = [];
+          for (i = 0, len = booking_texts.length; i < len; i++) {
+            bt = booking_texts[i];
             if (bt.message_type === msg_type) {
-              _results.push(bt);
+              results.push(bt);
             }
           }
-          return _results;
+          return results;
         })();
         if (booking_texts.length === 0) {
           defer.resolve([]);
         } else {
           this.getItems().then(function(items) {
-            var booking_text, item, msgs, type, _i, _j, _k, _len, _len1, _len2, _ref;
+            var booking_text, i, item, j, k, len, len1, len2, msgs, ref, type;
             msgs = [];
-            for (_i = 0, _len = booking_texts.length; _i < _len; _i++) {
-              booking_text = booking_texts[_i];
-              for (_j = 0, _len1 = items.length; _j < _len1; _j++) {
-                item = items[_j];
-                _ref = ['company', 'person', 'resource', 'service'];
-                for (_k = 0, _len2 = _ref.length; _k < _len2; _k++) {
-                  type = _ref[_k];
+            for (i = 0, len = booking_texts.length; i < len; i++) {
+              booking_text = booking_texts[i];
+              for (j = 0, len1 = items.length; j < len1; j++) {
+                item = items[j];
+                ref = ['company', 'person', 'resource', 'service'];
+                for (k = 0, len2 = ref.length; k < len2; k++) {
+                  type = ref[k];
                   if (item.$has(type) && item.$href(type) === booking_text.$href('item')) {
                     if (msgs.indexOf(booking_text.message) === -1) {
                       msgs.push(booking_text.message);
@@ -29819,11 +29832,11 @@ function getURIparam( name ){
       };
 
       Purchase_Total.prototype.totalDuration = function() {
-        var duration, item, _i, _len, _ref;
+        var duration, i, item, len, ref;
         duration = 0;
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (i = 0, len = ref.length; i < len; i++) {
+          item = ref[i];
           if (item.duration) {
             duration += item.duration;
           }
@@ -29832,11 +29845,11 @@ function getURIparam( name ){
       };
 
       Purchase_Total.prototype.containsWaitlistItems = function() {
-        var item, waitlist, _i, _len, _ref;
+        var i, item, len, ref, waitlist;
         waitlist = [];
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
+        ref = this.items;
+        for (i = 0, len = ref.length; i < len; i++) {
+          item = ref[i];
           if (item.on_waitlist === true) {
             waitlist.push(item);
           }
@@ -29924,7 +29937,7 @@ function getURIparam( name ){
         return defer.promise;
       },
       update: function(params) {
-        var bdata, booking, data, defer, _i, _len, _ref;
+        var bdata, booking, data, defer, i, len, ref;
         defer = $q.defer();
         if (!params.purchase) {
           defer.reject("No purchase present");
@@ -29933,9 +29946,9 @@ function getURIparam( name ){
         data = {};
         if (params.bookings) {
           bdata = [];
-          _ref = params.bookings;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            booking = _ref[_i];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
             bdata.push(booking.getPostData());
           }
           data.bookings = bdata;
