@@ -10209,6 +10209,172 @@ function getURIparam( name ){
 
   /***
   * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of payments for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+    var error, getHost, linker, sendLoadEvent;
+    error = function(scope, message) {
+      return scope.error(message);
+    };
+    getHost = function(url) {
+      var a;
+      a = document.createElement('a');
+      a.href = url;
+      return a['protocol'] + '//' + a['host'];
+    };
+    sendLoadEvent = function(element, origin, scope) {
+      var custom_stylesheet, payload, referrer;
+      referrer = $location.protocol() + "://" + $location.host();
+      if ($location.port()) {
+        referrer += ":" + $location.port();
+      }
+      if (scope.payment_options.custom_stylesheet) {
+        custom_stylesheet = scope.payment_options.custom_stylesheet;
+      }
+      payload = JSON.stringify({
+        'type': 'load',
+        'message': referrer,
+        'custom_partial_url': scope.bb.custom_partial_url,
+        'custom_stylesheet': custom_stylesheet,
+        'scroll_offset': SettingsService.getScrollOffset()
+      });
+      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+    };
+    linker = function(scope, element, attributes) {
+      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+      element.find('iframe').bind('load', (function(_this) {
+        return function(event) {
+          var origin, url;
+          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+            url = scope.bb.total.$href('new_payment');
+          }
+          origin = getHost(url);
+          sendLoadEvent(element, origin, scope);
+          return scope.$apply(function() {
+            return scope.callSetLoaded();
+          });
+        };
+      })(this));
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          var data;
+          if (angular.isObject(event.data)) {
+            data = event.data;
+          } else if (!event.data.match(/iFrameSizer/)) {
+            data = JSON.parse(event.data);
+          }
+          return scope.$apply(function() {
+            if (data) {
+              switch (data.type) {
+                case "submitting":
+                  return scope.callNotLoaded();
+                case "error":
+                  scope.$emit("payment:failed");
+                  scope.callNotLoaded();
+                  AlertService.raise('PAYMENT_FAILED');
+                  return document.getElementsByTagName("iframe")[0].src += '';
+                case "payment_complete":
+                  scope.callSetLoaded();
+                  return scope.paymentDone();
+              }
+            }
+          });
+        };
+      })(this), false);
+    };
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: linker
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if ($scope.total) {
+          $scope.bb.total = $scope.total;
+        }
+        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+        }
+      };
+    })(this));
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call not loaded
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call set loaded
+     */
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return $scope.setLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Payment done
+     */
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
   * @name BB.Directives:bbPayForm
   * @restrict AE
   * @scope true
@@ -10433,172 +10599,6 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of payments for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
-    var error, getHost, linker, sendLoadEvent;
-    error = function(scope, message) {
-      return scope.error(message);
-    };
-    getHost = function(url) {
-      var a;
-      a = document.createElement('a');
-      a.href = url;
-      return a['protocol'] + '//' + a['host'];
-    };
-    sendLoadEvent = function(element, origin, scope) {
-      var custom_stylesheet, payload, referrer;
-      referrer = $location.protocol() + "://" + $location.host();
-      if ($location.port()) {
-        referrer += ":" + $location.port();
-      }
-      if (scope.payment_options.custom_stylesheet) {
-        custom_stylesheet = scope.payment_options.custom_stylesheet;
-      }
-      payload = JSON.stringify({
-        'type': 'load',
-        'message': referrer,
-        'custom_partial_url': scope.bb.custom_partial_url,
-        'custom_stylesheet': custom_stylesheet,
-        'scroll_offset': SettingsService.getScrollOffset()
-      });
-      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-    };
-    linker = function(scope, element, attributes) {
-      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-      element.find('iframe').bind('load', (function(_this) {
-        return function(event) {
-          var origin, url;
-          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-            url = scope.bb.total.$href('new_payment');
-          }
-          origin = getHost(url);
-          sendLoadEvent(element, origin, scope);
-          return scope.$apply(function() {
-            return scope.callSetLoaded();
-          });
-        };
-      })(this));
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          var data;
-          if (angular.isObject(event.data)) {
-            data = event.data;
-          } else if (!event.data.match(/iFrameSizer/)) {
-            data = JSON.parse(event.data);
-          }
-          return scope.$apply(function() {
-            if (data) {
-              switch (data.type) {
-                case "submitting":
-                  return scope.callNotLoaded();
-                case "error":
-                  scope.$emit("payment:failed");
-                  scope.callNotLoaded();
-                  AlertService.raise('PAYMENT_FAILED');
-                  return document.getElementsByTagName("iframe")[0].src += '';
-                case "payment_complete":
-                  scope.callSetLoaded();
-                  return scope.paymentDone();
-              }
-            }
-          });
-        };
-      })(this), false);
-    };
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: linker
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if ($scope.total) {
-          $scope.bb.total = $scope.total;
-        }
-        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-        }
-      };
-    })(this));
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call not loaded
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call set loaded
-     */
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return $scope.setLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name paymentDone
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Payment done
-     */
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
   });
 
 }).call(this);
@@ -17079,7 +17079,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'EventCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -20873,6 +20873,40 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BBCollectionModel", function($q, BBModel, BaseModel) {
+    var BBCollection;
+    return BBCollection = (function(superClass) {
+      extend(BBCollection, superClass);
+
+      function BBCollection() {
+        this.getNextPage = bind(this.getNextPage, this);
+        return BBCollection.__super__.constructor.apply(this, arguments);
+      }
+
+      BBCollection.prototype.getNextPage = function(params) {
+        var deferred;
+        deferred = $q.defer();
+        this.$get('next', params).then(function(collection) {
+          return deferred.resolve(new BBModel.BBCollection(collection));
+        }, function() {
+          return deferred.reject();
+        });
+        return deferred.promise;
+      };
+
+      return BBCollection;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
 
   /***
   * @ngdoc service
@@ -21765,27 +21799,6 @@ function getURIparam( name ){
       };
 
       return EventChain;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventCollectionModel", function($q, BBModel, BaseModel) {
-    var EventCollection;
-    return EventCollection = (function(superClass) {
-      extend(EventCollection, superClass);
-
-      function EventCollection() {
-        return EventCollection.__super__.constructor.apply(this, arguments);
-      }
-
-      return EventCollection;
 
     })(BaseModel);
   });
@@ -24978,7 +24991,7 @@ function getURIparam( name ){
           company.$get('events', params).then((function(_this) {
             return function(resource) {
               var collection;
-              collection = new BBModel.EventCollection(resource);
+              collection = new BBModel.BBCollection(resource);
               return deferred.resolve(collection);
             };
           })(this), (function(_this) {
@@ -25018,6 +25031,26 @@ function getURIparam( name ){
                 })();
                 return deferred.resolve(event_chains);
               });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      queryEventChainCollection: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_chains')) {
+          deferred.resolve([]);
+        } else {
+          company.$get('event_chains', params).then((function(_this) {
+            return function(resource) {
+              var collection;
+              collection = new BBModel.BBCollection(resource);
+              return deferred.resolve(collection);
             };
           })(this), (function(_this) {
             return function(err) {
