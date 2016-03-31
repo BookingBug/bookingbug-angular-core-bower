@@ -24892,11 +24892,11 @@ function getURIparam( name ){
         persist: true,
         msg: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists."
       }, {
-        key: 'FB-LOGIN-FAILED',
+        key: 'FB_LOGIN_FAILED',
         type: 'warning',
         title: '',
         persist: true,
-        msg: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first."
+        msg: "Sorry, we couldn't find a login linked with your Facebook account. You will need to sign up using Facebook first."
       }
     ];
     return {
