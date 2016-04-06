@@ -34,7 +34,7 @@
   "STORE_RESULT_TITLE":"{results, plural, =0{No results} one{1 result} other{# results}} for stores near {address}",
   "STORE_PHONE":"Phone",
   "PICK_A_SERVICE":"pick a service",
-  "PICK_AN_ADVISER":"pick an adviser",
+  "PICK_STAFF":"Pick a staff member",
   "PICK_A_RESOURCE":"pick a resource",
   "AVAIL_TITLE":"Select a date and time for your {{ current_item }} appointment.",
   "AVAIL_DAY_PREVIOUS":"Previous Day",
@@ -76,6 +76,7 @@
   "ITEM_WHEN":"When",
   "ITEM_WHERE":"Where",
   "ITEM_FROM":"From",
+  "ITEM_TO": "To",
   "ITEM_DESCRIPTION":"Description",
   "ITEM_CONFIRMATION":"Confirmation",
   "EVENT_DETAILS_TITLE":" Event details",
@@ -90,7 +91,6 @@
   "EVENT_TICKETS":"Tickets",
   "EVENT_SPACE_WORD":"space",
   "EVENT_LEFT_WORD":"left",
-  "EVENT_SPACES_REMAINING":"remaining",
   "EVENT_JOIN_WAITLIST":"Join Waitlist",
   "EVENT_PAYMENT":"Please complete payment to confirm your booking",
   "WAITLIST_BOOKING_TITLE":"Your Waitlist booking",
@@ -157,7 +157,6 @@
   "CLIENT_DETAILS_INSTRUCTION":"Search for a customer or create a new one",
   "CLIENT_DETAILS_SEARCH":"Search for a customer",
   "CLIENT_DETAILS_SEARCH_BY_NAME_OR_EMAIL":"Search by Name or Email",
-  "CLIENT_DETAILS_SEARCH_ERROR":"Sorry, your search must be more than 3 characters long",
   "CLIENT_DETAILS_ENTER":"Enter customer details",
   "CLIENT_DETAILS_FIRST_NAME":"Please enter the client's first name",
   "CLIENT_DETAILS_LAST_NAME":"Please enter the client's last name",
@@ -233,7 +232,8 @@
     "LOGIN_FAILED": "Sorry, your email or password was not recognised. Please try again or reset your password.",
     "PASSWORD_INVALID": "Sorry, your chosen password is invalid",
     "PASSWORD_RESET_REQ_SUCCESS": "We have sent you an email with instructions on how to reset your password.",
-    "PASSWORD_RESET_REQ_FAILED": "Sorry, we didn't find an account registered with that email."
+    "PASSWORD_RESET_REQ_FAILED": "Sorry, we didn't find an account registered with that email.",
+    "FB-LOGIN-FAILED": "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first"
   },
   "THOUSANDS_SEPARATOR": ",",
   "DECIMAL_SEPARATOR": ".",
@@ -305,14 +305,41 @@
   "PREVIOUS_5_WEEKS": "Previous 5 Weeks",
   "NEXT_5_WEEKS": "Next 5 Weeks",
   "KEY": "Key",
-  "APPOINTMENT_TYPE": "Select appointment type"
+  "APPOINTMENT_TYPE": "Select appointment type",
+  "SPACES_LEFT": "Only {N, plural, one{one space}, others{# spaces}} left",
+  "JOIN_WAITLIST": "Join waitlist",
+  "BASKET_STATUS": "{N, plural, =0 {empty}, one {One item in your basket}, others {#items in your basket}}",
+  "SPEND_AT_LEAST": "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+  "SELECT_GIFT_CERTIFICATE": "You need to select at least one Gift Certificate to continue",
+  "SELECT_DURATION": "You need to select a duration",
+  "SELECT_DATE": "You need to select a date",
+  "TIME_SLOT_NOT_AVAILABLE": "Sorry, your requested time slot is not available. Please choose a different time.",
+  "SELECT_TIME_SLOT": "Please select a time slot",
+  "MAKE_BOOKING": "Make a booking",
+  "BLOCK_TIME": "Block time",
+  "FOR_SERVICE": "For"
 };
 
 moment.locale('en', {
-  longDateFormat : {
+  longDateFormat: {
     LT : "h:mma",
     LL: "Do MMMM YYYY",
-    LL: "h:mma Do MMM YYYY",
-    LLLL : "h:mma dddd Do MMMM YYYY"
-  }
+    LLL: "Do MMM YYYY h:mma",
+    LLLL : "dddd Do MMMM YYYY h:mma"
+  },
+  relativeTime: {
+    future: "in %s",
+    past:   "%s ago",
+    s:  "seconds",
+    m:  "one minute",
+    mm: "%d minutes",
+    h:  "one hour",
+    hh: "%d hours",
+    d:  "one day",
+    dd: "%d days",
+    M:  "one month",
+    MM: "%d months",
+    y:  "one year",
+    yy: "%d years"
+  }  
 });
