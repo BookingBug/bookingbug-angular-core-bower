@@ -10,8 +10,8 @@
   });
 
   app.value('AirbrakeConfig', {
-    projectId: '34693',
-    projectKey: 'b4174c79b8b7dfb0111e45aa35c95b71',
+    projectId: '122836',
+    projectKey: 'e6d6710b2cf00be965e8452d6a384d37',
     environment: ''
   });
 
@@ -1488,11 +1488,11 @@ angular
 
     function callService(method, href, options, data){
       if(!options) options = {};
-      headers = {
-        'Authorization': options.authorization
-        , 'Content-Type': 'application/json'
-        , 'Accept': 'application/hal+json,application/json'
-      }
+      var headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/hal+json,application/json'
+      };
+      if (options.authorization) headers.Authorization = options.authorization;
       if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
       if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
       if (options.auth_token) {
@@ -14137,58 +14137,6 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbTimepicker', [
-    function() {
-      return {
-        restrict: 'A',
-        templateUrl: 'bb-timepicker.html',
-        scope: {
-          datetime: '=',
-          showMeridian: '=',
-          minuteStep: '=?'
-        },
-        controller: [
-          '$scope', '$filter', '$timeout', function($scope, $filter, $timeout) {
-            var clearTimezone;
-            if (!$scope.minuteStep || typeof $scope.minuteStep === 'undefined') {
-              $scope.minuteStep = 10;
-            }
-            $scope.$watch('datetime', function(newValue, oldValue) {
-              if (newValue.toString() !== oldValue.toString() && (newValue != null)) {
-                clearTimezone(newValue);
-              }
-            });
-            $scope.$watch('datetimeWithNoTz', function(newValue, oldValue) {
-              var assembledDate;
-              if (newValue !== oldValue && (newValue != null) && moment.utc(newValue).isValid()) {
-                assembledDate = moment();
-                assembledDate.set({
-                  'year': moment.utc(newValue).get('year'),
-                  'month': moment.utc(newValue).get('month'),
-                  'day': moment.utc(newValue).get('day'),
-                  'hour': moment.utc(newValue).get('hour'),
-                  'minute': moment.utc(newValue).get('minute'),
-                  'second': 0
-                });
-                $scope.datetime = assembledDate.format();
-              }
-            });
-            clearTimezone = function(date) {
-              $scope.datetimeWithNoTz = $filter('clearTimezone')(moment(date).format());
-            };
-            $timeout((function() {
-              clearTimezone($scope.datetime);
-            }), 0);
-          }
-        ],
-        link: function(scope, element, attrs) {}
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
     return {
@@ -14482,7 +14430,7 @@ function getURIparam( name ){
               return scope.decideNextPage();
             }
           }, function(err) {
-            if (err.data.error === "FACEBOOK-LOGIN-UNAUTHORIZED") {
+            if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
               return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
             } else {
               return AlertService.raise('LOGIN_FAILED');
