@@ -313,7 +313,13 @@
   "SELECT_TIME_SLOT": "Choisir un créneau horaire.",
   "MAKE_BOOKING": "Réserver",
   "BLOCK_TIME": "Bloquer créneau horaire",
-  "FOR_SERVICE": "Pour"
+  "FOR_SERVICE": "Pour",
+  "HIDE_STORES": "Masquer les magasins sans disponibilité",
+  "SERVICE_UNAVAILABLE": "Désolé mais {{name}} n'est pas disponible dans ce magasin",
+  "REMEMBER_ME": "Rester connecter",
+  "LOGIN": "Connexion",
+  "EMAIL": "Email",
+  "PLEASE_ENTER_PASSWORD": "Merci d'entrer le mot de passe"
 };
 
 (function (global, factory) {

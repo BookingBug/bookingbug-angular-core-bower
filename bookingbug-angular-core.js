@@ -2,7 +2,7 @@
   'use strict';
   var app;
 
-  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngLocalData', 'ngAnimate', 'angular-data.DSCacheFactory', 'angularFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'slickCarousel']);
+  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'angularLoad', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngLocalData', 'ngAnimate', 'angular-data.DSCacheFactory', 'angularFileUpload', 'schemaForm', 'angular.filter', 'ui-rangeSlider', 'pascalprecht.translate', 'ngCookies', 'vcRecaptcha', 'slickCarousel']);
 
   app.value('AppConfig', {
     appId: 'f6b16c23',
@@ -24,7 +24,7 @@
 
   app.constant('UriTemplate', window.UriTemplate);
 
-  app.config(function($locationProvider, $httpProvider, $provide, ie8HttpBackendProvider) {
+  app.config(function($locationProvider, $httpProvider, $translateProvider, $provide, ie8HttpBackendProvider) {
     var int, lowercase, msie, regexp, result, webkit;
     $httpProvider.defaults.headers.common = {
       'App-Id': 'f6b16c23',
@@ -40,6 +40,7 @@
         return string;
       }
     };
+    $translateProvider.useLocalStorage().useLoader('I18nService').addInterpolation('$translateMessageFormatInterpolation');
     msie = int((/msie (\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
     if (isNaN(msie)) {
       msie = int((/trident\/.*; rv:(\d+)/.exec(lowercase(navigator.userAgent)) || [])[1]);
@@ -97,23 +98,9 @@
       if (options.reload) {
         return window.location.reload();
       }
-    }
+    },
+    translations: {}
   };
-
-  moment.locale('en', {
-    longDateFormat: {
-      LT: "h:mm A",
-      LTS: "h:mm:ss A",
-      L: "MM/DD/YYYY",
-      l: "M/D/YYYY",
-      LL: "MMMM Do YYYY",
-      ll: "MMM D YYYY",
-      LLL: "MMMM Do YYYY LT",
-      lll: "MMM D YYYY LT",
-      LLLL: "dddd Do MMMM[,] h.mma",
-      llll: "ddd, MMM D YYYY LT"
-    }
-  });
 
   if (!String.prototype.includes) {
     String.prototype.includes = function(search, start) {
@@ -2971,7 +2958,7 @@ function getURIparam( name ){
     })(this);
   });
 
-  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll, $localStorage) {
+  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, I18nService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll, $localStorage, $translate) {
     var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
@@ -3003,7 +2990,6 @@ function getURIparam( name ){
     $rootScope.connection_started = con_started.promise;
     widget_started = $q.defer();
     $rootScope.widget_started = widget_started.promise;
-    moment.locale([LocaleService, "en"]);
     $rootScope.Route = {
       Company: 0,
       Category: 1,
@@ -3151,6 +3137,9 @@ function getURIparam( name ){
         } else if ($scope.bb.original_item_defaults) {
           $scope.bb.item_defaults = angular.copy($scope.bb.original_item_defaults);
         }
+        if ($scope.bb.selected_service && $scope.bb.selected_service.company_id === company_id) {
+          $scope.bb.item_defaults.service = $scope.bb.selected_service.id;
+        }
         if (prms.route_format) {
           $scope.bb.setRouteFormat(prms.route_format);
           if ($scope.bb_route_init) {
@@ -3186,8 +3175,9 @@ function getURIparam( name ){
         if (prms.template) {
           $scope.bb.template = prms.template;
         }
+        I18nService.init(prms.i18n, prms.supported_locales);
         if (prms.i18n) {
-          SettingsService.enableInternationalizaton();
+          $scope.i18n = true;
         }
         if (prms.login_required) {
           $scope.bb.login_required = true;
@@ -3574,9 +3564,6 @@ function getURIparam( name ){
         $scope.jumped = false;
         if ($scope.isLoadingPage()) {
           return;
-        }
-        if ($window._gaq) {
-          $window._gaq.push(['_trackPageview', route]);
         }
         $scope.setLoadingPage(true);
         if ($scope.bb.current_page === route) {
@@ -4073,7 +4060,7 @@ function getURIparam( name ){
     $scope.getCurrentStepTitle = function() {
       var steps;
       steps = $scope.bb.steps;
-      if (!_.compact(steps).length) {
+      if (!_.compact(steps).length || steps.length === 1 && steps[0].number !== $scope.bb.current_step) {
         steps = $scope.bb.allSteps;
       }
       if ($scope.bb.current_step) {
@@ -4081,7 +4068,7 @@ function getURIparam( name ){
       }
     };
     $scope.checkStepTitle = function(title) {
-      if (!$scope.bb.steps[$scope.bb.current_step - 1].title) {
+      if ($scope.bb.steps[$scope.bb.current_step - 1] && !$scope.bb.steps[$scope.bb.current_step - 1].title) {
         return $scope.setStepTitle(title);
       }
     };
@@ -4223,8 +4210,6 @@ function getURIparam( name ){
         }
       };
     })(this);
-    $scope.today = moment().toDate();
-    $scope.tomorrow = moment().add(1, 'days').toDate();
     $scope.parseDate = (function(_this) {
       return function(d) {
         return moment(d);
@@ -5602,29 +5587,7 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbMonthAvailability
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of month availability for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {string} message The message text
-  * @property {string} setLoaded  Set the day list loaded
-  * @property {object} setLoadedAndShowError Set loaded and show error
-  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
-   */
-  angular.module('BB.Directives').directive('bbMonthAvailability', function() {
+  angular.module('BB.Directives').directive('bbDayList', function() {
     return {
       restrict: 'A',
       replace: true,
@@ -5633,214 +5596,58 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DayList', function($scope, $rootScope, $q, DayService, AlertService) {
+  angular.module('BB.Controllers').controller('DayList', function($scope, $rootScope, $q, DayService) {
+    var setCurrentDate;
     $scope.controller = "public.controllers.DayList";
-    $scope.notLoaded($scope);
-    $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    $scope.day_data = {};
-    if (!$scope.type) {
-      $scope.type = "month";
-    }
-    if (!$scope.data_source) {
-      $scope.data_source = $scope.bb.current_item;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if (!$scope.current_date && $scope.last_selected_date) {
-          $scope.current_date = $scope.last_selected_date.startOf($scope.type);
-        } else if (!$scope.current_date) {
-          $scope.current_date = moment().startOf($scope.type);
-        }
-        return $scope.loadData();
-      };
-    })(this), function(err) {
+    $rootScope.connection_started.then(function() {
+      if (!$scope.current_date && $scope.last_selected_date) {
+        $scope.selected_date = $scope.last_selected_date.clone();
+        setCurrentDate($scope.last_selected_date.clone().startOf('week'));
+      } else if (!$scope.current_date) {
+        setCurrentDate(moment().startOf('week'));
+      }
+      return $scope.loadData();
+    }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
-    $scope.$on("currentItemUpdate", function(event) {
-      return $scope.loadData();
-    });
-
-    /***
-    * @ngdoc method
-    * @name setCalType
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set cal type in acording of type
-    *
-    * @param {array} type The type of day list
-     */
-    $scope.setCalType = (function(_this) {
-      return function(type) {
-        return $scope.type = type;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setDataSource
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set data source in according of source
-    *
-    * @param {string} source The source of day list
-     */
-    $scope.setDataSource = (function(_this) {
-      return function(source) {
-        return $scope.data_source = source;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_date
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Format date and get current date
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_date = (function(_this) {
-      return function(fmt) {
-        if ($scope.current_date) {
-          return $scope.current_date.format(fmt);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_start_date
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Format start date in according of fmt parameter
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_start_date = (function(_this) {
-      return function(fmt) {
-        return $scope.format_date(fmt);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_end_date
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Format end date in according of fmt parameter
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_end_date = (function(_this) {
-      return function(fmt) {
-        if ($scope.end_date) {
-          return $scope.end_date.format(fmt);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name selectDay
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Select day
-    *
-    * @param {date} day The day
-    * @param {string=} route A specific route to load
-    * @param {string} force The force
-     */
     $scope.selectDay = (function(_this) {
-      return function(day, route, force) {
-        if (day.spaces === 0 && !force) {
-          return false;
+      return function(day) {
+        if (!day.spaces || (day.spaces && day.spaces === 0)) {
+          return;
         }
         $scope.setLastSelectedDate(day.date);
+        $scope.selected_date = day.date;
         $scope.bb.current_item.setDate(day);
-        if ($scope.$parent.$has_page_control) {
-
-        } else {
-          return $scope.decideNextPage(route);
-        }
+        return $scope.$broadcast('dateChanged', day.date);
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name setMonth
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set month
-    *
-    * @param {date} month The month
-    * @param {date} year The year
-     */
-    $scope.setMonth = (function(_this) {
-      return function(month, year) {
-        $scope.current_date = moment().startOf('month').year(year).month(month - 1);
-        $scope.current_date.year();
-        return $scope.type = "month";
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setWeek
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set month
-    *
-    * @param {date} week The week
-    * @param {date} year The year
-     */
-    $scope.setWeek = (function(_this) {
-      return function(week, year) {
-        $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
-        $scope.current_date.year();
-        return $scope.type = "week";
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name add
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Add the current date in according of type and amount parameters
-    *
-    * @param {string} type The type
-    * @param {string} amount The amount
-     */
+    setCurrentDate = function(date) {
+      $scope.current_date = date;
+      return $scope.current_date_js = $scope.current_date.toDate();
+    };
     $scope.add = (function(_this) {
       return function(type, amount) {
-        $scope.current_date.add(amount, type);
+        setCurrentDate($scope.current_date.add(amount, type));
         return $scope.loadData();
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name subtract
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Substract the current date in according of type and amount
-    *
-    * @param {string} type The type
-    * @param {string} amount The amount
-     */
     $scope.subtract = (function(_this) {
       return function(type, amount) {
         return $scope.add(type, -amount);
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name isPast
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
-     */
+    $scope.currentDateChanged = function() {
+      var date;
+      date = moment($scope.current_date_js).startOf('week');
+      setCurrentDate(date);
+      return $scope.loadData();
+    };
+    $scope.isDateDisabled = function(date, mode) {
+      var result;
+      date = moment(date);
+      result = mode === 'day' && (date.day() !== 1 || date.isBefore(moment(), 'day'));
+      return result;
+    };
     $scope.isPast = (function(_this) {
       return function() {
         if (!$scope.current_date) {
@@ -5849,129 +5656,36 @@ function getURIparam( name ){
         return moment().isAfter($scope.current_date);
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadData
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Load week if type is equals with week else load month
-     */
-    $scope.loadData = (function(_this) {
-      return function() {
-        if ($scope.type === "week") {
-          return $scope.loadWeek();
-        } else {
-          return $scope.loadMonth();
+    return $scope.loadData = function() {
+      var promise;
+      $scope.day_data = {};
+      $scope.notLoaded($scope);
+      $scope.end_date = moment($scope.current_date).add(5, 'weeks');
+      promise = DayService.query({
+        company: $scope.bb.company,
+        cItem: $scope.bb.current_item,
+        date: $scope.current_date.toISODate(),
+        edate: $scope.end_date.toISODate(),
+        client: $scope.client
+      });
+      return promise.then(function(days) {
+        var day, i, len;
+        for (i = 0, len = days.length; i < len; i++) {
+          day = days[i];
+          $scope.day_data[day.string_date] = {
+            spaces: day.spaces,
+            date: day.date
+          };
         }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadMonth
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Load month
-     */
-    $scope.loadMonth = (function(_this) {
-      return function() {
-        var date, edate;
-        date = $scope.current_date;
-        $scope.month = date.month();
-        $scope.notLoaded($scope);
-        edate = moment(date).add(1, 'months');
-        $scope.end_date = moment(edate).add(-1, 'days');
-        if ($scope.data_source) {
-          return DayService.query({
-            company: $scope.bb.company,
-            cItem: $scope.data_source,
-            'month': date.format("MMYY"),
-            client: $scope.client
-          }).then(function(days) {
-            var d, day, i, j, k, len, w, week, weeks;
-            $scope.days = days;
-            for (i = 0, len = days.length; i < len; i++) {
-              day = days[i];
-              $scope.day_data[day.string_date] = day;
-            }
-            weeks = [];
-            for (w = j = 0; j <= 5; w = ++j) {
-              week = [];
-              for (d = k = 0; k <= 6; d = ++k) {
-                week.push(days[w * 7 + d]);
-              }
-              weeks.push(week);
-            }
-            $scope.weeks = weeks;
-            return $scope.setLoaded($scope);
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        } else {
-          return $scope.setLoaded($scope);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadWeek
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Load week
-     */
-    $scope.loadWeek = (function(_this) {
-      return function() {
-        var date, edate;
-        date = $scope.current_date;
-        $scope.notLoaded($scope);
-        edate = moment(date).add(7, 'days');
-        $scope.end_date = moment(edate).add(-1, 'days');
-        if ($scope.data_source) {
-          return DayService.query({
-            company: $scope.bb.company,
-            cItem: $scope.data_source,
-            date: date.toISODate(),
-            edate: edate.toISODate(),
-            client: $scope.client
-          }).then(function(days) {
-            var day, i, len;
-            $scope.days = days;
-            for (i = 0, len = days.length; i < len; i++) {
-              day = days[i];
-              $scope.day_data[day.string_date] = day;
-            }
-            return $scope.setLoaded($scope);
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        } else {
-          return $scope.setLoaded($scope);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set this page section as ready
-     */
-    return $scope.setReady = (function(_this) {
-      return function() {
-        if ($scope.bb.current_item.date) {
-          return true;
-        } else {
-          AlertService.clear();
-          AlertService.add("danger", {
-            msg: "You need to select a date"
-          });
-          return false;
-        }
-      };
-    })(this);
+        $scope.weeks = _.groupBy($scope.day_data, function(day) {
+          return day.date.week();
+        });
+        $scope.weeks = _.toArray($scope.weeks);
+        return $scope.setLoaded($scope);
+      }, function(err) {
+        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+      });
+    };
   });
 
 }).call(this);
@@ -6008,7 +5722,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, DealService, $q, BBModel, AlertService, FormDataStoreService, ValidatorService, $modal) {
+  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, DealService, $q, BBModel, AlertService, FormDataStoreService, ValidatorService, $modal, $translate) {
     var ModalInstanceCtrl, init;
     $scope.controller = "public.controllers.DealList";
     FormDataStoreService.init('TimeRangeList', $scope, ['deals']);
@@ -6110,7 +5824,7 @@ function getURIparam( name ){
         return $scope.decideNextPage();
       } else {
         return AlertService.add('danger', {
-          msg: 'You need to select at least one Gift Certificate to continue'
+          msg: $translate.instant('SELECT_GIFT_CERTIFICATE')
         });
       }
     };
@@ -6127,7 +5841,7 @@ function getURIparam( name ){
         return true;
       } else {
         return AlertService.add('danger', {
-          msg: 'You need to select at least one Gift Certificate to continue'
+          msg: $translate.instant('SELECT_GIFT_CERTIFICATE')
         });
       }
     };
@@ -6166,7 +5880,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, PageControllerService, $q, AlertService, $filter) {
+  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, PageControllerService, $q, AlertService, $filter, $translate) {
     var options;
     $scope.controller = "public.controllers.DurationList";
     $scope.notLoaded($scope);
@@ -6271,7 +5985,7 @@ function getURIparam( name ){
         } else {
           AlertService.clear();
           AlertService.add("danger", {
-            msg: "You need to select a duration"
+            msg: $translate.instant('SELECT_DURATION')
           });
           return false;
         }
@@ -6603,7 +6317,7 @@ function getURIparam( name ){
       $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
       ppromise = comp.getEventGroupsPromise();
       return ppromise.then(function(items) {
-        var filterItems, i, item, j, len, len1;
+        var default_event_group, filterItems, i, item, j, len, len1;
         filterItems = $attrs.filterServices === 'false' ? false : true;
         if (filterItems) {
           if ($scope.booking_item.service_ref && !$scope.show_all) {
@@ -6625,10 +6339,11 @@ function getURIparam( name ){
         } else {
           setEventGroupItem(items);
         }
-        if ($scope.booking_item.defaultService()) {
+        default_event_group = $scope.booking_item.defaultService();
+        if (default_event_group) {
           for (i = 0, len = items.length; i < len; i++) {
             item = items[i];
-            if (item.self === $scope.booking_item.defaultService().self) {
+            if (item.self === default_event_group.self) {
               $scope.selectItem(item, $scope.nextRoute);
             }
           }
@@ -6786,7 +6501,7 @@ function getURIparam( name ){
     FormDataStoreService.init('EventList', $scope, ['selected_date', 'event_group_id', 'event_group_manually_set']);
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
-        if ($scope.bb.item_defaults.event) {
+        if ($scope.bb.current_item.defaults && $scope.bb.current_item.defaults.event) {
           $scope.skipThisStep();
           $scope.decideNextPage();
         } else if ($scope.bb.company.$has('parent') && !$scope.bb.company.$has('company_questions')) {
@@ -6855,7 +6570,7 @@ function getURIparam( name ){
           buildDynamicFilters(company_questions);
         }
         $scope.event_groups = event_groups;
-        event_groups_collection = _.indexBy(event_groups, 'id');
+        event_groups_collection = _.groupBy(event_groups, 'id');
         if ($scope.items) {
           ref = $scope.items;
           for (j = 0, len = ref.length; j < len; j++) {
@@ -7298,7 +7013,7 @@ function getURIparam( name ){
     };
     buildDynamicFilters = function(questions) {
       $scope.dynamic_filters = _.groupBy(questions, 'question_type');
-      $scope.dynamic_filters.question_types = _.uniq(_.pluck(questions, 'question_type'));
+      $scope.dynamic_filters.question_types = _.uniq(_.mapValues(questions, 'question_type'));
       return $scope.dynamic_filters.values = {};
     };
     sort = function() {};
@@ -7560,7 +7275,7 @@ function getURIparam( name ){
         oldQuestions = $scope.item_details.questions;
         _.each(details.questions, function(item) {
           var search;
-          search = _.findWhere(oldQuestions, {
+          search = _.find(oldQuestions, {
             name: item.name
           });
           if (search) {
@@ -8061,7 +7776,6 @@ function getURIparam( name ){
   * @property {object} mapLoaded The map has been loaded
   * @property {object} mapReady The maps has been ready
   * @property {object} map_init The initialization the map
-  * @property {object} numSearchResults The number of search results
   * @property {object} range_limit The range limit
   * @property {boolean} showAllMarkers Display or not all markers
   * @property {array} mapMarkers The map markers
@@ -8075,7 +7789,7 @@ function getURIparam( name ){
    */
   angular.module('BB.Directives').directive('bbMap', function() {
     return {
-      restrict: 'AE',
+      restrict: 'A',
       replace: true,
       scope: true,
       controller: 'MapCtrl'
@@ -8083,26 +7797,28 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, $q, $window, $timeout) {
-    var checkDataStore, geolocateFail, map_ready_def, options, reverseGeocode, searchFailed, searchPlaces, searchSuccess;
+    var checkDataStore, filterByService, geolocateFail, haversine, mapInit, map_ready_def, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
     $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
-    options = $scope.$eval($attrs.bbMap) || {};
+    $scope.options = $scope.$eval($attrs.bbMap) || {};
+    $scope.num_search_results = $scope.options.num_search_results || 6;
+    $scope.range_limit = $scope.options.range_limit || Infinity;
+    $scope.hide_not_live_stores = $scope.options.hide_not_live_stores || false;
+    $scope.can_filter_by_service = $scope.options.filter_by_service || false;
+    $scope.filter_by_service = $scope.options.filter_by_service || false;
+    $scope.default_zoom = $scope.options.default_zoom || 6;
     map_ready_def = $q.defer();
     $scope.mapLoaded = $q.defer();
     $scope.mapReady = map_ready_def.promise;
     $scope.map_init = $scope.mapLoaded.promise;
-    $scope.numSearchResults = options.num_search_results || 6;
-    $scope.range_limit = options.range_limit || Infinity;
     $scope.showAllMarkers = false;
     $scope.mapMarkers = [];
     $scope.shownMarkers = $scope.shownMarkers || [];
     $scope.numberedPin || ($scope.numberedPin = null);
     $scope.defaultPin || ($scope.defaultPin = null);
-    $scope.hide_not_live_stores = options.hide_not_live_stores != null ? options.hide_not_live_stores : false;
     if (!$scope.address && $attrs.bbAddress) {
       $scope.address = $scope.$eval($attrs.bbAddress);
     }
-    $scope.error_msg = options.error_msg || "You need to select a store";
     $scope.notLoaded($scope);
     webshim.setOptions({
       'waitReady': false,
@@ -8120,7 +7836,8 @@ function getURIparam( name ){
         $scope.initWidget({
           company_id: $rootScope.parent_id,
           first_page: $scope.bb.current_page,
-          keep_basket: true
+          keep_basket: true,
+          item_defaults: $scope.bb.item_defaults ? $scope.bb.item_defaults : {}
         });
         return;
       } else {
@@ -8134,6 +7851,18 @@ function getURIparam( name ){
       if (!$scope.companies || $scope.companies.length === 0) {
         $scope.companies = [$scope.bb.company];
       }
+      if ($scope.bb.current_item.service && $scope.options && $scope.options.filter_by_service) {
+        $scope.notLoaded($scope);
+        filterByService().then(function() {
+          return $scope.map_init.then(function() {
+            return mapInit();
+          });
+        });
+      } else {
+        $scope.map_init.then(function() {
+          return mapInit();
+        });
+      }
       $scope.mapBounds = new google.maps.LatLngBounds();
       ref = $scope.companies;
       for (i = 0, len = ref.length; i < len; i++) {
@@ -8145,15 +7874,15 @@ function getURIparam( name ){
       }
       $scope.mapOptions = {
         center: $scope.mapBounds.getCenter(),
-        zoom: 6,
+        zoom: $scope.default_zoom,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
         mapTypeControl: true,
         mapTypeControlOptions: {
           style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
         }
       };
-      if (options && options.map_options) {
-        ref1 = options.map_options;
+      if ($scope.options && $scope.options.map_options) {
+        ref1 = $scope.options.map_options;
         for (key in ref1) {
           value = ref1[key];
           $scope.mapOptions[key] = value;
@@ -8163,7 +7892,70 @@ function getURIparam( name ){
     }, function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
-    $scope.map_init.then(function() {
+
+    /***
+    * @ngdoc method
+    * @name filterByService
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Set the has_service property and the service object on all companies
+    * so companies can be filtered by service
+     */
+    filterByService = function() {
+      var deferred;
+      deferred = $q.defer();
+      if ($scope.bb.selected_service.$has('all_children')) {
+        $scope.bb.selected_service.$get('all_children').then(function(resource) {
+          return resource.$get('services').then(function(services) {
+            var company, company_ids, i, len, ref, results1, service;
+            company_ids = _.map(services, function(service) {
+              return service.company_id;
+            });
+            ref = $scope.companies;
+            results1 = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              company = ref[i];
+              company.has_service = _.contains(company_ids, company.id);
+              service = _.find(services, function(service) {
+                return service.company_id === company.id;
+              });
+              company.service = service;
+              results1.push(deferred.resolve());
+            }
+            return results1;
+          });
+        });
+      } else {
+        deferred.resolve();
+      }
+      return deferred.promise;
+    };
+
+    /***
+    * @ngdoc method
+    * @name $scope.filterByService
+    * @methodOf BB.Directives:bbMap
+    * @description
+    * Set $scope.shownMarkers to include / exclude
+    * companies without the selected service
+     */
+    $scope.filterByService = function() {
+      var i, len, marker, ref;
+      ref = $scope.shownMarkers;
+      for (i = 0, len = ref.length; i < len; i++) {
+        marker = ref[i];
+        marker.setMap(null);
+      }
+      if ($scope.options && $scope.filter_by_service) {
+        $scope.shownMarkers = $scope.shown_markers_with_services;
+      } else {
+        $scope.shownMarkers = $scope.shown_markers;
+      }
+      return $timeout(function() {
+        return setMarkers();
+      });
+    };
+    mapInit = function() {
       var comp, i, latlong, len, marker, ref;
       ref = $scope.companies;
       for (i = 0, len = ref.length; i < len; i++) {
@@ -8184,14 +7976,12 @@ function getURIparam( name ){
       }
       $timeout(function() {
         $scope.myMap.fitBounds($scope.mapBounds);
-        return $scope.myMap.setZoom(15);
+        $scope.myMap.setZoom(15);
+        if ($scope.bb.current_item.service && $scope.options && $scope.filter_by_service) {
+          return $scope.setLoaded($scope);
+        }
       });
       return checkDataStore();
-    });
-    $scope.init = function(options) {
-      if (options) {
-        return $scope.hide_not_live_stores = options.hide_not_live_stores;
-      }
     };
 
     /***
@@ -8307,8 +8097,7 @@ function getURIparam( name ){
     searchPlaces = function(prms) {
       var req, service;
       req = {
-        query: prms.address,
-        types: ['shopping_mall', 'store', 'embassy']
+        query: prms.address
       };
       if (prms.bounds) {
         req.bounds = prms.bounds;
@@ -8330,7 +8119,7 @@ function getURIparam( name ){
     * @name searchSuccess
     * @methodOf BB.Directives:bbMap
     * @description
-    * Search has been succeeded, and return 
+    * Search has been succeeded, and return
     *
     * @param {object} result The result of the search
      */
@@ -8378,6 +8167,24 @@ function getURIparam( name ){
         return true;
       }
     };
+    haversine = function(latlong, marker) {
+      var R, a, c, chLat, chLon, d, dLat, dLon, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
+      pi = Math.PI;
+      R = 6371;
+      lat1 = latlong.lat();
+      lon1 = latlong.lng();
+      lat2 = marker.position.lat();
+      lon2 = marker.position.lng();
+      chLat = lat2 - lat1;
+      chLon = lon2 - lon1;
+      dLat = chLat * (pi / 180);
+      dLon = chLon * (pi / 180);
+      rLat1 = lat1 * (pi / 180);
+      rLat2 = lat2 * (pi / 180);
+      a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
+      c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return d = R * c;
+    };
 
     /***
     * @ngdoc method
@@ -8389,67 +8196,74 @@ function getURIparam( name ){
     * @param {array} latlong Using for determinate the closest markers
      */
     $scope.showClosestMarkers = function(latlong) {
-      var R, a, c, chLat, chLon, d, dLat, dLon, distances, distances_kilometres, i, iconPath, index, item, items, j, k, l, lat1, lat2, len, len1, len2, localBounds, lon1, lon2, marker, pi, rLat1, rLat2, ref, ref1;
-      pi = Math.PI;
-      R = 6371;
+      var distances, distances_with_services, i, km, len, marker, ref;
       distances = [];
-      distances_kilometres = [];
-      lat1 = latlong.lat();
-      lon1 = latlong.lng();
+      distances_with_services = [];
       ref = $scope.mapMarkers;
       for (i = 0, len = ref.length; i < len; i++) {
         marker = ref[i];
-        lat2 = marker.position.lat();
-        lon2 = marker.position.lng();
-        chLat = lat2 - lat1;
-        chLon = lon2 - lon1;
-        dLat = chLat * (pi / 180);
-        dLon = chLon * (pi / 180);
-        rLat1 = lat1 * (pi / 180);
-        rLat2 = lat2 * (pi / 180);
-        a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
-        c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        d = R * c;
-        k = d;
-        d = d * 0.621371192;
+        km = haversine(latlong, marker);
         if (!$scope.showAllMarkers) {
           marker.setVisible(false);
         }
-        marker.distance = d;
-        marker.distance_kilometres = k;
-        if (d < $scope.range_limit) {
+        marker.distance = km * 0.621371192;
+        if (marker.distance < $scope.range_limit) {
           distances.push(marker);
-        }
-        if (k < $scope.range_limit) {
-          distances_kilometres.push(marker);
-        }
-        items = [distances, distances_kilometres];
-        for (j = 0, len1 = items.length; j < len1; j++) {
-          item = items[j];
-          item.sort(function(a, b) {
-            a.distance - b.distance;
-            return a.distance_kilometres - b.distance_kilometres;
-          });
+          if (marker.company.has_service) {
+            distances_with_services.push(marker);
+          }
         }
       }
-      $scope.shownMarkers = distances.slice(0, $scope.numSearchResults);
+      distances.sort(function(a, b) {
+        return a.distance - b.distance;
+      });
+      distances_with_services.sort(function(a, b) {
+        return a.distance - b.distance;
+      });
+      $scope.shown_markers = distances.slice(0, $scope.num_search_results);
+      $scope.shown_markers_with_services = distances_with_services.slice(0, $scope.num_search_results);
+      if ($scope.options && $scope.filter_by_service) {
+        $scope.shownMarkers = $scope.shown_markers_with_services;
+      } else {
+        $scope.shownMarkers = $scope.shown_markers;
+      }
+      return $timeout(function() {
+        return setMarkers();
+      });
+    };
+    setMarkers = function() {
+      var i, iconPath, index, latlong, len, localBounds, marker, open_marker, open_marker_index, ref;
+      latlong = $scope.loc;
       localBounds = new google.maps.LatLngBounds();
       localBounds.extend(latlong);
       index = 1;
-      ref1 = $scope.shownMarkers;
-      for (l = 0, len2 = ref1.length; l < len2; l++) {
-        marker = ref1[l];
+      ref = $scope.shownMarkers;
+      for (i = 0, len = ref.length; i < len; i++) {
+        marker = ref[i];
         if ($scope.numberedPin) {
           iconPath = $window.sprintf($scope.numberedPin, index);
           marker.setIcon(iconPath);
         }
         marker.setVisible(true);
+        marker.setMap($scope.myMap);
         localBounds.extend(marker.position);
         index += 1;
       }
       $scope.$emit('map:shown_markers_updated', $scope.shownMarkers);
       google.maps.event.trigger($scope.myMap, 'resize');
-      return $scope.myMap.fitBounds(localBounds);
+      $scope.myMap.fitBounds(localBounds);
+      open_marker_index = 0;
+      open_marker = _.find($scope.shownMarkers, function(obj) {
+        open_marker_index++;
+        return obj.company.id === $scope.bb.current_item.company.id;
+      });
+      if (open_marker) {
+        open_marker_index--;
+      } else {
+        open_marker_index = 0;
+      }
+      $scope.shownMarkers[open_marker_index].is_open = true;
+      return $scope.openMarkerInfo($scope.shownMarkers[open_marker_index]);
     };
 
     /***
@@ -8462,8 +8276,10 @@ function getURIparam( name ){
     * @param {object} marker The marker
      */
     $scope.openMarkerInfo = function(marker) {
-      $scope.currentMarker = marker;
-      return $scope.myInfoWindow.open($scope.myMap, marker);
+      return $timeout(function() {
+        $scope.currentMarker = marker;
+        return $scope.myInfoWindow.open($scope.myMap, marker);
+      }, 250);
     };
 
     /***
@@ -8476,25 +8292,46 @@ function getURIparam( name ){
     * @param {array} item The Map or BookableItem to select
     * @param {string=} route A specific route to load
      */
-    $scope.selectItem = function(item, route) {
+    $scope.selectItem = function(company, route) {
+      var init_obj;
       if (!$scope.$debounce(1000)) {
         return;
       }
-      if (!item) {
-        AlertService.warning({
-          msg: $scope.error_msg
-        });
+      if (!company) {
+        AlertService.warning(ErrorService.getError('STORE_NOT_SELECTED'));
         return;
       }
       $scope.notLoaded($scope);
-      if ($scope.selectedStore && $scope.selectedStore.id !== item.id) {
+      if ($scope.selectedStore && $scope.selectedStore.id !== company.id) {
         $scope.$emit('change:storeLocation');
       }
-      $scope.selectedStore = item;
-      return $scope.initWidget({
-        company_id: item.id,
-        first_page: route
-      });
+      $scope.selectedStore = company;
+      if ($scope.bb.current_item.item_details && $scope.bb.current_item.item_details.questions) {
+        setAnswers();
+      }
+      if (company.service) {
+        $scope.bb.item_defaults.service = company.service.id;
+      }
+      init_obj = {
+        company_id: company.id,
+        item_defaults: $scope.bb.item_defaults
+      };
+      if (route) {
+        init_obj.first_page = route;
+      }
+      return $scope.initWidget(init_obj);
+    };
+    setAnswers = function() {
+      var answers, i, len, q, ref;
+      answers = {};
+      ref = $scope.bb.current_item.item_details.questions;
+      for (i = 0, len = ref.length; i < len; i++) {
+        q = ref[i];
+        answers["q_" + q.name] = q.answer;
+      }
+      if (!_.isEmpty(answers)) {
+        return $scope.bb.item_defaults.answers = answers;
+      }
     };
 
     /***
@@ -8502,7 +8339,7 @@ function getURIparam( name ){
     * @name roundNumberUp
     * @methodOf BB.Directives:bbMap
     * @description
-    * Calculate the round number up 
+    * Calculate the round number up
     *
     * @param {integer} num The number of places
     * @param {object} places The places
@@ -8524,6 +8361,7 @@ function getURIparam( name ){
       }
       $scope.notLoaded($scope);
       return webshim.ready('geolocation', function() {
+        var options;
         options = {
           timeout: 5000,
           maximumAge: 3600000
@@ -8693,6 +8531,382 @@ function getURIparam( name ){
 
   /***
   * @ngdoc directive
+  * @name BB.Directives:bbMonthAvailability
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of month availability for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} message The message text
+  * @property {string} setLoaded  Set the day list loaded
+  * @property {object} setLoadedAndShowError Set loaded and show error
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
+  angular.module('BB.Directives').directive('bbMonthAvailability', function() {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      controller: 'MonthAvailability'
+    };
+  });
+
+  angular.module('BB.Controllers').controller('MonthAvailability', function($scope, $rootScope, $q, $translate, DayService, AlertService) {
+    $scope.controller = "public.controllers.MonthAvailability";
+    $scope.notLoaded($scope);
+    $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    $scope.day_data = {};
+    if (!$scope.type) {
+      $scope.type = "month";
+    }
+    if (!$scope.data_source) {
+      $scope.data_source = $scope.bb.current_item;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if (!$scope.current_date && $scope.last_selected_date) {
+          $scope.current_date = $scope.last_selected_date.startOf($scope.type);
+        } else if (!$scope.current_date) {
+          $scope.current_date = moment().startOf($scope.type);
+        }
+        return $scope.loadData();
+      };
+    })(this), function(err) {
+      return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+    });
+    $scope.$on("currentItemUpdate", function(event) {
+      return $scope.loadData();
+    });
+
+    /***
+    * @ngdoc method
+    * @name setCalType
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set cal type in acording of type
+    *
+    * @param {array} type The type of day list
+     */
+    $scope.setCalType = (function(_this) {
+      return function(type) {
+        return $scope.type = type;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setDataSource
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set data source in according of source
+    *
+    * @param {string} source The source of day list
+     */
+    $scope.setDataSource = (function(_this) {
+      return function(source) {
+        return $scope.data_source = source;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_date
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Format date and get current date
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_date = (function(_this) {
+      return function(fmt) {
+        if ($scope.current_date) {
+          return $scope.current_date.format(fmt);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_start_date
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Format start date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_start_date = (function(_this) {
+      return function(fmt) {
+        return $scope.format_date(fmt);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_end_date
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Format end date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_end_date = (function(_this) {
+      return function(fmt) {
+        if ($scope.end_date) {
+          return $scope.end_date.format(fmt);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectDay
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Select day
+    *
+    * @param {date} day The day
+    * @param {string=} route A specific route to load
+    * @param {string} force The force
+     */
+    $scope.selectDay = (function(_this) {
+      return function(day, route, force) {
+        if (day.spaces === 0 && !force) {
+          return false;
+        }
+        $scope.setLastSelectedDate(day.date);
+        $scope.bb.current_item.setDate(day);
+        if ($scope.$parent.$has_page_control) {
+
+        } else {
+          return $scope.decideNextPage(route);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setMonth
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set month
+    *
+    * @param {date} month The month
+    * @param {date} year The year
+     */
+    $scope.setMonth = (function(_this) {
+      return function(month, year) {
+        $scope.current_date = moment().startOf('month').year(year).month(month - 1);
+        $scope.current_date.year();
+        return $scope.type = "month";
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setWeek
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set month
+    *
+    * @param {date} week The week
+    * @param {date} year The year
+     */
+    $scope.setWeek = (function(_this) {
+      return function(week, year) {
+        $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
+        $scope.current_date.year();
+        return $scope.type = "week";
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Add the current date in according of type and amount parameters
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
+    $scope.add = (function(_this) {
+      return function(type, amount) {
+        $scope.current_date.add(amount, type);
+        return $scope.loadData();
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Substract the current date in according of type and amount
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
+    $scope.subtract = (function(_this) {
+      return function(type, amount) {
+        return $scope.add(type, -amount);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
+     */
+    $scope.isPast = (function(_this) {
+      return function() {
+        if (!$scope.current_date) {
+          return true;
+        }
+        return moment().isAfter($scope.current_date);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Load week if type is equals with week else load month
+     */
+    $scope.loadData = (function(_this) {
+      return function() {
+        if ($scope.type === "week") {
+          return $scope.loadWeek();
+        } else {
+          return $scope.loadMonth();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadMonth
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Load month
+     */
+    $scope.loadMonth = (function(_this) {
+      return function() {
+        var date, edate;
+        date = $scope.current_date;
+        $scope.month = date.month();
+        $scope.notLoaded($scope);
+        edate = moment(date).add(1, 'months');
+        $scope.end_date = moment(edate).add(-1, 'days');
+        if ($scope.data_source) {
+          return DayService.query({
+            company: $scope.bb.company,
+            cItem: $scope.data_source,
+            'month': date.format("MMYY"),
+            client: $scope.client
+          }).then(function(days) {
+            var d, day, i, j, k, len, w, week, weeks;
+            $scope.days = days;
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
+              $scope.day_data[day.string_date] = day;
+            }
+            weeks = [];
+            for (w = j = 0; j <= 5; w = ++j) {
+              week = [];
+              for (d = k = 0; k <= 6; d = ++k) {
+                week.push(days[w * 7 + d]);
+              }
+              weeks.push(week);
+            }
+            $scope.weeks = weeks;
+            return $scope.setLoaded($scope);
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        } else {
+          return $scope.setLoaded($scope);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadWeek
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Load week
+     */
+    $scope.loadWeek = (function(_this) {
+      return function() {
+        var date, edate;
+        date = $scope.current_date;
+        $scope.notLoaded($scope);
+        edate = moment(date).add(7, 'days');
+        $scope.end_date = moment(edate).add(-1, 'days');
+        if ($scope.data_source) {
+          return DayService.query({
+            company: $scope.bb.company,
+            cItem: $scope.data_source,
+            date: date.toISODate(),
+            edate: edate.toISODate(),
+            client: $scope.client
+          }).then(function(days) {
+            var day, i, len;
+            $scope.days = days;
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
+              $scope.day_data[day.string_date] = day;
+            }
+            return $scope.setLoaded($scope);
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        } else {
+          return $scope.setLoaded($scope);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMonthAvailability
+    * @description
+    * Set this page section as ready
+     */
+    return $scope.setReady = (function(_this) {
+      return function() {
+        if ($scope.bb.current_item.date) {
+          return true;
+        } else {
+          AlertService.clear();
+          AlertService.add("danger", {
+            msg: $translate.instant("SELECT_DATE")
+          });
+          return false;
+        }
+      };
+    })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
   * @name BB.Directives:bbMultiServiceSelect
   * @restrict AE
   * @scope true
@@ -8830,11 +9044,11 @@ function getURIparam( name ){
           category.name = category.name.slice(3);
         }
       }
-      $scope.all_categories = _.indexBy(categories, 'id');
+      $scope.all_categories = _.groupBy(categories, 'id');
       all_categories = _.groupBy($scope.items, function(item) {
         return item.category_id;
       });
-      sub_categories = _.findWhere($scope.company_questions, {
+      sub_categories = _.find($scope.company_questions, {
         name: 'Extra Category'
       });
       if (sub_categories) {
@@ -9468,7 +9682,7 @@ function getURIparam( name ){
             for (day in slots) {
               if (!hasProp.call(slots, day)) continue;
               times = slots[day];
-              item.slots[day] = _.indexBy(times, 'time');
+              item.slots[day] = _.groupBy(times, 'time');
             }
           }
         }
@@ -9511,7 +9725,7 @@ function getURIparam( name ){
       datetime = stacked_item.datetime || DateTimeUlititiesService.convertTimeSlotToMoment(stacked_item.date, stacked_item.time);
       if ($scope.start_date <= datetime && $scope.end_date >= datetime) {
         time = DateTimeUlititiesService.convertMomentToTime(datetime);
-        time_slot = _.findWhere(slots[datetime.toISODate()], {
+        time_slot = _.find(slots[datetime.toISODate()], {
           time: time
         });
         if (!time_slot) {
@@ -11536,6 +11750,7 @@ function getURIparam( name ){
           return $scope.routed = true;
         } else {
           $scope.booking_item.setService(item);
+          $scope.bb.selected_service = $scope.booking_item.service;
           if (options.skip_step) {
             $scope.skipThisStep();
           }
@@ -11550,7 +11765,8 @@ function getURIparam( name ){
         if ($scope.service && $scope.booking_item) {
           if (!$scope.booking_item.service || $scope.booking_item.service.self !== $scope.service.self) {
             $scope.booking_item.setService($scope.service);
-            return $scope.broadcastItemUpdate();
+            $scope.broadcastItemUpdate();
+            return $scope.bb.selected_service = $scope.service;
           }
         }
       };
@@ -12406,7 +12622,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel) {
+  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, $translate, TimeService, AlertService, BBModel) {
     $scope.controller = "public.controllers.TimeList";
     $scope.notLoaded($scope);
     if (!$scope.data_source) {
@@ -12707,7 +12923,7 @@ function getURIparam( name ){
                 }
                 $scope.time_not_found = true;
                 return AlertService.add("danger", {
-                  msg: "Sorry, your requested time slot is not available. Please choose a different time."
+                  msg: $translate.instant('TIME_SLOT_NOT_AVAILABLE')
                 });
               }
             }
@@ -12747,7 +12963,7 @@ function getURIparam( name ){
         if (!$scope.data_source.time) {
           AlertService.clear();
           AlertService.add("danger", {
-            msg: "You need to select a time slot"
+            msg: $translate.instant('SELECT_TIME_SLOT')
           });
           return false;
         } else {
@@ -12890,7 +13106,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUlititiesService) {
-    var currentPostcode, isSubtractValid, setTimeRange;
+    var checkRequestedTime, currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
     FormDataStoreService.init('TimeRangeList', $scope, ['selected_slot', 'postcode', 'original_start_date', 'start_at_week_start']);
@@ -12904,6 +13120,8 @@ function getURIparam( name ){
       $scope.data_source = $scope.bb.current_item;
     }
     $scope.options = $scope.$eval($attrs.bbTimeRanges) || {};
+    $scope.today = moment().toDate();
+    $scope.tomorrow = moment().add(1, 'days').toDate();
     $rootScope.connection_started.then(function() {
       var date, diff, selected_day, start_date;
       if ($attrs.bbTimeRangeLength != null) {
@@ -13310,7 +13528,7 @@ function getURIparam( name ){
                 }
               }
             }
-            results.push(DateTimeUlititiesService.checkRequestedTime(day, time_slots, current_item));
+            results.push(checkRequestedTime(day, time_slots));
           }
           return results;
         }, function(err) {
@@ -13331,6 +13549,34 @@ function getURIparam( name ){
     * @param {date} day The day
     * @param {date} time_losts The time slots
      */
+    checkRequestedTime = function(day, time_slots) {
+      var current_item, found_time, i, len, slot;
+      current_item = $scope.bb.current_item;
+      if ((current_item.requested_time || current_item.time) && current_item.requested_date && day.date.isSame(current_item.requested_date)) {
+        found_time = false;
+        for (i = 0, len = time_slots.length; i < len; i++) {
+          slot = time_slots[i];
+          if (slot.time === current_item.requested_time) {
+            current_item.requestedTimeUnavailable();
+            $scope.selectSlot(day, slot);
+            found_time = true;
+            $scope.days = [];
+            return;
+          }
+          if (current_item.time && current_item.time.time === slot.time && slot.avail === 1) {
+            if ($scope.selected_slot && $scope.selected_slot.time !== current_item.time.time) {
+              $scope.selected_slot = current_item.time;
+            }
+            current_item.setTime(slot);
+            found_time = true;
+          }
+        }
+        if (!found_time) {
+          current_item.requestedTimeUnavailable();
+          return AlertService.raise('REQ_TIME_NOT_AVAIL');
+        }
+      }
+    };
 
     /***
     * @ngdoc method
@@ -13557,6 +13803,8 @@ function getURIparam( name ){
 
   app = angular.module('BB.Filters');
 
+  app.requires.push('pascalprecht.translate');
+
   angular.module('BB.Filters').filter('stripPostcode', function() {
     return function(address) {
       var match;
@@ -13711,190 +13959,106 @@ function getURIparam( name ){
     })(this);
   });
 
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
+  app.filter('distance', function($translate) {
+    return function(distance) {
+      var localUnit, prettyDistance;
+      if (!distance) {
+        return '';
+      }
+      localUnit = $translate.instant('DISTANCE_UNIT');
+      if (localUnit === 'km') {
+        distance *= 1.60934;
+      }
+      prettyDistance = distance.toFixed(1).replace(/\.0+$/, '');
+      return prettyDistance + localUnit;
+    };
   });
 
-  angular.module('BB.Filters').filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
+  (function() {
+    var currency, currencyCodes, prettyPrice;
+    currencyCodes = {
+      USD: "$",
+      GBP: "£",
+      AUD: "$",
+      EUR: "€",
+      CAD: "$",
+      MIXED: "~"
+    };
+    currency = function($translate, $window, $rootScope) {
+      return function(cents, currencyCode, prettyPrice) {
+        var format, hideCents;
+        if (prettyPrice == null) {
+          prettyPrice = false;
         }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        format = $translate.instant(['THOUSANDS_SEPARATOR', 'DECIMAL_SEPARATOR', 'CURRENCY_FORMAT']);
+        hideCents = prettyPrice && (cents % 100 === 0);
+        return $window.accounting.formatMoney(cents / 100.0, currencyCodes[currencyCode], hideCents != null ? hideCents : {
+          0: 2
+        }, format.THOUSANDS_SEPARATOR, format.DECIMAL_SEPARATORS, format.CURRENCY_FORMAT);
       };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
+    };
+    prettyPrice = function($translate, $filter) {
+      return function(price, currencyCode) {
+        if (parseFloat(price) === 0) {
+          return $translate.instant('ITEM_FREE');
+        } else {
+          return $filter('currency')(price, currencyCode, true);
+        }
+      };
+    };
+    app.filter('currency', currency);
+    app.filter('icurrency', currency);
+    app.filter('raw_currency', function() {
       return function(number) {
         return number / 100.0;
       };
-    })(this);
-  });
+    });
+    app.filter('pretty_price', prettyPrice);
+    return app.filter('ipretty_price', prettyPrice);
+  })();
 
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  angular.module('BB.Filters').filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
+  app.filter('time_period', function($translate) {
+    return function(v) {
+      var hours, minutes, timePeriod;
       if (!angular.isNumber(v)) {
         return;
       }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val > 1) {
-          str += "s";
-        }
-        return str;
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins > 1) {
-          str += "s";
+      minutes = parseInt(v);
+      timePeriod = '';
+      hours = Math.floor(minutes / 60);
+      minutes %= 60;
+      if (hours > 0) {
+        timePeriod += moment.duration(hours, 'hours').humanize();
+        if (minutes > 0) {
+          timePeriod += $translate.instant('TIME_SEPARATOR');
         }
       }
-      return str;
+      if (minutes > 0 || hours === 0) {
+        timePeriod += moment.duration(minutes, 'minutes').humanize();
+      }
+      return timePeriod;
     };
   });
 
-  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, separator, suffix, t;
-      if (!angular.isNumber(time)) {
+  app.filter('time_period_from_seconds', function($translate, $filter) {
+    return function(v) {
+      var seconds, timePeriod;
+      if (!angular.isNumber(v)) {
         return;
       }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      separator = options && options.separator ? options.separator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + separator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
+      seconds = parseInt(v);
+      timePeriod = '';
+      if (seconds >= 60) {
+        timePeriod += $filter('time_period')(seconds / 60);
+        if ((seconds % 60) > 0) {
+          timePeriod += $translate.instant('TIME_SEPARATOR');
         }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
       }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
+      if ((seconds % 60) > 0) {
+        timePeriod += moment.duration(seconds % 60, 'seconds').humanize();
       }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
+      return timePeriod;
     };
   });
 
@@ -13922,6 +14086,7 @@ function getURIparam( name ){
   angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
     return function(phone_number) {
       var cc;
+      console.log(phone_number);
       if (!phone_number) {
         return;
       }
@@ -13937,32 +14102,35 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
-    return function(date, format) {
-      var cc, datestrings;
-      if (date && moment.isMoment(date)) {
-        datestrings = {
-          datetime_us: 'MM/DD/YYYY, h:mm a',
-          datetime_uk: 'DD/MM/YYYY, HH:mm',
-          date_us: 'MM/DD/YYYY',
-          date_uk: 'DD/MM/YYYY',
-          time_us: 'h:mm a',
-          time_uk: 'HH:mm'
-        };
-        cc = SettingsService.getCountryCode();
-        if (cc !== "us") {
-          cc = "uk";
-        }
-        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
-          return date.format(datestrings[format + "_" + cc]);
-        } else if (format) {
-          return date.format(format);
-        } else {
-          return date.format(datestrings["date_" + cc]);
-        }
-      } else {
-
+  app.filter("uk_local_number", function() {
+    return function(tel) {
+      if (!tel) {
+        return "";
       }
+      return tel.replace(/\+44 \(0\)/, '0');
+    };
+  });
+
+  app.filter("datetime", function() {
+    return function(datetime, format, show_timezone) {
+      var result;
+      if (show_timezone == null) {
+        show_timezone = true;
+      }
+      if (!datetime) {
+        return;
+      }
+      datetime = moment(datetime);
+      if (!datetime.isValid()) {
+        return;
+      }
+      result = datetime.format(format);
+      if (datetime.utcOffset() !== new Date().getTimezoneOffset() && show_timezone) {
+        if (datetime._z) {
+          result += datetime.format(" z");
+        }
+      }
+      return result;
     };
   });
 
@@ -14031,12 +14199,72 @@ function getURIparam( name ){
     };
   });
 
+  app.filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, seperator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      seperator = options && options.seperator ? options.seperator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + seperator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
   app.filter('clearTimezone', function() {
     return function(val, offset) {
       if (val !== null && val.length > 19) {
         return val.substring(0, 19);
       }
       return val;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
+    return {
+      restrict: 'A',
+      replace: true,
+      controller: function($scope, $element, $attrs) {
+        var map;
+        $element.addClass('map-canvas');
+        map = new google.maps.Map($element[0], {
+          zoom: 15
+        });
+        return $scope.$watch($attrs.bbAddressMap, function(value) {
+          var center, marker;
+          if (!value) {
+            return;
+          }
+          center = {
+            lat: value.lat,
+            lng: value.long
+          };
+          map.setCenter(center);
+          return marker = new google.maps.Marker({
+            position: center,
+            map: map
+          });
+        });
+      }
     };
   });
 
@@ -14092,15 +14320,9 @@ function getURIparam( name ){
         $scope.$watch(function() {
           var len;
           $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
-          if (!len) {
-            $scope.basketStatus = "empty";
-          } else {
-            if (len === 1) {
-              $scope.basketStatus = "1 item in your basket";
-            } else {
-              $scope.basketStatus = len + " items in your basket";
-            }
-          }
+          $scope.baskenStatus = $translate.instant("BASKET_STATUS", {
+            N: len
+          }, "messageformat");
         });
       },
       link: function(scope, element, attrs) {
@@ -14115,7 +14337,7 @@ function getURIparam( name ){
     return {
       restrict: 'A',
       scope: true,
-      controller: function($scope, $element, $attrs, AlertService, $filter) {
+      controller: function($scope, $element, $attrs, AlertService, $translate) {
         var checkMinSpend, options;
         options = $scope.$eval($attrs.bbMinSpend || {});
         $scope.min_spend = options.min_spend || 0;
@@ -14135,9 +14357,10 @@ function getURIparam( name ){
             return true;
           } else {
             AlertService.clear();
-            price = $filter('ipretty_price')($scope.min_spend);
             AlertService.add("warning", {
-              msg: "You need to spend at least " + price + " to make a booking."
+              msg: $translate.instant('SPEND_AT_LEAST', {
+                min_spend: $scope.min_spend
+              })
             });
             return false;
           }
@@ -15057,6 +15280,33 @@ function getURIparam( name ){
     };
   });
 
+  angular.module('BB.Directives').directive('bbDynamicFooter', function($timeout, $bbug) {
+    return function(scope, el, attrs) {
+      scope.$on("page:loaded", function() {
+        return $bbug('.content').css('height', 'auto');
+      });
+      scope.$watch(function() {
+        return $bbug('.content')[0].scrollHeight;
+      }, function(new_val, old_val) {
+        if (new_val !== old_val) {
+          return scope.setContentHeight();
+        }
+      });
+      scope.setContentHeight = function() {
+        var content_height, min_content_height;
+        $bbug('.content').css('height', 'auto');
+        content_height = $bbug('.content')[0].scrollHeight;
+        min_content_height = $bbug(window).innerHeight() - $bbug('.content').offset().top - $bbug('.footer').height();
+        if (content_height < min_content_height) {
+          return $bbug('.content').css('height', min_content_height + 'px');
+        }
+      };
+      return $bbug(window).on('resize', function() {
+        return scope.setContentHeight();
+      });
+    };
+  });
+
 
   /***
   * @ngdoc directive
@@ -15748,6 +15998,27 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Directives').directive('bbLocaleSwitcher', function(I18nService) {
+    return {
+      restrict: 'AE',
+      scope: false,
+      templateUrl: 'locale_switcher.html',
+      link: function(scope, element, attrs) {
+        scope.LANGUAGES = I18nService.getSupportedLocales().map(function(s) {
+          return s.toUpperCase();
+        });
+        scope.currentLanguage = I18nService.getDefaultLocale().toUpperCase();
+        return scope.changeLanguage = function(language) {
+          I18nService.setLocale(language.toLowerCase());
+          return scope.currentLanguage = language;
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
   angular.module('BB.Directives').directive('bbContent', function($compile) {
     return {
@@ -15771,12 +16042,23 @@ function getURIparam( name ){
 
   angular.module('BB.Directives').directive('bbLoading', function($compile) {
     return {
-      transclude: false,
-      restrict: 'A',
       link: function(scope, element, attrs) {
+        var positionLoadingIcon;
         scope.scopeLoaded = scope.areScopesLoaded(scope);
-        element.attr('ng-hide', "scopeLoaded");
-        element.attr('bb-loading', null);
+        element.attr("ng-hide", "scopeLoaded");
+        element.attr("bb-loading", null);
+        positionLoadingIcon = function() {
+          var center;
+          center = $(window).innerHeight() / 2 - $("#wait_graphic").height() / 2;
+          return $("#loading_icon").css("padding-top", center + "px");
+        };
+        positionLoadingIcon();
+        $(window).on("resize", function() {
+          return positionLoadingIcon();
+        });
+        scope.$on("page:loaded", function() {
+          return positionLoadingIcon();
+        });
         $compile(element)(scope);
       }
     };
@@ -15901,42 +16183,6 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
-    return {
-      restrict: 'A',
-      scope: true,
-      replace: true,
-      controller: function($scope, $element, $attrs) {
-        $scope.isDraggable = $document.width() > 480;
-        return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
-          var map_item;
-          if (!new_val) {
-            return;
-          }
-          map_item = new_val;
-          $scope.map = {
-            center: {
-              latitude: map_item.lat,
-              longitude: map_item.long
-            },
-            zoom: 15
-          };
-          $scope.options = {
-            scrollwheel: false,
-            draggable: $scope.isDraggable
-          };
-          return $scope.marker = {
-            id: 0,
-            coords: {
-              latitude: map_item.lat,
-              longitude: map_item.long
-            }
-          };
-        });
-      }
-    };
-  });
-
   angular.module('BB.Directives').directive('bbMergeDuplicateQuestions', function() {
     return {
       restrict: 'A',
@@ -15966,7 +16212,7 @@ function getURIparam( name ){
               }
             }
           }
-          return $scope.has_questions = _.pluck($scope.questions, 'question').length > 0;
+          return $scope.has_questions = _.mapValues($scope.questions, 'question').length > 0;
         });
       }
     };
@@ -18415,16 +18661,19 @@ function getURIparam( name ){
       * @name defaultService
       * @methodOf BB.Models:BasketItem
       * @description
-      * Return the default service if existent
+      * Return the default service or event group
       *
-      * @returns {array} Default service
+      * @returns {Object} Default Service or EventGroup
        */
 
       BasketItem.prototype.defaultService = function() {
-        if (!this.defaults) {
+        if (this.defaults && this.defaults.service) {
+          return this.defaults.service;
+        } else if (this.defaults && this.defaults.event_group) {
+          return this.defaults.event_group;
+        } else {
           return null;
         }
-        return this.defaults.service;
       };
 
 
@@ -20185,7 +20434,7 @@ function getURIparam( name ){
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
+  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel) {
     var Client;
     return Client = (function(superClass) {
       extend(Client, superClass);
@@ -21364,7 +21613,7 @@ function getURIparam( name ){
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUlititiesService) {
+  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUlititiesService, $translate) {
     var Event;
     return Event = (function(superClass) {
       extend(Event, superClass);
@@ -21559,10 +21808,12 @@ function getURIparam( name ){
         var left;
         left = this.getSpacesLeft();
         if (left > 0 && left < 3) {
-          return "Only " + left + " " + (left > 1 ? "spaces" : "space") + " left";
+          return $translate.instant("SPACES_LEFT", {
+            N: left
+          }, 'messageformat');
         }
         if (this.hasWaitlistSpace()) {
-          return "Join Waitlist";
+          return $translate.instant("JOIN_WAITLIST");
         }
         return "";
       };
@@ -21640,7 +21891,7 @@ function getURIparam( name ){
                 _this.price_range.from = _this.price;
                 _this.price_range.to = _this.price;
               }
-              _this.ticket_prices = _.indexBy(tickets, 'name');
+              _this.ticket_prices = _.groupBy(tickets, 'name');
               return def.resolve(_this);
             });
           };
@@ -21853,6 +22104,27 @@ function getURIparam( name ){
       };
 
       return EventChain;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventCollectionModel", function($q, BBModel, BaseModel) {
+    var EventCollection;
+    return EventCollection = (function(superClass) {
+      extend(EventCollection, superClass);
+
+      function EventCollection() {
+        return EventCollection.__super__.constructor.apply(this, arguments);
+      }
+
+      return EventCollection;
 
     })(BaseModel);
   });
@@ -22343,7 +22615,7 @@ function getURIparam( name ){
        */
 
       ItemDetails.prototype.getQuestion = function(id) {
-        return _.findWhere(this.questions, {
+        return _.find(this.questions, {
           id: id
         });
       };
@@ -23230,6 +23502,21 @@ function getURIparam( name ){
           date: moment()
         }, this);
       }
+
+
+      /***
+      * @ngdoc method
+      * @name print_local_time
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print local time using moment i18n
+      *
+      * @returns {date} The returning 12 hour time
+       */
+
+      TimeSlot.prototype.print_local_time = function() {
+        return this.time_moment.format('LT');
+      };
 
 
       /***
@@ -24498,7 +24785,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("DateTimeUlititiesService", function(AlertService) {
+  angular.module('BB.Services').factory("DateTimeUlititiesService", function() {
     return {
       convertTimeSlotToMoment: function(day, time_slot) {
         var datetime, hours, mins, val;
@@ -24519,32 +24806,6 @@ function getURIparam( name ){
       },
       convertMomentToTime: function(datetime) {
         return datetime.minutes() + datetime.hours() * 60;
-      },
-      checkRequestedTime: function(day, time_slots, current_item) {
-        var found_time, i, len, slot;
-        if ((current_item.requested_time || current_item.time) && current_item.requested_date && day.date.isSame(current_item.requested_date)) {
-          found_time = false;
-          for (i = 0, len = time_slots.length; i < len; i++) {
-            slot = time_slots[i];
-            if (slot.time === current_item.requested_time) {
-              current_item.requestedTimeUnavailable();
-              $scope.selectSlot(day, slot);
-              found_time = true;
-              $scope.days = [];
-              return;
-            }
-            if (current_item.time && current_item.time.time === slot.time && slot.avail === 1) {
-              if ($scope.selected_slot && $scope.selected_slot.time !== current_item.time.time) {
-                $scope.selected_slot = current_item.time;
-              }
-              current_item.setTime(slot);
-              found_time = true;
-            }
-          }
-          if (!found_time) {
-            return current_item.requestedTimeUnavailable();
-          }
-        }
       }
     };
   });
@@ -24783,229 +25044,31 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var alerts;
-    alerts = [
-      {
-        key: 'GENERIC',
-        type: 'error',
-        title: '',
+  angular.module('BB.Services').factory('ErrorService', function($translate) {
+    var get, types;
+    types = {
+      GENERIC: 'error',
+      ITEM_NO_LONGER_AVAILABLE: 'error',
+      GEOLOCATION_ERROR: 'error',
+      TOPUP_SUCCESS: 'success',
+      ATTENDEES_CHANGED: 'info',
+      PAYMENT_FAILED: 'danger',
+      PASSWORD_RESET_SUCESS: 'success',
+      TOPUP_SUCCESS: 'success',
+      UPDATE_SUCCESS: 'success',
+      PASSWORD_RESET_REQ_SUCCESS: 'success'
+    };
+    get = function(key) {
+      return {
+        msg: $translate.instant("ALERTS." + key),
         persist: true,
-        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
-      }, {
-        key: 'LOCATION_NOT_FOUND',
-        type: 'warning',
         title: '',
-        persist: true,
-        msg: "Sorry, we don't recognise that location"
-      }, {
-        key: 'MISSING_LOCATION',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter your location'
-      }, {
-        key: 'MISSING_POSTCODE',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a postcode'
-      }, {
-        key: 'INVALID_POSTCODE',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a valid postcode'
-      }, {
-        key: 'ITEM_NO_LONGER_AVAILABLE',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
-      }, {
-        key: 'FORM_INVALID',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please complete all required fields'
-      }, {
-        key: 'GEOLOCATION_ERROR',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we could not determine your location. Please try searching instead.'
-      }, {
-        key: 'EMPTY_BASKET_FOR_CHECKOUT',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to add some items to the basket before you can checkout.'
-      }, {
-        key: 'MAXIMUM_TICKETS',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the maximum number of tickets per person has been reached.'
-      }, {
-        key: 'GIFT_CERTIFICATE_REQUIRED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'A valid Gift Certificate is required to proceed with this booking'
-      }, {
-        key: 'TIME_SLOT_NOT_SELECTED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to select a time slot'
-      }, {
-        key: 'APPT_AT_SAME_TIME',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your appointment is already booked for this time'
-      }, {
-        key: 'REQ_TIME_NOT_AVAIL',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'The requested time slot is not available. Please choose a different time.'
-      }, {
-        key: 'TOPUP_SUCCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Your wallet has been topped up'
-      }, {
-        key: 'TOPUP_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your topup failed. Please try again.'
-      }, {
-        key: 'UPDATE_SUCCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Updated'
-      }, {
-        key: 'UPDATE_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Update failed. Please try again'
-      }, {
-        key: 'ALREADY_REGISTERED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You have already registered with this email address. Please login or reset your password.'
-      }, {
-        key: 'LOGIN_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your email or password was not recognised. Please try again or reset your password.'
-      }, {
-        key: 'PASSWORD_INVALID',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your chosen password is invalid'
-      }, {
-        key: 'PASSWORD_RESET_REQ_SUCCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'We have sent you an email with instructions on how to reset your password.'
-      }, {
-        key: 'PASSWORD_RESET_REQ_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we didn\'t find an account registered with that email.'
-      }, {
-        key: 'PASSWORD_RESET_SUCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Your password has been updated.'
-      }, {
-        key: 'PASSWORD_RESET_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we couldn\'t update your password. Please try again.'
-      }, {
-        key: 'PASSWORD_MISMATCH',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your passwords don\'t match'
-      }, {
-        key: 'ATTENDEES_CHANGED',
-        type: 'info',
-        title: '',
-        persist: true,
-        msg: 'Your booking has been successfully updated'
-      }, {
-        key: 'PAYMENT_FAILED',
-        type: 'danger',
-        title: '',
-        persist: true,
-        msg: 'We were unable to take payment. Please contact your card issuer or try again using a different card'
-      }, {
-        key: 'ACCOUNT_DISABLED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists."
-      }, {
-        key: 'FB_LOGIN_NOT_A_MEMBER',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Sorry, we couldn't find a login linked with your Facebook account. You will need to sign up using Facebook first."
-      }
-    ];
+        type: types[key] || 'warning'
+      };
+    };
     return {
-      getError: function(key) {
-        var error, translate;
-        error = _.findWhere(alerts, {
-          key: key
-        });
-        error.persist = true;
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (error && translate) {
-          return {
-            msg: "ERROR." + key
-          };
-        } else if (error && !translate) {
-          return error;
-        } else if (translate) {
-          return {
-            msg: 'GENERIC'
-          };
-        } else {
-          return alerts[0];
-        }
-      },
-      getAlert: function(key) {
-        var alert, translate;
-        alert = _.findWhere(alerts, {
-          key: key
-        });
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (alert && translate) {
-          return {
-            msg: "ALERT." + key
-          };
-        } else if (alert && !translate) {
-          return alert;
-        } else {
-          return null;
-        }
-      }
+      getError: get,
+      getAlert: get
     };
   });
 
@@ -25577,6 +25640,47 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  angular.module('BB.Services').factory('I18nService', function($translate, $window, $q, angularLoad, $translationCache) {
+    var defaultLocale, factory, initialized, supportedLocales;
+    supportedLocales = ['en', 'fr', 'de'];
+    defaultLocale = $translate.proposedLanguage() || 'en';
+    initialized = false;
+    factory = function(options) {
+      return $q.when($window.bookingbug.translations[options.key]);
+    };
+    factory.setLocale = function(locale) {
+      var loadingPromise;
+      loadingPromise = locale === 'en' ? $q.when() : angularLoad.loadScript("i18n/" + locale + ".js");
+      return loadingPromise.then(function() {
+        $translate.use(locale);
+        return moment.locale(locale);
+      });
+    };
+    factory.getDefaultLocale = function() {
+      return defaultLocale;
+    };
+    factory.getSupportedLocales = function() {
+      return supportedLocales;
+    };
+    factory.init = function(multilingual, locales) {
+      if (!initialized) {
+        initialized = true;
+        if (multilingual) {
+          supportedLocales = locales || supportedLocales;
+          return this.setLocale($translate.proposedLanguage() || 'en').then(function() {
+            return $translate.refresh();
+          });
+        } else {
+          return $translate.use('en');
+        }
+      }
+    };
+    return factory;
+  });
+
+}).call(this);
+
+(function() {
   angular.module('BB.Services').factory("ItemService", function($q, BBModel) {
     return {
       query: function(prms) {
@@ -25792,21 +25896,6 @@ function getURIparam( name ){
         }
       }
     };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('LocaleService', function($window) {
-    var locale;
-    locale = $window.getURIparam('locale');
-    if (locale) {
-      return locale;
-    } else if ($window.navigator.language) {
-      return $window.navigator.language;
-    } else {
-      return "en";
-    }
   });
 
 }).call(this);
@@ -26371,6 +26460,55 @@ function getURIparam( name ){
 
 }).call(this);
 
+
+/***
+* @ngdoc service
+* @name BB.Services:PathHelper
+*
+* @description
+* Helper service for retrieving params from $location.path 
+*
+ */
+
+(function() {
+  angular.module('BB.Services').factory('PathHelper', function($urlMatcherFactory, $location) {
+    return {
+
+      /***
+        * @ngdoc method
+        * @name matchRouteToPath
+        * @methodOf BB.Services:PathHelper
+        * @description
+        * Get the email pattern
+        * @param {string} the route format
+        * @param {string} optional argument specifying the param to return from the path if matched, e.g. 'page'
+        *
+        * @returns {Object} the match object or matched param
+       */
+      matchRouteToPath: function(route_format, param) {
+        var match, match_test, parts, pattern;
+        if (!$location.path() || !route_format) {
+          return false;
+        }
+        parts = route_format.split("/");
+        match = null;
+        while (parts.length > 0 && !match) {
+          match_test = parts.join("/");
+          pattern = $urlMatcherFactory.compile(match_test);
+          match = pattern.exec($location.path());
+          parts.pop();
+        }
+        if (match[param]) {
+          return match[param];
+        } else {
+          return match;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
 (function() {
   angular.module('BB.Services').factory("PersonService", function($q, BBModel) {
     return {
@@ -26795,17 +26933,10 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Services').factory('SettingsService', function() {
-    var country_code, i18n, scroll_offset;
-    i18n = false;
+    var country_code, scroll_offset;
     scroll_offset = 0;
     country_code = "";
     return {
-      enableInternationalizaton: function() {
-        return i18n = true;
-      },
-      isInternationalizatonEnabled: function() {
-        return i18n;
-      },
       setScrollOffset: function(value) {
         return scroll_offset = parseInt(value);
       },
@@ -27008,6 +27139,12 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  var base;
+
+  (base = moment.fn).toISODate || (base.toISODate = function() {
+    return this.locale('en').format('YYYY-MM-DD');
+  });
+
   angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient) {
     return {
       query: function(prms) {
@@ -28291,7 +28428,7 @@ function getURIparam( name ){
    */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope) {
+  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper) {
     var Widget;
     return Widget = (function() {
       function Widget() {
@@ -28347,7 +28484,7 @@ function getURIparam( name ){
        */
 
       Widget.prototype.updateRoute = function(page) {
-        var company, date, event_group, pattern, prms, service_name, time, url;
+        var company, date, event, event_group, pattern, prms, service_name, time, url;
         if (!this.routeFormat) {
           return;
         }
@@ -28355,12 +28492,16 @@ function getURIparam( name ){
         pattern = $urlMatcherFactory.compile(this.routeFormat);
         service_name = "-";
         event_group = "-";
+        event = "-";
         if (this.current_item) {
           if (this.current_item.service) {
             service_name = this.convertToDashSnakeCase(this.current_item.service.name);
           }
           if (this.current_item.event_group) {
             event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
+          }
+          if (this.current_item.event) {
+            event = this.current_item.event.id;
           }
           if (this.current_item.date) {
             date = this.current_item.date.date.toISODate();
@@ -28382,7 +28523,8 @@ function getURIparam( name ){
           service: service_name,
           event_group: event_group,
           date: date,
-          time: time
+          time: time,
+          event: event
         });
         url = pattern.format(prms);
         url = url.replace(/\/+$/, "");
@@ -28403,48 +28545,42 @@ function getURIparam( name ){
        */
 
       Widget.prototype.setRouteFormat = function(route) {
-        var match, match_test, parts, path, pattern;
+        var match;
         this.routeFormat = route;
         if (!this.routeFormat) {
           return;
         }
         this.routing = true;
-        path = $location.path();
-        if (path) {
-          parts = this.routeFormat.split("/");
-          while (parts.length > 0 && !match) {
-            match_test = parts.join("/");
-            pattern = $urlMatcherFactory.compile(match_test);
-            match = pattern.exec(path);
-            parts.pop();
+        match = PathHelper.matchRouteToPath(this.routeFormat);
+        if (match) {
+          if (match.company) {
+            this.item_defaults.company = decodeURIComponent(match.company);
           }
-          if (match) {
-            if (match.company) {
-              this.item_defaults.company = decodeURIComponent(match.company);
-            }
-            if (match.service && match.service !== "-") {
-              this.item_defaults.service = decodeURIComponent(match.service);
-            }
-            if (match.event_group && match.event_group !== "-") {
-              this.item_defaults.event_group = match.event_group;
-            }
-            if (match.person) {
-              this.item_defaults.person = decodeURIComponent(match.person);
-            }
-            if (match.resource) {
-              this.item_defaults.resource = decodeURIComponent(match.resource);
-            }
-            if (match.resources) {
-              this.item_defaults.resources = decodeURIComponent(match.resoures);
-            }
-            if (match.date) {
-              this.item_defaults.date = match.date;
-            }
-            if (match.time) {
-              this.item_defaults.time = match.time;
-            }
-            return this.route_matches = match;
+          if (match.service && match.service !== "-") {
+            this.item_defaults.service = decodeURIComponent(match.service);
           }
+          if (match.event_group && match.event_group !== "-") {
+            this.item_defaults.event_group = match.event_group;
+          }
+          if (match.event && match.event !== "-") {
+            this.item_defaults.event = decodeURIComponent(match.event);
+          }
+          if (match.person) {
+            this.item_defaults.person = decodeURIComponent(match.person);
+          }
+          if (match.resource) {
+            this.item_defaults.resource = decodeURIComponent(match.resource);
+          }
+          if (match.resources) {
+            this.item_defaults.resources = decodeURIComponent(match.resoures);
+          }
+          if (match.date) {
+            this.item_defaults.date = match.date;
+          }
+          if (match.time) {
+            this.item_defaults.time = match.time;
+          }
+          return this.route_matches = match;
         }
       };
 
@@ -28460,13 +28596,10 @@ function getURIparam( name ){
        */
 
       Widget.prototype.matchURLToStep = function() {
-        var path, step;
-        if (!this.routeFormat) {
-          return null;
-        }
-        path = $location.path();
+        var page, step;
+        page = PathHelper.matchRouteToPath(this.routeFormat, 'page');
         step = _.findWhere(this.allSteps, {
-          page: path.replace(/\//g, '')
+          page: page
         });
         if (step) {
           return step.number;
@@ -30260,3 +30393,355 @@ function getURIparam( name ){
   });
 
 }).call(this);
+
+;window.bookingbug.translations.en = {
+  "CHANGE_LANG":"Change language",
+  "EN":"English",
+  "DE":"Deutsch",
+  "FR":"Français",
+  "POWERED_BY":"Bookings powered by",
+  "DASHBOARD":"Dashboard",
+  "DASHBOARD_TITLE":"Pick a Location/Service",
+  "PROGRESS_BAR_TITLE":"Step",
+  "PROGRESS_BAR_COMPLETE":"Complete",
+  "PROGRESS_BACK":"Back",
+  "PROGRESS_PREVIOUS":"Previous",
+  "PROGRESS_CANCEL":"Cancel",
+  "PROGRESS_CLEAR":"Clear",
+  "PROGRESS_SEARCH":"Search",
+  "PROGRESS_SELECT":"Select",
+  "PROGRESS_CONFIRM":"Confirm",
+  "PROGRESS_NEXT":"Next",
+  "PROGRESS_CONTINUE":"Continue",
+  "PROGRESS_BOOK":"Book",
+  "PROGRESS_BOOK_WAITLIST_ITEMS":"Book Waitlist Items",
+  "PROGRESS_ADD":"Add",
+  "PROGRESS_BUY":"Buy",
+  "PROGRESS_RESERVE":"Reserve",
+  "PROGRESS_APPLY":"Apply",
+  "PROGRESS_REMOVE":"Remove",
+  "PROGRESS_OK":"OK",
+  "PROGRESS_MOVE_BOOKING":"Move booking",
+  "PROGRESS_CANCEL_CANCEL":"Do not cancel",
+  "PROGRESS_CANCEL_BOOKING":"Cancel booking",
+  "MAP_TITLE":"Search for a store to begin your booking.",
+  "MAP_PLACEHOLDER":"Enter a town, city, postcode or store",
+  "GEOLOCATE":"Use current location",
+  "STORE_RESULT_TITLE":"{results, plural, =0{No results} one{1 result} other{# results}} for stores near {address}",
+  "STORE_PHONE":"Phone",
+  "PICK_A_SERVICE":"pick a service",
+  "PICK_STAFF":"Pick a staff member",
+  "PICK_A_RESOURCE":"pick a resource",
+  "AVAIL_TITLE":"Select a date and time for your {{ current_item }} appointment.",
+  "AVAIL_DAY_PREVIOUS":"Previous Day",
+  "AVAIL_DAY_NEXT":"Next Day",
+  "AVAIL_MONTH_PREVIOUS":"Previous Month",
+  "AVAIL_MONTH_NEXT":"Next Month",
+  "AVAIL_MORNING":"Morning",
+  "AVAIL_AFTERNOON":"Afternoon",
+  "AVAIL_EVENING":"Evening",
+  "AVAILABLE":"{number, plural, =0{No availability} other{# available}}",
+  "AVAIL_NO":"No Service Available",
+  "PICK_A_DATE":"Pick a date",
+  "HOUR":"hour",
+  "MIN":"min",
+  "AND":"and",
+  "AT":"at",
+  "FILTER":"Filter",
+  "FILTER_ANY":"Any ",
+  "FILTER_CATEGORY":"Category",
+  "FILTER_FILTERED":"Showing filtered events",
+  "FILTER_NONE":"Showing all events",
+  "FILTER_RESET":"Reset",
+  "SERVICE_LIST_NO":"No services match your filter criteria.",
+  "ITEM":"Item",
+  "ITEM_SERVICE":"Service",
+  "ITEM_RESOURCE":"Resource",
+  "ITEM_PERSON":"Person",
+  "ITEM_PRICE":"Price",
+  "ITEM_DUE_NOW":"Due Now",
+  "ITEM_FREE":"Free",
+  "ITEM_DATE":"Date",
+  "ITEM_TIME":"Time",
+  "ITEM_DATE_AND_OR_TIME":"Date/Time",
+  "ITEM_SESSION":"Session",
+  "ITEM_DURATION":"Duration",
+  "ITEM_QTY":"Qty",
+  "ITEM_QUANTITY":"Quantity",
+  "ITEM_TYPE":"Type",
+  "ITEM_WHEN":"When",
+  "ITEM_WHERE":"Where",
+  "ITEM_FROM":"From",
+  "ITEM_TO": "To",
+  "ITEM_DESCRIPTION":"Description",
+  "ITEM_CONFIRMATION":"Confirmation",
+  "EVENT_DETAILS_TITLE":"Course details",
+  "EVENT_WORD":"Events",
+  "EVENT_LOCATION":"Events at",
+  "EVENT_NO":"No events found",
+  "EVENT_SOLD_OUT":"Sold out",
+  "EVENT_SOLD_OUT_HIDE":"Hide Sold Out Events",
+  "EVENT_SOLD_OUT_SHOW":"Show Sold Out Events",
+  "EVENT_TICKET":"ticket",
+  "EVENT_TICKET_SUMMARY_TITLE":"Ticket Summary",
+  "EVENT_TICKETS":"Tickets",
+  "EVENT_SPACE_WORD":"space",
+  "EVENT_LEFT_WORD":"left",
+  "EVENT_JOIN_WAITLIST":"Join Waitlist",
+  "EVENT_PAYMENT":"Please complete payment to confirm your booking",
+  "WAITLIST_BOOKING_TITLE":"Your Waitlist booking",
+  "BASKET_TITLE":"Your basket",
+  "BASKET_WALLET":"Wallet",
+  "BASKET_WALLET_BALANCE":"Current Wallet Balance",
+  "BASKET_WALLET_BALANCE_INSUFFICIENT":"Oh no! You do not currently have enough money in your wallet account. You can either pay the full amount, or top up to add more money to your wallet.",
+  "BASKET_WALLET_REMAINDER_PART_ONE":"You will have",
+  "BASKET_WALLET_REMAINDER_PART_TWO":"left in your wallet after this purchase",
+  "BASKET_WALLET_TOP_UP":"Top Up",
+  "BASKET_WALLET_MAKE_PAYMENT":"Make Payment",
+  "BASKET_WALLET_AMOUNT":"Amount",
+  "BASKET_WALLET_AMOUNT_MINIMUM":"Minimum top up amount must be greater than",
+  "BASKET_ADD":"Add to Basket",
+  "BASKET_BOOKING_FEE":"Booking Fee",
+  "BASKET_CHECKOUT":"Checkout",
+  "BASKET_DISCOUNT":"Discount",
+  "BASKET_COUPON_DISCOUNT":"Coupon Discount",
+  "BASKET_COUPON_APPLY":"Apply a coupon",
+  "BASKET_CERTIFICATE_PAID":"Certificate Paid",
+  "BASKET_DETAILS_TITLE":"Basket Details",
+  "BASKET_DETAILS_NO":"No items added to basket yet.",
+  "BASKET_ITEM_APPOINTMENT":"Appointment",
+  "BASKET_ITEM_ADD":"Add another item",
+  "BASKET_ITEM_NO":"There are no items in the basket",
+  "BASKET_ITEM_ADD_INSTRUCT":"Please press the add another item button if you wish to add a product or service.",
+  "BASKET_GIFT_CERTIFICATE":"Gift Certificates",
+  "BASKET_GIFT_CERTIFICATE_APPLY":"Apply a Gift Certificate",
+  "BASKET_GIFT_CERTIFICATE_APPLY_ANOTHER":"Apply another Gift Certificate",
+  "BASKET_GIFT_CERTIFICATE_APPLIED":"Gift Certificates applied",
+  "BASKET_GIFT_CERTIFICATE_BUY":"Buy Gift Certificates",
+  "BASKET_GIFT_CERTIFICATE_QUESTION":"Have a gift certificate?",
+  "BASKET_GIFT_CERTIFICATE_TOTAL":"Total Gift Certificates",
+  "BASKET_GIFT_CERTIFICATE_BALANCE":"Remaining Value on Gift Certificate",
+  "BASKET_GIFT_CERTIFICATE_SELECTED": "Selected Gift Certificates",
+  "BASKET_PRICE_ORIGINAL":"Original Price",
+  "BASKET_SUBTOTAL":"Subtotal",
+  "BASKET_TOTAL":"Total",
+  "BASKET_TOTAL_DUE_NOW":"Total Due Now",
+  "REVIEW_TITLE":"Review your appointment details",
+  "DETAILS_ADDRESS_VALIDATION_MSG": "Please enter your address",
+  "DETAILS_TITLE":"Your details",
+  "DETAILS_WORD":"Details",
+  "DETAILS_FIRST_NAME":"First Name",
+  "DETAILS_FIRST_NAME_VALIDATION_MSG":"Please enter your first name",
+  "DETAILS_LAST_NAME":"Last Name",
+  "DETAILS_LAST_NAME_VALIDATION_MSG":"Please enter your last name",
+  "DETAILS_EMAIL":"E-mail",
+  "DETAILS_EMAIL_VALIDATION_MSG":"Please enter a valid email address",
+  "DETAILS_PHONE_MOBILE":"Mobile",
+  "DETAILS_PHONE_MOBILE_VALIDATION_MSG":"Please enter a valid mobile number",
+  "DETAILS_ADDRESS":"Address",
+  "DETAILS_TOWN":"Town",
+  "DETAILS_COUNTY":"County",
+  "DETAILS_POSTCODE":"Postcode",
+  "DETAILS_TERMS":" I agree to the terms and conditions",
+  "DETAILS_TERMS_VALIDATION_MSG":"Please accept the terms and conditions",
+  "DETAILS_VALIDATION_MSG":"This field is required",
+  "DETAILS_REQUIRED":"Required",
+  "DETAILS_OPTIONAL":"optional",
+  "DETAILS_OTHER_INFO":"Other information",
+  "DETAILS_QUESTIONS":"Questions",
+  "CLIENT_DETAILS_TITLE":"Client details",
+  "CLIENT_DETAILS_INSTRUCTION":"Search for a customer or create a new one",
+  "CLIENT_DETAILS_SEARCH":"Search for a customer",
+  "CLIENT_DETAILS_SEARCH_BY_NAME_OR_EMAIL":"Search by Name or Email",
+  "CLIENT_DETAILS_ENTER":"Enter customer details",
+  "CLIENT_DETAILS_FIRST_NAME":"Please enter the client's first name",
+  "CLIENT_DETAILS_LAST_NAME":"Please enter the client's last name",
+  "CLIENT_DETAILS_CREATE":"Create Client",
+  "CLIENT_BOOKING_NOTES":"Booking Notes",
+  "ATTENDEE":"Attendee",
+  "ATTENDEE_FIRST_NAME_VALIDATION_MSG":"Please enter a first name for this attendee",
+  "ATTENDEE_LAST_NAME_VALIDATION_MSG":"Please enter last name for this attendee",
+  "ATTENDEE_EMAIL_VALIDATION_MSG":"Please enter a valid email address for this attendee",
+  "ATTENDEE_IS_YOU_QUESTION":"Are you the attendee?",
+  "ATTENDEE_USE_MY_DETAILS":" Yes, use my details",
+  "RECIPIENT":"Recipient",
+  "RECIPIENT_ADD":"Add a Recipient",
+  "RECIPIENT_TO":"Who should we send the gift voucher to?",
+  "RECIPIENT_ME":"Me",
+  "RECIPIENT_NOT_ME":"Someone else",
+  "RECIPIENT_NAME":"Name",
+  "RECIPIENT_NAME_VALIDATION_MSG":"Please enter the recipient's full name",
+  "RECIPIENT_EMAIL_VALIDATION_MSG":"Please enter a valid email address",
+  "MEMBERSHIP_TYPES":"Membership Types",
+  "PAYMENT_WORD":"Payment",
+  "PAYMENT_DETAILS_TITLE":"Payment Details",
+  "PAYMENT_INSTRUCTION":"Please enter your payment details to confirm your booking.",
+  "NEWSLETTER":"Sign up to our email newsletter and be first to hear about events, news and inspiration.",
+  "REVIEW":"Review",
+  "CONFIRMATION_BOOKING_TITLE":"Booking Confirmation",
+  "CONFIRMATION_BOOKING_SUBHEADER":"Thanks {{ member_name }}. Your booking is now confirmed. We have emailed you the details below.",
+  "CONFIRMATION_BOOKING_SUBHEADER_WITH_WAITLIST":"Thanks {{ member_name }}. Your have successfully made the following bookings. We have you emailed you the details below.",
+  "CONFIRMATION_PAYMENT_TITLE":"Payment Confirmation",
+  "CONFIRMATION_PAYMENT_SUBHEADER":"Thanks {{ member_name }}. Your payment was successful. We have you emailed you the details below.",
+  "CONFIRMATION_PURCHASE_TITLE":"Your {{ service_name }} booking",
+  "CONFIRMATION_WAITLIST_SUBHEADER":"Thanks {{ member_name }}. You have successully booked onto {{ purchase_item }}.", 
+  "CONFIRMATION_INSPIRATION_LINK":"Visit our inspiration site",
+  "CONFIRMATION_HOMEPAGE_LINK":"Return to the homepage",
+  "BOOKING_REFERENCE":"Booking Reference",
+  "PRINT":" Print",
+  "CALENDAR_EXPORT_TITLE":" Export to calendar",
+  "CANCEL_QUESTION":"Are you sure you want to cancel this booking?",
+  "CANCEL_CONFIRMATION":"Your booking has been cancelled.",
+  "RESULTS":"Results",
+  "PLEASE_TRY_AGAIN":"Please try again",
+  "ADD_ONS":"Add-ons",
+  "SURVEY_WORD":"Survey",
+  "SURVEY_NO":"No survey questions for this session.",
+  "SURVEY_SUBMIT":"Submit Answers",
+  "SURVEY_THANK_YOU":"Thank you for filling out the survey!",
+  "ALERTS":{
+    "GENERIC":"Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+    "LOCATION_NOT_FOUND":"Sorry, we don't recognise that location",
+    "MISSING_LOCATION":"Please enter your location",
+    "MISSING_POSTCODE":"Please enter a postcode",
+    "INVALID_POSTCODE":"Please enter a valid postcode",
+    "ITEM_NO_LONGER_AVAILABLE":"Sorry. The item you were trying to book is no longer available. Please try again.",
+    "FORM_INVALID":"Please complete all required fields",
+    "GEOLOCATION_ERROR":"Sorry, we could not determine your location. Please try searching instead.",
+    "EMPTY_BASKET_FOR_CHECKOUT":"There are no items in the basket to proceed to checkout.",
+    "ACCOUNT_DISABLED": "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+    "PAYMENT_FAILED": "We were unable to take payment. Please contact your card issuer or try again using a different card",
+    "ATTENDEES_CHANGED": "Your booking has been successfully updated",
+    "PASSWORD_MISMATCH": "Your passwords don't match",
+    "PASSWORD_RESET_FAILED": "Sorry, we couldn't update your password. Please try again.",
+    "PASSWORD_RESET_SUCESS": "Your password has been updated.",
+    "MAXIMUM_TICKETS": "Sorry, the maximum number of tickets per person has been reached.",
+    "GIFT_CERTIFICATE_REQUIRED": "A valid Gift Certificate is required to proceed with this booking",
+    "TIME_SLOT_NOT_SELECTED": "You need to select a time slot",
+    "APPT_AT_SAME_TIME": "Your appointment is already booked for this time",
+    "REQ_TIME_NOT_AVAIL": "The requested time slot is not available. Please choose a different time.",
+    "TOPUP_SUCCESS": "Your wallet has been topped up",
+    "TOPUP_FAILED": "Sorry, your topup failed. Please try again.",
+    "UPDATE_SUCCESS": "Updated",
+    "UPDATE_FAILED": "Update failed. Please try again",
+    "ALREADY_REGISTERED": "You have already registered with this email address. Please login or reset your password.",
+    "LOGIN_FAILED": "Sorry, your email or password was not recognised. Please try again or reset your password.",
+    "PASSWORD_INVALID": "Sorry, your chosen password is invalid",
+    "PASSWORD_RESET_REQ_SUCCESS": "We have sent you an email with instructions on how to reset your password.",
+    "PASSWORD_RESET_REQ_FAILED": "Sorry, we didn't find an account registered with that email.",
+    "FB-LOGIN-FAILED": "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first"
+  },
+  "THOUSANDS_SEPARATOR": ",",
+  "DECIMAL_SEPARATOR": ".",
+  "CURRENCY_FORMAT": "%s%v",
+  "TIME_SEPARATOR": " and ",
+  "PASSWORD": "Password",
+  "LOG_IN": "Log in",
+  "NEW_BOOKING": "New booking",
+  "EDIT": "Edit",
+  "SAVE_BOOKING": "Save booking",
+  "DISMISS": "Dismiss",
+  "BOOKING": "Booking",
+  "EMAIL_CUSTOMER_QUESTION": "Email customer?",
+  "CLOSE": "Close",
+  "UPCOMING_BOOKINGS": "Upcoming bookings",
+  "PAST_BOOKINGS": "Past bookings",
+  "PURCHASES": "Purchases",
+  "NO_PAST_BOOKINGS": "You don't currently have any past bookings.",
+  "NO_PREPAID_BOOKINGS": "You don't currently have any pre-paid bookings.",
+  "REMAINING_BOOKINGS": "{remaining} of {total} remaining",
+  "PREPAID_BOOKING_DATES": "Book By {{booking.book_by | datetime}} | Use from {{booking.use_from | datetime}} | Use by {{booking.use_by | datetime}}",
+  "YOUR_PURCHASES": "Your Purchases",
+  "NO_CURRENT_PURCHASES": "You don't currently have any purchases",
+  "PURCHASE_REF": "Purchase Ref",
+  "NO_UPCOMING_BOOKINGS": "You don't currently have any upcoming bookings.",
+  "PICK_COMPANY": "Pick Company",
+  "WALLET_TRANSACTION_HISTORY": "Wallet Transaction History",
+  "ACTION": "Action",
+  "AMOUNT": "Amount",
+  "BALANCE": "Balance",
+  "CHANGED_BY": "Changed By",
+  "DATE_AND_TIME": "Date and Time",
+  "WALLET_PURCHASE_BANDS": "Wallet Purchase Bands",
+  "WALLET_NO_CREDIT": "You dont have any credit in your wallet.",
+  "WALLET_NOT_ACTIVE": "Your wallet is not active.",
+  "ACTIVATE": "Activate",
+  "ACTIVE": "Active",
+  "STATUS": "Status",
+  "TOP_UP": "Top Up",
+  "MIN_TOP_UP": "Minimum top up amount must be greater than {{amount | currency }}",
+  "TOP_UP_WALLET": "Top up wallet by {{amount | currency}}",
+  "MAKE_PAYMENT": "Make Payment",
+  "$X_FOR_$Y": "{{x | currency}} for {{y | currency}}",
+  "YES": "Yes",
+  "NO": "No",
+  "NEW_EVENT_CHAIN": "New Event Chain",
+  "NEW_EVENT_GROUP": "New Event Group",
+  "DELETE": "Delete",
+  "NEW_ADMINISTRATOR": "New Administrator",
+  "SCHEDULE": "Schedule",
+  "NEW_PERSON": "New Person",
+  "NEW_RESOURCE": "New Resource",
+  "NEW_SERVICE": "New Service",
+  "TIME_AND_DURATION": "{{ time | datetime: 'LLLL':false}} for {{ duration | time_period }}",
+  "REQUIRED_FIELDS": "*Required fields",
+  "PLEASE_ENTER_FIRST_NAME": "Please enter a first name",
+  "PLEASE_ENTER_LAST_NAME": "Please enter a last name",
+  "PLEASE_ENTER_SOMETHING": "*Please enter a first and last name or email address",
+  "DISTANCE_UNIT": "mi",
+  "SELECT_SERVICE": "Select a service",
+  "SELECT_CATEGORY": "Select a category",
+  "SERVICE_TYPE": "Choose service type",
+  "ANY_DATE": "- Any date -",
+  "PICK_DATE": "Pick date",
+  "FULL_CALENDAR": "Full calendar",
+  "WEEK_BEGINNING": "Week beginning",
+  "SELECT_DAY": "Select a day",
+  "UNAVAILABLE": "Unavailable",
+  "PREVIOUS_5_WEEKS": "Previous 5 Weeks",
+  "NEXT_5_WEEKS": "Next 5 Weeks",
+  "KEY": "Key",
+  "APPOINTMENT_TYPE": "Select appointment type",
+  "SPACES_LEFT": "Only {N, plural, one{one space}, others{# spaces}} left",
+  "JOIN_WAITLIST": "Join waitlist",
+  "BASKET_STATUS": "{N, plural, =0 {empty}, one {One item in your basket}, others {#items in your basket}}",
+  "SPEND_AT_LEAST": "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+  "SELECT_GIFT_CERTIFICATE": "You need to select at least one Gift Certificate to continue",
+  "SELECT_DURATION": "You need to select a duration",
+  "SELECT_DATE": "You need to select a date",
+  "TIME_SLOT_NOT_AVAILABLE": "Sorry, your requested time slot is not available. Please choose a different time.",
+  "SELECT_TIME_SLOT": "Please select a time slot",
+  "MAKE_BOOKING": "Make a booking",
+  "BLOCK_TIME": "Block time",
+  "FOR_SERVICE": "For",
+  "HIDE_STORES": "Hide stores with no availability",
+  "SERVICE_UNAVAILABLE": "Sorry, but {{name}} is not available at this location",
+  "REMEMBER_ME": "Remember me",
+  "LOGIN": "Login",
+  "EMAIL": "Email",
+  "PLEASE_ENTER_PASSWORD": "Please enter your password"
+};
+
+moment.locale('en', {
+  longDateFormat: {
+    LT : "h:mma",
+    LL: "Do MMMM YYYY",
+    LLL: "Do MMM YYYY h:mma",
+    LLLL : "dddd Do MMMM YYYY h:mma"
+  },
+  relativeTime: {
+    future: "in %s",
+    past:   "%s ago",
+    s:  "seconds",
+    m:  "one minute",
+    mm: "%d minutes",
+    h:  "one hour",
+    hh: "%d hours",
+    d:  "one day",
+    dd: "%d days",
+    M:  "one month",
+    MM: "%d months",
+    y:  "one year",
+    yy: "%d years"
+  }  
+});

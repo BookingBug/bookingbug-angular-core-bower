@@ -318,7 +318,14 @@
   "SELECT_TIME_SLOT": "Please select a time slot",
   "MAKE_BOOKING": "Make a booking",
   "BLOCK_TIME": "Block time",
-  "FOR_SERVICE": "For"
+  "FOR_SERVICE": "For",
+  "HIDE_STORES": "Hide stores with no availability",
+  "SERVICE_UNAVAILABLE": "Sorry, but {{name}} is not available at this location",
+  "REMEMBER_ME": "Remember me",
+  "LOGIN": "Login",
+  "EMAIL": "Email",
+  "PLEASE_ENTER_PASSWORD": "Please enter your password"
+  
 };
 
 (function (global, factory) {
