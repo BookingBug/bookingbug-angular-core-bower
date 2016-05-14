@@ -6908,7 +6908,6 @@ function getURIparam( name ){
       if ($scope.bb.item_defaults.event_chain) {
         deferred.resolve([]);
       } else {
-        $scope.notLoaded($scope);
         comp || (comp = $scope.bb.company);
         params = {
           item: $scope.bb.current_item,
@@ -6916,7 +6915,6 @@ function getURIparam( name ){
           end_date: $scope.end_date.toISODate()
         };
         EventChainService.query(comp, params).then(function(event_chains) {
-          $scope.setLoaded($scope);
           return deferred.resolve(event_chains);
         }, function(err) {
           return deferred.reject();
