@@ -6750,6 +6750,7 @@ function getURIparam( name ){
     });
     $scope.events = {};
     $scope.fully_booked = false;
+    $scope.event_data_loaded = false;
     FormDataStoreService.init('EventList', $scope, ['selected_date', 'event_group_id', 'event_group_manually_set']);
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
@@ -6935,12 +6936,13 @@ function getURIparam( name ){
      */
     $scope.loadEventData = function(comp) {
       var chains, current_event, deferred, params;
+      $scope.notLoaded($scope);
+      $scope.event_data_loaded = false;
       if ($scope.mode === 0) {
         delete $scope.items;
       }
       deferred = $q.defer();
       current_event = $scope.current_item.event;
-      $scope.notLoaded($scope);
       comp || (comp = $scope.bb.company);
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
@@ -7029,6 +7031,7 @@ function getURIparam( name ){
           $scope.filterChanged();
           PaginationService.update($scope.pagination, $scope.filtered_items.length);
           $scope.setLoaded($scope);
+          $scope.event_data_loaded = true;
           return deferred.resolve($scope.items);
         }, function(err) {
           return deferred.reject();
