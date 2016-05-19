@@ -16,6 +16,10 @@ div.loader {
   display: block;
   background: url("images/BB_wait.gif"); }
 
+.modal-content div.loader {
+  width: 100px;
+  height: 100px; }
+
 [bb-loading-spinner] div.loader-wrapper {
   position: absolute;
   z-index: 10;
