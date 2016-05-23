@@ -2156,7 +2156,7 @@ function getURIparam( name ){
         day: '=',
         slots: '=',
         selectSlot: '=',
-        disabledSlot: '='
+        disabled_slot: "=disabledSlot"
       },
       controller: 'AccordionRangeGroup',
       link: function(scope, element, attrs) {
@@ -2244,18 +2244,32 @@ function getURIparam( name ){
     * @param {string} slot The slot of range group
      */
     updateAvailability = function(day, slot) {
-      var i, len, ref, relevent_slot;
+      var i, j, len, len1, ref, ref1, relevent_slot, times;
       $scope.selected_slot = null;
       if ($scope.accordion_slots) {
         $scope.has_availability = hasAvailability();
       }
-      if ($scope.disabledSlot) {
-        if ($scope.disabledSlot.date === $scope.day.date.toISODate()) {
-          relevent_slot = _.findWhere($scope.slots, {
-            time: $scope.disabledSlot.time
-          });
-          if (relevent_slot) {
-            relevent_slot.disabled = true;
+      if ($scope.disabled_slot && $scope.disabled_slot.time) {
+        if ($scope.disabled_slot.date === $scope.day.date.toISODate()) {
+          if (Array.isArray($scope.disabled_slot.time)) {
+            ref = $scope.disabled_slot.time;
+            for (i = 0, len = ref.length; i < len; i++) {
+              times = ref[i];
+              times;
+              relevent_slot = _.findWhere($scope.slots, {
+                time: times
+              });
+              if (relevent_slot) {
+                relevent_slot.disabled = true;
+              }
+            }
+          } else {
+            relevent_slot = _.findWhere($scope.slots, {
+              time: $scope.disabled_slot.time
+            });
+            if (relevent_slot) {
+              relevent_slot.disabled = true;
+            }
           }
         }
       }
@@ -2264,9 +2278,9 @@ function getURIparam( name ){
           $scope.selected_slot = slot;
         }
       } else {
-        ref = $scope.accordion_slots;
-        for (i = 0, len = ref.length; i < len; i++) {
-          slot = ref[i];
+        ref1 = $scope.accordion_slots;
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          slot = ref1[j];
           if (slot.selected) {
             $scope.selected_slot = slot;
             break;
@@ -10781,10 +10795,12 @@ function getURIparam( name ){
   * scope: true
   * </pre>
   *
-  * @property {array} items The items of the person list
+  * @param {BasketItem} bbItem The BasketItem that will be updated with the selected person. If no item is provided, bb.current_item is used as the default
+   * @param {array} bbItems An array of BasketItem's that will be updated with the selected person.
+  * @property {array} items A list of people
   * @property {array} bookable_people The bookable people from the person list
   * @property {array} bookable_items The bookable items from the person list
-  * @property {array} booking_item The booking item from the person list
+  * @property {array} booking_item The BasketItem used by the person list. If bbItems provided, this will be the first item
    */
   angular.module('BB.Directives').directive('bbPeople', function() {
     return {
@@ -11196,7 +11212,9 @@ function getURIparam( name ){
   * scope: true
   * </pre>
   *
-  * @param {hash}  bbResources   A hash of options
+  * @param {hash} bbResources A hash of options
+  * @param {BasketItem} bbItem The BasketItem that will be updated with the selected resource. If no item is provided, bb.current_item is used as the default
+   * @param {array} bbItems An array of BasketItem's that will be updated with the selected resource.
   * @property {array} items An array of all resources
   * @property {array} bookable_items An array of all BookableItems - used if the current_item has already selected a services or person
   * @property {array} bookable_resources An array of Resources - used if the current_item has already selected a services or person
@@ -11209,6 +11227,7 @@ function getURIparam( name ){
       scope: true,
       controller: 'ResourceList',
       link: function(scope, element, attrs) {
+        scope.options = scope.$eval(attrs.bbResources) || {};
         if (attrs.bbItems) {
           scope.booking_items = scope.$eval(attrs.bbItems) || [];
           return scope.booking_item = scope.booking_items[0];
@@ -11225,7 +11244,6 @@ function getURIparam( name ){
     $scope.controller = "public.controllers.ResourceList";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
-    $scope.options = $scope.$eval($attrs.bbResources) || {};
     $rootScope.connection_started.then((function(_this) {
       return function() {
         return loadData();
@@ -15480,38 +15498,41 @@ function getURIparam( name ){
   *
    */
 
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService) {
+  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
     return {
       restrict: 'A',
       require: '^form',
+      scope: true,
       link: function(scope, elem, attrs, ctrls) {
-        var form;
-        form = ctrls;
+        scope.form = ctrls;
         elem.on("submit", function() {
           scope.submitForm();
           return scope.$apply();
         });
         return scope.submitForm = function() {
-          var invalid_form_group, invalid_input, property;
-          form.submitted = true;
-          for (property in form) {
-            if (angular.isObject(form[property]) && form[property].hasOwnProperty('$valid')) {
-              form[property].submitted = true;
+          var property;
+          scope.form.submitted = true;
+          for (property in scope.form) {
+            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
+              scope.form[property].submitted = true;
             }
           }
-          invalid_form_group = elem.find('.has-error:first');
-          if (invalid_form_group && invalid_form_group.length > 0 && !form.raise_alerts) {
-            if ('parentIFrame' in $window) {
-              parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
-            } else {
-              $bbug("html, body").animate({
-                scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
-              }, 1000);
+          $timeout(function() {
+            var invalid_form_group, invalid_input;
+            invalid_form_group = elem.find('.has-error:first');
+            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
+              if ('parentIFrame' in $window) {
+                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
+              } else {
+                $bbug("html, body").animate({
+                  scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
+                }, 1000);
+              }
+              invalid_input = invalid_form_group.find('.ng-invalid');
+              return invalid_input.focus();
             }
-            invalid_input = invalid_form_group.find('.ng-invalid');
-            invalid_input.focus();
-          }
-          return ValidatorService.validateForm(form);
+          }, 100);
+          return ValidatorService.validateForm(scope.form);
         };
       }
     };
@@ -17265,7 +17286,7 @@ function getURIparam( name ){
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase', 'Pagination'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -22554,6 +22575,121 @@ function getURIparam( name ){
       return PackageItem;
 
     })(BaseModel);
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Models:Service
+*
+* @description
+* Representation of an Pagination Object
+*
+* @property {integer} current_page The current page
+* @property {integer} page_size The number of items to show on each page
+* @property {integer} request_page_size The request page size, if not provided, defaults to page_size. This must be a multiple of the page_size.
+* @property {integer} max_size Limit number for pagination size
+* @property {integer} num_pages The total number of pages
+* @property {integer} num_items The total number of items paginated
+* @property {integer} items The items to be paginated
+* @property {String} summary Summary of current page, i.e. 1 - 10 of 16
+ */
+
+(function() {
+  angular.module('BB.Models').factory("PaginationModel", function() {
+    var Pagination;
+    return Pagination = (function() {
+
+      /***
+      * @ngdoc method
+      * @name constructor
+      * @methodOf BB.Models:Service
+      * @description
+      * Constructor method
+      *
+      * @param {object} Options hash used to set page_size and max_size
+       */
+      function Pagination(options) {
+        this.current_page = 1;
+        this.page_size = options.page_size || 10;
+        this.request_page_size = options.request_page_size || this.page_size;
+        this.max_size = options.max_size || 5;
+        this.num_pages = null;
+        this.num_items = null;
+        this.items = [];
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name initialise
+      * @methodOf BB.Models:Service
+      * @description
+      * Initiailises the pagination instance when first page has been retrieved
+      *
+      * @param {array} The first page of items returned by the API
+      * @param {integer} The total number of items
+       */
+
+      Pagination.prototype.initialise = function(items, total_items) {
+        this.current_page = 1;
+        this.items = items || [];
+        this.num_items = total_items || 0;
+        return this.update();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name update
+      * @methodOf BB.Models:Service
+      * @description
+      * Updates the pagination summary when the page changes 
+      *
+      * @returns {boolean} Flag to indicate if items in current page are present
+      * @returns {integer} The page to load based on
+       */
+
+      Pagination.prototype.update = function() {
+        var end, page_to_load, start, total;
+        start = ((this.current_page - 1) * this.page_size) + 1;
+        end = this.current_page * this.page_size;
+        end = this.num_items < end ? this.num_items : end;
+        total = end >= 100 ? "100+" : end;
+        this.summary = start + " - " + end + " of " + total;
+        page_to_load = Math.ceil((this.current_page * this.page_size) / this.request_page_size);
+        return [this.items[start - 1] != null, page_to_load];
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name add
+      * @methodOf BB.Models:Service
+      * @description
+      * Appends additional items (from subsequent data requests) to items array
+      *
+      * @param {integer} The page number of the data request
+      * @param {array} The new items
+      *
+       */
+
+      Pagination.prototype.add = function(request_page, new_items) {
+        var i, index, item, len, results, start;
+        start = (request_page - 1) * this.request_page_size;
+        results = [];
+        for (index = i = 0, len = new_items.length; i < len; index = ++i) {
+          item = new_items[index];
+          results.push(this.items[start + index] = item);
+        }
+        return results;
+      };
+
+      return Pagination;
+
+    })();
   });
 
 }).call(this);
@@ -29808,161 +29944,6 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, len, ref;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.booking) {
-          data.booking = params.booking.getPostData();
-        }
-        data.booking_id = data.booking.id;
-        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      deleteAll: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      delete_item: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -30624,6 +30605,161 @@ function getURIparam( name ){
       return Purchase_Total;
 
     })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, len, ref;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.booking) {
+          data.booking = params.booking.getPostData();
+        }
+        data.booking_id = data.booking.id;
+        params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      deleteAll: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      delete_item: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
   });
 
 }).call(this);
