@@ -22589,12 +22589,67 @@ function getURIparam( name ){
 *
 * @property {integer} current_page The current page
 * @property {integer} page_size The number of items to show on each page
-* @property {integer} request_page_size The request page size, if not provided, defaults to page_size. This must be a multiple of the page_size.
+* @property {integer} request_page_size The request page size. Defaults to page_size when not provided. This value must be a multiple of the page_size.
 * @property {integer} max_size Limit number for pagination size
 * @property {integer} num_pages The total number of pages
 * @property {integer} num_items The total number of items paginated
 * @property {integer} items The items to be paginated
 * @property {String} summary Summary of current page, i.e. 1 - 10 of 16
+* @example
+*  <example module="BB"> 
+*    <file name="index.html">
+*   <div bb-api-url='https://uk.bookingbug.com'>
+*   <div bb-widget='{company_id:21}'>
+*     <div bb-pagination-example>
+*        <ul>
+*          <li ng-repeat="item in pagination.items | startFrom: (pagination.current_page - 1) * pagination.page_size | limitTo: pagination.page_size | orderBy: sort_by track by $index">
+*        </ul>
+*     </div>
+*     </div>
+*     </div>
+*   </file>
+*   <file name="script.js">
+*  angular.module('BB').directive('bbPaginationExample', function() {
+*    return {
+*      restrict: 'AE',
+*      controller: function(BBModel, DataService) {
+*       $scope.pagination = new BBModel.Pagination({
+*         page_size: 10,
+*         max_size: 5,
+*         request_page_size: 10
+*       });
+*       $scope.getData = function(params, options) {
+*         if (options == null) {
+*           options = {};
+*         }
+*          $scope.params = {
+*            per_page: $scope.pagination.request_page_size,
+*           page: params.page || 1
+*         };
+*         return DataService.query($scope.params).then(function(result) {
+*            if (options.add) {
+*              return $scope.pagination.add(params.page, result.items);
+*           } else {
+*             return $scope.pagination.initialise(result.items, result.total_entries);
+*           }
+*         });
+*       };
+*        return $scope.pageChanged = function() {
+*         var items_present, page_to_load, ref;
+*         ref = $scope.pagination.update(), items_present = ref[0], page_to_load = ref[1];
+*         if (!items_present) {
+*            $scope.params.page = page_to_load;
+*            return $scope.getData($scope.params, {
+*              add: true
+*           });
+*         }
+*       };
+*     }
+*   };
+* });
+*       </file>
+*  </example>
+*
  */
 
 (function() {
@@ -22635,7 +22690,7 @@ function getURIparam( name ){
 
       Pagination.prototype.initialise = function(items, total_items) {
         this.current_page = 1;
-        this.items = items || [];
+        this.items = items;
         this.num_items = total_items || 0;
         return this.update();
       };
