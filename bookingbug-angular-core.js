@@ -2168,10373 +2168,6 @@ function getURIparam( name ){
     return results[1];
 }
 (function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  angular.module('BB.Filters').filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  angular.module('BB.Filters').filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  angular.module('BB.Filters').filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  angular.module('BB.Filters').filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  angular.module('BB.Filters').filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  angular.module('BB.Filters').filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val > 1) {
-          str += "s";
-        }
-        return str;
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins > 1) {
-          str += "s";
-        }
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, separator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      separator = options && options.separator ? options.separator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + separator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  angular.module('BB.Filters').filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
-      if (!phone_number) {
-        return;
-      }
-      cc = SettingsService.getCountryCode();
-      switch (cc) {
-        case "gb":
-          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
-        case "us":
-          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
-        default:
-          return phone_number;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
-    return function(date, format) {
-      var cc, datestrings;
-      if (date && moment.isMoment(date)) {
-        datestrings = {
-          datetime_us: 'MM/DD/YYYY, h:mm a',
-          datetime_uk: 'DD/MM/YYYY, HH:mm',
-          date_us: 'MM/DD/YYYY',
-          date_uk: 'DD/MM/YYYY',
-          time_us: 'h:mm a',
-          time_uk: 'HH:mm'
-        };
-        cc = SettingsService.getCountryCode();
-        if (cc !== "us") {
-          cc = "uk";
-        }
-        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
-          return date.format(datestrings[format + "_" + cc]);
-        } else if (format) {
-          return date.format(format);
-        } else {
-          return date.format(datestrings["date_" + cc]);
-        }
-      } else {
-
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  angular.module('BB.Filters').filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-  angular.module('BB.Filters').filter('nl2br', function() {
-    return function(str) {
-      if (str) {
-        return str.replace(/\n/g, '<br/>');
-      }
-    };
-  });
-
-  app.filter('clearTimezone', function() {
-    return function(val, offset) {
-      if (val !== null && val.length > 19) {
-        return val.substring(0, 19);
-      }
-      return val;
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Address
-  *
-  * @description
-  * Representation of an Address Object
-  *
-  * @property {string} address1 First line of the address 
-  * @property {string} address2 Second line of the address 
-  * @property {string} address3 Third line of the address 
-  * @property {string} address4 Fourth line of the address 
-  * @property {string} address5 Fifth line of the address 
-  * @property {string} postcode The Postcode/Zipcode
-  * @property {string} country The country
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("AddressModel", function($q, BBModel, BaseModel) {
-    var Address;
-    return Address = (function(superClass) {
-      extend(Address, superClass);
-
-      function Address(data) {
-        Address.__super__.constructor.call(this, data);
-        if (!this.map_url || this.map_url === "") {
-          if (this.lat && this.long) {
-            this.map_url = "https://www.google.com/maps/@" + this.lat + "," + this.long + ",17z";
-          }
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name addressSingleLine
-      * @methodOf BB.Models:Address
-      * @description
-      * Get a the address as a single comma sepeated line
-      *
-      * @returns {string} The returned address
-       */
-
-      Address.prototype.addressSingleLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += ", ";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasAddress
-      * @methodOf BB.Models:Address
-      * @description
-      * Checks if this is considered a valid address
-      *
-      * @returns {boolean} If this is a valid address
-       */
-
-      Address.prototype.hasAddress = function() {
-        return this.address1 || this.address2 || this.postcode;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name addressCsvLine
-      * @methodOf BB.Models:Address
-      * @description
-      * Get all address fields as a single comma sepeated line - suitable for csv export
-      *
-      * @returns {string} The returned address
-       */
-
-      Address.prototype.addressCsvLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        str += ", ";
-        if (this.address2) {
-          str += this.address2;
-        }
-        str += ", ";
-        if (this.address3) {
-          str += this.address3;
-        }
-        str += ", ";
-        if (this.address4) {
-          str += this.address4;
-        }
-        str += ", ";
-        if (this.address5) {
-          str += this.address5;
-        }
-        str += ", ";
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        str += ", ";
-        if (this.country) {
-          str += this.country;
-        }
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name addressMultiLine
-      * @methodOf BB.Models:Address
-      * @description
-      * Get a the address as multiple lines with line feeds
-      *
-      * @returns {string} The returned address
-       */
-
-      Address.prototype.addressMultiLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-      return Address;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Affiliate
-  *
-  * @description
-  * Representation of an Affiliate Object
-  *
-  * @property {string} affiliate_id Id of the affiliated company
-  * @property {string} reference The reference of the affiliated company
-  * @property {integer} country_code Country code of the affiliated company
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("AffiliateModel", function($q, BBModel, BaseModel, halClient, $rootScope) {
-    var Affiliate;
-    return Affiliate = (function(superClass) {
-      extend(Affiliate, superClass);
-
-      function Affiliate(data) {
-        Affiliate.__super__.constructor.call(this, data);
-        this.test = 1;
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name getCompanyByRef
-      * @methodOf BB.Models:Affiliate
-      * @description
-      * Find a company in according to reference
-      *
-      * @param {string} ref A reference to find a company based on it
-      *
-      * @returns {promise} A promise for the company reference
-       */
-
-      Affiliate.prototype.getCompanyByRef = function(ref) {
-        var defer, href, prms, uri;
-        prms = {
-          id: this.cookie,
-          reference: ref
-        };
-        href = $rootScope.bb.api_url + "/api/v1/affiliates/{id}/companies/{reference}";
-        uri = new UriTemplate(href).fillFromObject(prms || {});
-        defer = $q.defer();
-        halClient.$get(uri, {}).then(function(company) {
-          if (company) {
-            return defer.resolve(new BBModel.Company(company));
-          } else {
-            return defer.reject('No company for ref ' + ref);
-          }
-        }, function(err) {
-          console.log('err ', err);
-          return defer.reject(err);
-        });
-        return defer.promise;
-      };
-
-      return Affiliate;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Answer
-  *
-  * @description
-  * Representation of an Answer Object
-  *
-  * @property {string} question The question that the answer belongs to
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("AnswerModel", function($q, BBModel, BaseModel, $bbug) {
-    var Answer;
-    return Answer = (function(superClass) {
-      extend(Answer, superClass);
-
-      function Answer(data) {
-        Answer.__super__.constructor.call(this, data);
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name getQuestion
-      * @methodOf BB.Models:Answer
-      * @description
-      * Build an array of questions 
-      *
-      * @returns {promise} A promise for the question/s
-       */
-
-      Answer.prototype.getQuestion = function() {
-        var defer;
-        defer = $q.defer();
-        if (this.question) {
-          defer.resolve(this.question);
-        }
-        if (this._data.$has('question')) {
-          this._data.$get('question').then((function(_this) {
-            return function(question) {
-              _this.question = question;
-              return defer.resolve(_this.question);
-            };
-          })(this));
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      return Answer;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Models').service("BBModel", function($q, $injector) {
-    var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase', 'Pagination'];
-    funcs = {};
-    fn = (function(_this) {
-      return function(model) {
-        return funcs[model] = function(p1, p2) {
-          return new ($injector.get(model + "Model"))(p1, p2);
-        };
-      };
-    })(this);
-    for (i = 0, len = models.length; i < len; i++) {
-      model = models[i];
-      fn(model);
-    }
-    purchase_models = ['Booking', 'Total', 'CourseBooking'];
-    pfuncs = {};
-    fn1 = (function(_this) {
-      return function(model) {
-        return pfuncs[model] = function(init) {
-          return new ($injector.get("Purchase." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (j = 0, len1 = purchase_models.length; j < len1; j++) {
-      model = purchase_models[j];
-      fn1(model);
-    }
-    funcs['Purchase'] = pfuncs;
-    member_models = ['Member', 'Booking', 'PrePaidBooking', 'Wallet', 'WalletLog', 'Purchase', 'PurchaseItem', 'WalletPurchaseBand'];
-    mfuncs = {};
-    fn2 = (function(_this) {
-      return function(model) {
-        return mfuncs[model] = function(init) {
-          return new ($injector.get("Member." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (k = 0, len2 = member_models.length; k < len2; k++) {
-      model = member_models[k];
-      fn2(model);
-    }
-    funcs['Member'] = mfuncs;
-    admin_models = ['Booking', 'Slot', 'User', 'Administrator', 'Schedule', 'Address', 'Resource', 'Person', 'Service', 'Login', 'EventChain', 'EventGroup', 'Event', 'Queuer', 'ClientQueue', 'Clinic'];
-    afuncs = {};
-    fn3 = (function(_this) {
-      return function(model) {
-        return afuncs[model] = function(init) {
-          return new ($injector.get("Admin." + model + "Model"))(init);
-        };
-      };
-    })(this);
-    for (l = 0, len3 = admin_models.length; l < len3; l++) {
-      model = admin_models[l];
-      fn3(model);
-    }
-    funcs['Admin'] = afuncs;
-    return funcs;
-  });
-
-  angular.module('BB.Models').service("BaseModel", function($q, $injector, $rootScope, $timeout) {
-    var Base;
-    return Base = (function() {
-      function Base(data) {
-        this.deleted = false;
-        this.updateModel(data);
-      }
-
-      Base.prototype.updateModel = function(data) {
-        var link, links, m, n, name, obj, results;
-        if (data) {
-          this._data = data;
-        }
-        if (data) {
-          for (n in data) {
-            m = data[n];
-            this[n] = m;
-          }
-        }
-        if (this._data && this._data.$href) {
-          this.self = this._data.$href("self");
-          links = this.$links();
-          this.__linkedData = {};
-          this.__linkedPromises = {};
-          results = [];
-          for (link in links) {
-            obj = links[link];
-            name = this._snakeToCamel("get_" + link);
-            results.push((function(_this) {
-              return function(link, obj, name) {
-                if (!_this[name]) {
-                  _this[name] = function() {
-                    return this.$buildOject(link);
-                  };
-                }
-                if (!_this[name + "Promise"]) {
-                  return _this[name + "Promise"] = function() {
-                    return this.$buildOjectPromise(link);
-                  };
-                }
-              };
-            })(this)(link, obj, name));
-          }
-          return results;
-        }
-      };
-
-      Base.prototype._snakeToCamel = function(s) {
-        return s.replace(/(\_\w)/g, function(m) {
-          return m[1].toUpperCase();
-        });
-      };
-
-      Base.prototype.$buildOject = function(link) {
-        if (this.__linkedData[link]) {
-          return this.__linkedData[link];
-        }
-        this.$buildOjectPromise(link).then((function(_this) {
-          return function(ans) {
-            _this.__linkedData[link] = ans;
-            return $timeout(function() {
-              return _this.__linkedData[link] = ans;
-            });
-          };
-        })(this));
-        return null;
-      };
-
-      Base.prototype.$buildOjectPromise = function(link) {
-        var prom;
-        if (this.__linkedPromises[link]) {
-          return this.__linkedPromises[link];
-        }
-        prom = $q.defer();
-        this.__linkedPromises[link] = prom.promise;
-        this.$get(link).then((function(_this) {
-          return function(res) {
-            var inj;
-            inj = $injector.get('BB.Service.' + link);
-            if (inj) {
-              if (inj.promise) {
-                return inj.unwrap(res).then(function(ans) {
-                  return prom.resolve(ans);
-                }, function(err) {
-                  return prom.reject(err);
-                });
-              } else {
-                return prom.resolve(inj.unwrap(res));
-              }
-            } else {
-              return prom.resolve(res);
-            }
-          };
-        })(this), function(err) {
-          return prom.reject(err);
-        });
-        return this.__linkedPromises[link];
-      };
-
-      Base.prototype.get = function(ikey) {
-        if (!this._data) {
-          return null;
-        }
-        return this._data[ikey];
-      };
-
-      Base.prototype.set = function(ikey, value) {
-        if (!this._data) {
-          return null;
-        }
-        return this._data[ikey] = value;
-      };
-
-      Base.prototype.$href = function(rel, params) {
-        if (this._data) {
-          return this._data.$href(rel, params);
-        }
-      };
-
-      Base.prototype.$has = function(rel) {
-        if (this._data) {
-          return this._data.$has(rel);
-        }
-      };
-
-      Base.prototype.$flush = function(rel, params) {
-        if (this._data) {
-          return this._data.$href(rel, params);
-        }
-      };
-
-      Base.prototype.$get = function(rel, params) {
-        if (this._data) {
-          return this._data.$get(rel, params);
-        }
-      };
-
-      Base.prototype.$post = function(rel, params, dat) {
-        if (this._data) {
-          return this._data.$post(rel, params, dat);
-        }
-      };
-
-      Base.prototype.$put = function(rel, params, dat) {
-        if (this._data) {
-          return this._data.$put(rel, params, dat);
-        }
-      };
-
-      Base.prototype.$patch = function(rel, params, dat) {
-        if (this._data) {
-          return this._data.$patch(rel, params, dat);
-        }
-      };
-
-      Base.prototype.$del = function(rel, params) {
-        if (this._data) {
-          return this._data.$del(rel, params);
-        }
-      };
-
-      Base.prototype.$links = function() {
-        if (this._data) {
-          return this._data.$links();
-        }
-      };
-
-      Base.prototype.$toStore = function() {
-        if (this._data) {
-          return this._data.$toStore();
-        }
-      };
-
-      return Base;
-
-    })();
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Basket
-  *
-  * @description
-  * Representation of an Basket Object
-  *
-  * @property {integer} company_id Company id that the basket belongs to 
-  * @property {integer} total_price Total price of the basket
-  * @property {integer} total_due_price Total price of the basket after applying discounts
-  * @property {array} items Array of items that are in the basket
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BasketModel", function($q, BBModel, BaseModel) {
-    var Basket;
-    return Basket = (function(superClass) {
-      extend(Basket, superClass);
-
-      function Basket(data, scope) {
-        if (scope && scope.isAdmin) {
-          this.is_admin = scope.isAdmin;
-        } else {
-          this.is_admin = false;
-        }
-        if ((scope != null) && scope.parent_client) {
-          this.parent_client_id = scope.parent_client.id;
-        }
-        this.items = [];
-        Basket.__super__.constructor.call(this, data);
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name addItem
-      * @methodOf BB.Models:Basket
-      * @description
-      * Adds an item to the items array of the basket
-      *
-       */
-
-      Basket.prototype.addItem = function(item) {
-        var i, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i === item) {
-            return;
-          }
-          if (i.id && item.id && i.id === item.id) {
-            return;
-          }
-        }
-        return this.items.push(item);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clear
-      * @methodOf BB.Models:Basket
-      * @description
-      * Empty items array
-      *
-       */
-
-      Basket.prototype.clear = function() {
-        return this.items = [];
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearItem
-      * @methodOf BB.Models:Basket
-      * @description
-      * Remove a given item from the items array
-      *
-       */
-
-      Basket.prototype.clearItem = function(item) {
-        return this.items = this.items.filter(function(i) {
-          return i !== item;
-        });
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name readyToCheckout
-      * @methodOf BB.Models:Basket
-      * @description
-      * Use to check if the basket is ready to checkout
-      *
-      * @returns {boolean} Flag to indicate if basket is ready checkout
-       */
-
-      Basket.prototype.readyToCheckout = function() {
-        if (this.items.length > 0) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name timeItems
-      * @methodOf BB.Models:Basket
-      * @description
-      * Returns an array of time items (i.e. event and appointment bookings)
-      *
-      * @returns {array}
-       */
-
-      Basket.prototype.timeItems = function() {
-        var i, j, len, ref, titems;
-        titems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i.isTimeItem()) {
-            titems.push(i);
-          }
-        }
-        return titems;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasTimeItems
-      * @methodOf BB.Models:Basket
-      * @description
-      * Indicates if the basket contains time items (i.e. event and appointment bookings)
-      *
-      * @returns {boolean}
-       */
-
-      Basket.prototype.hasTimeItems = function() {
-        var i, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i.isTimeItem()) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name basketItems
-      * @methodOf BB.Models:Basket
-      * @description
-      * Gets all BasketItem's that are not coupons
-      *
-      * @returns {array} array of basket items
-       */
-
-      Basket.prototype.basketItems = function() {
-        var bitems, i, j, len, ref;
-        bitems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (!i.is_coupon) {
-            bitems.push(i);
-          }
-        }
-        return bitems;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name externalPurchaseItems
-      * @methodOf BB.Models:Basket
-      * @description
-      * Gets all external purchases in the basket
-      *
-      * @returns {array} array of external purchases
-       */
-
-      Basket.prototype.externalPurchaseItems = function() {
-        var eitems, i, j, len, ref;
-        eitems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i.isExternalPurchase()) {
-            eitems.push(i);
-          }
-        }
-        return eitems;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name couponItems
-      * @methodOf BB.Models:Basket
-      * @description
-      * Build an array of items that are coupons
-      *
-      * @returns {array} the newly build array of coupon items
-       */
-
-      Basket.prototype.couponItems = function() {
-        var citems, i, j, len, ref;
-        citems = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i.is_coupon) {
-            citems.push(i);
-          }
-        }
-        return citems;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name removeCoupons
-      * @methodOf BB.Models:Basket
-      * @description
-      * Remove coupon items from the items array
-      *
-      * @returns {array} the items array after removing items that are coupons
-       */
-
-      Basket.prototype.removeCoupons = function() {
-        return this.items = _.reject(this.items, function(x) {
-          return x.is_coupon;
-        });
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setSettings
-      * @methodOf BB.Models:Basket
-      * @description
-      * Extend the settings with the set param passed to the function
-      *
-      * @returns {object} settings object
-       */
-
-      Basket.prototype.setSettings = function(set) {
-        if (!set) {
-          return;
-        }
-        this.settings || (this.settings = {});
-        return $.extend(this.settings, set);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setClient
-      * @methodOf BB.Models:Basket
-      * @description
-      * Set the client
-      *
-      * @returns {object} client object
-       */
-
-      Basket.prototype.setClient = function(client) {
-        return this.client = client;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setClientDetails
-      * @methodOf BB.Models:Basket
-      * @description
-      * Set client details
-      *
-      * @returns {object} client details
-       */
-
-      Basket.prototype.setClientDetails = function(client_details) {
-        return this.client_details = new BBModel.PurchaseItem(client_details);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPostData
-      * @methodOf BB.Models:Basket
-      * @description
-      * Build an array with details for every item in items array
-      *
-      * @returns {array} newly created details array
-       */
-
-      Basket.prototype.getPostData = function() {
-        var item, j, len, post, ref;
-        post = {
-          client: this.client.getPostData(),
-          settings: this.settings,
-          reference: this.reference
-        };
-        post.is_admin = this.is_admin;
-        post.parent_client_id = this.parent_client_id;
-        post.take_from_wallet = this.take_from_wallet;
-        post.items = [];
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          post.items.push(item.getPostData());
-        }
-        return post;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name dueTotal
-      * @methodOf BB.Models:Basket
-      * @description
-      * Total price after checking every item if it is on the wait list
-      *
-      * @returns {integer} total
-       */
-
-      Basket.prototype.dueTotal = function() {
-        var item, j, len, ref, total;
-        total = this.totalPrice();
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.isWaitlist()) {
-            total -= item.price;
-          }
-        }
-        if (total < 0) {
-          total = 0;
-        }
-        return total;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name length
-      * @methodOf BB.Models:Basket
-      * @description
-      * Length of the items array
-      *
-      * @returns {integer} length
-       */
-
-      Basket.prototype.length = function() {
-        return this.items.length;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name questionPrice
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates total question's price
-      *
-      * @returns {integer} question's price
-       */
-
-      Basket.prototype.questionPrice = function(options) {
-        var item, j, len, price, ref, unready;
-        unready = options && options.unready;
-        price = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if ((!item.ready && unready) || !unready) {
-            price += item.questionPrice();
-          }
-        }
-        return price;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalPrice
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates total price of the items after coupuns have been applied
-      *
-      * @returns {integer} total price
-       */
-
-      Basket.prototype.totalPrice = function(options) {
-        var item, j, len, price, ref, unready;
-        unready = options && options.unready;
-        price = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if ((!item.ready && unready) || !unready) {
-            price += item.totalPrice();
-          }
-        }
-        return price;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name updateTotalPrice
-      * @methodOf BB.Models:Basket
-      * @description
-      * Update the total_price attribute using totalPrice method
-      *
-      * @returns {integer} the updated total_price variable
-       */
-
-      Basket.prototype.updateTotalPrice = function(options) {
-        return this.total_price = this.totalPrice(options);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name fullPrice
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates full price of all items, before applying any coupons or deals
-      *
-      * @returns {integer} full price
-       */
-
-      Basket.prototype.fullPrice = function() {
-        var item, j, len, price, ref;
-        price = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          price += item.fullPrice();
-        }
-        return price;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasCoupon
-      * @methodOf BB.Models:Basket
-      * @description
-      * Checks if there is an item in items array, that is a coupon
-      *
-      * @returns {boolean} true or false if a coupon is found or not
-       */
-
-      Basket.prototype.hasCoupon = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.is_coupon) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalCoupons
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates the full discount for the basket
-      *
-      * @returns {integer} full discount
-       */
-
-      Basket.prototype.totalCoupons = function() {
-        return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalDuration
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates total duration of all items in basket
-      *
-      * @returns {integer} total duration
-       */
-
-      Basket.prototype.totalDuration = function() {
-        var duration, item, j, len, ref;
-        duration = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.service && item.service.listed_duration) {
-            duration += item.service.listed_duration;
-          }
-        }
-        return duration;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name containsDeal
-      * @methodOf BB.Models:Basket
-      * @description
-      * Checks if there is an item in items array, that is a deal
-      *
-      * @returns {boolean} true or false depending if a deal was found or not
-       */
-
-      Basket.prototype.containsDeal = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.deal_id) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasDeal
-      * @methodOf BB.Models:Basket
-      * @description
-      * Checks if there is any item in items array with a deal code
-      *
-      * @returns {boolean} true or false depending if a deal code was found or not
-       */
-
-      Basket.prototype.hasDeal = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.deal_codes && item.deal_codes.length > 0) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getDealCodes
-      * @methodOf BB.Models:Basket
-      * @description
-      * Builds an array of deal codes
-      *
-      * @returns {array} deal codes array
-       */
-
-      Basket.prototype.getDealCodes = function() {
-        this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
-        return this.deals;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalDeals
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates the total amount of deal codes array
-      *
-      * @returns {integer} total amount of deals
-       */
-
-      Basket.prototype.totalDeals = function() {
-        var deal, j, len, ref, value;
-        value = 0;
-        ref = this.getDealCodes();
-        for (j = 0, len = ref.length; j < len; j++) {
-          deal = ref[j];
-          value += deal.value;
-        }
-        return value;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalDealPaid
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates the amount paid by gift certificates
-      *
-      * @returns {integer} amount paid by deals
-       */
-
-      Basket.prototype.totalDealPaid = function() {
-        var item, j, len, ref, total_cert_paid;
-        total_cert_paid = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.certificate_paid) {
-            total_cert_paid += item.certificate_paid;
-          }
-        }
-        return total_cert_paid;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name remainingDealBalance
-      * @methodOf BB.Models:Basket
-      * @description
-      * Calculates the difference between total deals amount and amount paid by deals
-      *
-      * @returns {integer} The remaining deal (gift certificate) balance
-       */
-
-      Basket.prototype.remainingDealBalance = function() {
-        return this.totalDeals() - this.totalDealPaid();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasWaitlistItem
-      * @methodOf BB.Models:Basket
-      * @description
-      * Checks if the basket contains an wait list event
-      *
-      * @returns {boolean} true or false
-       */
-
-      Basket.prototype.hasWaitlistItem = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.isWaitlist()) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasExternalPurchase
-      * @methodOf BB.Models:Basket
-      * @description
-      * Checks if the basket contains an external purchase
-      *
-      * @returns {boolean} true or false
-       */
-
-      Basket.prototype.hasExternalPurchase = function() {
-        var item, j, len, ref;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.isExternalPurchase()) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name useWallet
-      * @methodOf BB.Models:Basket
-      * @description
-      * Indicates if a wallet should be used for payment
-      *
-      * @returns {boolean} true or false
-       */
-
-      Basket.prototype.useWallet = function(value, client) {
-        if (client && client.$has('wallet') && value) {
-          this.take_from_wallet = true;
-          return true;
-        } else {
-          this.take_from_wallet = false;
-          return false;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name voucherRemainder
-      * @methodOf BB.Models:Basket
-      * @description
-      * Remaining voucher value if used
-      *
-      * @returns {integer} remaining voucher value
-       */
-
-      Basket.prototype.voucherRemainder = function() {
-        var amount, item, j, len, ref;
-        amount = 0;
-        ref = this.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.voucher_remainder) {
-            amount += item.voucher_remainder;
-          }
-        }
-        return amount;
-      };
-
-      return Basket;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:BasketItem
-  *
-  * @description
-  * Representation of an BasketItem Object
-  *
-  * @property {integer} company_id Company id that the basket item belongs to
-  * @property {integer} total_price Total price of the basket item
-  * @property {integer} total_due_price Total price of the basket item after applying discounts
-  * @property {array} items Arrays of items that are in the basket
-  * @property {integer} event_id The event id of the basket item
-  * @property {date} datetime Date and time of the event
-  * @property {integer} status Status of the items
-  *
-   */
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, SettingsService) {
-    var BasketItem;
-    return BasketItem = (function(superClass) {
-      extend(BasketItem, superClass);
-
-      function BasketItem(data, bb) {
-        this.fullPrice = bind(this.fullPrice, this);
-        this.totalPrice = bind(this.totalPrice, this);
-        this.getQty = bind(this.getQty, this);
-        this.questionPrice = bind(this.questionPrice, this);
-        var chain, comp, per, res, serv, t;
-        BasketItem.__super__.constructor.call(this, data);
-        this.ready = false;
-        this.days_link = null;
-        this.book_link = null;
-        this.parts_links = {};
-        this.settings || (this.settings = {});
-        this.has_questions = false;
-        if (bb) {
-          this.reserve_without_questions = bb.reserve_without_questions;
-        }
-        if (this.time) {
-          this.time = new BBModel.TimeSlot({
-            time: this.time,
-            event_id: this.event_id,
-            selected: true,
-            avail: 1,
-            price: this.price
-          });
-        }
-        if (this.date) {
-          this.date = new BBModel.Day({
-            date: this.date,
-            spaces: 1
-          });
-        }
-        if (this.datetime) {
-          this.date = new BBModel.Day({
-            date: this.datetime.toISODate(),
-            spaces: 1
-          });
-          t = this.datetime.hour() * 60 + this.datetime.minute();
-          this.time = new BBModel.TimeSlot({
-            time: t,
-            event_id: this.event_id,
-            selected: true,
-            avail: 1,
-            price: this.price
-          });
-        }
-        if (this.id) {
-          this.reserve_ready = true;
-          this.held = {
-            time: this.time,
-            date: this.date,
-            event_id: this.event_id
-          };
-        }
-        this.promises = [];
-        if (data) {
-          if (data.$has("answers")) {
-            data.$get("answers").then((function(_this) {
-              return function(answers) {
-                var a, i, len, results;
-                data.questions = [];
-                results = [];
-                for (i = 0, len = answers.length; i < len; i++) {
-                  a = answers[i];
-                  results.push(data.questions.push({
-                    id: a.question_id,
-                    answer: a.value
-                  }));
-                }
-                return results;
-              };
-            })(this));
-          }
-          if (data.$has('company')) {
-            comp = data.$get('company');
-            this.promises.push(comp);
-            comp.then((function(_this) {
-              return function(comp) {
-                var c;
-                c = new BBModel.Company(comp);
-                _this.promises.push(c.getSettings());
-                return _this.setCompany(c);
-              };
-            })(this));
-          }
-          if (data.$has('service')) {
-            serv = data.$get('service');
-            this.promises.push(serv);
-            serv.then((function(_this) {
-              return function(serv) {
-                var prom;
-                if (serv.$has('category')) {
-                  prom = serv.$get('category');
-                  _this.promises.push(prom);
-                  prom.then(function(cat) {
-                    return _this.setCategory(new BBModel.Category(cat));
-                  });
-                }
-                _this.setService(new BBModel.Service(serv), data.questions);
-                if (_this.duration) {
-                  _this.setDuration(_this.duration);
-                }
-                _this.checkReady();
-                if (_this.time) {
-                  return _this.time.service = _this.service;
-                }
-              };
-            })(this));
-          }
-          if (data.$has('event_group')) {
-            serv = data.$get('event_group');
-            this.promises.push(serv);
-            serv.then((function(_this) {
-              return function(serv) {
-                var prom;
-                if (serv.$has('category')) {
-                  prom = serv.$get('category');
-                  _this.promises.push(prom);
-                  prom.then(function(cat) {
-                    return _this.setCategory(new BBModel.Category(cat));
-                  });
-                }
-                _this.setEventGroup(new BBModel.EventGroup(serv));
-                if (_this.time) {
-                  return _this.time.service = _this.event_group;
-                }
-              };
-            })(this));
-          }
-          if (data.$has('event_chain')) {
-            chain = data.$get('event_chain');
-            this.promises.push(chain);
-            if (!data.$has('event')) {
-              chain.then((function(_this) {
-                return function(serv) {
-                  return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
-                };
-              })(this));
-            }
-          }
-          if (data.$has('resource')) {
-            res = data.$get('resource');
-            this.promises.push(res);
-            res.then((function(_this) {
-              return function(res) {
-                return _this.setResource(new BBModel.Resource(res), false);
-              };
-            })(this));
-          }
-          if (data.$has('person')) {
-            per = data.$get('person');
-            this.promises.push(per);
-            per.then((function(_this) {
-              return function(per) {
-                return _this.setPerson(new BBModel.Person(per), false);
-              };
-            })(this));
-          }
-          if (data.$has('event')) {
-            data.$get('event').then((function(_this) {
-              return function(event) {
-                return _this.setEvent(new BBModel.Event(event));
-              };
-            })(this));
-          }
-          if (data.settings) {
-            this.settings = $bbug.extend(true, {}, data.settings);
-          }
-          if (data.attachment_id) {
-            this.attachment_id = data.attachment_id;
-          }
-          if (data.$has('product')) {
-            data.$get('product').then((function(_this) {
-              return function(product) {
-                return _this.setProduct(new BBModel.Product(product));
-              };
-            })(this));
-          }
-          if (data.$has('package_item')) {
-            data.$get('package_item').then((function(_this) {
-              return function(package_item) {
-                return _this.setPackageItem(new BBModel.PackageItem(package_item));
-              };
-            })(this));
-          }
-          if (data.$has('bulk_purchase')) {
-            data.$get('bulk_purchase').then((function(_this) {
-              return function(bulk_purchase) {
-                return _this.setBulkPurchase(new BBModel.BulkPurchase(bulk_purchase));
-              };
-            })(this));
-          }
-          if (data.$has('deal')) {
-            data.$get('deal').then((function(_this) {
-              return function(deal) {
-                return _this.setDeal(new BBModel.Deal(deal));
-              };
-            })(this));
-          }
-          if (data.$has('pre_paid_booking')) {
-            data.$get('pre_paid_booking').then((function(_this) {
-              return function(pre_paid_booking) {
-                return _this.setPrepaidBooking(new BBModel.PrePaidBooking(pre_paid_booking));
-              };
-            })(this));
-          }
-          if (data.clinic_id) {
-            this.clinic_id = data.clinic_id;
-          }
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name setDefaults
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set the default settings
-      *
-      * @returns {object} Default settings
-       */
-
-      BasketItem.prototype.setDefaults = function(defaults) {
-        var date, time;
-        if (defaults.settings) {
-          this.settings = defaults.settings;
-        }
-        if (defaults.company) {
-          this.setCompany(defaults.company);
-        }
-        if (defaults.merge_resources) {
-          this.setResource(null);
-        }
-        if (defaults.merge_people) {
-          this.setPerson(null);
-        }
-        if (defaults.resource) {
-          this.setResource(defaults.resource);
-        }
-        if (defaults.person) {
-          this.setPerson(defaults.person);
-        }
-        if (defaults.service) {
-          this.setService(defaults.service);
-        }
-        if (defaults.category) {
-          this.setCategory(defaults.category);
-        }
-        if (defaults.date) {
-          defaults.date = moment(defaults.date);
-        }
-        if (defaults.time) {
-          date = defaults.date ? defaults.date : moment();
-          time = defaults.time ? parseInt(defaults.time) : 0;
-          defaults.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment({
-            date: defaults.date
-          }, {
-            time: time
-          });
-        }
-        if (defaults.service_ref) {
-          this.service_ref = defaults.service_ref;
-        }
-        if (defaults.group) {
-          this.group = defaults.group;
-        }
-        if (defaults.clinic) {
-          this.clinic = defaults.clinic;
-          this.clinic_id = defaults.clinic.id;
-        }
-        if (defaults.private_note) {
-          this.private_note = defaults.private_note;
-        }
-        if (defaults.event_group) {
-          this.setEventGroup(defaults.event_group);
-        }
-        if (defaults.event) {
-          this.setEvent(defaults.event);
-        }
-        return this.defaults = defaults;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name storeDefaults
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Store the default settings by attaching them to the current context
-      *
-      * @returns {array} defaults variable
-       */
-
-      BasketItem.prototype.storeDefaults = function(defaults) {
-        return this.defaults = defaults;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name defaultService
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Return the default service or event group
-      *
-      * @returns {Object} Default Service or EventGroup
-       */
-
-      BasketItem.prototype.defaultService = function() {
-        if (this.defaults && this.defaults.service) {
-          return this.defaults.service;
-        } else if (this.defaults && this.defaults.event_group) {
-          return this.defaults.event_group;
-        } else {
-          return null;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setSlot
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set the current slot based on the passed parameter
-      *
-      * @param {object} slot A hash representing a slot object
-      * @returns {array} The available slot
-       */
-
-      BasketItem.prototype.setSlot = function(slot) {
-        var t;
-        this.date = new BBModel.Day({
-          date: slot.datetime.toISODate(),
-          spaces: 1
-        });
-        t = slot.datetime.hour() * 60 + slot.datetime.minute();
-        this.time = new BBModel.TimeSlot({
-          time: t,
-          avail: 1,
-          price: this.price
-        });
-        return this.available_slot = slot.id;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setCompany
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set the current company based on the passed parameter
-      * @param {object} company a hash representing a company object
-       */
-
-      BasketItem.prototype.setCompany = function(company) {
-        this.company = company;
-        this.parts_links.company = this.company.$href('self');
-        if (this.item_details) {
-          return this.item_details.currency_code = this.company.currency_code;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearExistingItem
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Clear existing item
-       */
-
-      BasketItem.prototype.clearExistingItem = function() {
-        var prom;
-        if (this.$has('self') && this.event_id) {
-          prom = this.$del('self');
-          this.promises.push(prom);
-          prom.then(function() {});
-        }
-        delete this.earliest_time;
-        return delete this.event_id;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setItem
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set the current item based on the item object passed as parameter
-       */
-
-      BasketItem.prototype.setItem = function(item) {
-        if (!item) {
-          return;
-        }
-        if (item.type === "person") {
-          return this.setPerson(item);
-        } else if (item.type === "service") {
-          return this.setService(item);
-        } else if (item.type === "resource") {
-          return this.setResource(item);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setService
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set service in according of server parameter, if default_question is null
-      *
-      * @returns {array} The returned service set
-       */
-
-      BasketItem.prototype.setService = function(serv, default_questions) {
-        var prom;
-        if (default_questions == null) {
-          default_questions = null;
-        }
-        if (this.service) {
-          if (this.service.self && serv.self && this.service.self === serv.self) {
-            if (this.service.$has('book')) {
-              this.book_link = this.service;
-            }
-            if (serv.$has('days')) {
-              this.days_link = serv;
-            }
-            if (serv.$has('book')) {
-              this.book_link = serv;
-            }
-            return;
-          }
-          this.item_details = null;
-          this.clearExistingItem();
-        }
-        if (this.service && serv && this.service.self && serv.self) {
-          if ((this.service.self !== serv.self) && serv.durations && serv.durations.length > 1) {
-            this.duration = null;
-            this.listed_duration = null;
-          }
-        }
-        this.service = serv;
-        if (serv && (serv instanceof BookableItemModel)) {
-          this.service = serv.item;
-        }
-        this.parts_links.service = this.service.$href('self');
-        if (this.service.$has('book')) {
-          this.book_link = this.service;
-        }
-        if (serv.$has('days')) {
-          this.days_link = serv;
-        }
-        if (serv.$has('book')) {
-          this.book_link = serv;
-        }
-        if (this.service.$has('questions')) {
-          this.has_questions = true;
-          prom = this.service.$get('questions');
-          this.promises.push(prom);
-          prom.then((function(_this) {
-            return function(details) {
-              if (_this.company) {
-                details.currency_code = _this.company.currency_code;
-              }
-              _this.item_details = new BBModel.ItemDetails(details);
-              _this.has_questions = _this.item_details.hasQuestions;
-              if (default_questions) {
-                _this.item_details.setAnswers(default_questions);
-                return _this.setAskedQuestions();
-              }
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return _this.has_questions = false;
-            };
-          })(this));
-        } else {
-          this.has_questions = false;
-        }
-        if (this.service && this.service.durations && this.service.durations.length === 1) {
-          this.setDuration(this.service.durations[0]);
-          this.listed_duration = this.service.durations[0];
-        }
-        if (this.service && this.service.listed_durations && this.service.listed_durations.length === 1) {
-          this.listed_duration = this.service.listed_durations[0];
-        }
-        if (this.service.$has('category')) {
-          prom = this.service.getCategoryPromise();
-          if (prom) {
-            return this.promises.push(prom);
-          }
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setEventGroup
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set event group based on the event_group param
-      *
-      * @param {object} event_group a hash
-       */
-
-      BasketItem.prototype.setEventGroup = function(event_group) {
-        var prom;
-        if (this.event_group) {
-          if (this.event_group.self && event_group.self && this.event_group.self === event_group.self) {
-            return;
-          }
-        }
-        this.event_group = event_group;
-        this.parts_links.event_group = this.event_group.$href('self').replace('event_group', 'service');
-        if (this.event_group.$has('category')) {
-          prom = this.event_group.getCategoryPromise();
-          if (prom) {
-            return this.promises.push(prom);
-          }
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setEventChain
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set event chain in according of event_chain parameter, default_qustions is null
-      *
-      * @returns {array} The returned set event chaint
-       */
-
-      BasketItem.prototype.setEventChain = function(event_chain, default_questions) {
-        var prom;
-        if (default_questions == null) {
-          default_questions = null;
-        }
-        if (this.event_chain) {
-          if (this.event_chain.self && event_chain.self && this.event_chain.self === event_chain.self) {
-            return;
-          }
-        }
-        this.event_chain = event_chain;
-        this.base_price = parseFloat(event_chain.price);
-        if ((this.price != null) && this.price !== this.base_price) {
-          this.setPrice(this.price);
-        } else {
-          this.setPrice(this.base_price);
-        }
-        if (this.event_chain.isSingleBooking()) {
-          this.tickets = {
-            name: "Admittance",
-            max: 1,
-            type: "normal",
-            price: this.base_price
-          };
-          this.tickets.pre_paid_booking_id = this.pre_paid_booking_id;
-          if (this.num_book) {
-            this.tickets.qty = this.num_book;
-          }
-        }
-        if (this.event_chain.$has('questions')) {
-          this.has_questions = true;
-          prom = this.event_chain.$get('questions');
-          this.promises.push(prom);
-          return prom.then((function(_this) {
-            return function(details) {
-              var a, i, len, q, ref;
-              _this.item_details = new BBModel.ItemDetails(details);
-              _this.has_questions = _this.item_details.hasQuestions;
-              if (_this.questions) {
-                ref = _this.item_details.questions;
-                for (i = 0, len = ref.length; i < len; i++) {
-                  q = ref[i];
-                  a = _.find(_this.questions, function(c) {
-                    return c.id === q.id;
-                  });
-                  if (a && q.answer === void 0 || a !== q.answer) {
-                    q.answer = a.answer;
-                  }
-                }
-                _this.setAskedQuestions();
-              }
-              if (default_questions) {
-                _this.item_details.setAnswers(default_questions);
-                return _this.setAskedQuestions();
-              }
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return _this.has_questions = false;
-            };
-          })(this));
-        } else {
-          return this.has_questions = false;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setEvent
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set event according to event parameter
-      *
-      * @param {object} event A hash representing an event object
-       */
-
-      BasketItem.prototype.setEvent = function(event, default_questions) {
-        var prom;
-        if (default_questions == null) {
-          default_questions = null;
-        }
-        if (this.event) {
-          this.event.unselect();
-        }
-        this.event = event;
-        this.event.select();
-        this.event_chain_id = event.event_chain_id;
-        this.setDate({
-          date: event.date
-        });
-        this.setTime(event.time);
-        this.setDuration(event.duration);
-        if (event.$has('book')) {
-          this.book_link = event;
-        }
-        if (event.qty) {
-          this.num_book = event.qty;
-        }
-        prom = this.event.getChain();
-        this.promises.push(prom);
-        prom.then((function(_this) {
-          return function(chain) {
-            return _this.setEventChain(chain, default_questions);
-          };
-        })(this));
-        prom = this.event.getGroup();
-        this.promises.push(prom);
-        prom.then((function(_this) {
-          return function(group) {
-            return _this.setEventGroup(group);
-          };
-        })(this));
-        if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
-          if (this.company.getSettings().has_waitlists) {
-            return this.status = 8;
-          }
-        } else if (this.event.getSpacesLeft() <= 0 && this.company.settings && this.company.settings.has_waitlists) {
-          return this.status = 8;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setCategory
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set category according to cat parameter
-      *
-      * @param {object} cat A hash representing a category object
-       */
-
-      BasketItem.prototype.setCategory = function(cat) {
-        return this.category = cat;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setPerson
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set person according to per parameter
-      *
-      * @param {object} per A hash representing a person object
-      
-      * @param {boolean} set_selected The returned set resource for basket item
-       */
-
-      BasketItem.prototype.setPerson = function(per, set_selected) {
-        if (set_selected == null) {
-          set_selected = true;
-        }
-        if (set_selected && this.earliest_time) {
-          delete this.earliest_time;
-        }
-        if (!per) {
-          this.person = true;
-          if (set_selected) {
-            this.settings.person = -1;
-          }
-          this.parts_links.person = null;
-          if (this.service) {
-            this.setService(this.service);
-          }
-          if (this.resource && !this.anyResource()) {
-            this.setResource(this.resource, false);
-          }
-          if (this.event_id) {
-            delete this.event_id;
-            if (this.resource && this.defaults && this.defaults.merge_resources) {
-              return this.setResource(null);
-            }
-          }
-        } else {
-          this.person = per;
-          if (set_selected) {
-            this.settings.person = this.person.id;
-          }
-          this.parts_links.person = this.person.$href('self');
-          if (per.$has('days')) {
-            this.days_link = per;
-          }
-          if (per.$has('book')) {
-            this.book_link = per;
-          }
-          if (this.event_id && this.$has('person') && this.$href('person') !== this.person.self) {
-            delete this.event_id;
-            if (this.resource && this.defaults && this.defaults.merge_resources) {
-              return this.setResource(null);
-            }
-          }
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setResource
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set resource in according of res parameter, if set_selected is true
-      *
-      * @returns {object} The returned set resource for basket item
-       */
-
-      BasketItem.prototype.setResource = function(res, set_selected) {
-        if (set_selected == null) {
-          set_selected = true;
-        }
-        if (set_selected && this.earliest_time) {
-          delete this.earliest_time;
-        }
-        if (!res) {
-          this.resource = true;
-          if (set_selected) {
-            this.settings.resource = -1;
-          }
-          this.parts_links.resource = null;
-          if (this.service) {
-            this.setService(this.service);
-          }
-          if (this.person && !this.anyPerson()) {
-            this.setPerson(this.person, false);
-          }
-          if (this.event_id) {
-            delete this.event_id;
-            if (this.person && this.defaults && this.defaults.merge_people) {
-              return this.setPerson(null);
-            }
-          }
-        } else {
-          this.resource = res;
-          if (set_selected) {
-            this.settings.resource = this.resource.id;
-          }
-          this.parts_links.resource = this.resource.$href('self');
-          if (res.$has('days')) {
-            this.days_link = res;
-          }
-          if (res.$has('book')) {
-            this.book_link = res;
-          }
-          if (this.event_id && this.$has('resource') && this.$href('resource') !== this.resource.self) {
-            delete this.event_id;
-            if (this.person && this.defaults && this.defaults.merge_people) {
-              return this.setPerson(null);
-            }
-          }
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setDuration
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set duration in according of dur parameter
-      *
-      * @returns {integer} The returned set duration for basket item
-       */
-
-      BasketItem.prototype.setDuration = function(dur) {
-        this.duration = dur;
-        if (this.service) {
-          this.base_price = this.service.getPriceByDuration(dur);
-        } else if (this.time && this.time.price) {
-          this.base_price = this.time.price;
-        } else if (this.price) {
-          this.base_price = this.price;
-        }
-        return this.setPrice(this.base_price);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_time
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get to print time
-      *
-      * @returns {date} The returned print time
-       */
-
-      BasketItem.prototype.print_time = function() {
-        if (this.time) {
-          return this.time.print_time();
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_end_time
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get to print end time
-      *
-      * @returns {date} The returned print end time
-       */
-
-      BasketItem.prototype.print_end_time = function() {
-        if (this.time) {
-          return this.time.print_end_time(this.duration);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_time12
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get to print time12 if show suffix is true
-      *
-      * @returns {date} The returned print time12
-       */
-
-      BasketItem.prototype.print_time12 = function(show_suffix) {
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        if (this.time) {
-          return this.time.print_time12(show_suffix);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_end_time12
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get to print end time12 if show_suffix is true
-      *
-      * @returns {date} The returned print end time12
-       */
-
-      BasketItem.prototype.print_end_time12 = function(show_suffix) {
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        if (this.time) {
-          return this.time.print_end_time12(show_suffix, this.duration);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setTime
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set time in according of time parameter
-      *
-      * @returns {date} The returned set time
-       */
-
-      BasketItem.prototype.setTime = function(time) {
-        var hours, mins, val;
-        if (this.time) {
-          this.time.unselect();
-        }
-        this.time = time;
-        if (this.time) {
-          this.time.select();
-          if (this.datetime) {
-            val = parseInt(time.time);
-            hours = parseInt(val / 60);
-            mins = val % 60;
-            this.datetime.hour(hours);
-            this.datetime.minutes(mins);
-          }
-          if (this.price && this.time.price && (this.price !== this.time.price)) {
-            this.setPrice(this.time.price);
-          } else if (this.price && !this.time.price) {
-            this.setPrice(this.price);
-          } else if (this.time.price && !this.price) {
-            this.setPrice(this.time.price);
-          } else if (this.price && this.time.price) {
-            this.setPrice(this.price);
-          } else {
-            this.setPrice(null);
-          }
-        }
-        return this.checkReady();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setDate
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set date in according of date parameter
-      *
-      * @returns {date} The returned set date
-       */
-
-      BasketItem.prototype.setDate = function(date) {
-        this.date = date;
-        if (this.date) {
-          this.date.date = moment(this.date.date);
-          if (this.datetime) {
-            this.datetime.date(this.date.date.date());
-            this.datetime.month(this.date.date.month());
-            this.datetime.year(this.date.date.year());
-          }
-        }
-        return this.checkReady();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearDateTime
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Clear date and time
-      *
-      * @returns {date} The returned clear date and time
-       */
-
-      BasketItem.prototype.clearDateTime = function() {
-        delete this.date;
-        delete this.time;
-        delete this.datetime;
-        this.ready = false;
-        return this.reserve_ready = false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearTime
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Clear time
-      *
-      * @returns {date} The returned clear time
-       */
-
-      BasketItem.prototype.clearTime = function() {
-        delete this.time;
-        this.ready = false;
-        return this.reserve_ready = false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearTime
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set group in according of group parameter
-      *
-      * @returns {object} The returned set group
-       */
-
-      BasketItem.prototype.setGroup = function(group) {
-        return this.group = group;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setAskedQuestions
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set asked questions
-      *
-      * @returns {object} The returned set asked questions
-       */
-
-      BasketItem.prototype.setAskedQuestions = function() {
-        this.asked_questions = true;
-        return this.checkReady();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name checkReady
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Check if an item is ready for checking out
-      *
-      * @returns {date} The returned item has been ready for checking out
-       */
-
-      BasketItem.prototype.checkReady = function() {
-        if (((this.date && this.time && this.service) || this.event || this.product || this.package_item || this.bulk_purchase || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
-          this.ready = true;
-        }
-        if (((this.date && this.time && this.service) || this.event || this.product || this.package_item || this.bulk_purchase || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions || this.reserve_without_questions)) {
-          return this.reserve_ready = true;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPostData
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Build an array with details for every basket item in items array
-      *
-      * @returns {array} Newly created details array
-       */
-
-      BasketItem.prototype.getPostData = function() {
-        var data, i, j, len, len1, m_question, o_question, ref, ref1;
-        if (this.cloneAnswersItem) {
-          ref = this.cloneAnswersItem.item_details.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            o_question = ref[i];
-            ref1 = this.item_details.questions;
-            for (j = 0, len1 = ref1.length; j < len1; j++) {
-              m_question = ref1[j];
-              if (m_question.id === o_question.id) {
-                m_question.answer = o_question.answer;
-                this.setAskedQuestions();
-              }
-            }
-          }
-        }
-        data = {};
-        if (this.date) {
-          data.date = this.date.date.toISODate();
-        }
-        if (this.time) {
-          data.time = this.time.time;
-          if (this.time.event_id) {
-            data.event_id = this.time.event_id;
-          } else if (this.time.event_ids) {
-            data.event_ids = this.time.event_ids;
-          }
-        } else if (this.date && this.date.event_id) {
-          data.event_id = this.date.event_id;
-        }
-        data.price = this.price;
-        data.paid = this.paid;
-        if (this.book_link) {
-          data.book = this.book_link.$href('book');
-        }
-        data.id = this.id;
-        data.duration = this.duration;
-        data.settings = this.settings;
-        data.settings || (data.settings = {});
-        if (this.earliest_time) {
-          data.settings.earliest_time = this.earliest_time;
-        }
-        if (this.item_details && this.asked_questions) {
-          data.questions = this.item_details.getPostData();
-        }
-        if (this.move_item_id) {
-          data.move_item_id = this.move_item_id;
-        }
-        if (this.srcBooking) {
-          data.move_item_id = this.srcBooking.id;
-        }
-        if (this.service) {
-          data.service_id = this.service.id;
-        }
-        if (this.resource) {
-          data.resource_id = this.resource.id;
-        }
-        if (this.person) {
-          data.person_id = this.person.id;
-        }
-        data.length = this.length;
-        if (this.event) {
-          data.event_id = this.event.id;
-          if (this.event.pre_paid_booking_id != null) {
-            data.pre_paid_booking_id = this.event.pre_paid_booking_id;
-          } else if (this.tickets && (this.tickets.pre_paid_booking_id != null)) {
-            data.pre_paid_booking_id = this.tickets.pre_paid_booking_id;
-          }
-          data.tickets = this.tickets;
-        }
-        if (this.pre_paid_booking_id != null) {
-          data.pre_paid_booking_id = this.pre_paid_booking_id;
-        }
-        data.event_chain_id = this.event_chain_id;
-        data.event_group_id = this.event_group_id;
-        data.qty = this.qty;
-        if (this.status) {
-          data.status = this.status;
-        }
-        if (this.num_resources != null) {
-          data.num_resources = parseInt(this.num_resources);
-        }
-        if (this.package_item) {
-          data.package_id = this.package_item.id;
-        }
-        if (this.bulk_purchase) {
-          data.bulk_purchase_id = this.bulk_purchase.id;
-        }
-        data.external_purchase = this.external_purchase;
-        if (this.deal) {
-          data.deal = this.deal;
-        }
-        if (this.deal && this.recipient) {
-          data.recipient = this.recipient;
-        }
-        if (this.deal && this.recipient && this.recipient_mail) {
-          data.recipient_mail = this.recipient_mail;
-        }
-        data.coupon_id = this.coupon_id;
-        data.is_coupon = this.is_coupon;
-        if (this.attachment_id) {
-          data.attachment_id = this.attachment_id;
-        }
-        if (this.deal_codes) {
-          data.vouchers = this.deal_codes;
-        }
-        if (this.product) {
-          data.product_id = this.product.id;
-        }
-        if (this.email) {
-          data.email = this.email;
-        }
-        if (this.first_name) {
-          data.first_name = this.first_name;
-        }
-        if (this.last_name) {
-          data.last_name = this.last_name;
-        }
-        if (this.email != null) {
-          data.email = this.email;
-        }
-        if (this.email_admin != null) {
-          data.email_admin = this.email_admin;
-        }
-        if (this.private_note) {
-          data.private_note = this.private_note;
-        }
-        if (this.available_slot) {
-          data.available_slot = this.available_slot;
-        }
-        if (this.clinic_id) {
-          data.clinic_id = this.clinic_id;
-        }
-        return data;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setPrice
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set price in according of nprice parameter
-      *
-      * @returns {integer} The returned set price
-       */
-
-      BasketItem.prototype.setPrice = function(nprice) {
-        var printed_price;
-        if (nprice != null) {
-          this.price = parseFloat(nprice);
-          printed_price = this.price / 100;
-          this.printed_price = printed_price % 1 === 0 ? "£" + parseInt(printed_price) : $window.sprintf("£%.2f", printed_price);
-          if (this.company && this.company.settings) {
-            this.printed_vat_cal = this.company.settings.payment_tax;
-          }
-          if (this.printed_vat_cal) {
-            this.printed_vat = this.printed_vat_cal / 100 * printed_price;
-          }
-          if (this.printed_vat_cal) {
-            return this.printed_vat_inc = this.printed_vat_cal / 100 * printed_price + printed_price;
-          }
-        } else {
-          this.price = null;
-          this.printed_price = null;
-          this.printed_vat_cal = null;
-          this.printed_vat = null;
-          return this.printed_vat_inc = null;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getStep
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Build a temp object with current step variables
-      *
-      * @returns {object} Temp hash
-       */
-
-      BasketItem.prototype.getStep = function() {
-        var temp;
-        temp = {};
-        temp.service = this.service;
-        temp.category = this.category;
-        temp.person = this.person;
-        temp.resource = this.resource;
-        temp.duration = this.duration;
-        temp.event = this.event;
-        temp.event_group = this.event_group;
-        temp.event_chain = this.event_chain;
-        temp.time = this.time;
-        temp.date = this.date;
-        temp.days_link = this.days_link;
-        temp.book_link = this.book_link;
-        temp.ready = this.ready;
-        return temp;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name loadStep
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Build current step variables based on a hash object passed as parameter
-      *
-      * @param {object} step Hash object representing a step
-      *
-      * @returns {object} The returned load step
-       */
-
-      BasketItem.prototype.loadStep = function(step) {
-        this.service = step.service;
-        this.category = step.category;
-        this.person = step.person;
-        this.resource = step.resource;
-        this.duration = step.duration;
-        this.event = step.event;
-        this.event_chain = step.event_chain;
-        this.event_group = step.event_group;
-        this.time = step.time;
-        this.date = step.date;
-        this.days_link = step.days_link;
-        this.book_link = step.book_link;
-        return this.ready = step.ready;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name describe
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get information about of the basket item
-      *
-      * @returns {object} The returned title
-       */
-
-      BasketItem.prototype.describe = function() {
-        var title;
-        title = "-";
-        if (this.service) {
-          title = this.service.name;
-        }
-        if (this.event_group && this.event && title === "-") {
-          title = this.event_group.name + " - " + this.event.description;
-        }
-        if (this.product) {
-          title = this.product.name;
-        }
-        if (this.external_purchase) {
-          title = this.external_purchase.name;
-        }
-        if (this.deal) {
-          title = this.deal.name;
-        }
-        if (this.package_item) {
-          title = this.package_item.name;
-        }
-        if (this.bulk_purchase) {
-          title = this.bulk_purchase.name;
-        }
-        return title;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name booking_date
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get booking date of the basket item, in according of format parameter
-      *
-      * @returns {date} The returned booking date
-       */
-
-      BasketItem.prototype.booking_date = function(format) {
-        if (!this.date || !this.date.date) {
-          return null;
-        }
-        return this.date.date.format(format);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name booking_time
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get booking time of the basket item in according with separator = '-'
-      *
-      * @returns {date} The returned booking time
-       */
-
-      BasketItem.prototype.booking_time = function(seperator) {
-        var duration;
-        if (seperator == null) {
-          seperator = '-';
-        }
-        if (!this.time) {
-          return null;
-        }
-        duration = this.listed_duration ? this.listed_duration : this.duration;
-        return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name duePrice
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get due price for the basket item
-      *
-      * @returns {string} The returned price
-       */
-
-      BasketItem.prototype.duePrice = function() {
-        if (this.isWaitlist()) {
-          return 0;
-        }
-        return this.price;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name isWaitlist
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Checks if this is a wait list
-      *
-      * @returns {boolean} If this is a wait list
-       */
-
-      BasketItem.prototype.isWaitlist = function() {
-        return this.status && this.status === 8;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name start_datetime
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get booking start date and time
-      *
-      * @returns {date} The returned start date time
-       */
-
-      BasketItem.prototype.start_datetime = function() {
-        var start_datetime;
-        if (!this.date || !this.time) {
-          return null;
-        }
-        start_datetime = moment(this.date.date.toISODate());
-        start_datetime.minutes(this.time.time);
-        return start_datetime;
-      };
-
-      BasketItem.prototype.startDatetime = function() {
-        return this.start_datetime();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name end_datetime
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get booking end date and time
-      *
-      * @returns {date} The returned end date time
-       */
-
-      BasketItem.prototype.end_datetime = function() {
-        var duration, end_datetime;
-        if (!this.date || !this.time || (!this.listed_duration && !this.duration)) {
-          return null;
-        }
-        duration = this.listed_duration ? this.listed_duration : this.duration;
-        end_datetime = moment(this.date.date.toISODate());
-        end_datetime.minutes(this.time.time + duration);
-        return end_datetime;
-      };
-
-      BasketItem.prototype.endDatetime = function() {
-        return this.end_datetime();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setSrcBooking
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set a booking are to be a move if according of booking parameter
-      *
-      * @returns {object} The returned end date time
-       */
-
-      BasketItem.prototype.setSrcBooking = function(booking) {
-        this.srcBooking = booking;
-        return this.duration = booking.duration;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name anyPerson
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Verify type of any person
-      *
-      * @returns {boolean} The returned any person
-       */
-
-      BasketItem.prototype.anyPerson = function() {
-        return this.person && (typeof this.person === 'boolean');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name anyResource
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Verify type of any resorce
-      *
-      * @returns {boolean} The returned any resource
-       */
-
-      BasketItem.prototype.anyResource = function() {
-        return this.resource && (typeof this.resource === 'boolean');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name isMovingBooking
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Verify if booking has been moved
-      *
-      * @returns {boolean} The returned moving booking
-       */
-
-      BasketItem.prototype.isMovingBooking = function() {
-        return this.srcBooking || this.move_item_id;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setCloneAnswers
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Set clone answers in according of other item parameter
-      *
-      * @returns {object} The returned clone answers
-       */
-
-      BasketItem.prototype.setCloneAnswers = function(otherItem) {
-        return this.cloneAnswersItem = otherItem;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name questionPrice
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Question price for the basket item
-      *
-      * @returns {integer} The returned question price
-       */
-
-      BasketItem.prototype.questionPrice = function() {
-        if (!this.item_details) {
-          return 0;
-        }
-        return this.item_details.questionPrice(this.getQty());
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getQty
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get quantity of tickets
-      *
-      * @returns {integer} The returned quatity of tickets
-       */
-
-      BasketItem.prototype.getQty = function() {
-        if (this.qty) {
-          return this.qty;
-        }
-        if (this.tickets) {
-          return this.tickets.qty;
-        }
-        return 1;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalPrice
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Total price of the basket item (price including discounts)
-      *
-      * @returns {integer} The returned total price
-       */
-
-      BasketItem.prototype.totalPrice = function() {
-        var pr;
-        if (this.tickets && this.tickets.pre_paid_booking_id) {
-          return 0;
-        }
-        if (this.pre_paid_booking_id) {
-          return 0;
-        }
-        if (this.discount_price != null) {
-          return this.discount_price + this.questionPrice();
-        }
-        pr = this.total_price;
-        if (!angular.isNumber(pr)) {
-          pr = this.price;
-        }
-        if (!angular.isNumber(pr)) {
-          pr = 0;
-        }
-        return pr + this.questionPrice();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name fullPrice
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Full price for the basket item (price not including discounts)
-      *
-      * @returns {integer} The returned full price
-       */
-
-      BasketItem.prototype.fullPrice = function() {
-        var pr;
-        pr = this.base_price;
-        pr || (pr = this.total_price);
-        pr || (pr = this.price);
-        pr || (pr = 0);
-        return pr + this.questionPrice();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setProduct
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Apply a product to the BasketItem
-      *
-       */
-
-      BasketItem.prototype.setProduct = function(product) {
-        this.product = product;
-        if (this.product.$has('book')) {
-          this.book_link = this.product;
-        }
-        if (product.price) {
-          return this.setPrice(product.price);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setPackageItem
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Apply a package to the BasketItem
-      *
-       */
-
-      BasketItem.prototype.setPackageItem = function(package_item) {
-        this.package_item = package_item;
-        if (this.package_item.$has('book')) {
-          this.book_link = this.package_item;
-        }
-        if (package_item.price) {
-          return this.setPrice(package_item.price);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setBulkPurchase
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Apply a bulk purchase to the BasketItem
-      *
-       */
-
-      BasketItem.prototype.setBulkPurchase = function(bulk_purchase) {
-        this.bulk_purchase = bulk_purchase;
-        if (this.bulk_purchase.$has('book')) {
-          this.book_link = this.bulk_purchase;
-        }
-        if (bulk_purchase.price) {
-          return this.setPrice(bulk_purchase.price);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setExternalPurchase
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Apply an external purchase to the BasketItem
-      *
-       */
-
-      BasketItem.prototype.setExternalPurchase = function(external_purchase) {
-        this.external_purchase = external_purchase;
-        this.book_link = this.company;
-        if (external_purchase.price) {
-          return this.setPrice(external_purchase.price);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setDeal
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Apply a deal on to BasketItem
-      *
-       */
-
-      BasketItem.prototype.setDeal = function(deal) {
-        this.deal = deal;
-        if (this.deal.$has('book')) {
-          this.book_link = this.deal;
-        }
-        if (deal.price) {
-          return this.setPrice(deal.price);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasPrice
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Checks if the BasketItem has a price
-      *
-      * @returns {boolean}
-       */
-
-      BasketItem.prototype.hasPrice = function() {
-        return this.price != null;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getAttachment
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get attachment of the basket item
-      *
-      * @returns {object} The attachment
-       */
-
-      BasketItem.prototype.getAttachment = function() {
-        if (this.attachment) {
-          return this.attachment;
-        }
-        if (this.$has('attachment') && this.attachment_id) {
-          return this._data.$get('attachment').then((function(_this) {
-            return function(att) {
-              _this.attachment = att;
-              return _this.attachment;
-            };
-          })(this));
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setPrepaidBooking
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Apply a prepaid booking to BasketItem
-      *
-       */
-
-      BasketItem.prototype.setPrepaidBooking = function(pre_paid_booking) {
-        this.pre_paid_booking = pre_paid_booking;
-        return this.pre_paid_booking_id = pre_paid_booking.id;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasPrepaidBooking
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Indicates if the basket item has a prepaid booking applied
-      *
-      * @returns {boolean} boolean indicating if the BasketItem has a prepaid booking
-       */
-
-      BasketItem.prototype.hasPrepaidBooking = function() {
-        return this.pre_paid_booking_id != null;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getEventId
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Get the event id for the BasketItem
-      *
-      * @returns {string} The Event ID
-       */
-
-      BasketItem.prototype.getEventId = function() {
-        if (this.time && this.time.event_id) {
-          return this.time.event_id;
-        } else if (this.date && this.date.event_id) {
-          return this.date.event_id;
-        } else if (this.event) {
-          return this.event.id;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name isExternalPurchase
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Indicates if the BasketItem is an external purchase
-      *
-      * @returns {boolean}
-       */
-
-      BasketItem.prototype.isExternalPurchase = function() {
-        return this.external_purchase != null;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getName
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Returns the name
-      *
-      * @returns {String}
-       */
-
-      BasketItem.prototype.getName = function(client) {
-        if (this.first_name) {
-          return this.first_name + " " + this.last_name;
-        } else if (client) {
-          return client.getName();
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name isTimeItem
-      * @methodOf BB.Models:BasketItem
-      * @description
-      * Indicates if the BasketItem is a time item (i.e. either an event
-      * or appointment booking)
-      *
-      * @returns {boolean}
-       */
-
-      BasketItem.prototype.isTimeItem = function() {
-        return this.service || this.event;
-      };
-
-      return BasketItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:BookableItem
-  *
-  * @description
-  * Representation of an BookableItem Object
-  *
-  * @property {string} name Property name display "-Waiting-"
-  * @property {string} ready The ready
-  * @property {string} promise The promise
-  * @property {string} item Bookable item
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BookableItemModel", function($q, BBModel, BaseModel) {
-    var BookableItem;
-    return BookableItem = (function(superClass) {
-      extend(BookableItem, superClass);
-
-      BookableItem.prototype.item = null;
-
-      BookableItem.prototype.promise = null;
-
-      function BookableItem(data) {
-        BookableItem.__super__.constructor.apply(this, arguments);
-        this.name = "-Waiting-";
-        this.ready = $q.defer();
-        this.promise = this._data.$get('item');
-        this.promise.then((function(_this) {
-          return function(val) {
-            var m, n, ref, ref1, ref2;
-            if (val.type === "person") {
-              _this.item = new BBModel.Person(val);
-              if (_this.item) {
-                ref = _this.item._data;
-                for (n in ref) {
-                  m = ref[n];
-                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
-                    _this[n] = m;
-                  }
-                }
-                return _this.ready.resolve();
-              } else {
-                return _this.ready.resolve();
-              }
-            } else if (val.type === "resource") {
-              _this.item = new BBModel.Resource(val);
-              if (_this.item) {
-                ref1 = _this.item._data;
-                for (n in ref1) {
-                  m = ref1[n];
-                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
-                    _this[n] = m;
-                  }
-                }
-                return _this.ready.resolve();
-              } else {
-                return _this.ready.resolve();
-              }
-            } else if (val.type === "service") {
-              _this.item = new BBModel.Service(val);
-              if (_this.item) {
-                ref2 = _this.item._data;
-                for (n in ref2) {
-                  m = ref2[n];
-                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
-                    _this[n] = m;
-                  }
-                }
-                return _this.ready.resolve();
-              } else {
-                return _this.ready.resolve();
-              }
-            }
-          };
-        })(this));
-      }
-
-      return BookableItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:BulkPurchase
-  *
-  * @description
-  * Representation of a BulkPurchase Object
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BulkPurchaseModel", function($q, BBModel, BaseModel) {
-    var BulkPurchase;
-    return BulkPurchase = (function(superClass) {
-      extend(BulkPurchase, superClass);
-
-      function BulkPurchase() {
-        return BulkPurchase.__super__.constructor.apply(this, arguments);
-      }
-
-      return BulkPurchase;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:BussinessQuestion
-  *
-  * @description
-  * Representation of an BussinessQuestion Object
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BusinessQuestionModel", function($q, $filter, BBModel, BaseModel) {
-    var BusinessQuestion;
-    return BusinessQuestion = (function(superClass) {
-      extend(BusinessQuestion, superClass);
-
-      function BusinessQuestion(data) {
-        BusinessQuestion.__super__.constructor.call(this, data);
-      }
-
-      return BusinessQuestion;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Category
-  *
-  * @description
-  * Representation of a Category Object
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("CategoryModel", function($q, BBModel, BaseModel) {
-    var Category;
-    return Category = (function(superClass) {
-      extend(Category, superClass);
-
-      function Category() {
-        return Category.__super__.constructor.apply(this, arguments);
-      }
-
-      return Category;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Client
-  *
-  * @description
-  * Representation of an Client Object
-  *
-  * @property {string} first_name Client first name
-  * @property {string} last_name Client last name
-  * @property {string} email Client email address
-  * @property {string} address1 The first line of client address
-  * @property {string} address2 The second line of client address
-  * @property {string} address3 The third line of client address
-  * @property {string} address4 The fourth line of client address
-  * @property {string} address4 The fifth line of client address
-  * @property {string} postcode Postcode of the client
-  * @property {string} country Country of the client
-  * @property {integer} phone The phone number of the client
-  * @property {integer} mobile The mobile phone number of the client
-  * @property {integer} id Id of the client
-  * @property {array} answers Answers of the client
-  * @property {boolean} deleted Verify if the client account is deleted or not
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
-    var Client;
-    return Client = (function(superClass) {
-      extend(Client, superClass);
-
-      function Client(data) {
-        Client.__super__.constructor.apply(this, arguments);
-        this.name = this.getName();
-        if (data) {
-          if (data.answers && data.$has('questions')) {
-            this.waitingQuestions = $q.defer();
-            this.gotQuestions = this.waitingQuestions.promise;
-            data.$get('questions').then((function(_this) {
-              return function(details) {
-                _this.client_details = new BBModel.ClientDetails(details);
-                _this.client_details.setAnswers(data.answers);
-                _this.questions = _this.client_details.questions;
-                _this.setAskedQuestions();
-                return _this.waitingQuestions.resolve();
-              };
-            })(this));
-          }
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name setClientDetails
-      * @methodOf BB.Models:Client
-      * @description
-      * Set client details in according to details parameter
-      *
-      * @returns {object} The returned client details
-       */
-
-      Client.prototype.setClientDetails = function(details) {
-        this.client_details = details;
-        return this.questions = this.client_details.questions;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setDefaults
-      * @methodOf BB.Models:Client
-      * @description
-      * Set client defaults in according of values parameter
-      *
-      * @returns {object} The returned client defaults
-       */
-
-      Client.prototype.setDefaults = function(values) {
-        if (values.name) {
-          this.name = values.name;
-        }
-        if (values.first_name) {
-          this.first_name = values.first_name;
-        }
-        if (values.last_name) {
-          this.last_name = values.last_name;
-        }
-        if (values.phone) {
-          this.phone = values.phone;
-        }
-        if (values.mobile) {
-          this.mobile = values.mobile;
-        }
-        if (values.email) {
-          this.email = values.email;
-        }
-        if (values.id) {
-          this.id = values.id;
-        }
-        if (values.ref) {
-          this.comp_ref = values.ref;
-        }
-        if (values.comp_ref) {
-          this.comp_ref = values.comp_ref;
-        }
-        if (values.address1) {
-          this.address1 = values.address1;
-        }
-        if (values.address2) {
-          this.address2 = values.address2;
-        }
-        if (values.address3) {
-          this.address3 = values.address3;
-        }
-        if (values.address4) {
-          this.address4 = values.address4;
-        }
-        if (values.address5) {
-          this.address5 = values.address5;
-        }
-        if (values.postcode) {
-          this.postcode = values.postcode;
-        }
-        if (values.country) {
-          this.country = values.country;
-        }
-        if (values.answers) {
-          return this.default_answers = values.answers;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name pre_fill_answers
-      * @methodOf BB.Models:Client
-      * @description
-      * Pre fill client answers according of details
-      *
-      * @returns {object} The returned pre fill answers
-       */
-
-      Client.prototype.pre_fill_answers = function(details) {
-        var i, len, q, ref, results;
-        if (!this.default_answers) {
-          return;
-        }
-        ref = details.questions;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          q = ref[i];
-          if (this.default_answers[q.name]) {
-            results.push(q.answer = this.default_answers[q.name]);
-          } else {
-            results.push(void 0);
-          }
-        }
-        return results;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getName
-      * @methodOf BB.Models:Client
-      * @description
-      * Get client first name and last name
-      *
-      * @returns {string} The returned client name
-       */
-
-      Client.prototype.getName = function() {
-        var str;
-        str = "";
-        if (this.first_name) {
-          str += this.first_name;
-        }
-        if (str.length > 0 && this.last_name) {
-          str += " ";
-        }
-        if (this.last_name) {
-          str += this.last_name;
-        }
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name addressSingleLine
-      * @methodOf BB.Models:Address
-      * @description
-      * Get the address and postcode of the client
-      *
-      * @returns {string} The returned address
-       */
-
-      Client.prototype.addressSingleLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += ", ";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += ", ";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasAddress
-      * @methodOf BB.Models:Address
-      * @description
-      * Checks if this is considered a valid address
-      *
-      * @returns {boolean} If this is a valid address
-       */
-
-      Client.prototype.hasAddress = function() {
-        return this.address1 || this.address2 || this.postcode;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name addressCsvLine
-      * @methodOf BB.Models:Address
-      * @description
-      * Get all address fields, postcode and country for CSV file
-      *
-      * @returns {string} The returned address
-       */
-
-      Client.prototype.addressCsvLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        str += ", ";
-        if (this.address2) {
-          str += this.address2;
-        }
-        str += ", ";
-        if (this.address3) {
-          str += this.address3;
-        }
-        str += ", ";
-        if (this.address4) {
-          str += this.address4;
-        }
-        str += ", ";
-        if (this.address5) {
-          str += this.address5;
-        }
-        str += ", ";
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        str += ", ";
-        if (this.country) {
-          str += this.country;
-        }
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name addressMultiLine
-      * @methodOf BB.Models:Address
-      * @description
-      * Get address several lines separated by line breaks
-      *
-      * @returns {string} The returned address
-       */
-
-      Client.prototype.addressMultiLine = function() {
-        var str;
-        str = "";
-        if (this.address1) {
-          str += this.address1;
-        }
-        if (this.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address2) {
-          str += this.address2;
-        }
-        if (this.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address3) {
-          str += this.address3;
-        }
-        if (this.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address4) {
-          str += this.address4;
-        }
-        if (this.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.address5) {
-          str += this.address5;
-        }
-        if (this.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (this.postcode) {
-          str += this.postcode;
-        }
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPostData
-      * @methodOf BB.Models:Address
-      * @description
-      * Build an array with details of the client
-      *
-      * @returns {array} newly created details array
-       */
-
-      Client.prototype.getPostData = function() {
-        var i, len, q, ref, x;
-        x = {};
-        x.first_name = this.first_name;
-        x.last_name = this.last_name;
-        if (this.house_number) {
-          x.address1 = this.house_number + " " + this.address1;
-        } else {
-          x.address1 = this.address1;
-        }
-        x.address2 = this.address2;
-        x.address3 = this.address3;
-        x.address4 = this.address4;
-        x.address5 = this.address5;
-        x.postcode = this.postcode;
-        x.country = this.country;
-        x.email = this.email;
-        x.id = this.id;
-        x.comp_ref = this.comp_ref;
-        x.parent_client_id = this.parent_client_id;
-        x.password = this.password;
-        x.notifications = this.notifications;
-        if (this.member_level_id) {
-          x.member_level_id = this.member_level_id;
-        }
-        if (this.send_welcome_email) {
-          x.send_welcome_email = this.send_welcome_email;
-        }
-        if (this.default_company_id) {
-          x.default_company_id = this.default_company_id;
-        }
-        if (this.phone) {
-          x.phone = this.phone;
-          if (this.phone_prefix) {
-            x.phone_prefix = this.phone_prefix;
-          }
-        }
-        if (this.mobile) {
-          this.remove_prefix();
-          x.mobile = this.mobile;
-          x.mobile_prefix = this.mobile_prefix;
-        }
-        if (this.questions) {
-          x.questions = [];
-          ref = this.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            x.questions.push(q.getPostData());
-          }
-        }
-        return x;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name valid
-      * @methodOf BB.Models:Address
-      * @description
-      * Checks if this is considered a valid email
-      *
-      * @returns {boolean} If this is a valid email
-       */
-
-      Client.prototype.valid = function() {
-        if (this.isValid) {
-          return this.isValid;
-        }
-        if (this.email || this.hasServerId()) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setValid
-      * @methodOf BB.Models:Address
-      * @description
-      * Set valid client, according of val
-      *
-      * @returns {object} The returned valid client
-       */
-
-      Client.prototype.setValid = function(val) {
-        return this.isValid = val;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasServerId
-      * @methodOf BB.Models:Address
-      * @description
-      * Checks if this has a id
-      *
-      * @returns {boolean} If this has a id
-       */
-
-      Client.prototype.hasServerId = function() {
-        return this.id;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setAskedQuestions
-      * @methodOf BB.Models:Address
-      * @description
-      * Set asked questions of the client
-      *
-      * @returns {boolean} If this is set
-       */
-
-      Client.prototype.setAskedQuestions = function() {
-        return this.asked_questions = true;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name fullMobile
-      * @methodOf BB.Models:Address
-      * @description
-      * Full mobile phone number of the client
-      *
-      * @returns {object} The returned full mobile number
-       */
-
-      Client.prototype.fullMobile = function() {
-        if (!this.mobile) {
-          return;
-        }
-        if (!this.mobile_prefix) {
-          return this.mobile;
-        }
-        return "+" + this.mobile_prefix + this.mobile;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name remove_prefix
-      * @methodOf BB.Models:Address
-      * @description
-      * Remove prefix from mobile number of the client
-      *
-      * @returns {array} The returned full mobile number without prefix
-       */
-
-      Client.prototype.remove_prefix = function() {
-        var pref_arr;
-        pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
-        if (pref_arr) {
-          this.mobile.replace(pref_arr[0], "");
-          return this.mobile_prefix = pref_arr[0];
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPrePaidBookingsPromise
-      * @methodOf BB.Models:Address
-      * @description
-      * Get pre paid bookings promise of the client
-      *
-      * @returns {promise} A promise for client pre paid bookings
-       */
-
-      Client.prototype.getPrePaidBookingsPromise = function(params) {
-        var defer;
-        defer = $q.defer();
-        if (this.$has('pre_paid_bookings')) {
-          this.$get('pre_paid_bookings', params).then(function(collection) {
-            return collection.$get('pre_paid_bookings').then(function(prepaids) {
-              var prepaid;
-              return defer.resolve((function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = prepaids.length; i < len; i++) {
-                  prepaid = prepaids[i];
-                  results.push(new BBModel.PrePaidBooking(prepaid));
-                }
-                return results;
-              })());
-            }, function(err) {
-              return defer.reject(err);
-            });
-          }, function(err) {
-            return defer.resolve([]);
-          });
-        } else {
-          defer.resolve([]);
-        }
-        return defer.promise;
-      };
-
-      return Client;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:ClientDetails
-  *
-  * @description
-  * Representation of an ClientDetails Object
-  *
-  * @property {array} questions Questions of the client
-  * @property {integer} company_id The company id of the client company
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ClientDetailsModel", function($q, BBModel, BaseModel) {
-    var ClientDetails;
-    return ClientDetails = (function(superClass) {
-      extend(ClientDetails, superClass);
-
-      function ClientDetails(data) {
-        var i, len, q, ref;
-        ClientDetails.__super__.constructor.apply(this, arguments);
-        this.questions = [];
-        if (this._data) {
-          ref = data.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            this.questions.push(new BBModel.Question(q));
-          }
-        }
-        this.hasQuestions = this.questions.length > 0;
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name getPostData
-      * @methodOf BB.Models:ClientDetails
-      * @description
-      * Get post data from client details according to questions
-      *
-      * @returns {object} The returned data
-       */
-
-      ClientDetails.prototype.getPostData = function(questions) {
-        var data, i, len, q;
-        data = [];
-        for (i = 0, len = questions.length; i < len; i++) {
-          q = questions[i];
-          data.push({
-            answer: q.answer,
-            id: q.id,
-            price: q.price
-          });
-        }
-        return data;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setAnswers
-      * @methodOf BB.Models:ClientDetails
-      * @description
-      * Set answers of the client details in function of answers
-      *
-      * @returns {object} The returned answers
-       */
-
-      ClientDetails.prototype.setAnswers = function(answers) {
-        var a, ahash, i, j, len, len1, q, ref, results;
-        ahash = {};
-        for (i = 0, len = answers.length; i < len; i++) {
-          a = answers[i];
-          ahash[a.question_id] = a;
-        }
-        ref = this.questions;
-        results = [];
-        for (j = 0, len1 = ref.length; j < len1; j++) {
-          q = ref[j];
-          if (ahash[q.id]) {
-            results.push(q.answer = ahash[q.id].answer);
-          } else {
-            results.push(void 0);
-          }
-        }
-        return results;
-      };
-
-      return ClientDetails;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Clinic
-  *
-  * @description
-  * Representation of an Clinic Object
-  *
-  * @property {string} setTimes Set times for the clinic
-  * @property {string} setResourcesAndPeople Set resources and people for the clinic 
-  * @property {object} settings Clinic settings
-  * @property {string} resources Clinic resources
-  * @property {integer} resource_ids Clinic resources ids
-  * @property {string} people Clinic people
-  * @property {integer} person_ids Clinic Person ids
-  * @property {string} services Clinic services
-  * @property {integer} services_ids Clinic service ids
-  * @property {string} uncovered The uncovered
-  * @property {string} className The class Name
-  * @property {string} start_time The clinic start thime
-  * @property {string} start The clinic start
-  * @property {string} end_time The clinic end time
-  * @property {string} end The clinic end
-  * @property {string} title The title
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
-    var Clinic;
-    return Clinic = (function(superClass) {
-      extend(Clinic, superClass);
-
-      function Clinic(data) {
-        Clinic.__super__.constructor.call(this, data);
-        this.setTimes();
-        this.setResourcesAndPeople();
-        this.settings || (this.settings = {});
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name setResourcesAndPeople
-      * @methodOf BB.Models:Clinic
-      * @description
-      * Set resources and people for clinic
-      *
-      * @returns {object} The returned resources and people
-       */
-
-      Clinic.prototype.setResourcesAndPeople = function() {
-        this.resources = _.reduce(this.resource_ids, function(h, id) {
-          h[id] = true;
-          return h;
-        }, {});
-        this.people = _.reduce(this.person_ids, function(h, id) {
-          h[id] = true;
-          return h;
-        }, {});
-        this.services = _.reduce(this.service_ids, function(h, id) {
-          h[id] = true;
-          return h;
-        }, {});
-        this.uncovered = !this.person_ids || this.person_ids.length === 0;
-        if (this.uncovered) {
-          return this.className = "clinic_uncovered";
-        } else {
-          return this.className = "clinic_covered";
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setTimes
-      * @methodOf BB.Models:Clinic
-      * @description
-      * Set time for clinic
-      *
-      * @returns {object} The returned time
-       */
-
-      Clinic.prototype.setTimes = function() {
-        if (this.start_time) {
-          this.start_time = moment(this.start_time);
-          this.start = this.start_time;
-        }
-        if (this.end_time) {
-          this.end_time = moment(this.end_time);
-          this.end = this.end_time;
-        }
-        return this.title = this.name;
-      };
-
-      return Clinic;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("BBCollectionModel", function($q, BBModel, BaseModel) {
-    var BBCollection;
-    return BBCollection = (function(superClass) {
-      extend(BBCollection, superClass);
-
-      function BBCollection() {
-        this.getNextPage = bind(this.getNextPage, this);
-        return BBCollection.__super__.constructor.apply(this, arguments);
-      }
-
-      BBCollection.prototype.getNextPage = function(params) {
-        var deferred;
-        deferred = $q.defer();
-        this.$get('next', params).then(function(collection) {
-          return deferred.resolve(new BBModel.BBCollection(collection));
-        }, function() {
-          return deferred.reject();
-        });
-        return deferred.promise;
-      };
-
-      return BBCollection;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Company
-  *
-  * @description
-  * Representation of an Company Object
-  *
-  * @constructor
-  * @param {HALobject=} data A HAL object to initialise the company from
-  * 
-  * @property {string} name The company name
-  * @property {string} description The company description
-  * @property {string} country_code the Country code for thie company
-  * @property {string} currency_code A CCY for this company
-  * @property {string} reference A custom external reference for the company
-  * @property {integer} id The company ID
-  * @property {boolean} live If this company is set live
-  * @property {array} companies An array of child companies if this is a parent company
-  * @property {string} timezone The timezone for the business
-   */
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("CompanyModel", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
-    var Company;
-    return Company = (function(superClass) {
-      extend(Company, superClass);
-
-      function Company(data) {
-        this.getPusherChannel = bind(this.getPusherChannel, this);
-        this.pusherSubscribe = bind(this.pusherSubscribe, this);
-        var all_companies, c, child, comp, i, j, len, len1, ref1, ref2;
-        Company.__super__.constructor.call(this, data);
-        if (this.companies) {
-          all_companies = [];
-          this.child_companies = [];
-          ref1 = this.companies;
-          for (i = 0, len = ref1.length; i < len; i++) {
-            comp = ref1[i];
-            c = new BBModel.Company(halClient.$parse(comp));
-            this.child_companies.push(c);
-            if (c.companies) {
-              ref2 = c.companies;
-              for (j = 0, len1 = ref2.length; j < len1; j++) {
-                child = ref2[j];
-                all_companies.push(child);
-              }
-            } else {
-              all_companies.push(c);
-            }
-          }
-          this.companies = all_companies;
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name getCompanyByRef
-      * @methodOf BB.Models:Company
-      * @description
-      * Find a child company by reference
-      *
-      * @returns {promise} A promise for the child company
-       */
-
-      Company.prototype.getCompanyByRef = function(ref) {
-        var defer;
-        defer = $q.defer();
-        this.$get('companies').then(function(companies) {
-          var company;
-          company = _.find(companies, function(c) {
-            return c.reference === ref;
-          });
-          if (company) {
-            return defer.resolve(company);
-          } else {
-            return defer.reject('No company for ref ' + ref);
-          }
-        }, function(err) {
-          console.log('err ', err);
-          return defer.reject(err);
-        });
-        return defer.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name findChildCompany
-      * @methodOf BB.Models:Company
-      * @description
-      * Find a child company by id
-      *
-      * @returns {object} The child company
-       */
-
-      Company.prototype.findChildCompany = function(id) {
-        var c, cname, i, j, len, len1, name, ref1, ref2;
-        if (!this.companies) {
-          return null;
-        }
-        ref1 = this.companies;
-        for (i = 0, len = ref1.length; i < len; i++) {
-          c = ref1[i];
-          if (c.id === parseInt(id)) {
-            return c;
-          }
-          if (c.ref && c.ref === String(id)) {
-            return c;
-          }
-        }
-        if (typeof id === "string") {
-          name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-          ref2 = this.companies;
-          for (j = 0, len1 = ref2.length; j < len1; j++) {
-            c = ref2[j];
-            cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-            if (name === cname) {
-              return c;
-            }
-          }
-        }
-        return null;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getSettings
-      * @methodOf BB.Models:Company
-      * @description
-      * Get settings company
-      *
-      * @returns {promise} A promise for settings company
-       */
-
-      Company.prototype.getSettings = function() {
-        var def;
-        def = $q.defer();
-        if (this.settings) {
-          def.resolve(this.settings);
-        } else {
-          if (this.$has('settings')) {
-            this.$get('settings').then((function(_this) {
-              return function(set) {
-                _this.settings = new BBModel.CompanySettings(set);
-                return def.resolve(_this.settings);
-              };
-            })(this));
-          } else {
-            def.reject("Company has no settings");
-          }
-        }
-        return def.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name pusherSubscribe
-      * @methodOf BB.Models:Company
-      * @description
-      * Push subscribe for company
-      *
-      * @returns {object} Subscriber company
-       */
-
-      Company.prototype.pusherSubscribe = function(callback, options) {
-        var channelName;
-        if (options == null) {
-          options = {};
-        }
-        if ((typeof Pusher !== "undefined" && Pusher !== null) && (this.pusher == null)) {
-          this.pusher = new Pusher('c8d8cea659cc46060608', {
-            encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
-            authEndpoint: this.$link('pusher').href,
-            auth: {
-              headers: {
-                'App-Id': AppConfig.appId,
-                'App-Key': AppConfig.appKey,
-                'Auth-Token': $sessionStorage.getItem('auth_token')
-              }
-            }
-          });
-        }
-        channelName = "private-c" + this.id + "-w" + this.numeric_widget_id;
-        if (this.pusher.channel(channelName) != null) {
-          this.pusher.unsubscribe(channelName);
-        }
-        this.pusher_channel = this.pusher.subscribe(channelName);
-        this.pusher_channel.bind('booking', callback);
-        this.pusher_channel.bind('cancellation', callback);
-        return this.pusher_channel.bind('updating', callback);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPusherChannel
-      * @methodOf BB.Models:Company
-      *
-      * @returns {object} Pusher channel
-       */
-
-      Company.prototype.getPusherChannel = function(model, options) {
-        var channelName;
-        if (options == null) {
-          options = {};
-        }
-        if (!this.pusher) {
-          this.pusher = new Pusher('c8d8cea659cc46060608', {
-            encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
-            authEndpoint: this.$link('pusher').href,
-            auth: {
-              headers: {
-                'App-Id': AppConfig.appId,
-                'App-Key': AppConfig.appKey,
-                'Auth-Token': $sessionStorage.getItem('auth_token')
-              }
-            }
-          });
-        }
-        if (this.$has(model)) {
-          channelName = this.$href(model);
-          channelName = channelName.replace(/https?:\/\//, '').replace(/\//g, '-').replace(/:/g, '_');
-          if (this.pusher.channel(channelName)) {
-            return this.pusher.channel(channelName);
-          } else {
-            this.pusher.subscribe(channelName);
-            return this.pusher.channel(channelName);
-          }
-        }
-      };
-
-      return Company;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:CompanySettings
-  *
-  * @description
-  * Representation of an CompanySettings Object
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("CompanySettingsModel", function($q, BBModel, BaseModel) {
-    var CompanySettings;
-    return CompanySettings = (function(superClass) {
-      extend(CompanySettings, superClass);
-
-      function CompanySettings() {
-        return CompanySettings.__super__.constructor.apply(this, arguments);
-      }
-
-      return CompanySettings;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Day
-  *
-  * @description
-  * Representation of an Day Object
-  *
-  * @property {string} string_date The string date
-  * @property {date} date Second The date
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("DayModel", function($q, BBModel, BaseModel) {
-    var Day;
-    return Day = (function(superClass) {
-      extend(Day, superClass);
-
-      function Day(data) {
-        Day.__super__.constructor.apply(this, arguments);
-        this.string_date = this.date;
-        this.date = moment(this.date);
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name day
-      * @methodOf BB.Models:Day
-      * @description
-      * Get day date
-      *
-      * @returns {date} The returned day
-       */
-
-      Day.prototype.day = function() {
-        return this.date.date();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name off
-      * @methodOf BB.Models:Day
-      * @description
-      * Get off by month
-      *
-      * @returns {date} The returned off
-       */
-
-      Day.prototype.off = function(month) {
-        return this.date.month() !== month;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name class
-      * @methodOf BB.Models:Day
-      * @description
-      * Get class in according of month
-      *
-      * @returns {string} The returned class
-       */
-
-      Day.prototype["class"] = function(month) {
-        var str;
-        str = "";
-        if (this.date.month() < month) {
-          str += "off off-prev";
-        }
-        if (this.date.month() > month) {
-          str += "off off-next";
-        }
-        if (this.spaces === 0) {
-          str += " not-avail";
-        }
-        return str;
-      };
-
-      return Day;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("DealModel", function($q, BBModel, BaseModel) {
-    var Deal;
-    return Deal = (function(superClass) {
-      extend(Deal, superClass);
-
-      function Deal() {
-        return Deal.__super__.constructor.apply(this, arguments);
-      }
-
-      return Deal;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Models:Event
-*
-* @description
-* This is the event object returned by the API
-*
-* @property {integer} id The event id
-* @property {date} datetime The event date and time
-* @property {string} description Description of the event
-* @property {integer} status Status of the event
-* @property {integer} spaces_booked The booked spaces
-* @property {integer} duration Duration of the event
- */
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUtilitiesService) {
-    var Event;
-    return Event = (function(superClass) {
-      extend(Event, superClass);
-
-      function Event(data) {
-        Event.__super__.constructor.call(this, data);
-        this.date = moment.parseZone(this.datetime);
-        this.time = new BBModel.TimeSlot({
-          time: DateTimeUtilitiesService.convertMomentToTime(this.date)
-        });
-        if (this.duration) {
-          this.end_datetime = this.date.clone().add(this.duration, 'minutes');
-        }
-        this.date_unix = this.date.unix();
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name getGroup
-      * @methodOf BB.Models:Event
-      * @description
-      * Get event groups
-      *
-      * @returns {promise} A promise for the group event
-       */
-
-      Event.prototype.getGroup = function() {
-        var defer, event_group;
-        defer = $q.defer();
-        if (this.group) {
-          defer.resolve(this.group);
-        } else if (this.$has('event_groups') || this.$has('event_group')) {
-          event_group = 'event_group';
-          if (this.$has('event_groups')) {
-            event_group = 'event_groups';
-          }
-          this.$get(event_group).then((function(_this) {
-            return function(group) {
-              _this.group = new BBModel.EventGroup(group);
-              return defer.resolve(_this.group);
-            };
-          })(this), function(err) {
-            return defer.reject(err);
-          });
-        } else {
-          defer.reject("No event group");
-        }
-        return defer.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getGroup
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the chains of the event
-      *
-      * @returns {promise} A promise for the chains event
-       */
-
-      Event.prototype.getChain = function() {
-        var defer, event_chain;
-        defer = $q.defer();
-        if (this.chain) {
-          defer.resolve(this.chain);
-        } else {
-          if (this.$has('event_chains') || this.$has('event_chain')) {
-            event_chain = 'event_chain';
-            if (this.$has('event_chains')) {
-              event_chain = 'event_chains';
-            }
-            this.$get(event_chain).then((function(_this) {
-              return function(chain) {
-                _this.chain = new BBModel.EventChain(chain);
-                return defer.resolve(_this.chain);
-              };
-            })(this));
-          } else {
-            defer.reject("No event chain");
-          }
-        }
-        return defer.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getDuration
-      * @methodOf BB.Models:Event
-      * @description
-      * Get duration of the event chains
-      *
-      * @returns {promise} A promise for duration of the event
-       */
-
-      Event.prototype.getDuration = function() {
-        var defer;
-        defer = new $q.defer();
-        if (this.duration) {
-          defer.resolve(this.duration);
-        } else {
-          this.getChain().then((function(_this) {
-            return function(chain) {
-              _this.duration = chain.duration;
-              return defer.resolve(_this.duration);
-            };
-          })(this));
-        }
-        return defer.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getNumBooked
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the number booked
-      *
-      * @returns {object} The returned number booked
-       */
-
-      Event.prototype.getNumBooked = function() {
-        return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getSpacesLeft
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the number of spaces left (possibly limited by a specific ticket pool)
-      *
-      * @returns {object} The returned spaces left
-       */
-
-      Event.prototype.getSpacesLeft = function(pool) {
-        if (pool == null) {
-          pool = null;
-        }
-        if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
-          return this.ticket_spaces[pool].left;
-        } else {
-          return this.num_spaces - this.getNumBooked();
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasSpace
-      * @methodOf BB.Models:Event
-      * @description
-      * Checks if this considered a valid space
-      *
-      * @returns {boolean} If this is a valid space
-       */
-
-      Event.prototype.hasSpace = function() {
-        return this.getSpacesLeft() > 0;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasWaitlistSpace
-      * @methodOf BB.Models:Event
-      * @description
-      * Checks if this considered a valid waiting list space
-      *
-      * @returns {boolean} If this is a valid waiting list space
-       */
-
-      Event.prototype.hasWaitlistSpace = function() {
-        return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getRemainingDescription
-      * @methodOf BB.Models:Event
-      * @description
-      * Get the remaining description
-      *
-      * @returns {object} The returned remaining description
-       */
-
-      Event.prototype.getRemainingDescription = function() {
-        var left;
-        left = this.getSpacesLeft();
-        if (left > 0 && left < 3) {
-          return "Only " + left + " " + (left > 1 ? "spaces" : "space") + " left";
-        }
-        if (this.hasWaitlistSpace()) {
-          return "Join Waitlist";
-        }
-        return "";
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name select
-      * @methodOf BB.Models:Event
-      * @description
-      * Checks is this considered a selected
-      *
-      * @returns {boolean} If this is a selected
-       */
-
-      Event.prototype.select = function() {
-        return this.selected = true;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name unselect
-      * @methodOf BB.Models:Event
-      * @description
-      * Unselect if is selected
-      *
-      * @returns {boolean} If this is a unselected
-       */
-
-      Event.prototype.unselect = function() {
-        if (this.selected) {
-          return delete this.selected;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name prepEvent
-      * @methodOf BB.Models:Event
-      * @description
-      * Prepare the event
-      *
-      * @returns {promise} A promise for the event
-       */
-
-      Event.prototype.prepEvent = function() {
-        var def;
-        def = $q.defer();
-        this.getChain().then((function(_this) {
-          return function() {
-            if (_this.chain.$has('address')) {
-              _this.chain.getAddressPromise().then(function(address) {
-                return _this.chain.address = address;
-              });
-            }
-            return _this.chain.getTickets().then(function(tickets) {
-              var i, len, ref, ticket;
-              _this.tickets = tickets;
-              _this.price_range = {};
-              if (tickets && tickets.length > 0) {
-                ref = _this.tickets;
-                for (i = 0, len = ref.length; i < len; i++) {
-                  ticket = ref[i];
-                  if (!_this.price_range.from || (_this.price_range.from && ticket.price < _this.price_range.from)) {
-                    _this.price_range.from = ticket.price;
-                  }
-                  if (!_this.price_range.to || (_this.price_range.to && ticket.price > _this.price_range.to)) {
-                    _this.price_range.to = ticket.price;
-                  }
-                  ticket.old_price = ticket.price;
-                }
-              } else {
-                _this.price_range.from = _this.price;
-                _this.price_range.to = _this.price;
-              }
-              _this.ticket_prices = _.indexBy(tickets, 'name');
-              return def.resolve(_this);
-            });
-          };
-        })(this));
-        return def.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name updatePrice
-      * @methodOf BB.Models:Event
-      * @description
-      * Update price for the ticket
-      *
-      * @returns {object} The returned update price
-       */
-
-      Event.prototype.updatePrice = function() {
-        var i, len, ref, results, ticket;
-        ref = this.tickets;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          ticket = ref[i];
-          if (ticket.pre_paid_booking_id) {
-            results.push(ticket.price = 0);
-          } else {
-            results.push(ticket.price = ticket.old_price);
-          }
-        }
-        return results;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name numTicketsSelected
-      * @methodOf BB.Models:Event
-      * @description
-      * 
-      *
-      * @returns {object} get number of tickets selected
-       */
-
-      Event.prototype.numTicketsSelected = function() {
-        var i, len, num, ref, ticket;
-        num = 0;
-        ref = this.tickets;
-        for (i = 0, len = ref.length; i < len; i++) {
-          ticket = ref[i];
-          num += ticket.qty;
-        }
-        return num;
-      };
-
-      return Event;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:EventChain
-  *
-  * @description
-  * Representation of an EventChain Object
-  * 
-  * @property {integer} id The id of event chain
-  * @property {string} name Name of the event chain
-  * @property {string} description The description of the event
-  * @property {integer} capacity_view The capacity view
-  * @property {date} start_date Event chain start date
-  * @property {date} finish_date Event chain finish date
-  * @property {integer} price The price of the event chain
-  * @property {string} ticket_type Type of the ticket
-  * @property {boolean} course Verify is couse exist or not
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel) {
-    var EventChain;
-    return EventChain = (function(superClass) {
-      var setCapacityView;
-
-      extend(EventChain, superClass);
-
-      function EventChain(data) {
-        EventChain.__super__.constructor.apply(this, arguments);
-        this.capacity_view = setCapacityView(this.capacity_view);
-      }
-
-      EventChain.prototype.name = function() {
-        return this._data.name;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name isSingleBooking
-      * @methodOf BB.Models:EventChain
-      * @description
-      * Verify if is a single booking
-      *
-      * @returns {array} If maximum number of bookings is equal with 1 and not have an ticket sets
-       */
-
-      EventChain.prototype.isSingleBooking = function() {
-        return this.max_num_bookings === 1 && !this.$has('ticket_sets');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasTickets
-      * @methodOf BB.Models:EventChain
-      * @description
-      * Checks if this is considered a valid tickets
-      *
-      * @returns {boolean} If this have an ticket sets
-       */
-
-      EventChain.prototype.hasTickets = function() {
-        return this.$has('ticket_sets');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getTickets
-      * @methodOf BB.Models:EventChain
-      * @description
-      * Get the tickets of the event
-      *
-      * @returns {promise} A promise for the tickets
-       */
-
-      EventChain.prototype.getTickets = function() {
-        var def;
-        def = $q.defer();
-        if (this.tickets) {
-          def.resolve(this.tickets);
-        } else {
-          if (this.$has('ticket_sets')) {
-            this.$get('ticket_sets').then((function(_this) {
-              return function(tickets) {
-                var i, len, ticket;
-                _this.tickets = [];
-                for (i = 0, len = tickets.length; i < len; i++) {
-                  ticket = tickets[i];
-                  _this.tickets.push(new BBModel.EventTicket(ticket));
-                }
-                _this.adjustTicketsForRemaining();
-                return def.resolve(_this.tickets);
-              };
-            })(this));
-          } else {
-            this.tickets = [
-              new BBModel.EventTicket({
-                name: "Admittance",
-                min_num_bookings: 1,
-                max_num_bookings: this.max_num_bookings,
-                type: "normal",
-                price: this.price
-              })
-            ];
-            this.adjustTicketsForRemaining();
-            def.resolve(this.tickets);
-          }
-        }
-        return def.promise;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name adjustTicketsForRemaining
-      * @methodOf BB.Models:EventChain
-      * @description
-      * Adjust the number of tickets that can be booked due to changes in the number of remaining spaces for each ticket set
-      *
-      * @returns {object} The returned adjust tickets for remaining
-       */
-
-      EventChain.prototype.adjustTicketsForRemaining = function() {
-        var i, len, ref, results;
-        if (this.tickets) {
-          ref = this.tickets;
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            this.ticket = ref[i];
-            results.push(this.ticket.max_spaces = this.spaces);
-          }
-          return results;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setCapacityView
-      * @methodOf BB.Models:EventChain
-      * @description
-      * Sets the capacity_view (referred to as the "spaces view" in admin console) to a more helpful String
-      * @returns {String} code for the capacity_view
-       */
-
-      setCapacityView = function(capacity_view) {
-        var capacity_view_str;
-        switch (capacity_view) {
-          case 0:
-            capacity_view_str = "DO_NOT_DISPLAY";
-            break;
-          case 1:
-            capacity_view_str = "NUM_SPACES";
-            break;
-          case 2:
-            capacity_view_str = "NUM_SPACES_LEFT";
-            break;
-          case 3:
-            capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
-            break;
-          default:
-            capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
-        }
-        return capacity_view_str;
-      };
-
-      return EventChain;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:EventGroup
-  *
-  * @description
-  * Representation of an EventGroup Object
-  *
-  * @property {integer} total_entries The total of entries in  event groupst
-  * @property {array} event_chains An array with items of the event
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventGroupModel", function($q, BBModel, BaseModel) {
-    var EventGroup;
-    return EventGroup = (function(superClass) {
-      extend(EventGroup, superClass);
-
-      function EventGroup() {
-        return EventGroup.__super__.constructor.apply(this, arguments);
-      }
-
-      EventGroup.prototype.name = function() {
-        return this._data.name;
-      };
-
-      EventGroup.prototype.colour = function() {
-        return this._data.colour;
-      };
-
-      return EventGroup;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:EventSequence
-  *
-  * @description
-  * Representation of an EventSequence Object
-  *
-  * @property {integer} total_entries The total of entries in  event groupst
-  * @property {array} event_chains An array with items of the event
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventSequenceModel", function($q, BBModel, BaseModel) {
-    var EventSequence;
-    return EventSequence = (function(superClass) {
-      extend(EventSequence, superClass);
-
-      function EventSequence() {
-        return EventSequence.__super__.constructor.apply(this, arguments);
-      }
-
-      EventSequence.prototype.name = function() {
-        return this._data.name;
-      };
-
-      return EventSequence;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:EventTicket
-  *
-  * @description
-  * Representation of an EventTicket Object
-  *
-  * @property {integer} max The maximum of the event ticket
-  * @property {integer} max_num_bookings The maximum number of the bookings
-  * @property {integer} max_spaces The maximum spaces of the evenet
-  * @property {integer} counts_as The counts as
-  * @property {string} pool_name The pool name
-  * @property {string} name The name 
-  * @property {string} min_num_bookings The minimum number of the bookings
-  * @property {string} qty The quantity of the event ticket
-  * @property {string} totalQty The total quantity of the event ticket
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("EventTicketModel", function($q, BBModel, BaseModel) {
-    var EventTicket;
-    return EventTicket = (function(superClass) {
-      extend(EventTicket, superClass);
-
-      function EventTicket(data) {
-        var ms;
-        EventTicket.__super__.constructor.call(this, data);
-        this.max = this.max_num_bookings;
-        if (this.max_spaces) {
-          ms = this.max_spaces;
-          if (this.counts_as) {
-            ms = this.max_spaces / this.counts_as;
-          }
-          if (ms < max) {
-            this.max = ms;
-          }
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name fullName
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get the full name
-      *
-      * @returns {object} The returned full name
-       */
-
-      EventTicket.prototype.fullName = function() {
-        if (this.pool_name) {
-          return this.pool_name + " - " + this.name;
-        }
-        return this.name;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getRange
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get the range between minimum number of bookings and the maximum number of bookings
-      *
-      * @returns {array} The returned range
-       */
-
-      EventTicket.prototype.getRange = function(cap) {
-        var c, i, ref, ref1, results;
-        if (cap) {
-          c = cap;
-          if (this.counts_as) {
-            c = cap / this.counts_as;
-          }
-          if (c + this.min_num_bookings < this.max) {
-            this.max = c + this.min_num_bookings;
-          }
-        }
-        return [0].concat((function() {
-          results = [];
-          for (var i = ref = this.min_num_bookings, ref1 = this.max; ref <= ref1 ? i <= ref1 : i >= ref1; ref <= ref1 ? i++ : i--){ results.push(i); }
-          return results;
-        }).apply(this));
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name isAvailable
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Check if there is an availability for at least one of the pools
-      *
-      * @returns {boolean} true if there is an availibity for at least one pool
-      *                    false otherwise
-       */
-
-      EventTicket.prototype.isAvailable = function(event) {
-        var i, len, ref, ticket;
-        ref = event.tickets;
-        for (i = 0, len = ref.length; i < len; i++) {
-          ticket = ref[i];
-          if (event.ticket_spaces[ticket.pool_id]) {
-            if (event.ticket_spaces[ticket.pool_id].left > 0) {
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getRangeTicketSpaces
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get a range base on the minimum number of bookings and the tickets left. This method
-      * is useful when you have multiple spaces for an event in complex tickets. 
-      *
-      * @returns {array} The returned range
-       */
-
-      EventTicket.prototype.getRangeTicketSpaces = function(pool_id, event) {
-        var i, max_left, min, results;
-        max_left = 0;
-        min = this.min_num_bookings;
-        if (this.isAvailable(event)) {
-          if (pool_id) {
-            max_left = event.ticket_spaces[pool_id].left;
-          }
-          if (max_left === 0) {
-            return [0];
-          } else {
-            return [0].concat((function() {
-              results = [];
-              for (var i = min; min <= max_left ? i <= max_left : i >= max_left; min <= max_left ? i++ : i--){ results.push(i); }
-              return results;
-            }).apply(this));
-          }
-        } else {
-          return this.getRange(20);
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalQty
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get the total quantity of the event ticket
-      *
-      * @returns {array} The returned total quantity
-       */
-
-      EventTicket.prototype.totalQty = function() {
-        if (!this.qty) {
-          return 0;
-        }
-        if (!this.counts_as) {
-          return this.qty;
-        }
-        return this.qty * this.counts_as;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getMax
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
-      *
-      * @returns {array} The returned maximum
-       */
-
-      EventTicket.prototype.getMax = function(cap, ev) {
-        var c, i, len, live_max, ref, ticket, used;
-        if (ev == null) {
-          ev = null;
-        }
-        live_max = this.max;
-        if (ev) {
-          used = 0;
-          ref = ev.tickets;
-          for (i = 0, len = ref.length; i < len; i++) {
-            ticket = ref[i];
-            used += ticket.totalQty();
-          }
-          if (this.qty) {
-            used = used - this.totalQty();
-          }
-          if (this.counts_as) {
-            used = Math.ceil(used / this.counts_as);
-          }
-          live_max = live_max - used;
-          if (live_max < 0) {
-            live_max = 0;
-          }
-        }
-        if (cap) {
-          c = cap;
-          if (this.counts_as) {
-            c = cap / this.counts_as;
-          }
-          if (c + this.min_num_bookings < live_max) {
-            return c + this.min_num_bookings;
-          }
-        }
-        return live_max;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name add
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Add to the a quantity a new value
-      *
-      * @returns {array} The returned new quantity added
-       */
-
-      EventTicket.prototype.add = function(value) {
-        if (!this.qty) {
-          this.qty = 0;
-        }
-        this.qty = parseInt(this.qty);
-        if (angular.isNumber(this.qty) && (this.qty >= this.max && value > 0) || (this.qty === 0 && value < 0)) {
-          return;
-        }
-        return this.qty += value;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name subtract
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Subtract a value from the quantity
-      *
-      * @returns {array} The returned substract
-       */
-
-      EventTicket.prototype.subtract = function(value) {
-        return this.add(-value);
-      };
-
-      return EventTicket;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ExternalPurchaseModel", function($q, BBModel, BaseModel) {
-    var ExternalPurchase;
-    return ExternalPurchase = (function(superClass) {
-      extend(ExternalPurchase, superClass);
-
-      function ExternalPurchase() {
-        return ExternalPurchase.__super__.constructor.apply(this, arguments);
-      }
-
-      return ExternalPurchase;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Image
-  *
-  * @description
-  * Representation of an Image Object
-  *
-  * @property {array} iamges An array with event images
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ImageModel", function($q, $filter, BBModel, BaseModel) {
-    var Image;
-    return Image = (function(superClass) {
-      extend(Image, superClass);
-
-      function Image(data) {
-        Image.__super__.constructor.call(this, data);
-      }
-
-      return Image;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:ItemDetails
-  *
-  * @description
-  * Representation of an ItemDetails Object
-  *
-  * @property {string} self The self
-  * @property {array} questions The questions
-  * @property {array} survey_questions The survey questions
-  * @property {string} hasQuestions Has questions about the item details
-  * @property {string} hasSurveyQuestions Has survey questions about the item details
-  * @property {string} checkConditionalQuestions Check conditional questions about the item details
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ItemDetailsModel", function($q, BBModel, BaseModel, $bbug, QuestionService) {
-    var ItemDetails;
-    return ItemDetails = (function(superClass) {
-      extend(ItemDetails, superClass);
-
-      function ItemDetails(data) {
-        var i, len, q, ref;
-        this._data = data;
-        if (this._data) {
-          this.self = this._data.$href("self");
-        }
-        this.questions = [];
-        this.survey_questions = [];
-        if (data) {
-          ref = data.questions;
-          for (i = 0, len = ref.length; i < len; i++) {
-            q = ref[i];
-            if (q.outcome === false) {
-              if (data.currency_code) {
-                q.currency_code = data.currency_code;
-              }
-              this.questions.push(new BBModel.Question(q));
-            } else {
-              this.survey_questions.push(new BBModel.SurveyQuestion(q));
-            }
-          }
-        }
-        this.hasQuestions = this.questions.length > 0;
-        this.hasSurveyQuestions = this.survey_questions.length > 0;
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name questionPrice
-      * @methodOf BB.Models:ItemDetails
-      * @description
-      * Get question about price in according of quantity
-      *
-      * @returns {integer} The returned price
-       */
-
-      ItemDetails.prototype.questionPrice = function(qty) {
-        var i, len, price, q, ref;
-        qty || (qty = 1);
-        this.checkConditionalQuestions();
-        price = 0;
-        ref = this.questions;
-        for (i = 0, len = ref.length; i < len; i++) {
-          q = ref[i];
-          price += q.selectedPriceQty(qty);
-        }
-        return price;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name checkConditionalQuestions
-      * @methodOf BB.Models:ItemDetails
-      * @description
-      * Checks if exist conditional questions 
-      *
-      * @returns {boolean} The returned existing conditional questions
-       */
-
-      ItemDetails.prototype.checkConditionalQuestions = function() {
-        return QuestionService.checkConditionalQuestions(this.questions);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getPostData
-      * @methodOf BB.Models:ItemDetails
-      * @description
-      * Get data 
-      *
-      * @returns {array} The returned data
-       */
-
-      ItemDetails.prototype.getPostData = function() {
-        var data, i, len, q, ref;
-        data = [];
-        ref = this.questions;
-        for (i = 0, len = ref.length; i < len; i++) {
-          q = ref[i];
-          if (q.currentlyShown) {
-            data.push(q.getPostData());
-          }
-        }
-        return data;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setAnswers
-      * @methodOf BB.Models:ItemDetails
-      * @description
-      * Load the answers from an answer set - probably from loading an existing basket item
-      *
-      * @returns {object} The returned answers set
-       */
-
-      ItemDetails.prototype.setAnswers = function(answers) {
-        var a, ahash, i, j, len, len1, q, ref;
-        ahash = {};
-        for (i = 0, len = answers.length; i < len; i++) {
-          a = answers[i];
-          ahash[a.id] = a;
-        }
-        ref = this.questions;
-        for (j = 0, len1 = ref.length; j < len1; j++) {
-          q = ref[j];
-          if (ahash[q.id]) {
-            q.answer = ahash[q.id].answer;
-          }
-        }
-        return this.checkConditionalQuestions();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getQuestion
-      * @methodOf BB.Models:ItemDetails
-      * @description
-      * Get question about item details by id
-      *
-      * @returns {object} The returned question
-       */
-
-      ItemDetails.prototype.getQuestion = function(id) {
-        return _.findWhere(this.questions, {
-          id: id
-        });
-      };
-
-      return ItemDetails;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
-    var MembershipLevel;
-    return MembershipLevel = (function(superClass) {
-      extend(MembershipLevel, superClass);
-
-      function MembershipLevel() {
-        return MembershipLevel.__super__.constructor.apply(this, arguments);
-      }
-
-      return MembershipLevel;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:PackageItem
-  *
-  * @description
-  * Representation of a PackageItem Object
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PackageItemModel", function($q, BBModel, BaseModel) {
-    var PackageItem;
-    return PackageItem = (function(superClass) {
-      extend(PackageItem, superClass);
-
-      function PackageItem() {
-        return PackageItem.__super__.constructor.apply(this, arguments);
-      }
-
-      return PackageItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Models:Service
-*
-* @description
-* Representation of an Pagination Object
-*
-* @property {integer} current_page The current page
-* @property {integer} page_size The number of items to show on each page
-* @property {integer} request_page_size The request page size. Defaults to page_size when not provided. This value must be a multiple of the page_size.
-* @property {integer} max_size Limit number for pagination size
-* @property {integer} num_pages The total number of pages
-* @property {integer} num_items The total number of items paginated
-* @property {integer} items The items to be paginated
-* @property {String} summary Summary of current page, i.e. 1 - 10 of 16
-* @example
-*  <example module="BB"> 
-*    <file name="index.html">
-*   <div bb-api-url='https://uk.bookingbug.com'>
-*   <div bb-widget='{company_id:21}'>
-*     <div bb-pagination-example>
-*        <ul>
-*          <li ng-repeat="item in pagination.items | startFrom: (pagination.current_page - 1) * pagination.page_size | limitTo: pagination.page_size | orderBy: sort_by track by $index">
-*        </ul>
-*     </div>
-*     </div>
-*     </div>
-*   </file>
-*   <file name="script.js">
-*  angular.module('BB').directive('bbPaginationExample', function() {
-*    return {
-*      restrict: 'AE',
-*      controller: function(BBModel, DataService) {
-*       $scope.pagination = new BBModel.Pagination({
-*         page_size: 10,
-*         max_size: 5,
-*         request_page_size: 10
-*       });
-*       $scope.getData = function(params, options) {
-*         if (options == null) {
-*           options = {};
-*         }
-*          $scope.params = {
-*            per_page: $scope.pagination.request_page_size,
-*           page: params.page || 1
-*         };
-*         return DataService.query($scope.params).then(function(result) {
-*            if (options.add) {
-*              return $scope.pagination.add(params.page, result.items);
-*           } else {
-*             return $scope.pagination.initialise(result.items, result.total_entries);
-*           }
-*         });
-*       };
-*        return $scope.pageChanged = function() {
-*         var items_present, page_to_load, ref;
-*         ref = $scope.pagination.update(), items_present = ref[0], page_to_load = ref[1];
-*         if (!items_present) {
-*            $scope.params.page = page_to_load;
-*            return $scope.getData($scope.params, {
-*              add: true
-*           });
-*         }
-*       };
-*     }
-*   };
-* });
-*       </file>
-*  </example>
-*
- */
-
-(function() {
-  angular.module('BB.Models').factory("PaginationModel", function() {
-    var Pagination;
-    return Pagination = (function() {
-
-      /***
-      * @ngdoc method
-      * @name constructor
-      * @methodOf BB.Models:Service
-      * @description
-      * Constructor method
-      *
-      * @param {object} Options hash used to set page_size and max_size
-       */
-      function Pagination(options) {
-        this.current_page = 1;
-        this.page_size = options.page_size || 10;
-        this.request_page_size = options.request_page_size || this.page_size;
-        this.max_size = options.max_size || 5;
-        this.num_pages = null;
-        this.num_items = null;
-        this.items = [];
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name initialise
-      * @methodOf BB.Models:Service
-      * @description
-      * Initiailises the pagination instance when first page has been retrieved
-      *
-      * @param {array} The first page of items returned by the API
-      * @param {integer} The total number of items
-       */
-
-      Pagination.prototype.initialise = function(items, total_items) {
-        this.current_page = 1;
-        this.items = items;
-        this.num_items = total_items || 0;
-        return this.update();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name update
-      * @methodOf BB.Models:Service
-      * @description
-      * Updates the pagination summary when the page changes 
-      *
-      * @returns {boolean} Flag to indicate if items in current page are present
-      * @returns {integer} The page to load based on
-       */
-
-      Pagination.prototype.update = function() {
-        var end, page_to_load, start, total;
-        start = ((this.current_page - 1) * this.page_size) + 1;
-        end = this.current_page * this.page_size;
-        end = this.num_items < end ? this.num_items : end;
-        total = end >= 100 ? "100+" : end;
-        this.summary = start + " - " + end + " of " + total;
-        page_to_load = Math.ceil((this.current_page * this.page_size) / this.request_page_size);
-        return [this.items[start - 1] != null, page_to_load];
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name add
-      * @methodOf BB.Models:Service
-      * @description
-      * Appends additional items (from subsequent data requests) to items array
-      *
-      * @param {integer} The page number of the data request
-      * @param {array} The new items
-      *
-       */
-
-      Pagination.prototype.add = function(request_page, new_items) {
-        var i, index, item, len, results, start;
-        start = (request_page - 1) * this.request_page_size;
-        results = [];
-        for (index = i = 0, len = new_items.length; i < len; index = ++i) {
-          item = new_items[index];
-          results.push(this.items[start + index] = item);
-        }
-        return results;
-      };
-
-      return Pagination;
-
-    })();
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Person
-  *
-  * @description
-  * Representation of an Person Object
-  *
-  * @property {integer} id Person id
-  * @property {string} name Person name
-  * @property {boolean} deleted Verify if person is deleted or not
-  * @property {boolean} disabled Verify if person is disabled or not
-  * @property {integer} order The person order
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
-    var Person;
-    return Person = (function(superClass) {
-      extend(Person, superClass);
-
-      function Person() {
-        return Person.__super__.constructor.apply(this, arguments);
-      }
-
-      return Person;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Models:PrePaidBooking
-*
-* @description
-* Representation of an PrePaidBooking Object
- */
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PrePaidBookingModel", function($q, BBModel, BaseModel) {
-    var PrePaidBooking;
-    return PrePaidBooking = (function(superClass) {
-      extend(PrePaidBooking, superClass);
-
-      function PrePaidBooking(data) {
-        PrePaidBooking.__super__.constructor.call(this, data);
-        if (this.book_by) {
-          this.book_by = moment(this.book_by);
-        }
-        if (this.use_by) {
-          this.use_by = moment(this.use_by);
-        }
-        if (this.use_from) {
-          this.use_from = moment(this.use_from);
-        }
-        this.expired = (this.book_by && moment().isAfter(this.book_by, 'day')) || (this.use_by && moment().isAfter(this.use_by, 'day')) || false;
-      }
-
-      PrePaidBooking.prototype.checkValidity = function(item) {
-        if (this.service_id && item.service_id && this.service_id !== item.service_id) {
-          return false;
-        } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
-          return false;
-        } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
-          return false;
-        } else {
-          return true;
-        }
-      };
-
-      return PrePaidBooking;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
-    var Product;
-    return Product = (function(superClass) {
-      extend(Product, superClass);
-
-      function Product() {
-        return Product.__super__.constructor.apply(this, arguments);
-      }
-
-      return Product;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:PurchaseItem
-  *
-  * @description
-  * Representation of an PurchaseItem Object
-  *
-  * @property {float} price Price of the purchase item
-  * @property {float} paid Purchase item paid
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PurchaseItemModel", function($q, BBModel, BaseModel) {
-    var PurchaseItem;
-    return PurchaseItem = (function(superClass) {
-      extend(PurchaseItem, superClass);
-
-      function PurchaseItem(data) {
-        PurchaseItem.__super__.constructor.call(this, data);
-        this.parts_links = {};
-        if (data) {
-          if (data.$has('service')) {
-            this.parts_links.service = data.$href('service');
-          }
-          if (data.$has('resource')) {
-            this.parts_links.resource = data.$href('resource');
-          }
-          if (data.$has('person')) {
-            this.parts_links.person = data.$href('person');
-          }
-          if (data.$has('company')) {
-            this.parts_links.company = data.$href('company');
-          }
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name describe
-      * @methodOf BB.Models:PurchaseItem
-      * @description
-      * Describe the item for purchase
-      *
-      * @returns {object} The returned describe
-       */
-
-      PurchaseItem.prototype.describe = function() {
-        return this.get('describe');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name full_describe
-      * @methodOf BB.Models:PurchaseItem
-      * @description
-      * Full description of the item purchase
-      *
-      * @returns {object} The returned full describe
-       */
-
-      PurchaseItem.prototype.full_describe = function() {
-        return this.get('full_describe');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name hasPrice
-      * @methodOf BB.Models:PurchaseItem
-      * @description
-      * Checks if the item for purchase have a price
-      *
-      * @returns {boolean} If the item for purchase have a price
-       */
-
-      PurchaseItem.prototype.hasPrice = function() {
-        return this.price && this.price > 0;
-      };
-
-      return PurchaseItem;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:PurchaseTotal
-  *
-  * @description
-  * Representation of an PurchaseTotal Object
-  *
-  * @property {float} total_price The total price of items
-  * @property {float} price Price of items
-  * @property {float} tax_payable_on_price The tax payable on price of the item
-  * @property {float} due_now The due now
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("PurchaseTotalModel", function($q, BBModel, BaseModel) {
-    var PurchaseTotal;
-    return PurchaseTotal = (function(superClass) {
-      extend(PurchaseTotal, superClass);
-
-      function PurchaseTotal(data) {
-        var cprom;
-        PurchaseTotal.__super__.constructor.call(this, data);
-        this.promise = this._data.$get('purchase_items');
-        this.purchase_items = [];
-        this.promise.then((function(_this) {
-          return function(items) {
-            var i, item, len, results;
-            results = [];
-            for (i = 0, len = items.length; i < len; i++) {
-              item = items[i];
-              results.push(_this.purchase_items.push(new BBModel.PurchaseItem(item)));
-            }
-            return results;
-          };
-        })(this));
-        if (this._data.$has('client')) {
-          cprom = data.$get('client');
-          cprom.then((function(_this) {
-            return function(client) {
-              return _this.client = new BBModel.Client(client);
-            };
-          })(this));
-        }
-        this.created_at = moment.parseZone(this.created_at);
-        if (this.time_zone) {
-          this.created_at.tz(this.time_zone);
-        }
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name icalLink
-      * @methodOf BB.Models:PurchaseTotal
-      * @description
-      * Get the icalLink
-      *
-      * @returns {object} The returned icalLink
-       */
-
-      PurchaseTotal.prototype.icalLink = function() {
-        return this._data.$href('ical');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name webcalLink
-      * @methodOf BB.Models:PurchaseTotal
-      * @description
-      * Get webcalLink
-      *
-      * @returns {object} The returned webcalLink
-       */
-
-      PurchaseTotal.prototype.webcalLink = function() {
-        return this._data.$href('ical');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name gcalLink
-      * @methodOf BB.Models:PurchaseTotal
-      * @description
-      * Get the gcalLink
-      *
-      * @returns {object} The returned gcalLink
-       */
-
-      PurchaseTotal.prototype.gcalLink = function() {
-        return this._data.$href('gcal');
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name id
-      * @methodOf BB.Models:PurchaseTotal
-      * @description
-      * Get the id
-      *
-      * @returns {object} The returned id
-       */
-
-      PurchaseTotal.prototype.id = function() {
-        return this.get('id');
-      };
-
-      return PurchaseTotal;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Question
-  *
-  * @description
-  * Representation of an Question Object
-  *
-  * @property {integer} company_id The company id
-  * @property {array} question An array with questions
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("QuestionModel", function($q, $filter, BBModel, BaseModel) {
-    var Question;
-    return Question = (function(superClass) {
-      extend(Question, superClass);
-
-      function Question(data) {
-        var currency, i, len, option, ref;
-        Question.__super__.constructor.call(this, data);
-        if (this.price) {
-          this.price = parseFloat(this.price);
-        }
-        if (this._data["default"]) {
-          this.answer = this._data["default"];
-        }
-        if (this._data.options) {
-          ref = this._data.options;
-          for (i = 0, len = ref.length; i < len; i++) {
-            option = ref[i];
-            if (option.is_default) {
-              this.answer = option.name;
-            }
-            if (this.hasPrice()) {
-              option.price = parseFloat(option.price);
-              currency = data.currency_code ? data.currency_code : 'GBP';
-              option.display_name = option.name + " (" + ($filter('currency')(option.price, currency)) + ")";
-            } else {
-              option.display_name = option.name;
-            }
-          }
-        }
-        if (this._data.detail_type === "check" || this._data.detail_type === "check-price") {
-          this.answer = this._data["default"] && this._data["default"] === "1";
-        }
-        this.currentlyShown = true;
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name hasPrice
-      * @methodOf BB.Models:Question
-      * @description
-      * Check if it contains one of the following: "check-price", "select-price", "radio-price"
-      *
-      * @returns {boolean} If this contains detail_type
-       */
-
-      Question.prototype.hasPrice = function() {
-        return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name selectedPrice
-      * @methodOf BB.Models:Question
-      * @description
-      * Select price if detail type si equal with check-price
-      *
-      * @returns {float} The returned selected price
-       */
-
-      Question.prototype.selectedPrice = function() {
-        var i, len, option, ref;
-        if (!this.hasPrice()) {
-          return 0;
-        }
-        if (this.detail_type === "check-price") {
-          return (this.answer ? this.price : 0);
-        }
-        ref = this._data.options;
-        for (i = 0, len = ref.length; i < len; i++) {
-          option = ref[i];
-          if (this.answer === option.name) {
-            return option.price;
-          }
-        }
-        return 0;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name selectedPriceQty
-      * @methodOf BB.Models:Question
-      * @description
-      * Select price quantity if selected price has been selected
-      *
-      * @returns {object} The returned selected price quantity
-       */
-
-      Question.prototype.selectedPriceQty = function(qty) {
-        var p;
-        qty || (qty = 1);
-        p = this.selectedPrice();
-        if (this.price_per_booking) {
-          p = p * qty;
-        }
-        return p;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getAnswerId
-      * @methodOf BB.Models:Question
-      * @description
-      * Get answer id
-      *
-      * @returns {object} The returned answer id
-       */
-
-      Question.prototype.getAnswerId = function() {
-        var i, len, o, ref;
-        if (!this.answer || !this.options || this.options.length === 0) {
-          return null;
-        }
-        ref = this.options;
-        for (i = 0, len = ref.length; i < len; i++) {
-          o = ref[i];
-          if (this.answer === o.name) {
-            return o.id;
-          }
-        }
-        return null;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name showElement
-      * @methodOf BB.Models:Question
-      * @description
-      * Show element
-      *
-      * @returns {boolean} If element is displayed
-       */
-
-      Question.prototype.showElement = function() {
-        return this.currentlyShown = true;
-      };
-
-
-      /***
-      * @ngdoc hideElement
-      * @name showElement
-      * @methodOf BB.Models:Question
-      * @description
-      * Hide element
-      *
-      * @returns {boolean} If element is hidden
-       */
-
-      Question.prototype.hideElement = function() {
-        return this.currentlyShown = false;
-      };
-
-
-      /***
-      * @ngdoc hideElement
-      * @name getPostData
-      * @methodOf BB.Models:Question
-      * @description
-      * Get post data
-      *
-      * @returns {object} The returned post data
-       */
-
-      Question.prototype.getPostData = function() {
-        var p, x;
-        x = {};
-        x.id = this.id;
-        x.answer = this.answer;
-        if (this.detail_type === "date" && this.answer) {
-          x.answer = moment(this.answer).toISODate();
-        }
-        p = this.selectedPrice();
-        if (p) {
-          x.price = p;
-        }
-        return x;
-      };
-
-      return Question;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Resource
-  *
-  * @description
-  * Representation of an Resource Object
-  *
-  * @property {integer} total_entries The total entries
-  * @property {array} resources An array with resources elements
-  * @property {integer} id The resources id
-  * @property {string} name Name of resources
-  * @propertu {string} type Type of resources
-  * @property {boolean} deleted Verify if resources is deleted or not
-  * @property {boolean} disabled Verify if resources is disabled or not
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ResourceModel", function($q, BBModel, BaseModel) {
-    var Resource;
-    return Resource = (function(superClass) {
-      extend(Resource, superClass);
-
-      function Resource() {
-        return Resource.__super__.constructor.apply(this, arguments);
-      }
-
-      return Resource;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Service
-  *
-  * @description
-  * Representation of an Service Object
-  *
-  * @property {integer} id Id of the service
-  * @property {string} name The name of service
-  * @property {date} duration Duration of the service
-  * @property {float} prices The prices of the service
-  * @property {integer} detail_group_id The detail group id
-  * @property {date} booking_time_step The time step of the booking
-  * @property {integer} min_bookings The minimum number of bookings
-  * @property {integer} max_booings The maximum number of bookings
-   */
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("ServiceModel", function($q, BBModel, BaseModel) {
-    var Service;
-    return Service = (function(superClass) {
-      extend(Service, superClass);
-
-      function Service(data) {
-        this.days_array = bind(this.days_array, this);
-        this.getCategoryPromise = bind(this.getCategoryPromise, this);
-        Service.__super__.constructor.apply(this, arguments);
-        if (this.prices && this.prices.length > 0) {
-          this.price = this.prices[0];
-        }
-        if (this.durations && this.durations.length > 0) {
-          this.duration = this.durations[0];
-        }
-        if (!this.listed_durations) {
-          this.listed_durations = this.durations;
-        }
-        if (this.listed_durations && this.listed_durations.length > 0) {
-          this.listed_duration = this.listed_durations[0];
-        }
-        this.min_advance_datetime = moment().add(this.min_advance_period, 'seconds');
-        this.max_advance_datetime = moment().add(this.max_advance_period, 'seconds');
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name getPriceByDuration
-      * @methodOf BB.Models:Service
-      * @description
-      * Get price by duration in function of duration
-      *
-      * @returns {object} The returning price by duration
-       */
-
-      Service.prototype.getPriceByDuration = function(dur) {
-        var d, i, j, len, ref;
-        ref = this.durations;
-        for (i = j = 0, len = ref.length; j < len; i = ++j) {
-          d = ref[i];
-          if (d === dur) {
-            return this.prices[i];
-          }
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getCategoryPromise
-      * @methodOf BB.Models:Service
-      * @description
-      * Get category promise
-      *
-      * @returns {object} The returning category promise
-       */
-
-      Service.prototype.getCategoryPromise = function() {
-        var prom;
-        if (!this.$has('category')) {
-          return null;
-        }
-        prom = this.$get('category');
-        prom.then((function(_this) {
-          return function(cat) {
-            return _this.category = new BBModel.Category(cat);
-          };
-        })(this));
-        return prom;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name days_array
-      * @methodOf BB.Models:Service
-      * @description
-      * Put days in array
-      *
-      * @returns {array} The returning days array
-       */
-
-      Service.prototype.days_array = function() {
-        var arr, j, ref, ref1, str, x;
-        arr = [];
-        for (x = j = ref = this.min_bookings, ref1 = this.max_bookings; ref <= ref1 ? j <= ref1 : j >= ref1; x = ref <= ref1 ? ++j : --j) {
-          str = "" + x + " day";
-          if (x > 1) {
-            str += "s";
-          }
-          arr.push({
-            name: str,
-            val: x
-          });
-        }
-        return arr;
-      };
-
-      return Service;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Slot
-  *
-  * @description
-  * Representation of an Slot Object
-  *
-  * @property {integer} total_entries The The total entries of the slot
-  * @property {array} slots An array with slots
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("SlotModel", function($q, BBModel, BaseModel) {
-    var Slot;
-    return Slot = (function(superClass) {
-      extend(Slot, superClass);
-
-      function Slot(data) {
-        Slot.__super__.constructor.call(this, data);
-        this.datetime = moment(data.datetime);
-      }
-
-      return Slot;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:Space
-  *
-  * @description
-  * Representation of an Space Object
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("SpaceModel", function($q, BBModel, BaseModel) {
-    var Space;
-    return Space = (function(superClass) {
-      extend(Space, superClass);
-
-      function Space() {
-        return Space.__super__.constructor.apply(this, arguments);
-      }
-
-      return Space;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:SurveyQuestion
-  *
-  * @description
-  * Representation of an SurveyQuestion Object
-  *
-  * @property {integer} company_id The company id
-  * @property {array} questions An array with questions
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("SurveyQuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
-    var SurveyQuestion;
-    return SurveyQuestion = (function(superClass) {
-      extend(SurveyQuestion, superClass);
-
-      function SurveyQuestion() {
-        return SurveyQuestion.__super__.constructor.apply(this, arguments);
-      }
-
-      return SurveyQuestion;
-
-    })(QuestionModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:TimeSlot
-  *
-  * @description
-  * Representation of an TimeSlot Object
-  *
-  * @property {string} service The service
-  * @property {date} time_12 The time_12 of time slot
-  * @property {date} time_24 The time_24 of time slot
-  * @property {date} start The start time of the slot
-  * @property {date} end The end time of the slot
-  * @property {string} service The service of time slot
-  * @property {string} get Get the time slot
-  * @property {string} selected The selected
-  * @property {boolean} disabled Verify if time slot are disabled or not
-  * @property {string} disabled_reason The disabled reason
-  * @property {string} availability The availability of time slot
-  * @property {string} avail The avail of time slot
-   */
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel, DateTimeUtilitiesService) {
-    var TimeSlot;
-    return TimeSlot = (function(superClass) {
-      extend(TimeSlot, superClass);
-
-      function TimeSlot(data, service) {
-        TimeSlot.__super__.constructor.call(this, data);
-        this.service = service;
-        this.time_12 = this.print_time12();
-        this.time_24 = this.print_time();
-        this.time_moment = DateTimeUtilitiesService.convertTimeSlotToMoment({
-          date: moment()
-        }, this);
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name print_time
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print time of the slot
-      *
-      * @returns {date} The returning time
-       */
-
-      TimeSlot.prototype.print_time = function() {
-        var min, t;
-        if (this.start) {
-          return this.start.format("h:mm");
-        } else {
-          t = this.get('time');
-          if (t % 60 < 10) {
-            min = "0" + t % 60;
-          } else {
-            min = t % 60;
-          }
-          return "" + Math.floor(t / 60) + ":" + min;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_end_time
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print end time of the slot
-      *
-      * @returns {date} The returning end time
-       */
-
-      TimeSlot.prototype.print_end_time = function(dur) {
-        var min, t;
-        if (this.end) {
-          return this.end.format("h:mm");
-        } else {
-          if (!dur) {
-            dur = this.service.listed_durations[0];
-          }
-          t = this.get('time') + dur;
-          if (t % 60 < 10) {
-            min = "0" + t % 60;
-          } else {
-            min = t % 60;
-          }
-          return "" + Math.floor(t / 60) + ":" + min;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_time12
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print 12 hour time
-      *
-      * @returns {date} The returning 12 hour time
-       */
-
-      TimeSlot.prototype.print_time12 = function(show_suffix) {
-        var h, m, suffix, t, time;
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        t = this.get('time');
-        h = Math.floor(t / 60);
-        m = t % 60;
-        suffix = 'am';
-        if (h >= 12) {
-          suffix = 'pm';
-        }
-        if (h > 12) {
-          h -= 12;
-        }
-        time = $window.sprintf("%d.%02d", h, m);
-        if (show_suffix) {
-          time += suffix;
-        }
-        return time;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_end_time12
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print 12 hour end time
-      *
-      * @returns {date} The returning 12 hour end time
-       */
-
-      TimeSlot.prototype.print_end_time12 = function(show_suffix, dur) {
-        var end_time, h, m, suffix, t;
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        dur = null;
-        if (!dur) {
-          if (this.service.listed_duration != null) {
-            dur = this.service.listed_duration;
-          } else {
-            dur = this.service.listed_durations[0];
-          }
-        }
-        t = this.get('time') + dur;
-        h = Math.floor(t / 60);
-        m = t % 60;
-        suffix = 'am';
-        if (h >= 12) {
-          suffix = 'pm';
-        }
-        if (h > 12) {
-          h -= 12;
-        }
-        end_time = $window.sprintf("%d.%02d", h, m);
-        if (show_suffix) {
-          end_time += suffix;
-        }
-        return end_time;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name availability
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Get availability
-      *
-      * @returns {object} The returning availability
-       */
-
-      TimeSlot.prototype.availability = function() {
-        return this.avail;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name select
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Checks if selected is true
-      *
-      * @returns {boolean} If this is checked
-       */
-
-      TimeSlot.prototype.select = function() {
-        return this.selected = true;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name unselect
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Unselect if is selected
-      *
-      * @returns {boolean} If this is unselect
-       */
-
-      TimeSlot.prototype.unselect = function() {
-        if (this.selected) {
-          return delete this.selected;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name disable
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Disable time slot by reason
-      *
-      * @returns {boolean} If this is a disabled
-       */
-
-      TimeSlot.prototype.disable = function(reason) {
-        this.disabled = true;
-        return this.disabled_reason = reason;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name enable
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Enable time slot
-      *
-      * @returns {boolean} If this is a enable
-       */
-
-      TimeSlot.prototype.enable = function() {
-        if (this.disabled) {
-          delete this.disabled;
-        }
-        if (this.disabled_reason) {
-          return delete this.disabled_reason;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name status
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Get status of the time slot
-      *
-      * @returns {object} The returned status
-       */
-
-      TimeSlot.prototype.status = function() {
-        if (this.selected) {
-          return "selected";
-        }
-        if (this.disabled) {
-          return "disabled";
-        }
-        if (this.availability() > 0) {
-          return "enabled";
-        }
-        return "disabled";
-      };
-
-      return TimeSlot;
-
-    })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      templateUrl: function(element, attrs) {
-        if (_.has(attrs, 'mini')) {
-          return PathSvc.directivePartial("_basket_mini");
-        } else {
-          return PathSvc.directivePartial("basket");
-        }
-      },
-      controllerAs: 'BasketCtrl',
-      controller: function($scope, $modal, BasketService) {
-        var BasketInstanceCtrl;
-        $scope.setUsingBasket(true);
-        this.empty = function() {
-          return $scope.$eval('emptyBasket()');
-        };
-        this.view = function() {
-          return $scope.$eval('viewBasket()');
-        };
-        $scope.showBasketDetails = function() {
-          var modalInstance;
-          if (($scope.bb.current_page === "basket") || ($scope.bb.current_page === "checkout")) {
-            return false;
-          } else {
-            return modalInstance = $modal.open({
-              templateUrl: $scope.getPartial("_basket_details"),
-              scope: $scope,
-              controller: BasketInstanceCtrl,
-              resolve: {
-                basket: function() {
-                  return $scope.bb.basket;
-                }
-              }
-            });
-          }
-        };
-        BasketInstanceCtrl = function($scope, $rootScope, $modalInstance, basket) {
-          $scope.basket = basket;
-          return $scope.cancel = function() {
-            return $modalInstance.dismiss("cancel");
-          };
-        };
-        $scope.$watch(function() {
-          var len;
-          $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
-          if (!len) {
-            $scope.basketStatus = "empty";
-          } else {
-            if (len === 1) {
-              $scope.basketStatus = "1 item in your basket";
-            } else {
-              $scope.basketStatus = len + " items in your basket";
-            }
-          }
-        });
-      },
-      link: function(scope, element, attrs) {
-        return element.bind('click', function(e) {
-          return e.preventDefault();
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbMinSpend', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      controller: function($scope, $element, $attrs, AlertService, $filter) {
-        var checkMinSpend, options;
-        options = $scope.$eval($attrs.bbMinSpend || {});
-        $scope.min_spend = options.min_spend || 0;
-        $scope.setReady = function() {
-          return checkMinSpend();
-        };
-        return checkMinSpend = function() {
-          var i, item, len1, price, ref;
-          price = 0;
-          ref = $scope.bb.stacked_items;
-          for (i = 0, len1 = ref.length; i < len1; i++) {
-            item = ref[i];
-            price += item.service.price;
-          }
-          if (price >= $scope.min_spend) {
-            AlertService.clear();
-            return true;
-          } else {
-            AlertService.clear();
-            price = $filter('ipretty_price')($scope.min_spend);
-            AlertService.add("warning", {
-              msg: "You need to spend at least " + price + " to make a booking."
-            });
-            return false;
-          }
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc directive
-* @name BB.Directives.directive:bbDateTimePicker
-* @scope
-* @restrict A
-*
-* @description
-* DateTime picker that combines date & timepicker and consolidates 
-* the Use of Moment.js in the App and Date in the pickers 
-*
-* @param {object}  date   A moment.js date object
-* @param {boolean}  showMeridian   Switch to show/hide meridian (optional, default:false)
-* @param {number}  minuteStep Step for the timepicker (optional, default:10)
-* @param {object}  minDate Min date value for datetimepicker
-* @param {object}  maxDate Max date value for datetimepicker
- */
-
-(function() {
-  angular.module('BB.Directives').directive('bbDateTimePicker', function(PathSvc) {
-    return {
-      scope: {
-        date: '=',
-        showMeridian: '=?',
-        minuteStep: '=?',
-        minDate: '=?',
-        maxDate: '=?',
-        format: '=?'
-      },
-      restrict: 'A',
-      templateUrl: 'bb_date_time_picker.html',
-      controller: function($scope, $filter, $timeout, GeneralOptions) {
-        var filterDate;
-        if ($scope.format == null) {
-          $scope.format = 'dd/MM/yyyy';
-        }
-        if (!$scope.minuteStep || typeof $scope.minuteStep === 'undefined') {
-          $scope.minuteStep = GeneralOptions.calendar_minute_step;
-        }
-        if (!$scope.showMeridian || typeof $scope.showMeridian === 'undefined') {
-          $scope.showMeridian = GeneralOptions.twelve_hour_format;
-        }
-        $scope.$watch('datetimeWithNoTz', function(newValue, oldValue) {
-          var assembledDate, maxDateClean, minDateDate;
-          newValue = new Date(newValue);
-          if ((newValue != null) && moment(newValue).isValid()) {
-            assembledDate = moment();
-            assembledDate.set({
-              'year': parseInt(newValue.getFullYear()),
-              'month': parseInt(newValue.getMonth()),
-              'date': parseInt(newValue.getDate()),
-              'hour': parseInt(newValue.getHours()),
-              'minute': parseInt(newValue.getMinutes()),
-              'second': 0
-            });
-            if ($scope.minDateClean != null) {
-              minDateDate = new Date($scope.minDateClean);
-              if ((newValue.getTime() / 1000) < (minDateDate.getTime() / 1000)) {
-                if (newValue.getFullYear() < minDateDate.getFullYear()) {
-                  assembledDate.year(parseInt(minDateDate.getFullYear()));
-                }
-                if (newValue.getMonth() < minDateDate.getMonth()) {
-                  assembledDate.month(parseInt(minDateDate.getMonth()));
-                }
-                if (newValue.getDate() < minDateDate.getDate()) {
-                  assembledDate.date(parseInt(minDateDate.getDate()));
-                }
-                if (newValue.getHours() < minDateDate.getHours()) {
-                  assembledDate.hours(parseInt(minDateDate.getHours()));
-                }
-                if (newValue.getMinutes() < minDateDate.getMinutes()) {
-                  assembledDate.minutes(parseInt(minDateDate.getMinutes()));
-                }
-                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
-              }
-            }
-            if ($scope.maxDateClean != null) {
-              maxDateClean = new Date($scope.maxDateClean);
-              if ((newValue.getTime() / 1000) > (maxDateClean.getTime() / 1000)) {
-                if (newValue.getFullYear() > minDateDate.getFullYear()) {
-                  assembledDate.year(parseInt(minDateDate.getFullYear()));
-                }
-                if (newValue.getMonth() > minDateDate.getMonth()) {
-                  assembledDate.month(parseInt(minDateDate.getMonth()));
-                }
-                if (newValue.getDate() > minDateDate.getDate()) {
-                  assembledDate.date(parseInt(minDateDate.getDate()));
-                }
-                if (newValue.getHours() > maxDateClean.getHours()) {
-                  assembledDate.hours(parseInt(maxDateClean.getHours()));
-                }
-                if (newValue.getMinutes() > maxDateClean.getMinutes()) {
-                  assembledDate.minutes(parseInt(maxDateClean.getMinutes()));
-                }
-                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
-              }
-            }
-            $scope.date = assembledDate.format();
-          }
-        });
-        $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
-        $scope.$watch('date', function(newValue, oldValue) {
-          if (newValue !== oldValue) {
-            return $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
-          }
-        });
-        $scope.$watch('minDate', function(newValue, oldValue) {
-          if (newValue !== oldValue) {
-            return $scope.minDateClean = filterDate(newValue);
-          }
-        });
-        $scope.$watch('maxDate', function(newValue, oldValue) {
-          if (newValue !== oldValue) {
-            return $scope.maxDateClean = filterDate(newValue);
-          }
-        });
-        filterDate = function(date) {
-          if ((date != null) && moment(date).isValid()) {
-            return $filter('clearTimezone')(moment(date).format());
-          }
-          return null;
-        };
-        $scope.minDateClean = filterDate($scope.minDate);
-        return $scope.maxDateClean = filterDate($scope.maxDate);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      controller: 'Breadcrumbs',
-      templateUrl: function(element, attrs) {
-        if (_.has(attrs, 'complex')) {
-          return PathSvc.directivePartial("_breadcrumb_complex");
-        } else {
-          return PathSvc.directivePartial("_breadcrumb");
-        }
-      },
-      link: function(scope) {}
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Breadcrumbs', function($scope) {
-    var atDisablePoint, currentStep, lastStep, loadStep;
-    loadStep = $scope.loadStep;
-    $scope.steps = $scope.bb.steps;
-    $scope.allSteps = $scope.bb.allSteps;
-    $scope.loadStep = function(number) {
-      if (!lastStep() && !currentStep(number) && !atDisablePoint()) {
-        return loadStep(number);
-      }
-    };
-    lastStep = function() {
-      return $scope.bb.current_step === $scope.bb.allSteps.length;
-    };
-    currentStep = function(step) {
-      return step === $scope.bb.current_step;
-    };
-    atDisablePoint = function() {
-      if (!angular.isDefined($scope.bb.disableGoingBackAtStep)) {
-        return false;
-      }
-      return $scope.bb.current_step >= $scope.bb.disableGoingBackAtStep;
-    };
-    return $scope.isDisabledStep = function(step) {
-      if (lastStep() || currentStep(step.number) || !step.passed || atDisablePoint()) {
-        return true;
-      } else {
-        return false;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbContentNew', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      templateUrl: PathSvc.directivePartial("content_main"),
-      controller: function($scope) {
-        $scope.initPage = function() {
-          return $scope.$eval('setPageLoaded()');
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, error, ie8orLess;
-    ie8orLess = false;
-    try {
-      ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
-    } catch (error) {
-      e = error;
-      ie8orLess = false;
-    }
-    return {
-      restrict: 'A',
-      priority: -1,
-      require: 'ngModel',
-      link: function(scope, element, attrs, ngModel) {
-        var callDateHandler, data, dateFormat, f, format, getTimeRangeScope, getter, origDateParser, replacementDateParser, timeRangeScope, yearNow;
-        origDateParser = null;
-        data = element.controller('ngModel');
-        if (attrs.datepickerPopup != null) {
-          format = {
-            date_us: "MM/dd/yyyy",
-            date_uk: "dd/MM/yyyy"
-          };
-          if (scope.bb.company.country_code === "us") {
-            attrs.datepickerPopup = format.date_us;
-          } else {
-            attrs.datepickerPopup = format.date_uk;
-          }
-        }
-        dateFormat = !!attrs.bbDatepickerPopup ? attrs.bbDatepickerPopup : 'DD/MM/YYYY';
-        yearNow = moment(new Date()).year();
-        getter = $parse(attrs.ngModel);
-        timeRangeScope = scope;
-        getTimeRangeScope = function(scope) {
-          if (scope) {
-            if (scope.controller && scope.controller.indexOf('TimeRangeList') > 0) {
-              return timeRangeScope = scope;
-            } else {
-              return getTimeRangeScope(scope.$parent);
-            }
-          }
-        };
-        getTimeRangeScope(scope);
-        if (ie8orLess) {
-          $bbug(element).on('keydown keyup keypress', function(ev) {
-            ev.preventDefault();
-            return ev.stopPropagation();
-          });
-        }
-        if (ie8orLess || scope.display.xs) {
-          $bbug(element).attr('readonly', 'true');
-        }
-        $bbug(element).on('keydown', function(e) {
-          if (e.keyCode === 13) {
-            replacementDateParser($bbug(e.target).val(), true);
-            $document.trigger('click');
-            return $bbug(element).blur();
-          }
-        });
-        $bbug(element).on('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          return $timeout(function() {
-            return scope.opened = true;
-          });
-        });
-        $bbug(element).on('focus', function() {
-          if ($(this).attr("readonly")) {
-            return this.blur();
-          }
-        });
-        callDateHandler = function(date) {
-          var isDate, watch;
-          watch = scope.$watch(getter, function(newVal, oldVal) {
-            if (!newVal) {
-              return getter.assign(timeRangeScope, date);
-            }
-          });
-          $timeout(watch, 0);
-          isDate = _.isDate(date);
-          if (isDate) {
-            getter.assign(timeRangeScope, date);
-            ngModel.$setValidity('date', true);
-            scope.$eval(attrs.onDateChange);
-          }
-          return isDate;
-        };
-        replacementDateParser = function(viewValue, returnKey) {
-          var mDate;
-          if (callDateHandler(viewValue)) {
-            return viewValue;
-          }
-          if (ie8orLess) {
-            return viewValue;
-          }
-          mDate = moment(viewValue, dateFormat);
-          if (!mDate.isValid()) {
-            mDate = moment(new Date());
-          }
-          if (/\/YY$/.test(dateFormat)) {
-            dateFormat += 'YY';
-          }
-          if (mDate.year() === 0) {
-            mDate.year(yearNow);
-          }
-          viewValue = mDate.format('MM/DD/YYYY');
-          viewValue = viewValue.replace(/\/00/, '/20');
-          if (/\/02\d{2}$/.test(viewValue)) {
-            return;
-          }
-          if (returnKey) {
-            if (mDate.year().toString().length === 2) {
-              mDate.year(mDate.year() + 2000);
-            }
-            return callDateHandler(mDate._d);
-          } else {
-            return origDateParser.call(this, viewValue);
-          }
-        };
-        f = function() {
-          if (_.isFunction(data.$parsers[0])) {
-            origDateParser = data.$parsers[0];
-            data.$parsers[0] = replacementDateParser;
-          } else {
-            return setTimeout(f, 10);
-          }
-        };
-        return f();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, $window) {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var checkLoginState, loginToBBWithFBUser, options, statusChangeCallback;
-        options = scope.$eval(attrs.bbFbLogin) || {};
-        $rootScope.connection_started.then(function() {
-          return checkLoginState();
-        });
-        statusChangeCallback = function(response) {
-          var params;
-          if (response.status === 'connected') {
-            params = {};
-            params.access_token = response.authResponse.accessToken;
-            if (options.login_only) {
-              params.login_only = options.login_only;
-            }
-            loginToBBWithFBUser(params);
-          } else if (response.status === 'not_authorized') {
-            scope.loginFB();
-          } else {
-            scope.loginFB();
-          }
-        };
-        checkLoginState = function() {
-          FB.getLoginStatus(function(response) {
-            statusChangeCallback(response);
-          });
-        };
-        loginToBBWithFBUser = function(params) {
-          return LoginService.FBLogin(scope.bb.company, params).then(function(member) {
-            $rootScope.member = member;
-            scope.setClient($rootScope.member);
-            if (scope.bb.destination) {
-              return scope.redirectTo(scope.bb.destination);
-            } else {
-              scope.setLoaded(scope);
-              return scope.decideNextPage();
-            }
-          }, function(err) {
-            if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
-              return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
-            } else {
-              return AlertService.raise('LOGIN_FAILED');
-            }
-          });
-        };
-        return scope.loginFB = function() {
-          return FB.login((function(response) {
-            var params;
-            if (response.status === 'connected') {
-              params = {};
-              params.access_token = response.authResponse.accessToken;
-              if (options.login_only) {
-                params.login_only = options.login_only;
-              }
-              loginToBBWithFBUser(params);
-            } else if (response.status === 'not_authorized') {
-              AlertService.raise('LOGIN_FAILED');
-            } else {
-              AlertService.raise('LOGIN_FAILED');
-            }
-          }), {
-            scope: 'public_profile,email'
-          });
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbFormDataStore', function(FormDataStoreService) {
-    return {
-      require: '?bbWidget',
-      link: function(scope) {
-        return FormDataStoreService.register(scope);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('ngConfirmClick', function() {
-    return {
-      link: function(scope, element, attr) {
-        var clickAction, msg;
-        msg = attr.ngConfirmClick || "Are you sure?";
-        clickAction = attr.ngConfirmedClick;
-        return element.bind('click', (function(_this) {
-          return function(event) {
-            if (window.confirm(msg)) {
-              return scope.$eval(clickAction);
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('ngValidInclude', function($compile) {
-    return {
-      link: function(scope, element, attr) {
-        return scope[attr.watchValue].then((function(_this) {
-          return function(logged) {
-            element.attr('ng-include', attr.ngValidInclude);
-            element.attr('ng-valid-include', null);
-            return $compile(element)(scope);
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('ngDelayed', function($compile) {
-    return {
-      link: function(scope, element, attr) {
-        return scope[attr.ngDelayedWatch].then((function(_this) {
-          return function(logged) {
-            element.attr(attr.ngDelayed, attr.ngDelayedValue);
-            element.attr('ng-delayed-value', null);
-            element.attr('ng-delayed-watch', null);
-            element.attr('ng-delayed', null);
-            $compile(element)(scope);
-            if (attr.ngDelayedReady) {
-              return scope[attr.ngDelayedReady].resolve(true);
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('ngInitial', function() {
-    return {
-      restrict: 'A',
-      controller: [
-        '$scope', '$element', '$attrs', '$parse', function($scope, $element, $attrs, $parse) {
-          var getter, setter, val;
-          val = $attrs.ngInitial || $attrs.value;
-          getter = $parse($attrs.ngModel);
-          setter = getter.assign;
-          if (val === "true") {
-            val = true;
-          } else if (val === "false") {
-            val = false;
-          }
-          return setter($scope, val);
-        }
-      ]
-    };
-  });
-
-  app.directive('bbPrintPage', function($window, $timeout) {
-    return {
-      restrict: 'A',
-      link: function(scope, element, attr) {
-        if (attr.bbPrintPage) {
-          return scope.$watch(attr.bbPrintPage, (function(_this) {
-            return function(newVal, oldVal) {
-              return $timeout(function() {
-                return $window.print();
-              }, 3000);
-            };
-          })(this));
-        }
-      }
-    };
-  });
-
-  app.directive('bbInclude', function($compile, $rootScope) {
-    return {
-      link: function(scope, element, attr) {
-        var track_page;
-        track_page = attr.bbTrackPage != null ? true : false;
-        return scope.$watch('bb.path_setup', (function(_this) {
-          return function(newval, oldval) {
-            if (newval) {
-              element.attr('ng-include', "'" + scope.getPartial(attr.bbInclude) + "'");
-              element.attr('bb-include', null);
-              $compile(element)(scope);
-              if (track_page) {
-                return $rootScope.$broadcast("page:loaded", attr.bbInclude);
-              }
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('bbRaiseAlertWhenInvalid', function($compile) {
-    return {
-      require: '^form',
-      link: function(scope, element, attr, ctrl) {
-        var options;
-        ctrl.raise_alerts = true;
-        options = scope.$eval(attr.bbRaiseAlertWhenInvalid);
-        if (options && options.alert) {
-          return ctrl.alert = options.alert;
-        }
-      }
-    };
-  });
-
-  app.directive('bbHeader', function($compile) {
-    return {
-      link: function(scope, element, attr) {
-        scope.bb.waitForRoutes();
-        return scope.$watch('bb.path_setup', (function(_this) {
-          return function(newval, oldval) {
-            if (newval) {
-              element.attr('ng-include', "'" + scope.getPartial(attr.bbHeader) + "'");
-              element.attr('bb-header', null);
-              return $compile(element)(scope);
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('bbDate', function() {
-    return {
-      restrict: 'AE',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var date, track_service;
-        track_service = attrs.bbTrackService != null;
-        if (attrs.bbDate) {
-          date = moment(scope.$eval(attrs.bbDate));
-        } else if (scope.bb && scope.bb.current_item && scope.bb.current_item.date) {
-          date = scope.bb.current_item.date.date;
-        } else {
-          date = moment();
-        }
-        if (track_service && scope.bb.current_item && scope.bb.current_item.service) {
-          scope.min_date = scope.bb.current_item.service.min_advance_datetime;
-          scope.max_date = scope.bb.current_item.service.max_advance_datetime;
-        }
-        scope.$broadcast('dateChanged', moment(date));
-        scope.bb_date = {
-          date: date,
-          js_date: date.toDate(),
-          addDays: function(type, amount) {
-            this.date = moment(this.date).add(amount, type);
-            this.js_date = this.date.toDate();
-            return scope.$broadcast('dateChanged', moment(this.date));
-          },
-          subtractDays: function(type, amount) {
-            return this.addDays(type, -amount);
-          },
-          setDate: function(date) {
-            this.date = date;
-            this.js_date = date.toDate();
-            return scope.$broadcast('dateChanged', moment(this.date));
-          }
-        };
-        scope.$on("currentItemUpdate", function(event) {
-          if (scope.bb.current_item.service && track_service) {
-            scope.min_date = scope.bb.current_item.service.min_advance_datetime;
-            scope.max_date = scope.bb.current_item.service.max_advance_datetime;
-            if (scope.bb_date.date.isBefore(scope.min_date, 'day')) {
-              scope.bb_date.setDate(scope.min_date.clone());
-            }
-            if (scope.bb_date.date.isAfter(scope.max_date, 'day')) {
-              return scope.bb_date.setDate(scope.max_date.clone());
-            }
-          }
-        });
-        return scope.$watch('bb_date.js_date', function(newval, oldval) {
-          var ndate;
-          ndate = moment(newval);
-          if (!scope.bb_date.date.isSame(ndate)) {
-            scope.bb_date.date = ndate;
-            if (moment(ndate).isValid()) {
-              return scope.$broadcast('dateChanged', moment(ndate));
-            }
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbDebounce', function($timeout) {
-    return {
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        var delay;
-        delay = 400;
-        if (attrs.bbDebounce) {
-          delay = attrs.bbDebounce;
-        }
-        return element.bind('click', (function(_this) {
-          return function() {
-            $timeout(function() {
-              return element.attr('disabled', true);
-            }, 0);
-            return $timeout(function() {
-              return element.attr('disabled', false);
-            }, delay);
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('bbLocalNumber', function() {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var prettyifyNumber;
-        prettyifyNumber = function(value) {
-          if (value && value[0] !== "0") {
-            value = "0" + value;
-          } else {
-            value;
-          }
-          return value;
-        };
-        return ctrl.$formatters.push(prettyifyNumber);
-      }
-    };
-  });
-
-  app.directive('bbPadWithZeros', function() {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var how_many, options, padNumber;
-        options = scope.$eval(attrs.bbPadWithZeros) || {};
-        how_many = options.how_many || 2;
-        padNumber = function(value) {
-          var i, index, padding, ref;
-          value = String(value);
-          if (value && value.length < how_many) {
-            padding = "";
-            for (index = i = 1, ref = how_many - value.length; 1 <= ref ? i <= ref : i >= ref; index = 1 <= ref ? ++i : --i) {
-              padding += "0";
-            }
-            value = padding.concat(value);
-          }
-          return value;
-        };
-        return ctrl.$formatters.push(padNumber);
-      }
-    };
-  });
-
-  app.directive('bbFormResettable', function($parse) {
-    return {
-      restrict: 'A',
-      controller: function($scope, $element, $attrs) {
-        $scope.inputs = [];
-        $scope.resetForm = function(options) {
-          var i, input, len, ref, results;
-          if (options && options.clear_submitted) {
-            $scope[$attrs.name].submitted = false;
-          }
-          ref = $scope.inputs;
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            input = ref[i];
-            input.getter.assign($scope, null);
-            results.push(input.controller.$setPristine());
-          }
-          return results;
-        };
-        return {
-          registerInput: function(input, ctrl) {
-            var getter;
-            getter = $parse(input);
-            return $scope.inputs.push({
-              getter: getter,
-              controller: ctrl
-            });
-          }
-        };
-      }
-    };
-  });
-
-  app.directive('bbResettable', function() {
-    return {
-      restrict: 'A',
-      require: ['ngModel', '^bbFormResettable'],
-      link: function(scope, element, attrs, ctrls) {
-        var formResettableCtrl, ngModelCtrl;
-        ngModelCtrl = ctrls[0];
-        formResettableCtrl = ctrls[1];
-        return formResettableCtrl.registerInput(attrs.ngModel, ngModelCtrl);
-      }
-    };
-  });
-
-  app.directive('bbDateSplit', function($parse) {
-    return {
-      restrict: 'A',
-      require: ['ngModel'],
-      link: function(scope, element, attrs, ctrls) {
-        var ngModel, question;
-        ngModel = ctrls[0];
-        question = scope.$eval(attrs.bbDateSplit);
-        question.date = {
-          day: null,
-          month: null,
-          year: null,
-          date: null,
-          joinDate: function() {
-            var date_string;
-            if (this.day && this.month && this.year) {
-              date_string = this.day + '/' + this.month + '/' + this.year;
-              this.date = moment(date_string, "DD/MM/YYYY");
-              date_string = this.date.toISODate();
-              ngModel.$setViewValue(date_string);
-              return ngModel.$render();
-            }
-          },
-          splitDate: function(date) {
-            if (date && date.isValid()) {
-              this.day = date.date();
-              this.month = date.month() + 1;
-              this.year = date.year();
-              return this.date = date;
-            }
-          }
-        };
-        if (question.answer) {
-          question.date.splitDate(moment(question.answer));
-        }
-        if (ngModel.$viewValue) {
-          return question.date.splitDate(moment(ngModel.$viewValue));
-        }
-      }
-    };
-  });
-
-  app.directive('bbCommPref', function() {
-    return {
-      restrict: 'A',
-      require: ['ngModel'],
-      link: function(scope, element, attrs, ctrls) {
-        var comm_pref, ng_model_ctrl, parser;
-        ng_model_ctrl = ctrls[0];
-        comm_pref = scope.$eval(attrs.bbCommPref) || false;
-        if ((scope.bb.current_item.settings.send_email_followup != null) && (scope.bb.current_item.settings.send_sms_followup != null)) {
-          comm_pref = scope.bb.current_item.settings.send_email_followup;
-        } else {
-          scope.bb.current_item.settings.send_email_followup = comm_pref;
-          scope.bb.current_item.settings.send_sms_followup = comm_pref;
-        }
-        ng_model_ctrl.$setViewValue(comm_pref);
-        parser = function(value) {
-          scope.bb.current_item.settings.send_email_followup = value;
-          scope.bb.current_item.settings.send_sms_followup = value;
-          return value;
-        };
-        return ng_model_ctrl.$parsers.push(parser);
-      }
-    };
-  });
-
-  app.directive('bbCountTicketTypes', function($rootScope) {
-    return {
-      restrict: 'A',
-      scope: false,
-      link: function(scope, element, attrs) {
-        var countTicketTypes;
-        $rootScope.connection_started.then(function() {
-          return countTicketTypes();
-        });
-        scope.$on("basket:updated", function(event, basket) {
-          return countTicketTypes();
-        });
-        return countTicketTypes = function(items) {
-          var counts, i, item, len;
-          items = scope.bb.basket.timeItems();
-          counts = [];
-          for (i = 0, len = items.length; i < len; i++) {
-            item = items[i];
-            if (item.tickets) {
-              if (counts[item.tickets.name]) {
-                counts[item.tickets.name] += item.tickets.qty;
-              } else {
-                counts[item.tickets.name] = item.tickets.qty;
-              }
-              item.number = counts[item.tickets.name];
-            }
-          }
-          return scope.counts = counts;
-        };
-      }
-    };
-  });
-
-  app.directive('bbCapitaliseFirstLetter', function() {
-    return {
-      restrict: 'A',
-      require: ['ngModel'],
-      link: function(scope, element, attrs, ctrls) {
-        var ngModel;
-        ngModel = ctrls[0];
-        return scope.$watch(attrs.ngModel, function(newval, oldval) {
-          var string;
-          if (newval) {
-            string = scope.$eval(attrs.ngModel);
-            string = string.charAt(0).toUpperCase() + string.slice(1);
-            ngModel.$setViewValue(string);
-            ngModel.$render();
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbApiUrl', function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
-    return {
-      restrict: 'A',
-      scope: {
-        'apiUrl': '@bbApiUrl'
-      },
-      compile: function(tElem, tAttrs) {
-        return {
-          pre: function(scope, element, attrs) {
-            var src, url;
-            $rootScope.bb || ($rootScope.bb = {});
-            $rootScope.bb.api_url = scope.apiUrl;
-            url = document.createElement('a');
-            url.href = scope.apiUrl;
-            if (($sniffer.msie && $sniffer.msie <= 9) || ($sniffer.webkit && $sniffer.webkit < 537)) {
-              if (!(url.host === '' || url.host === $location.host() || url.host === (($location.host()) + ":" + ($location.port())))) {
-                if (url.protocol[url.protocol.length - 1] === ':') {
-                  src = url.protocol + "//" + url.host + "/ClientProxy.html";
-                } else {
-                  src = url.protocol + "://" + url.host + "/ClientProxy.html";
-                }
-                $rootScope.iframe_proxy_ready = false;
-                return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;'></iframe>"))(scope, (function(_this) {
-                  return function(cloned, scope) {
-                    cloned.bind("load", function() {
-                      $rootScope.iframe_proxy_ready = true;
-                      return $rootScope.$broadcast('iframe_proxy_ready', {
-                        iframe_proxy_ready: true
-                      });
-                    });
-                    return element.append(cloned);
-                  };
-                })(this));
-              }
-            }
-          }
-        };
-      }
-    };
-  });
-
-  app.directive('bbPriceFilter', function(PathSvc) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: false,
-      require: '^?bbServices',
-      templateUrl: function(element, attrs) {
-        return PathSvc.directivePartial("_price_filter");
-      },
-      controller: function($scope, $attrs) {
-        var setPricefilter, suitable_max;
-        $scope.$watch('items', function(new_val, old_val) {
-          if (new_val) {
-            return setPricefilter(new_val);
-          }
-        });
-        setPricefilter = function(items) {
-          $scope.price_array = _.uniq(_.map(items, function(item) {
-            return item.price / 100 || 0;
-          }));
-          $scope.price_array.sort(function(a, b) {
-            return a - b;
-          });
-          return suitable_max();
-        };
-        suitable_max = function() {
-          var max_number, min_number, top_number;
-          top_number = _.last($scope.price_array);
-          max_number = (function() {
-            switch (false) {
-              case !(top_number < 1):
-                return 0;
-              case !(top_number < 11):
-                return 10;
-              case !(top_number < 51):
-                return 50;
-              case !(top_number < 101):
-                return 100;
-              case !(top_number < 1000):
-                return (Math.ceil(top_number / 100)) * 100;
-            }
-          })();
-          min_number = 0;
-          $scope.price_options = {
-            min: min_number,
-            max: max_number
-          };
-          return $scope.filters.price = {
-            min: min_number,
-            max: max_number
-          };
-        };
-        $scope.$watch('filters.price.min', function(new_val, old_val) {
-          if (new_val !== old_val) {
-            return $scope.filterChanged();
-          }
-        });
-        return $scope.$watch('filters.price.max', function(new_val, old_val) {
-          if (new_val !== old_val) {
-            return $scope.filterChanged();
-          }
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbBookingExport', function() {
-    return {
-      restrict: 'AE',
-      scope: true,
-      template: '<div bb-include="_popout_export_booking" style="display: inline-block"></div>',
-      link: function(scope, el, attrs) {
-        var setHTML;
-        scope.$watch('total', function(new_val, old_val) {
-          if (new_val) {
-            return setHTML(new_val);
-          }
-        });
-        scope.$watch('purchase', function(new_val, old_val) {
-          if (new_val) {
-            return setHTML(new_val);
-          }
-        });
-        return setHTML = function(purchase_total) {
-          return scope.html = ("<div class='text-center'><a href='" + (purchase_total.webcalLink()) + "'><img src='images/outlook.png' alt='outlook calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Outlook</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.gcalLink()) + "'><img src='images/google.png' alt='google calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Google</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.icalLink()) + "'><img src='images/ical.png' alt='ical calendar icon' height='30' width='30' /><div class='clearfix'></div><span>iCal</span></a></div>");
-        };
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbDynamicFooter', function($timeout, $bbug) {
-    return function(scope, el, attrs) {
-      scope.$on("page:loaded", function() {
-        return $bbug('.content').css('height', 'auto');
-      });
-      scope.$watch(function() {
-        return $bbug('.content')[0].scrollHeight;
-      }, function(new_val, old_val) {
-        if (new_val !== old_val) {
-          return scope.setContentHeight();
-        }
-      });
-      scope.setContentHeight = function() {
-        var content_height, min_content_height;
-        $bbug('.content').css('height', 'auto');
-        content_height = $bbug('.content')[0].scrollHeight;
-        min_content_height = $bbug(window).innerHeight() - $bbug('.content').offset().top - $bbug('.footer').height();
-        if (content_height < min_content_height) {
-          return $bbug('.content').css('height', min_content_height + 'px');
-        }
-      };
-      return $bbug(window).on('resize', function() {
-        return scope.setContentHeight();
-      });
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbBlurOnReturn
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Removes focus from an input[type=text] element when return key is pressed
-  * @example
-  * <input type='text' bb-blur-on-return></div>
-   */
-
-  angular.module('BB.Directives').directive('bbBlurOnReturn', function($timeout) {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, el, attrs) {
-        return el.keydown(function(e) {
-          var key;
-          key = e.which || e.keyCode;
-          if (key === 13 || key === '13') {
-            return $timeout(function() {
-              if (e.target) {
-                return e.target.blur();
-              }
-            }, 10);
-          }
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app, isEmpty;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbQuestionLine', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        var e, elm, html, index;
-        if (scope.question.detail_type === "heading") {
-          elm = "";
-          if (scope.question.name.length > 0) {
-            elm += "<div class='bb-question-heading'>" + scope.question.name + "</div>";
-          }
-          if (scope.question.help_text && scope.question.help_text.length > 0) {
-            elm += "<div class='bb-question-help-text'>" + scope.question.help_text + "</div>";
-          }
-          element.html(elm);
-        }
-        if (scope.idmaps && ((scope.idmaps[scope.question.detail_type] && scope.idmaps[scope.question.detail_type].block) || (scope.idmaps[scope.question.id] && scope.idmaps[scope.question.id].block))) {
-          index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
-          html = scope.$parent.idmaps[index].html;
-          return e = $compile(html)(scope, (function(_this) {
-            return function(cloned, scope) {
-              return element.replaceWith(cloned);
-            };
-          })(this));
-        }
-      }
-    };
-  });
-
-  app.directive('bbQuestion', function($compile, $timeout) {
-    return {
-      priority: 0,
-      replace: true,
-      transclude: false,
-      restrict: 'A',
-      compile: function(el, attr, trans) {
-        return {
-          pre: function(scope, element, attrs) {
-            var adminRequired, date_format, date_format_2;
-            adminRequired = attrs.bbAdminRequired != null ? true : false;
-            date_format = 'DD/MM/YYYY';
-            date_format_2 = 'dd/MM/yyyy';
-            if ((attrs.bbDateFormat != null) && attrs.bbDateFormat === 'US') {
-              date_format = 'MM/DD/YYYY';
-              date_format_2 = 'MM/dd/yyyy';
-            }
-            return scope.$watch(attrs.bbQuestion, function(question) {
-              var e, html, i, index, itemx, j, k, lastName, len1, len2, len3, name, placeholder, ref, ref1, ref2;
-              if (question) {
-                html = '';
-                lastName = '';
-                placeholder = '';
-                if (attrs.defaultPlaceholder != null) {
-                  if (question.detail_type === "text_area" | question.detail_type === "text_field") {
-                    if (question["default"]) {
-                      placeholder = question["default"];
-                    }
-                    if (question.answer === question["default"]) {
-                      question.answer = "";
-                    }
-                  }
-                }
-                scope.recalc = (function(_this) {
-                  return function() {
-                    if (angular.isDefined(scope.recalc_price)) {
-                      if (!question.outcome) {
-                        scope.recalc_price();
-                      }
-                    }
-                    if (angular.isDefined(scope.recalc_question)) {
-                      return scope.recalc_question();
-                    }
-                  };
-                })(this);
-                if (scope.idmaps && (scope.idmaps[question.detail_type] || scope.idmaps[question.id])) {
-                  index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
-                  html = scope.idmaps[index].html;
-                } else if (question.detail_type === "select" || question.detail_type === "select-price") {
-                  html = "<select ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'>";
-                  ref = question.options;
-                  for (i = 0, len1 = ref.length; i < len1; i++) {
-                    itemx = ref[i];
-                    html += "<option data_id='" + itemx.id + "' value='" + (itemx.name.replace(/'/g, "&apos;")) + "'>" + itemx.display_name + "</option>";
-                  }
-                  html += "</select>";
-                } else if (question.detail_type === "text_area") {
-                  html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
-                } else if (question.detail_type === "radio") {
-                  html = '<div class="radio-group">';
-                  ref1 = question.options;
-                  for (j = 0, len2 = ref1.length; j < len2; j++) {
-                    itemx = ref1[j];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
-                  }
-                  html += "</div>";
-                } else if (question.detail_type === "check") {
-                  name = question.name;
-                  if (name === lastName) {
-                    name = "";
-                  }
-                  lastName = question.name;
-                  html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
-                } else if (question.detail_type === "check-price") {
-                  html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
-                } else if (question.detail_type === "radio-price") {
-                  html = '<div class="radio-group">';
-                  ref2 = question.options;
-                  for (k = 0, len3 = ref2.length; k < len3; k++) {
-                    itemx = ref2[k];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
-                  }
-                  html += "</div>";
-                } else if (question.detail_type === "date") {
-                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
-                } else {
-                  html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
-                }
-                if (html) {
-                  return e = $compile(html)(scope, (function(_this) {
-                    return function(cloned, scope) {
-                      return element.replaceWith(cloned);
-                    };
-                  })(this));
-                }
-              }
-            });
-          },
-          post: function(scope, $e, $a, parentControl) {}
-        };
-      }
-    };
-  });
-
-  app.directive('bbQuestionSetup', function() {
-    return {
-      restrict: 'A',
-      terminal: true,
-      priority: 1000,
-      link: function(scope, element, attrs) {
-        var block, child, def, i, id, idmaps, index, len1, ref;
-        idmaps = {};
-        def = null;
-        ref = element.children();
-        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
-          child = ref[index];
-          id = $(child).attr("bb-question-id");
-          block = false;
-          if ($(child).attr("bb-replace-block")) {
-            block = true;
-          }
-          child.innerHTML = child.innerHTML.replace(/question_form/g, "question_form_" + index);
-          idmaps[id] = {
-            id: id,
-            html: child.innerHTML,
-            block: block
-          };
-        }
-        scope.idmaps = idmaps;
-        return element.replaceWith("");
-      }
-    };
-  });
-
-  app.directive("bbFocus", [
-    function() {
-      var FOCUS_CLASS;
-      FOCUS_CLASS = "bb-focused";
-      return {
-        restrict: "A",
-        require: "ngModel",
-        link: function(scope, element, attrs, ctrl) {
-          ctrl.$focused = false;
-          return element.bind("focus", function(evt) {
-            element.addClass(FOCUS_CLASS);
-            return scope.$apply(function() {
-              return ctrl.$focused = true;
-            });
-          }).bind("blur", function(evt) {
-            element.removeClass(FOCUS_CLASS);
-            return scope.$apply(function() {
-              return ctrl.$focused = false;
-            });
-          });
-        }
-      };
-    }
-  ]);
-
-  app.directive('bbCurrencyField', function($filter) {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var convertToCurrency, convertToInteger;
-        convertToCurrency = function(value) {
-          return value / 100;
-        };
-        convertToInteger = function(value) {
-          return value * 100;
-        };
-        ctrl.$formatters.push(convertToCurrency);
-        return ctrl.$parsers.push(convertToInteger);
-      }
-    };
-  });
-
-  isEmpty = function(value) {
-    return angular.isUndefined(value) || value === "" || value === null || value !== value;
-  };
-
-  app.directive("ngMin", function() {
-    return {
-      restrict: "A",
-      require: "ngModel",
-      link: function(scope, elem, attr, ctrl) {
-        var minValidator;
-        minValidator = function(value) {
-          var min;
-          min = scope.$eval(attr.ngMin) || 0;
-          ctrl.$setValidity("ngMin", isEmpty(value) || value >= min);
-          return value;
-        };
-        ctrl.$parsers.push(minValidator);
-        ctrl.$formatters.push(minValidator);
-      }
-    };
-  });
-
-  app.directive("ngMax", function() {
-    return {
-      restrict: "A",
-      require: "ngModel",
-      link: function(scope, elem, attr, ctrl) {
-        var maxValidator;
-        maxValidator = function(value) {
-          var max;
-          max = scope.$eval(attr.ngMax);
-          ctrl.$setValidity("ngMax", isEmpty(value) || value <= max);
-          return value;
-        };
-        ctrl.$parsers.push(maxValidator);
-        ctrl.$formatters.push(maxValidator);
-      }
-    };
-  });
-
-  app.directive("creditCardNumber", function() {
-    var getCardType, isValid, linker;
-    getCardType = function(ccnumber) {
-      if (!ccnumber) {
-        return '';
-      }
-      ccnumber = ccnumber.toString().replace(/\s+/g, '');
-      if (/^(34)|^(37)/.test(ccnumber)) {
-        return "american_express";
-      }
-      if (/^(62)|^(88)/.test(ccnumber)) {
-        return "china_unionpay";
-      }
-      if (/^30[0-5]/.test(ccnumber)) {
-        return "diners_club_carte_blanche";
-      }
-      if (/^(2014)|^(2149)/.test(ccnumber)) {
-        return "diners_club_enroute";
-      }
-      if (/^36/.test(ccnumber)) {
-        return "diners_club_international";
-      }
-      if (/^(6011)|^(622(1(2[6-9]|[3-9][0-9])|[2-8][0-9]{2}|9([01][0-9]|2[0-5])))|^(64[4-9])|^65/.test(ccnumber)) {
-        return "discover";
-      }
-      if (/^35(2[89]|[3-8][0-9])/.test(ccnumber)) {
-        return "jcb";
-      }
-      if (/^(6304)|^(6706)|^(6771)|^(6709)/.test(ccnumber)) {
-        return "laser";
-      }
-      if (/^(5018)|^(5020)|^(5038)|^(5893)|^(6304)|^(6759)|^(6761)|^(6762)|^(6763)|^(0604)/.test(ccnumber)) {
-        return "maestro";
-      }
-      if (/^5[1-5]/.test(ccnumber)) {
-        return "master";
-      }
-      if (/^4/.test(ccnumber)) {
-        return "visa";
-      }
-      if (/^(4026)|^(417500)|^(4405)|^(4508)|^(4844)|^(4913)|^(4917)/.test(ccnumber)) {
-        return "visa_electron";
-      }
-    };
-    isValid = function(ccnumber) {
-      var len, mul, prodArr, sum;
-      if (!ccnumber) {
-        return false;
-      }
-      ccnumber = ccnumber.toString().replace(/\s+/g, '');
-      len = ccnumber.length;
-      mul = 0;
-      prodArr = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]];
-      sum = 0;
-      while (len--) {
-        sum += prodArr[mul][parseInt(ccnumber.charAt(len), 10)];
-        mul ^= 1;
-      }
-      return sum % 10 === 0 && sum > 0;
-    };
-    linker = function(scope, element, attributes, ngModel) {
-      return scope.$watch(function() {
-        return ngModel.$modelValue;
-      }, function(newValue) {
-        ngModel.$setValidity('card_number', isValid(newValue));
-        scope.cardType = getCardType(newValue);
-        if ((newValue != null) && newValue.length === 16) {
-          if (ngModel.$invalid) {
-            element.parent().addClass('has-error');
-            return element.parent().removeClass('has-success');
-          } else {
-            element.parent().removeClass('has-error');
-            return element.parent().addClass('has-success');
-          }
-        } else {
-          return element.parent().removeClass('has-success');
-        }
-      });
-    };
-    return {
-      restrict: "C",
-      require: "ngModel",
-      link: linker,
-      scope: {
-        'cardType': '='
-      }
-    };
-  });
-
-  app.directive("cardSecurityCode", function() {
-    var linker;
-    linker = function(scope, element, attributes) {
-      return scope.$watch('cardType', function(newValue) {
-        if (newValue === 'american_express') {
-          element.attr('maxlength', 4);
-          return element.attr('placeholder', "••••");
-        } else {
-          element.attr('maxlength', 3);
-          return element.attr('placeholder', "•••");
-        }
-      });
-    };
-    return {
-      restrict: "AC",
-      link: linker,
-      scope: {
-        'cardType': '='
-      }
-    };
-  });
-
-  app.directive('bbInputGroupManager', function(ValidatorService) {
-    return {
-      restrict: 'A',
-      controller: function($scope, $element, $attrs) {
-        $scope.input_manger = {
-          input_groups: {},
-          inputs: [],
-          registerInput: function(input, name) {
-            if (this.inputs.indexOf(input.$name) >= 0) {
-              return;
-            }
-            this.inputs.push(input.$name);
-            if (!this.input_groups[name]) {
-              this.input_groups[name] = {
-                inputs: [],
-                valid: false
-              };
-            }
-            return this.input_groups[name].inputs.push(input);
-          },
-          validateInputGroup: function(name) {
-            var i, input, is_valid, j, len1, len2, ref, ref1;
-            is_valid = false;
-            ref = this.input_groups[name].inputs;
-            for (i = 0, len1 = ref.length; i < len1; i++) {
-              input = ref[i];
-              is_valid = input.$modelValue;
-              if (is_valid) {
-                break;
-              }
-            }
-            if (is_valid === !this.input_groups[name].valid) {
-              ref1 = this.input_groups[name].inputs;
-              for (j = 0, len2 = ref1.length; j < len2; j++) {
-                input = ref1[j];
-                input.$setValidity(input.$name, is_valid);
-              }
-              return this.input_groups[name].valid = is_valid;
-            }
-          }
-        };
-        return $element.on("submit", function() {
-          var input_group, results;
-          results = [];
-          for (input_group in $scope.input_manger.input_groups) {
-            results.push($scope.input_manger.validateInputGroup(input_group));
-          }
-          return results;
-        });
-      }
-    };
-  });
-
-  app.directive("bbInputGroup", function() {
-    return {
-      restrict: "A",
-      require: 'ngModel',
-      link: function(scope, elem, attrs, ngModel) {
-        if (scope.input_manger.inputs.indexOf(ngModel.$name) >= 0) {
-          return;
-        }
-        scope.input_manger.registerInput(ngModel, attrs.bbInputGroup);
-        return scope.$watch(attrs.ngModel, function(newval, oldval) {
-          if (newval === !oldval) {
-            return scope.input_manger.validateInputGroup(attrs.bbInputGroup);
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbQuestionLabel', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      scope: false,
-      link: function(scope, element, attrs) {
-        return scope.$watch(attrs.bbQuestionLabel, function(question) {
-          if (question) {
-            if (question.detail_type === "check" || question.detail_type === "check-price") {
-              return element.html("");
-            }
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbQuestionLink', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var id;
-        id = parseInt(attrs.bbQuestionLink);
-        return scope.$watch("question_set", function(newval, oldval) {
-          var i, len1, q, ref, results;
-          if (newval) {
-            ref = scope.question_set;
-            results = [];
-            for (i = 0, len1 = ref.length; i < len1; i++) {
-              q = ref[i];
-              if (q.id === id) {
-                scope.question = q;
-                element.attr('ng-model', "question.answer");
-                element.attr('bb-question-link', null);
-                results.push($compile(element)(scope));
-              } else {
-                results.push(void 0);
-              }
-            }
-            return results;
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbQuestionSet', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var set;
-        set = attrs.bbQuestionSet;
-        element.addClass('ng-hide');
-        return scope.$watch(set, function(newval, oldval) {
-          if (newval) {
-            scope.question_set = newval;
-            return element.removeClass('ng-hide');
-          }
-        });
-      }
-    };
-  });
-
-  app.directive("bbMatchInput", function() {
-    return {
-      restrict: "A",
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl, ngModel) {
-        var compare;
-        scope.$watch(attrs.bbMatchInput, function() {
-          scope.val_1 = scope.$eval(attrs.bbMatchInput);
-          return compare(ctrl.$viewValue);
-        });
-        compare = function(value) {
-          ctrl.$setValidity('match', scope.val_1 === value);
-          return value;
-        };
-        return ctrl.$parsers.push(compare);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive("bbIntTelNumber", function($parse) {
-    return {
-      restrict: "A",
-      require: "ngModel",
-      link: function(scope, element, attrs, ctrl) {
-        var format, isValid, options, parse;
-        options = scope.$eval(attrs.bbIntTelNumber);
-        element.intlTelInput(options);
-        isValid = function(value) {
-          if (value) {
-            return element.intlTelInput("isValidNumber");
-          } else {
-            return true;
-          }
-        };
-        format = function(value) {
-          var str;
-          str = "";
-          if (scope.$eval(attrs.ngModel + '_prefix') != null) {
-            str += "+" + scope.$eval(attrs.ngModel + '_prefix') + " ";
-          }
-          if (scope.$eval(attrs.ngModel) != null) {
-            str += scope.$eval(attrs.ngModel);
-          }
-          if (str[0] === "+") {
-            element.intlTelInput("setNumber", "+" + (scope.$eval(attrs.ngModel + '_prefix')) + " " + (scope.$eval(attrs.ngModel)));
-            ctrl.$setValidity("phone", isValid(value));
-          }
-          return str;
-        };
-        parse = function(value) {
-          var getter, prefix;
-          prefix = element.intlTelInput("getSelectedCountryData").dialCode;
-          getter = $parse(attrs.ngModel + '_prefix');
-          getter.assign(scope, prefix);
-          ctrl.$setValidity("phone", isValid(value));
-          return value;
-        };
-        ctrl.$formatters.push(format);
-        return ctrl.$parsers.push(parse);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbLoader', function($rootScope, $compile, PathSvc, TemplateSvc) {
-    return {
-      restrict: 'A',
-      replace: false,
-      scope: {},
-      controllerAs: 'LoaderCtrl',
-      controller: function($scope) {
-        var addScopeId, hideLoader, parentScopeId, removeScopeId, scopeIdArr, showLoader;
-        parentScopeId = $scope.$parent.$id;
-        scopeIdArr = [];
-        addScopeId = function(id) {
-          scopeIdArr.push(id);
-          scopeIdArr = _.uniq(scopeIdArr);
-        };
-        removeScopeId = function(id) {
-          scopeIdArr = _.without(scopeIdArr, id);
-          return scopeIdArr.length;
-        };
-        showLoader = function(e, cscope) {
-          var sid;
-          sid = cscope.$id;
-          while (cscope) {
-            if (cscope.$id === parentScopeId) {
-              addScopeId(sid);
-              $scope.scopeLoaded = false;
-              break;
-            }
-            cscope = cscope.$parent;
-          }
-        };
-        hideLoader = function(e, cscope) {
-          if (!removeScopeId(cscope.$id)) {
-            $scope.scopeLoaded = true;
-          }
-        };
-        $rootScope.$on('show:loader', showLoader);
-        $rootScope.$on('hide:loader', hideLoader);
-        $scope.scopeLoaded = false;
-      },
-      link: function(scope, element, attrs) {
-        TemplateSvc.get(PathSvc.directivePartial("loader")).then(function(html) {
-          var str;
-          if (_.isString(attrs.bbLoader)) {
-            str = attrs.bbLoader.slice(1);
-            if (/^#/.test(attrs.bbLoader)) {
-              html.attr('id', str);
-            } else if (/^\./.test(attrs.bbLoader)) {
-              html.addClass(str);
-            }
-          }
-          element.prepend(html);
-          $compile(html)(scope);
-        });
-      }
-    };
-  });
-
-  app.directive('bbLoadingSpinner', function($compile) {
-    return {
-      transclude: true,
-      link: function(scope, element, attrs, controller, transclude) {
-        var loadingScopes;
-        loadingScopes = {};
-        scope.isLoading = false;
-        return scope.$on('isLoading', function(event, isLoading) {
-          event.stopPropagation();
-          loadingScopes[event.targetScope.$id] = isLoading;
-          return scope.isLoading = _.every(_.values(loadingScopes));
-        });
-      },
-      template: "<div ng-show=\"isLoading\" class=\"loader-wrapper\">\n  <div class=\"loader\"></div>\n</div>\n<div ng-transclude></div>"
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbContent', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        element.attr('ng-include', "bb_main");
-        element.attr('onLoad', "initPage()");
-        element.attr('bb-content', null);
-        element.attr('ng-hide', "hide_page");
-        scope.initPage = (function(_this) {
-          return function() {
-            scope.setPageLoaded();
-            return scope.setLoadingPage(false);
-          };
-        })(this);
-        return $compile(element)(scope);
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbLoading', function($compile) {
-    return {
-      link: function(scope, element, attrs) {
-        var positionLoadingIcon;
-        scope.scopeLoaded = scope.areScopesLoaded(scope);
-        element.attr("ng-hide", "scopeLoaded");
-        element.attr("bb-loading", null);
-        positionLoadingIcon = function() {
-          var center;
-          center = $(window).innerHeight() / 2 - $("#wait_graphic").height() / 2;
-          return $("#loading_icon").css("padding-top", center + "px");
-        };
-        positionLoadingIcon();
-        $(window).on("resize", function() {
-          return positionLoadingIcon();
-        });
-        scope.$on("page:loaded", function() {
-          return positionLoadingIcon();
-        });
-        $compile(element)(scope);
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbWaitFor', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      priority: 800,
-      link: function(scope, element, attrs) {
-        var name, prom;
-        name = attrs.bbWaitVar;
-        name || (name = "allDone");
-        scope[name] = false;
-        prom = scope.$eval(attrs.bbWaitFor);
-        prom.then(function() {
-          return scope[name] = true;
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        var always_scroll, bb_transition_time, evnts, scrollToCallback;
-        evnts = attrs.bbScrollTo.split(',');
-        always_scroll = (attrs.bbAlwaysScroll != null) || false;
-        bb_transition_time = attrs.bbTransitionTime != null ? parseInt(attrs.bbTransitionTime, 10) : 500;
-        if (angular.isArray(evnts)) {
-          angular.forEach(evnts, function(evnt) {
-            return scope.$on(evnt, function(e) {
-              return scrollToCallback(evnt);
-            });
-          });
-        } else {
-          scope.$on(evnts, function(e) {
-            return scrollToCallback(evnts);
-          });
-        }
-        return scrollToCallback = function(evnt) {
-          var current_step, scroll_to_element;
-          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
-            scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
-          } else {
-            scroll_to_element = $bbug(element);
-          }
-          current_step = BreadcrumbService.getCurrentStep();
-          if (scroll_to_element) {
-            if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!scroll_to_element.is(':visible') && scroll_to_element.offset().top !== 0)) {
-              if ('parentIFrame' in $window) {
-                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
-              } else {
-                return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
-                }, bb_transition_time);
-              }
-            }
-          }
-        };
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbSlotGrouper', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var i, len, slot, slots;
-        slots = scope.$eval(attrs.slots);
-        if (!slots) {
-          return;
-        }
-        scope.grouped_slots = [];
-        for (i = 0, len = slots.length; i < len; i++) {
-          slot = slots[i];
-          if (slot.time >= scope.$eval(attrs.startTime) && slot.time < scope.$eval(attrs.endTime)) {
-            scope.grouped_slots.push(slot);
-          }
-        }
-        return scope.has_slots = scope.grouped_slots.length > 0;
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbForm
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with forms to add enhanced validation. When using with ng-form, submitForm 
-  * needs to be called manually as submit event is not raised.
-  
-  *
-  * @example
-  * <div ng-form name="example_form" bb-form></div>
-  * <form name="example_form" bb-form></form>
-  *
-   */
-
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
-    return {
-      restrict: 'A',
-      require: '^form',
-      scope: true,
-      link: function(scope, elem, attrs, ctrls) {
-        scope.form = ctrls;
-        elem.on("submit", function() {
-          scope.submitForm();
-          return scope.$apply();
-        });
-        return scope.submitForm = function() {
-          var property;
-          scope.form.submitted = true;
-          for (property in scope.form) {
-            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
-              scope.form[property].submitted = true;
-            }
-          }
-          $timeout(function() {
-            var invalid_form_group, invalid_input;
-            invalid_form_group = elem.find('.has-error:first');
-            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
-              if ('parentIFrame' in $window) {
-                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
-              } else {
-                $bbug("html, body").animate({
-                  scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
-                }, 1000);
-              }
-              invalid_input = invalid_form_group.find('.ng-invalid');
-              return invalid_input.focus();
-            }
-          }, 100);
-          return ValidatorService.validateForm(scope.form);
-        };
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
-    return {
-      restrict: 'A',
-      scope: true,
-      replace: true,
-      controller: function($scope, $element, $attrs) {
-        $scope.isDraggable = $document.width() > 480;
-        return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
-          var map_item;
-          if (!new_val) {
-            return;
-          }
-          map_item = new_val;
-          $scope.map = {
-            center: {
-              latitude: map_item.lat,
-              longitude: map_item.long
-            },
-            zoom: 15
-          };
-          $scope.options = {
-            scrollwheel: false,
-            draggable: $scope.isDraggable
-          };
-          return $scope.marker = {
-            id: 0,
-            coords: {
-              latitude: map_item.lat,
-              longitude: map_item.long
-            }
-          };
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbMergeDuplicateQuestions', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      controller: function($scope, $rootScope) {
-        $scope.questions = {};
-        return $rootScope.$on("item_details:loaded", function() {
-          var i, item, j, len, len1, question, ref, ref1;
-          ref = $scope.bb.stacked_items;
-          for (i = 0, len = ref.length; i < len; i++) {
-            item = ref[i];
-            if (item.item_details && item.item_details.questions) {
-              item.item_details.hide_questions = false;
-              ref1 = item.item_details.questions;
-              for (j = 0, len1 = ref1.length; j < len1; j++) {
-                question = ref1[j];
-                if ($scope.questions[question.id]) {
-                  item.setCloneAnswers($scope.questions[question.id].item);
-                  item.item_details.hide_questions = true;
-                  break;
-                } else {
-                  $scope.questions[question.id] = {
-                    question: question,
-                    item: item
-                  };
-                }
-              }
-            }
-          }
-          return $scope.has_questions = _.pluck($scope.questions, 'question').length > 0;
-        });
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbModal
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with modal templates to ensure modal height does not exceed window height
-  
-  *
-  * @example
-  * <div bb-modal></div>
-   */
-
-  angular.module('BB.Directives').directive('bbModal', function($window, $bbug, $timeout) {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, elem, attrs) {
-        var deregisterWatcher;
-        return $timeout(function() {
-          return elem.parent().parent().parent().css("z-index", 999999);
-        }, deregisterWatcher = scope.$watch(function() {
-          var height, modal_padding, new_height;
-          height = elem.height();
-          if ($bbug(window).width() >= 769) {
-            modal_padding = 200;
-          } else {
-            modal_padding = 20;
-          }
-          if (height > $bbug(window).height()) {
-            new_height = $bbug(window).height() - modal_padding;
-            elem.css({
-              "height": new_height + "px",
-              "overflow-y": "scroll"
-            });
-            return deregisterWatcher();
-          }
-        }));
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbBackgroundImage
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Adds a background-image to an element
-  
-  * @param
-  * {string} url
-  *
-  * @example
-  * <div bb-background-image='images/example.jpg'></div>
-   */
-
-  angular.module('BB.Directives').directive('bbBackgroundImage', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, el, attrs) {
-        var killWatch;
-        if (!attrs.bbBackgroundImage || attrs.bbBackgroundImage === "") {
-          return;
-        }
-        return killWatch = scope.$watch(attrs.bbBackgroundImage, function(new_val, old_val) {
-          if (new_val) {
-            killWatch();
-            return el.css('background-image', 'url("' + new_val + '")');
-          }
-        });
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbCapacityView
-  * @restrict A
-  * @description
-  * Assigns an appropriate description of ticket availability based
-  * on the value of the "Select spaces view" dropdown in the admin console
-  * @param
-  * {object} The event object
-  * @attribute ticket-type-singular
-  * {String} Custom name for the ticket
-  * @example
-  * <span bb-capacity-view='event' ticket-type-singular='seat'></span>
-  * @example_result
-  * <span bb-capacity-view='event' ticket-type-singular='seat' class='ng-binding'>5 of 10 seats available</span>
-   */
-
-  angular.module('BB.Directives').directive('bbCapacityView', function() {
-    return {
-      restrict: 'A',
-      template: '{{capacity_view_description}}',
-      link: function(scope, el, attrs) {
-        var killWatch, ticket_type;
-        ticket_type = attrs.ticketTypeSingular || "ticket";
-        return killWatch = scope.$watch(attrs.bbCapacityView, function(item) {
-          var num_spaces_plural, spaces_left_plural;
-          if (item) {
-            killWatch();
-            num_spaces_plural = item.num_spaces > 1 ? "s" : "";
-            spaces_left_plural = item.spaces_left > 1 ? "s" : "";
-            switch (item.chain.capacity_view) {
-              case "NUM_SPACES":
-                return scope.capacity_view_description = scope.ticket_spaces = item.num_spaces + " " + ticket_type + num_spaces_plural;
-              case "NUM_SPACES_LEFT":
-                return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " " + ticket_type + spaces_left_plural + " available";
-              case "NUM_SPACES_AND_SPACES_LEFT":
-                return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " of " + item.num_spaces + " " + ticket_type + num_spaces_plural + " available";
-            }
-          }
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB').directive('bbMemberLogin', function(PathSvc) {
-    return {
-      restrict: 'A',
-      controller: 'MemberLogin',
-      templateUrl: function(elem, attrs) {
-        if (attrs.bbCustomLoginForm != null) {
-          return PathSvc.directivePartial("_member_login_form");
-        } else {
-          return PathSvc.directivePartial("_member_login_schema_form");
-        }
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
-    $scope.login_form = {};
-    $scope.validator = ValidatorService;
-    $rootScope.connection_started.then(function() {
-      if (LoginService.checkLogin()) {
-        $scope.setClient($rootScope.member);
-        if ($scope.bb.destination) {
-          return $scope.redirectTo($scope.bb.destination);
-        } else {
-          $scope.setLoaded($scope);
-          return $scope.decideNextPage();
-        }
-      } else {
-        return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
-          return root.$get("new_login").then(function(new_login) {
-            $scope.form = new_login.form;
-            return $scope.schema = new_login.schema;
-          }, function(err) {
-            return console.log('err ', err);
-          });
-        }, function(err) {
-          return console.log('err ', err);
-        });
-      }
-    });
-    $scope.submit = function(form) {
-      form['role'] = 'member';
-      return $scope.company.$post('login', {}, form).then(function(login) {
-        if (login.$has('members')) {
-          return login.$get('members').then(function(members) {
-            return $scope.handleLogin(members[0]);
-          });
-        } else if (login.$has('member')) {
-          return login.$get('member').then(function(member) {
-            return $scope.handleLogin(member);
-          });
-        }
-      }, function(err) {
-        if (err.data.error === "Account has been disabled") {
-          return AlertService.raise('ACCOUNT_DISABLED');
-        } else {
-          return AlertService.raise('LOGIN_FAILED');
-        }
-      });
-    };
-    return $scope.handleLogin = function(member) {
-      member = LoginService.setLogin(member, $scope.login_form.persist_login);
-      $scope.setClient(member);
-      if ($scope.bb.destination) {
-        return $scope.redirectTo($scope.bb.destination);
-      } else {
-        $scope.skipThisStep();
-        return $scope.decideNextPage();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc, $timeout) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      require: ['^?bbEvents', '^?bbMultiCompanyEvents'],
-      templateUrl: function(element, attrs) {
-        return PathSvc.directivePartial("_month_picker");
-      },
-      link: function(scope, el, attrs) {
-        var stopWatch;
-        scope.picker_settings = scope.$eval(attrs.bbMonthPicker) || {};
-        scope.picker_settings.months_to_show = scope.picker_settings.months_to_show || 3;
-        return stopWatch = scope.$watch(attrs.dayData, function(dates) {
-          if (dates) {
-            scope.processDates(dates);
-            return stopWatch();
-          }
-        });
-      },
-      controller: function($scope) {
-        $scope.processDates = function(dates) {
-          var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
-          datehash = {};
-          for (i = 0, len = dates.length; i < len; i++) {
-            date = dates[i];
-            datehash[date.date.format("DDMMYY")] = date;
-            if (!$scope.first_available_day && date.spaces > 0) {
-              $scope.first_available_day = date.date;
-            }
-          }
-          if ($scope.picker_settings.start_at_first_available_day) {
-            cur_month = $scope.first_available_day.clone().startOf('month');
-          } else {
-            cur_month = moment().startOf('month');
-          }
-          last_date = _.last(dates);
-          diff = last_date.date.diff(cur_month, 'months');
-          diff = diff > 0 ? diff + 1 : 1;
-          $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
-          months = [];
-          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
-            date = cur_month.clone().startOf('week');
-            month = {
-              weeks: []
-            };
-            month.index = m - 1;
-            for (w = k = 1; k <= 6; w = ++k) {
-              week = {
-                days: []
-              };
-              for (d = l = 1; l <= 7; d = ++l) {
-                if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
-                  month.start_date = date.clone();
-                }
-                day_data = datehash[date.format("DDMMYY")];
-                day = {
-                  date: date.clone(),
-                  data: day_data,
-                  available: day_data && day_data.spaces && day_data.spaces > 0,
-                  today: moment().isSame(date, 'day'),
-                  past: date.isBefore(moment(), 'day'),
-                  disabled: !month.start_date || !date.isSame(month.start_date, 'month')
-                };
-                week.days.push(day);
-                if ($scope.selected_date && day.date.isSame($scope.selected_date, 'day')) {
-                  day.selected = true;
-                  $scope.selected_day = day;
-                }
-                date.add(1, 'day');
-              }
-              month.weeks.push(week);
-            }
-            months.push(month);
-            cur_month.add(1, 'month');
-          }
-          $scope.months = months;
-          return $scope.slick_config = {
-            nextArrow: ".month-next",
-            prevArrow: ".month-prev",
-            slidesToShow: $scope.months.length >= $scope.picker_settings.months_to_show ? $scope.picker_settings.months_to_show : $scope.months.length,
-            infinite: false,
-            responsive: [
-              {
-                breakpoint: 1200,
-                settings: {
-                  slidesToShow: $scope.months.length >= 2 ? 2 : $scope.months.length
-                }
-              }, {
-                breakpoint: 992,
-                settings: {
-                  slidesToShow: 1
-                }
-              }
-            ],
-            method: {},
-            event: {
-              init: function(event, slick) {
-                return $timeout(function() {
-                  var len1, n, ref1, results;
-                  if ($scope.selected_day != null) {
-                    ref1 = $scope.months;
-                    results = [];
-                    for (n = 0, len1 = ref1.length; n < len1; n++) {
-                      m = ref1[n];
-                      if (m.start_date.month() === $scope.selected_day.date.month()) {
-                        results.push(slick.slickGoTo(m.index));
-                      } else {
-                        results.push(void 0);
-                      }
-                    }
-                    return results;
-                  }
-                });
-              }
-            }
-          };
-        };
-        $scope.$on('event_list_filter_date:changed', function(event, date) {
-          if ($scope.selected_day) {
-            return $scope.selected_day.selected = false;
-          }
-        });
-        return $scope.toggleDay = function(day) {
-          if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
-            return;
-          }
-          if ($scope.selected_day) {
-            $scope.selected_day.selected = false;
-          }
-          if (!$scope.selected_day || ($scope.selected_day && !day.date.isSame($scope.selected_day.date, 'day'))) {
-            day.selected = true;
-            $scope.selected_day = day;
-          }
-          return $scope.showDay(day.date);
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('ngOptions', function($sniffer, $rootScope) {
-    return {
-      restrict: 'A',
-      link: function(scope, el, attrs) {
-        var size;
-        size = parseInt(attrs['size'], 10);
-        if (!isNaN(size) && size > 1 && $sniffer.msie) {
-          return $rootScope.$on('loading:finished', function() {
-            el.focus();
-            return $('body').focus();
-          });
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('script', function($compile, halClient) {
-    return {
-      transclude: false,
-      restrict: 'E',
-      link: function(scope, element, attrs) {
-        var body, json, res;
-        if (attrs.type === 'text/hal-object') {
-          body = element[0].innerText;
-          json = $bbug.parseJSON(body);
-          return res = halClient.$parse(json);
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
-    var getButtonFormTemplate, getTemplate, linker, setClassAndValue;
-    getTemplate = function(type, scope) {
-      switch (type) {
-        case 'button_form':
-          return getButtonFormTemplate(scope);
-        case 'page':
-          return TemplateSvc.get("payment.html");
-        case 'location':
-          return "<a href='{{payment_link}}'>{{label}}</a>";
-        default:
-          return "";
-      }
-    };
-    getButtonFormTemplate = function(scope) {
-      var src;
-      src = $sce.parseAsResourceUrl("'" + scope.payment_link + "'")();
-      return $http.get(src, {}).then(function(response) {
-        return response.data;
-      });
-    };
-    setClassAndValue = function(scope, element, attributes) {
-      var c, i, inputs, j, len, main_tag, ref, results;
-      switch (scope.link_type) {
-        case 'button_form':
-          inputs = element.find("input");
-          main_tag = ((function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = inputs.length; j < len; j++) {
-              i = inputs[j];
-              if ($(i).attr('type') === 'submit') {
-                results.push(i);
-              }
-            }
-            return results;
-          })())[0];
-          if (attributes.value) {
-            $(main_tag).attr('value', attributes.value);
-          }
-          break;
-        case 'page':
-        case 'location':
-          main_tag = element.find("a")[0];
-      }
-      if (attributes["class"]) {
-        ref = attributes["class"].split(" ");
-        results = [];
-        for (j = 0, len = ref.length; j < len; j++) {
-          c = ref[j];
-          $(main_tag).addClass(c);
-          results.push($(element).removeClass(c));
-        }
-        return results;
-      }
-    };
-    linker = function(scope, element, attributes) {
-      var killWatch;
-      return killWatch = scope.$watch('total', function(total) {
-        var url;
-        if (total) {
-          killWatch();
-          scope.bb.payment_status = "pending";
-          scope.bb.total = scope.total;
-          scope.link_type = scope.total.$link('new_payment').type;
-          scope.label = attributes.value || "Make Payment";
-          scope.payment_link = scope.total.$href('new_payment');
-          url = scope.total.$href('new_payment');
-          return $q.when(getTemplate(scope.link_type, scope)).then(function(template) {
-            element.html(template).show();
-            $compile(element.contents())(scope);
-            return setClassAndValue(scope, element, attributes);
-          }, function(err) {
-            $log.warn(err.data);
-            return element.remove();
-          });
-        }
-      });
-    };
-    return {
-      restrict: 'EA',
-      replace: true,
-      scope: {
-        total: '=',
-        bb: '=',
-        decideNextPage: '='
-      },
-      link: linker
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbPaypalExpressButton', function($compile, $sce, $http, $templateCache, $q, $log, $window, UriTemplate) {
-    var linker;
-    linker = function(scope, element, attributes) {
-      var paypalOptions, total;
-      total = scope.total;
-      paypalOptions = scope.paypalOptions;
-      scope.href = new UriTemplate(total.$link('paypal_express').href).fillFromObject(paypalOptions);
-      return scope.showLoader = function() {
-        if (scope.notLoaded) {
-          return scope.notLoaded(scope);
-        }
-      };
-    };
-    return {
-      restrict: 'EA',
-      replace: true,
-      template: "<a ng-href=\"{{href}}\" ng-click=\"showLoader()\">Pay</a>",
-      scope: {
-        total: '=',
-        bb: '=',
-        decideNextPage: '=',
-        paypalOptions: '=bbPaypalExpressButton',
-        notLoaded: '='
-      },
-      link: linker
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbPaypal', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: {
-        ppDetails: "=bbPaypal"
-      },
-      templateUrl: PathSvc.directivePartial("paypal_button"),
-      link: function(scope, element, attrs) {
-        var keys;
-        scope.inputs = [];
-        if (!scope.ppDetails) {
-          return;
-        }
-        keys = _.keys(scope.ppDetails);
-        return _.each(keys, function(keyName) {
-          var obj;
-          obj = {
-            name: keyName,
-            value: scope.ppDetails[keyName]
-          };
-          return scope.inputs.push(obj);
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('pricepicker', function() {
-    var controller, link;
-    controller = function($scope) {
-      return $scope.$watch('price', function(price) {
-        if (price != null) {
-          return $scope.updateModel(price);
-        }
-      });
-    };
-    link = function(scope, element, attrs, ngModel) {
-      ngModel.$render = function() {
-        if (ngModel.$viewValue) {
-          return scope.price = ngModel.$viewValue;
-        }
-      };
-      return scope.updateModel = function(value) {
-        return ngModel.$setViewValue(value);
-      };
-    };
-    return {
-      require: 'ngModel',
-      link: link,
-      controller: controller,
-      scope: {
-        currency: '@'
-      },
-      template: "<span>{{0 | currency: currency | limitTo: 1}}</span>\n<input type=\"number\" ng-model=\"price\" class=\"form-control\" step=\"0.01\">"
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
-    var scopeIt;
-    this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
-      check = document.createElement('style');
-      if (typeof check.sheet !== 'undefined') {
-        DOMStyle = 'sheet';
-      } else if (typeof check.getSheet !== 'undefined') {
-        DOMStyle = 'getSheet';
-      } else {
-        DOMStyle = 'styleSheet';
-      }
-      scopeSupported = void 0 !== check.scoped;
-      document.body.appendChild(check);
-      testSheet = check[DOMStyle];
-      if (testSheet.addRule) {
-        testSheet.addRule('c', 'blink');
-      } else {
-        testSheet.insertRule('c{}', 0);
-      }
-      DOMRules = testSheet.rules ? 'rules' : 'cssRules';
-      testStyle = testSheet[DOMRules][0];
-      try {
-        testStyle.selectorText = 'd';
-      } catch (error) {
-        e = error;
-      }
-      changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
-      check.parentNode.removeChild(check);
-      return {
-        scopeSupported: scopeSupported,
-        rules: DOMRules,
-        sheet: DOMStyle,
-        changeSelectorTextAllowed: changeSelectorTextAllowed
-      };
-    })();
-    scopeIt = (function(_this) {
-      return function(element) {
-        var allRules, glue, id, idCounter, index, par, results, rule, selector, sheet, styleNode, styleRule;
-        styleNode = element[0];
-        idCounter = 0;
-        sheet = styleNode[_this.compat.sheet];
-        if (!sheet) {
-          return;
-        }
-        allRules = sheet[_this.compat.rules];
-        par = styleNode.parentNode;
-        id = par.id || (par.id = 'scopedByScopedPolyfill_' + ++idCounter);
-        glue = '';
-        index = allRules.length || 0;
-        while (par) {
-          if (par.id) {
-            glue = '#' + par.id + ' ' + glue;
-          }
-          par = par.parentNode;
-        }
-        results = [];
-        while (index--) {
-          rule = allRules[index];
-          if (rule.selectorText) {
-            if (!rule.selectorText.match(new RegExp(glue))) {
-              selector = glue + ' ' + rule.selectorText.split(',').join(', ' + glue);
-              selector = selector.replace(/[\ ]+:root/gi, '');
-              if (_this.compat.changeSelectorTextAllowed) {
-                results.push(rule.selectorText = selector);
-              } else {
-                if (!rule.type || 1 === rule.type) {
-                  styleRule = rule.style.cssText;
-                  if (styleRule) {
-                    if (sheet.removeRule) {
-                      sheet.removeRule(index);
-                    } else {
-                      sheet.deleteRule(index);
-                    }
-                    if (sheet.addRule) {
-                      results.push(sheet.addRule(selector, styleRule));
-                    } else {
-                      results.push(sheet.insertRule(selector + '{' + styleRule + '}', index));
-                    }
-                  } else {
-                    results.push(void 0);
-                  }
-                } else {
-                  results.push(void 0);
-                }
-              }
-            } else {
-              results.push(void 0);
-            }
-          } else {
-            results.push(void 0);
-          }
-        }
-        return results;
-      };
-    })(this);
-    return {
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        scope.scopeSupported = this.compat.scopeSupported;
-        if (!this.compat.scopeSupported) {
-          return $timeout(function() {
-            return scopeIt(element);
-          });
-        }
-      },
-      controller: function($scope, $element, $timeout) {
-        if (!$scope.scopeSupported) {
-          this.updateCss = function() {
-            return $timeout(function() {
-              return scopeIt($element);
-            });
-          };
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbDisplayMode', function($compile, $window, $bbug) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      template: '<span class="visible-xs"></span><span class="visible-sm"></span><span class="visible-md"></span><span class="visible-lg"></span>',
-      link: function(scope, elem, attrs) {
-        var getCurrentSize, isVisible, markers, t, update;
-        markers = elem.find('span');
-        $bbug(elem).addClass("bb-display-mode");
-        scope.display = {};
-        isVisible = function(element) {
-          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
-        };
-        getCurrentSize = function() {
-          var element, i, len;
-          for (i = 0, len = markers.length; i < len; i++) {
-            element = markers[i];
-            if (isVisible(element)) {
-              return element.className.slice(8, 11);
-            }
-            scope.display = {};
-            scope.display[element.className.slice(8, 11)] = true;
-            return false;
-          }
-        };
-        update = (function(_this) {
-          return function() {
-            var nsize;
-            nsize = getCurrentSize();
-            if (nsize !== _this.currentSize) {
-              _this.currentSize = nsize;
-              scope.display.xs = false;
-              scope.display.sm = false;
-              scope.display.md = false;
-              scope.display.lg = false;
-              scope.display.not_xs = true;
-              scope.display.not_sm = true;
-              scope.display.not_md = true;
-              scope.display.not_lg = true;
-              scope.display[nsize] = true;
-              scope.display["not_" + nsize] = false;
-              return true;
-            }
-            return false;
-          };
-        })(this);
-        t = null;
-        angular.element($window).bind('resize', (function(_this) {
-          return function() {
-            window.clearTimeout(t);
-            return t = setTimeout(function() {
-              if (update()) {
-                return scope.$apply();
-              }
-            }, 50);
-          };
-        })(this));
-        return angular.element($window).bind('load', (function(_this) {
-          return function() {
-            if (update()) {
-              return scope.$apply();
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbToggleEdit', function($compile, $window, $document) {
-    return {
-      restrict: 'AE',
-      link: function(scope, element, attr) {
-        scope.editing = false;
-        element.on('dblclick', (function(_this) {
-          return function(event) {
-            return scope.$apply(function() {
-              return scope.editing = true;
-            });
-          };
-        })(this));
-        $document.on('click', (function(_this) {
-          return function() {
-            if (!element.is(':hover')) {
-              return scope.$apply(function() {
-                return scope.editing = false;
-              });
-            }
-          };
-        })(this));
-        return true;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('popover', function() {
-    var openElement, openScope;
-    openElement = null;
-    openScope = null;
-    $('div[ng-controller="BBCtrl"]').off('.bbtooltip').on('click.bbtooltip', function(e) {
-      var target;
-      target = $(e.target).closest('[popover]')[0];
-      if (!target && openElement && openScope) {
-        $(openElement).next('.popover').remove();
-        openScope.tt_isOpen = false;
-      }
-      return true;
-    });
-    return {
-      restrict: 'EA',
-      priority: -1000,
-      link: function(scope, element) {
-        element.on('click.bbtooltip', function(e) {
-          if (openElement === $(e.target).closest('[popover]')[0]) {
-            e.preventDefault();
-            return;
-          }
-          if (openElement && openScope) {
-            $(openElement).next('.popover').remove();
-            openScope.tt_isOpen = false;
-          }
-          openElement = element[0];
-          return openScope = scope;
-        });
-        return scope.$on('$destroy', function() {
-          return $(element).off('.bbtooltip');
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function (angular) {
-  'use strict';
-
-  /* Directives */
-  var app = angular.module('BB.Directives');
-
-  app.directive('appVersion', function(version) {
-    return function(scope, elm, attrs) {
-      elm.text(version);
-    };
-  });
-}(window.angular));
-
-(function() {
   'use strict';
 
   /***
@@ -23965,6 +13598,10373 @@ function getURIparam( name ){
         return true;
       };
     })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      templateUrl: function(element, attrs) {
+        if (_.has(attrs, 'mini')) {
+          return PathSvc.directivePartial("_basket_mini");
+        } else {
+          return PathSvc.directivePartial("basket");
+        }
+      },
+      controllerAs: 'BasketCtrl',
+      controller: function($scope, $modal, BasketService) {
+        var BasketInstanceCtrl;
+        $scope.setUsingBasket(true);
+        this.empty = function() {
+          return $scope.$eval('emptyBasket()');
+        };
+        this.view = function() {
+          return $scope.$eval('viewBasket()');
+        };
+        $scope.showBasketDetails = function() {
+          var modalInstance;
+          if (($scope.bb.current_page === "basket") || ($scope.bb.current_page === "checkout")) {
+            return false;
+          } else {
+            return modalInstance = $modal.open({
+              templateUrl: $scope.getPartial("_basket_details"),
+              scope: $scope,
+              controller: BasketInstanceCtrl,
+              resolve: {
+                basket: function() {
+                  return $scope.bb.basket;
+                }
+              }
+            });
+          }
+        };
+        BasketInstanceCtrl = function($scope, $rootScope, $modalInstance, basket) {
+          $scope.basket = basket;
+          return $scope.cancel = function() {
+            return $modalInstance.dismiss("cancel");
+          };
+        };
+        $scope.$watch(function() {
+          var len;
+          $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
+          if (!len) {
+            $scope.basketStatus = "empty";
+          } else {
+            if (len === 1) {
+              $scope.basketStatus = "1 item in your basket";
+            } else {
+              $scope.basketStatus = len + " items in your basket";
+            }
+          }
+        });
+      },
+      link: function(scope, element, attrs) {
+        return element.bind('click', function(e) {
+          return e.preventDefault();
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbMinSpend', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      controller: function($scope, $element, $attrs, AlertService, $filter) {
+        var checkMinSpend, options;
+        options = $scope.$eval($attrs.bbMinSpend || {});
+        $scope.min_spend = options.min_spend || 0;
+        $scope.setReady = function() {
+          return checkMinSpend();
+        };
+        return checkMinSpend = function() {
+          var i, item, len1, price, ref;
+          price = 0;
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len1 = ref.length; i < len1; i++) {
+            item = ref[i];
+            price += item.service.price;
+          }
+          if (price >= $scope.min_spend) {
+            AlertService.clear();
+            return true;
+          } else {
+            AlertService.clear();
+            price = $filter('ipretty_price')($scope.min_spend);
+            AlertService.add("warning", {
+              msg: "You need to spend at least " + price + " to make a booking."
+            });
+            return false;
+          }
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc directive
+* @name BB.Directives.directive:bbDateTimePicker
+* @scope
+* @restrict A
+*
+* @description
+* DateTime picker that combines date & timepicker and consolidates 
+* the Use of Moment.js in the App and Date in the pickers 
+*
+* @param {object}  date   A moment.js date object
+* @param {boolean}  showMeridian   Switch to show/hide meridian (optional, default:false)
+* @param {number}  minuteStep Step for the timepicker (optional, default:10)
+* @param {object}  minDate Min date value for datetimepicker
+* @param {object}  maxDate Max date value for datetimepicker
+ */
+
+(function() {
+  angular.module('BB.Directives').directive('bbDateTimePicker', function(PathSvc) {
+    return {
+      scope: {
+        date: '=',
+        showMeridian: '=?',
+        minuteStep: '=?',
+        minDate: '=?',
+        maxDate: '=?',
+        format: '=?'
+      },
+      restrict: 'A',
+      templateUrl: 'bb_date_time_picker.html',
+      controller: function($scope, $filter, $timeout, GeneralOptions) {
+        var filterDate;
+        if ($scope.format == null) {
+          $scope.format = 'dd/MM/yyyy';
+        }
+        if (!$scope.minuteStep || typeof $scope.minuteStep === 'undefined') {
+          $scope.minuteStep = GeneralOptions.calendar_minute_step;
+        }
+        if (!$scope.showMeridian || typeof $scope.showMeridian === 'undefined') {
+          $scope.showMeridian = GeneralOptions.twelve_hour_format;
+        }
+        $scope.$watch('datetimeWithNoTz', function(newValue, oldValue) {
+          var assembledDate, maxDateClean, minDateDate;
+          newValue = new Date(newValue);
+          if ((newValue != null) && moment(newValue).isValid()) {
+            assembledDate = moment();
+            assembledDate.set({
+              'year': parseInt(newValue.getFullYear()),
+              'month': parseInt(newValue.getMonth()),
+              'date': parseInt(newValue.getDate()),
+              'hour': parseInt(newValue.getHours()),
+              'minute': parseInt(newValue.getMinutes()),
+              'second': 0
+            });
+            if ($scope.minDateClean != null) {
+              minDateDate = new Date($scope.minDateClean);
+              if ((newValue.getTime() / 1000) < (minDateDate.getTime() / 1000)) {
+                if (newValue.getFullYear() < minDateDate.getFullYear()) {
+                  assembledDate.year(parseInt(minDateDate.getFullYear()));
+                }
+                if (newValue.getMonth() < minDateDate.getMonth()) {
+                  assembledDate.month(parseInt(minDateDate.getMonth()));
+                }
+                if (newValue.getDate() < minDateDate.getDate()) {
+                  assembledDate.date(parseInt(minDateDate.getDate()));
+                }
+                if (newValue.getHours() < minDateDate.getHours()) {
+                  assembledDate.hours(parseInt(minDateDate.getHours()));
+                }
+                if (newValue.getMinutes() < minDateDate.getMinutes()) {
+                  assembledDate.minutes(parseInt(minDateDate.getMinutes()));
+                }
+                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
+              }
+            }
+            if ($scope.maxDateClean != null) {
+              maxDateClean = new Date($scope.maxDateClean);
+              if ((newValue.getTime() / 1000) > (maxDateClean.getTime() / 1000)) {
+                if (newValue.getFullYear() > minDateDate.getFullYear()) {
+                  assembledDate.year(parseInt(minDateDate.getFullYear()));
+                }
+                if (newValue.getMonth() > minDateDate.getMonth()) {
+                  assembledDate.month(parseInt(minDateDate.getMonth()));
+                }
+                if (newValue.getDate() > minDateDate.getDate()) {
+                  assembledDate.date(parseInt(minDateDate.getDate()));
+                }
+                if (newValue.getHours() > maxDateClean.getHours()) {
+                  assembledDate.hours(parseInt(maxDateClean.getHours()));
+                }
+                if (newValue.getMinutes() > maxDateClean.getMinutes()) {
+                  assembledDate.minutes(parseInt(maxDateClean.getMinutes()));
+                }
+                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
+              }
+            }
+            $scope.date = assembledDate.format();
+          }
+        });
+        $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
+        $scope.$watch('date', function(newValue, oldValue) {
+          if (newValue !== oldValue) {
+            return $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
+          }
+        });
+        $scope.$watch('minDate', function(newValue, oldValue) {
+          if (newValue !== oldValue) {
+            return $scope.minDateClean = filterDate(newValue);
+          }
+        });
+        $scope.$watch('maxDate', function(newValue, oldValue) {
+          if (newValue !== oldValue) {
+            return $scope.maxDateClean = filterDate(newValue);
+          }
+        });
+        filterDate = function(date) {
+          if ((date != null) && moment(date).isValid()) {
+            return $filter('clearTimezone')(moment(date).format());
+          }
+          return null;
+        };
+        $scope.minDateClean = filterDate($scope.minDate);
+        return $scope.maxDateClean = filterDate($scope.maxDate);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      controller: 'Breadcrumbs',
+      templateUrl: function(element, attrs) {
+        if (_.has(attrs, 'complex')) {
+          return PathSvc.directivePartial("_breadcrumb_complex");
+        } else {
+          return PathSvc.directivePartial("_breadcrumb");
+        }
+      },
+      link: function(scope) {}
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Breadcrumbs', function($scope) {
+    var atDisablePoint, currentStep, lastStep, loadStep;
+    loadStep = $scope.loadStep;
+    $scope.steps = $scope.bb.steps;
+    $scope.allSteps = $scope.bb.allSteps;
+    $scope.loadStep = function(number) {
+      if (!lastStep() && !currentStep(number) && !atDisablePoint()) {
+        return loadStep(number);
+      }
+    };
+    lastStep = function() {
+      return $scope.bb.current_step === $scope.bb.allSteps.length;
+    };
+    currentStep = function(step) {
+      return step === $scope.bb.current_step;
+    };
+    atDisablePoint = function() {
+      if (!angular.isDefined($scope.bb.disableGoingBackAtStep)) {
+        return false;
+      }
+      return $scope.bb.current_step >= $scope.bb.disableGoingBackAtStep;
+    };
+    return $scope.isDisabledStep = function(step) {
+      if (lastStep() || currentStep(step.number) || !step.passed || atDisablePoint()) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbContentNew', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      templateUrl: PathSvc.directivePartial("content_main"),
+      controller: function($scope) {
+        $scope.initPage = function() {
+          return $scope.$eval('setPageLoaded()');
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
+    var e, error, ie8orLess;
+    ie8orLess = false;
+    try {
+      ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
+    } catch (error) {
+      e = error;
+      ie8orLess = false;
+    }
+    return {
+      restrict: 'A',
+      priority: -1,
+      require: 'ngModel',
+      link: function(scope, element, attrs, ngModel) {
+        var callDateHandler, data, dateFormat, f, format, getTimeRangeScope, getter, origDateParser, replacementDateParser, timeRangeScope, yearNow;
+        origDateParser = null;
+        data = element.controller('ngModel');
+        if (attrs.datepickerPopup != null) {
+          format = {
+            date_us: "MM/dd/yyyy",
+            date_uk: "dd/MM/yyyy"
+          };
+          if (scope.bb.company.country_code === "us") {
+            attrs.datepickerPopup = format.date_us;
+          } else {
+            attrs.datepickerPopup = format.date_uk;
+          }
+        }
+        dateFormat = !!attrs.bbDatepickerPopup ? attrs.bbDatepickerPopup : 'DD/MM/YYYY';
+        yearNow = moment(new Date()).year();
+        getter = $parse(attrs.ngModel);
+        timeRangeScope = scope;
+        getTimeRangeScope = function(scope) {
+          if (scope) {
+            if (scope.controller && scope.controller.indexOf('TimeRangeList') > 0) {
+              return timeRangeScope = scope;
+            } else {
+              return getTimeRangeScope(scope.$parent);
+            }
+          }
+        };
+        getTimeRangeScope(scope);
+        if (ie8orLess) {
+          $bbug(element).on('keydown keyup keypress', function(ev) {
+            ev.preventDefault();
+            return ev.stopPropagation();
+          });
+        }
+        if (ie8orLess || scope.display.xs) {
+          $bbug(element).attr('readonly', 'true');
+        }
+        $bbug(element).on('keydown', function(e) {
+          if (e.keyCode === 13) {
+            replacementDateParser($bbug(e.target).val(), true);
+            $document.trigger('click');
+            return $bbug(element).blur();
+          }
+        });
+        $bbug(element).on('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          return $timeout(function() {
+            return scope.opened = true;
+          });
+        });
+        $bbug(element).on('focus', function() {
+          if ($(this).attr("readonly")) {
+            return this.blur();
+          }
+        });
+        callDateHandler = function(date) {
+          var isDate, watch;
+          watch = scope.$watch(getter, function(newVal, oldVal) {
+            if (!newVal) {
+              return getter.assign(timeRangeScope, date);
+            }
+          });
+          $timeout(watch, 0);
+          isDate = _.isDate(date);
+          if (isDate) {
+            getter.assign(timeRangeScope, date);
+            ngModel.$setValidity('date', true);
+            scope.$eval(attrs.onDateChange);
+          }
+          return isDate;
+        };
+        replacementDateParser = function(viewValue, returnKey) {
+          var mDate;
+          if (callDateHandler(viewValue)) {
+            return viewValue;
+          }
+          if (ie8orLess) {
+            return viewValue;
+          }
+          mDate = moment(viewValue, dateFormat);
+          if (!mDate.isValid()) {
+            mDate = moment(new Date());
+          }
+          if (/\/YY$/.test(dateFormat)) {
+            dateFormat += 'YY';
+          }
+          if (mDate.year() === 0) {
+            mDate.year(yearNow);
+          }
+          viewValue = mDate.format('MM/DD/YYYY');
+          viewValue = viewValue.replace(/\/00/, '/20');
+          if (/\/02\d{2}$/.test(viewValue)) {
+            return;
+          }
+          if (returnKey) {
+            if (mDate.year().toString().length === 2) {
+              mDate.year(mDate.year() + 2000);
+            }
+            return callDateHandler(mDate._d);
+          } else {
+            return origDateParser.call(this, viewValue);
+          }
+        };
+        f = function() {
+          if (_.isFunction(data.$parsers[0])) {
+            origDateParser = data.$parsers[0];
+            data.$parsers[0] = replacementDateParser;
+          } else {
+            return setTimeout(f, 10);
+          }
+        };
+        return f();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, $window) {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var checkLoginState, loginToBBWithFBUser, options, statusChangeCallback;
+        options = scope.$eval(attrs.bbFbLogin) || {};
+        $rootScope.connection_started.then(function() {
+          return checkLoginState();
+        });
+        statusChangeCallback = function(response) {
+          var params;
+          if (response.status === 'connected') {
+            params = {};
+            params.access_token = response.authResponse.accessToken;
+            if (options.login_only) {
+              params.login_only = options.login_only;
+            }
+            loginToBBWithFBUser(params);
+          } else if (response.status === 'not_authorized') {
+            scope.loginFB();
+          } else {
+            scope.loginFB();
+          }
+        };
+        checkLoginState = function() {
+          FB.getLoginStatus(function(response) {
+            statusChangeCallback(response);
+          });
+        };
+        loginToBBWithFBUser = function(params) {
+          return LoginService.FBLogin(scope.bb.company, params).then(function(member) {
+            $rootScope.member = member;
+            scope.setClient($rootScope.member);
+            if (scope.bb.destination) {
+              return scope.redirectTo(scope.bb.destination);
+            } else {
+              scope.setLoaded(scope);
+              return scope.decideNextPage();
+            }
+          }, function(err) {
+            if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
+              return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
+            } else {
+              return AlertService.raise('LOGIN_FAILED');
+            }
+          });
+        };
+        return scope.loginFB = function() {
+          return FB.login((function(response) {
+            var params;
+            if (response.status === 'connected') {
+              params = {};
+              params.access_token = response.authResponse.accessToken;
+              if (options.login_only) {
+                params.login_only = options.login_only;
+              }
+              loginToBBWithFBUser(params);
+            } else if (response.status === 'not_authorized') {
+              AlertService.raise('LOGIN_FAILED');
+            } else {
+              AlertService.raise('LOGIN_FAILED');
+            }
+          }), {
+            scope: 'public_profile,email'
+          });
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbFormDataStore', function(FormDataStoreService) {
+    return {
+      require: '?bbWidget',
+      link: function(scope) {
+        return FormDataStoreService.register(scope);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('ngConfirmClick', function() {
+    return {
+      link: function(scope, element, attr) {
+        var clickAction, msg;
+        msg = attr.ngConfirmClick || "Are you sure?";
+        clickAction = attr.ngConfirmedClick;
+        return element.bind('click', (function(_this) {
+          return function(event) {
+            if (window.confirm(msg)) {
+              return scope.$eval(clickAction);
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('ngValidInclude', function($compile) {
+    return {
+      link: function(scope, element, attr) {
+        return scope[attr.watchValue].then((function(_this) {
+          return function(logged) {
+            element.attr('ng-include', attr.ngValidInclude);
+            element.attr('ng-valid-include', null);
+            return $compile(element)(scope);
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('ngDelayed', function($compile) {
+    return {
+      link: function(scope, element, attr) {
+        return scope[attr.ngDelayedWatch].then((function(_this) {
+          return function(logged) {
+            element.attr(attr.ngDelayed, attr.ngDelayedValue);
+            element.attr('ng-delayed-value', null);
+            element.attr('ng-delayed-watch', null);
+            element.attr('ng-delayed', null);
+            $compile(element)(scope);
+            if (attr.ngDelayedReady) {
+              return scope[attr.ngDelayedReady].resolve(true);
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('ngInitial', function() {
+    return {
+      restrict: 'A',
+      controller: [
+        '$scope', '$element', '$attrs', '$parse', function($scope, $element, $attrs, $parse) {
+          var getter, setter, val;
+          val = $attrs.ngInitial || $attrs.value;
+          getter = $parse($attrs.ngModel);
+          setter = getter.assign;
+          if (val === "true") {
+            val = true;
+          } else if (val === "false") {
+            val = false;
+          }
+          return setter($scope, val);
+        }
+      ]
+    };
+  });
+
+  app.directive('bbPrintPage', function($window, $timeout) {
+    return {
+      restrict: 'A',
+      link: function(scope, element, attr) {
+        if (attr.bbPrintPage) {
+          return scope.$watch(attr.bbPrintPage, (function(_this) {
+            return function(newVal, oldVal) {
+              return $timeout(function() {
+                return $window.print();
+              }, 3000);
+            };
+          })(this));
+        }
+      }
+    };
+  });
+
+  app.directive('bbInclude', function($compile, $rootScope) {
+    return {
+      link: function(scope, element, attr) {
+        var track_page;
+        track_page = attr.bbTrackPage != null ? true : false;
+        return scope.$watch('bb.path_setup', (function(_this) {
+          return function(newval, oldval) {
+            if (newval) {
+              element.attr('ng-include', "'" + scope.getPartial(attr.bbInclude) + "'");
+              element.attr('bb-include', null);
+              $compile(element)(scope);
+              if (track_page) {
+                return $rootScope.$broadcast("page:loaded", attr.bbInclude);
+              }
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('bbRaiseAlertWhenInvalid', function($compile) {
+    return {
+      require: '^form',
+      link: function(scope, element, attr, ctrl) {
+        var options;
+        ctrl.raise_alerts = true;
+        options = scope.$eval(attr.bbRaiseAlertWhenInvalid);
+        if (options && options.alert) {
+          return ctrl.alert = options.alert;
+        }
+      }
+    };
+  });
+
+  app.directive('bbHeader', function($compile) {
+    return {
+      link: function(scope, element, attr) {
+        scope.bb.waitForRoutes();
+        return scope.$watch('bb.path_setup', (function(_this) {
+          return function(newval, oldval) {
+            if (newval) {
+              element.attr('ng-include', "'" + scope.getPartial(attr.bbHeader) + "'");
+              element.attr('bb-header', null);
+              return $compile(element)(scope);
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('bbDate', function() {
+    return {
+      restrict: 'AE',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var date, track_service;
+        track_service = attrs.bbTrackService != null;
+        if (attrs.bbDate) {
+          date = moment(scope.$eval(attrs.bbDate));
+        } else if (scope.bb && scope.bb.current_item && scope.bb.current_item.date) {
+          date = scope.bb.current_item.date.date;
+        } else {
+          date = moment();
+        }
+        if (track_service && scope.bb.current_item && scope.bb.current_item.service) {
+          scope.min_date = scope.bb.current_item.service.min_advance_datetime;
+          scope.max_date = scope.bb.current_item.service.max_advance_datetime;
+        }
+        scope.$broadcast('dateChanged', moment(date));
+        scope.bb_date = {
+          date: date,
+          js_date: date.toDate(),
+          addDays: function(type, amount) {
+            this.date = moment(this.date).add(amount, type);
+            this.js_date = this.date.toDate();
+            return scope.$broadcast('dateChanged', moment(this.date));
+          },
+          subtractDays: function(type, amount) {
+            return this.addDays(type, -amount);
+          },
+          setDate: function(date) {
+            this.date = date;
+            this.js_date = date.toDate();
+            return scope.$broadcast('dateChanged', moment(this.date));
+          }
+        };
+        scope.$on("currentItemUpdate", function(event) {
+          if (scope.bb.current_item.service && track_service) {
+            scope.min_date = scope.bb.current_item.service.min_advance_datetime;
+            scope.max_date = scope.bb.current_item.service.max_advance_datetime;
+            if (scope.bb_date.date.isBefore(scope.min_date, 'day')) {
+              scope.bb_date.setDate(scope.min_date.clone());
+            }
+            if (scope.bb_date.date.isAfter(scope.max_date, 'day')) {
+              return scope.bb_date.setDate(scope.max_date.clone());
+            }
+          }
+        });
+        return scope.$watch('bb_date.js_date', function(newval, oldval) {
+          var ndate;
+          ndate = moment(newval);
+          if (!scope.bb_date.date.isSame(ndate)) {
+            scope.bb_date.date = ndate;
+            if (moment(ndate).isValid()) {
+              return scope.$broadcast('dateChanged', moment(ndate));
+            }
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbDebounce', function($timeout) {
+    return {
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        var delay;
+        delay = 400;
+        if (attrs.bbDebounce) {
+          delay = attrs.bbDebounce;
+        }
+        return element.bind('click', (function(_this) {
+          return function() {
+            $timeout(function() {
+              return element.attr('disabled', true);
+            }, 0);
+            return $timeout(function() {
+              return element.attr('disabled', false);
+            }, delay);
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('bbLocalNumber', function() {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var prettyifyNumber;
+        prettyifyNumber = function(value) {
+          if (value && value[0] !== "0") {
+            value = "0" + value;
+          } else {
+            value;
+          }
+          return value;
+        };
+        return ctrl.$formatters.push(prettyifyNumber);
+      }
+    };
+  });
+
+  app.directive('bbPadWithZeros', function() {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var how_many, options, padNumber;
+        options = scope.$eval(attrs.bbPadWithZeros) || {};
+        how_many = options.how_many || 2;
+        padNumber = function(value) {
+          var i, index, padding, ref;
+          value = String(value);
+          if (value && value.length < how_many) {
+            padding = "";
+            for (index = i = 1, ref = how_many - value.length; 1 <= ref ? i <= ref : i >= ref; index = 1 <= ref ? ++i : --i) {
+              padding += "0";
+            }
+            value = padding.concat(value);
+          }
+          return value;
+        };
+        return ctrl.$formatters.push(padNumber);
+      }
+    };
+  });
+
+  app.directive('bbFormResettable', function($parse) {
+    return {
+      restrict: 'A',
+      controller: function($scope, $element, $attrs) {
+        $scope.inputs = [];
+        $scope.resetForm = function(options) {
+          var i, input, len, ref, results;
+          if (options && options.clear_submitted) {
+            $scope[$attrs.name].submitted = false;
+          }
+          ref = $scope.inputs;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            input = ref[i];
+            input.getter.assign($scope, null);
+            results.push(input.controller.$setPristine());
+          }
+          return results;
+        };
+        return {
+          registerInput: function(input, ctrl) {
+            var getter;
+            getter = $parse(input);
+            return $scope.inputs.push({
+              getter: getter,
+              controller: ctrl
+            });
+          }
+        };
+      }
+    };
+  });
+
+  app.directive('bbResettable', function() {
+    return {
+      restrict: 'A',
+      require: ['ngModel', '^bbFormResettable'],
+      link: function(scope, element, attrs, ctrls) {
+        var formResettableCtrl, ngModelCtrl;
+        ngModelCtrl = ctrls[0];
+        formResettableCtrl = ctrls[1];
+        return formResettableCtrl.registerInput(attrs.ngModel, ngModelCtrl);
+      }
+    };
+  });
+
+  app.directive('bbDateSplit', function($parse) {
+    return {
+      restrict: 'A',
+      require: ['ngModel'],
+      link: function(scope, element, attrs, ctrls) {
+        var ngModel, question;
+        ngModel = ctrls[0];
+        question = scope.$eval(attrs.bbDateSplit);
+        question.date = {
+          day: null,
+          month: null,
+          year: null,
+          date: null,
+          joinDate: function() {
+            var date_string;
+            if (this.day && this.month && this.year) {
+              date_string = this.day + '/' + this.month + '/' + this.year;
+              this.date = moment(date_string, "DD/MM/YYYY");
+              date_string = this.date.toISODate();
+              ngModel.$setViewValue(date_string);
+              return ngModel.$render();
+            }
+          },
+          splitDate: function(date) {
+            if (date && date.isValid()) {
+              this.day = date.date();
+              this.month = date.month() + 1;
+              this.year = date.year();
+              return this.date = date;
+            }
+          }
+        };
+        if (question.answer) {
+          question.date.splitDate(moment(question.answer));
+        }
+        if (ngModel.$viewValue) {
+          return question.date.splitDate(moment(ngModel.$viewValue));
+        }
+      }
+    };
+  });
+
+  app.directive('bbCommPref', function() {
+    return {
+      restrict: 'A',
+      require: ['ngModel'],
+      link: function(scope, element, attrs, ctrls) {
+        var comm_pref, ng_model_ctrl, parser;
+        ng_model_ctrl = ctrls[0];
+        comm_pref = scope.$eval(attrs.bbCommPref) || false;
+        if ((scope.bb.current_item.settings.send_email_followup != null) && (scope.bb.current_item.settings.send_sms_followup != null)) {
+          comm_pref = scope.bb.current_item.settings.send_email_followup;
+        } else {
+          scope.bb.current_item.settings.send_email_followup = comm_pref;
+          scope.bb.current_item.settings.send_sms_followup = comm_pref;
+        }
+        ng_model_ctrl.$setViewValue(comm_pref);
+        parser = function(value) {
+          scope.bb.current_item.settings.send_email_followup = value;
+          scope.bb.current_item.settings.send_sms_followup = value;
+          return value;
+        };
+        return ng_model_ctrl.$parsers.push(parser);
+      }
+    };
+  });
+
+  app.directive('bbCountTicketTypes', function($rootScope) {
+    return {
+      restrict: 'A',
+      scope: false,
+      link: function(scope, element, attrs) {
+        var countTicketTypes;
+        $rootScope.connection_started.then(function() {
+          return countTicketTypes();
+        });
+        scope.$on("basket:updated", function(event, basket) {
+          return countTicketTypes();
+        });
+        return countTicketTypes = function(items) {
+          var counts, i, item, len;
+          items = scope.bb.basket.timeItems();
+          counts = [];
+          for (i = 0, len = items.length; i < len; i++) {
+            item = items[i];
+            if (item.tickets) {
+              if (counts[item.tickets.name]) {
+                counts[item.tickets.name] += item.tickets.qty;
+              } else {
+                counts[item.tickets.name] = item.tickets.qty;
+              }
+              item.number = counts[item.tickets.name];
+            }
+          }
+          return scope.counts = counts;
+        };
+      }
+    };
+  });
+
+  app.directive('bbCapitaliseFirstLetter', function() {
+    return {
+      restrict: 'A',
+      require: ['ngModel'],
+      link: function(scope, element, attrs, ctrls) {
+        var ngModel;
+        ngModel = ctrls[0];
+        return scope.$watch(attrs.ngModel, function(newval, oldval) {
+          var string;
+          if (newval) {
+            string = scope.$eval(attrs.ngModel);
+            string = string.charAt(0).toUpperCase() + string.slice(1);
+            ngModel.$setViewValue(string);
+            ngModel.$render();
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbApiUrl', function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
+    return {
+      restrict: 'A',
+      scope: {
+        'apiUrl': '@bbApiUrl'
+      },
+      compile: function(tElem, tAttrs) {
+        return {
+          pre: function(scope, element, attrs) {
+            var src, url;
+            $rootScope.bb || ($rootScope.bb = {});
+            $rootScope.bb.api_url = scope.apiUrl;
+            url = document.createElement('a');
+            url.href = scope.apiUrl;
+            if (($sniffer.msie && $sniffer.msie <= 9) || ($sniffer.webkit && $sniffer.webkit < 537)) {
+              if (!(url.host === '' || url.host === $location.host() || url.host === (($location.host()) + ":" + ($location.port())))) {
+                if (url.protocol[url.protocol.length - 1] === ':') {
+                  src = url.protocol + "//" + url.host + "/ClientProxy.html";
+                } else {
+                  src = url.protocol + "://" + url.host + "/ClientProxy.html";
+                }
+                $rootScope.iframe_proxy_ready = false;
+                return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;'></iframe>"))(scope, (function(_this) {
+                  return function(cloned, scope) {
+                    cloned.bind("load", function() {
+                      $rootScope.iframe_proxy_ready = true;
+                      return $rootScope.$broadcast('iframe_proxy_ready', {
+                        iframe_proxy_ready: true
+                      });
+                    });
+                    return element.append(cloned);
+                  };
+                })(this));
+              }
+            }
+          }
+        };
+      }
+    };
+  });
+
+  app.directive('bbPriceFilter', function(PathSvc) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: false,
+      require: '^?bbServices',
+      templateUrl: function(element, attrs) {
+        return PathSvc.directivePartial("_price_filter");
+      },
+      controller: function($scope, $attrs) {
+        var setPricefilter, suitable_max;
+        $scope.$watch('items', function(new_val, old_val) {
+          if (new_val) {
+            return setPricefilter(new_val);
+          }
+        });
+        setPricefilter = function(items) {
+          $scope.price_array = _.uniq(_.map(items, function(item) {
+            return item.price / 100 || 0;
+          }));
+          $scope.price_array.sort(function(a, b) {
+            return a - b;
+          });
+          return suitable_max();
+        };
+        suitable_max = function() {
+          var max_number, min_number, top_number;
+          top_number = _.last($scope.price_array);
+          max_number = (function() {
+            switch (false) {
+              case !(top_number < 1):
+                return 0;
+              case !(top_number < 11):
+                return 10;
+              case !(top_number < 51):
+                return 50;
+              case !(top_number < 101):
+                return 100;
+              case !(top_number < 1000):
+                return (Math.ceil(top_number / 100)) * 100;
+            }
+          })();
+          min_number = 0;
+          $scope.price_options = {
+            min: min_number,
+            max: max_number
+          };
+          return $scope.filters.price = {
+            min: min_number,
+            max: max_number
+          };
+        };
+        $scope.$watch('filters.price.min', function(new_val, old_val) {
+          if (new_val !== old_val) {
+            return $scope.filterChanged();
+          }
+        });
+        return $scope.$watch('filters.price.max', function(new_val, old_val) {
+          if (new_val !== old_val) {
+            return $scope.filterChanged();
+          }
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbBookingExport', function() {
+    return {
+      restrict: 'AE',
+      scope: true,
+      template: '<div bb-include="_popout_export_booking" style="display: inline-block"></div>',
+      link: function(scope, el, attrs) {
+        var setHTML;
+        scope.$watch('total', function(new_val, old_val) {
+          if (new_val) {
+            return setHTML(new_val);
+          }
+        });
+        scope.$watch('purchase', function(new_val, old_val) {
+          if (new_val) {
+            return setHTML(new_val);
+          }
+        });
+        return setHTML = function(purchase_total) {
+          return scope.html = ("<div class='text-center'><a href='" + (purchase_total.webcalLink()) + "'><img src='images/outlook.png' alt='outlook calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Outlook</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.gcalLink()) + "'><img src='images/google.png' alt='google calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Google</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.icalLink()) + "'><img src='images/ical.png' alt='ical calendar icon' height='30' width='30' /><div class='clearfix'></div><span>iCal</span></a></div>");
+        };
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbDynamicFooter', function($timeout, $bbug) {
+    return function(scope, el, attrs) {
+      scope.$on("page:loaded", function() {
+        return $bbug('.content').css('height', 'auto');
+      });
+      scope.$watch(function() {
+        return $bbug('.content')[0].scrollHeight;
+      }, function(new_val, old_val) {
+        if (new_val !== old_val) {
+          return scope.setContentHeight();
+        }
+      });
+      scope.setContentHeight = function() {
+        var content_height, min_content_height;
+        $bbug('.content').css('height', 'auto');
+        content_height = $bbug('.content')[0].scrollHeight;
+        min_content_height = $bbug(window).innerHeight() - $bbug('.content').offset().top - $bbug('.footer').height();
+        if (content_height < min_content_height) {
+          return $bbug('.content').css('height', min_content_height + 'px');
+        }
+      };
+      return $bbug(window).on('resize', function() {
+        return scope.setContentHeight();
+      });
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbBlurOnReturn
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Removes focus from an input[type=text] element when return key is pressed
+  * @example
+  * <input type='text' bb-blur-on-return></div>
+   */
+
+  angular.module('BB.Directives').directive('bbBlurOnReturn', function($timeout) {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, el, attrs) {
+        return el.keydown(function(e) {
+          var key;
+          key = e.which || e.keyCode;
+          if (key === 13 || key === '13') {
+            return $timeout(function() {
+              if (e.target) {
+                return e.target.blur();
+              }
+            }, 10);
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app, isEmpty;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbQuestionLine', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        var e, elm, html, index;
+        if (scope.question.detail_type === "heading") {
+          elm = "";
+          if (scope.question.name.length > 0) {
+            elm += "<div class='bb-question-heading'>" + scope.question.name + "</div>";
+          }
+          if (scope.question.help_text && scope.question.help_text.length > 0) {
+            elm += "<div class='bb-question-help-text'>" + scope.question.help_text + "</div>";
+          }
+          element.html(elm);
+        }
+        if (scope.idmaps && ((scope.idmaps[scope.question.detail_type] && scope.idmaps[scope.question.detail_type].block) || (scope.idmaps[scope.question.id] && scope.idmaps[scope.question.id].block))) {
+          index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
+          html = scope.$parent.idmaps[index].html;
+          return e = $compile(html)(scope, (function(_this) {
+            return function(cloned, scope) {
+              return element.replaceWith(cloned);
+            };
+          })(this));
+        }
+      }
+    };
+  });
+
+  app.directive('bbQuestion', function($compile, $timeout) {
+    return {
+      priority: 0,
+      replace: true,
+      transclude: false,
+      restrict: 'A',
+      compile: function(el, attr, trans) {
+        return {
+          pre: function(scope, element, attrs) {
+            var adminRequired, date_format, date_format_2;
+            adminRequired = attrs.bbAdminRequired != null ? true : false;
+            date_format = 'DD/MM/YYYY';
+            date_format_2 = 'dd/MM/yyyy';
+            if ((attrs.bbDateFormat != null) && attrs.bbDateFormat === 'US') {
+              date_format = 'MM/DD/YYYY';
+              date_format_2 = 'MM/dd/yyyy';
+            }
+            return scope.$watch(attrs.bbQuestion, function(question) {
+              var e, html, i, index, itemx, j, k, lastName, len1, len2, len3, name, placeholder, ref, ref1, ref2;
+              if (question) {
+                html = '';
+                lastName = '';
+                placeholder = '';
+                if (attrs.defaultPlaceholder != null) {
+                  if (question.detail_type === "text_area" | question.detail_type === "text_field") {
+                    if (question["default"]) {
+                      placeholder = question["default"];
+                    }
+                    if (question.answer === question["default"]) {
+                      question.answer = "";
+                    }
+                  }
+                }
+                scope.recalc = (function(_this) {
+                  return function() {
+                    if (angular.isDefined(scope.recalc_price)) {
+                      if (!question.outcome) {
+                        scope.recalc_price();
+                      }
+                    }
+                    if (angular.isDefined(scope.recalc_question)) {
+                      return scope.recalc_question();
+                    }
+                  };
+                })(this);
+                if (scope.idmaps && (scope.idmaps[question.detail_type] || scope.idmaps[question.id])) {
+                  index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
+                  html = scope.idmaps[index].html;
+                } else if (question.detail_type === "select" || question.detail_type === "select-price") {
+                  html = "<select ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'>";
+                  ref = question.options;
+                  for (i = 0, len1 = ref.length; i < len1; i++) {
+                    itemx = ref[i];
+                    html += "<option data_id='" + itemx.id + "' value='" + (itemx.name.replace(/'/g, "&apos;")) + "'>" + itemx.display_name + "</option>";
+                  }
+                  html += "</select>";
+                } else if (question.detail_type === "text_area") {
+                  html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
+                } else if (question.detail_type === "radio") {
+                  html = '<div class="radio-group">';
+                  ref1 = question.options;
+                  for (j = 0, len2 = ref1.length; j < len2; j++) {
+                    itemx = ref1[j];
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
+                  }
+                  html += "</div>";
+                } else if (question.detail_type === "check") {
+                  name = question.name;
+                  if (name === lastName) {
+                    name = "";
+                  }
+                  lastName = question.name;
+                  html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
+                } else if (question.detail_type === "check-price") {
+                  html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
+                } else if (question.detail_type === "radio-price") {
+                  html = '<div class="radio-group">';
+                  ref2 = question.options;
+                  for (k = 0, len3 = ref2.length; k < len3; k++) {
+                    itemx = ref2[k];
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
+                  }
+                  html += "</div>";
+                } else if (question.detail_type === "date") {
+                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
+                } else {
+                  html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
+                }
+                if (html) {
+                  return e = $compile(html)(scope, (function(_this) {
+                    return function(cloned, scope) {
+                      return element.replaceWith(cloned);
+                    };
+                  })(this));
+                }
+              }
+            });
+          },
+          post: function(scope, $e, $a, parentControl) {}
+        };
+      }
+    };
+  });
+
+  app.directive('bbQuestionSetup', function() {
+    return {
+      restrict: 'A',
+      terminal: true,
+      priority: 1000,
+      link: function(scope, element, attrs) {
+        var block, child, def, i, id, idmaps, index, len1, ref;
+        idmaps = {};
+        def = null;
+        ref = element.children();
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          child = ref[index];
+          id = $(child).attr("bb-question-id");
+          block = false;
+          if ($(child).attr("bb-replace-block")) {
+            block = true;
+          }
+          child.innerHTML = child.innerHTML.replace(/question_form/g, "question_form_" + index);
+          idmaps[id] = {
+            id: id,
+            html: child.innerHTML,
+            block: block
+          };
+        }
+        scope.idmaps = idmaps;
+        return element.replaceWith("");
+      }
+    };
+  });
+
+  app.directive("bbFocus", [
+    function() {
+      var FOCUS_CLASS;
+      FOCUS_CLASS = "bb-focused";
+      return {
+        restrict: "A",
+        require: "ngModel",
+        link: function(scope, element, attrs, ctrl) {
+          ctrl.$focused = false;
+          return element.bind("focus", function(evt) {
+            element.addClass(FOCUS_CLASS);
+            return scope.$apply(function() {
+              return ctrl.$focused = true;
+            });
+          }).bind("blur", function(evt) {
+            element.removeClass(FOCUS_CLASS);
+            return scope.$apply(function() {
+              return ctrl.$focused = false;
+            });
+          });
+        }
+      };
+    }
+  ]);
+
+  app.directive('bbCurrencyField', function($filter) {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var convertToCurrency, convertToInteger;
+        convertToCurrency = function(value) {
+          return value / 100;
+        };
+        convertToInteger = function(value) {
+          return value * 100;
+        };
+        ctrl.$formatters.push(convertToCurrency);
+        return ctrl.$parsers.push(convertToInteger);
+      }
+    };
+  });
+
+  isEmpty = function(value) {
+    return angular.isUndefined(value) || value === "" || value === null || value !== value;
+  };
+
+  app.directive("ngMin", function() {
+    return {
+      restrict: "A",
+      require: "ngModel",
+      link: function(scope, elem, attr, ctrl) {
+        var minValidator;
+        minValidator = function(value) {
+          var min;
+          min = scope.$eval(attr.ngMin) || 0;
+          ctrl.$setValidity("ngMin", isEmpty(value) || value >= min);
+          return value;
+        };
+        ctrl.$parsers.push(minValidator);
+        ctrl.$formatters.push(minValidator);
+      }
+    };
+  });
+
+  app.directive("ngMax", function() {
+    return {
+      restrict: "A",
+      require: "ngModel",
+      link: function(scope, elem, attr, ctrl) {
+        var maxValidator;
+        maxValidator = function(value) {
+          var max;
+          max = scope.$eval(attr.ngMax);
+          ctrl.$setValidity("ngMax", isEmpty(value) || value <= max);
+          return value;
+        };
+        ctrl.$parsers.push(maxValidator);
+        ctrl.$formatters.push(maxValidator);
+      }
+    };
+  });
+
+  app.directive("creditCardNumber", function() {
+    var getCardType, isValid, linker;
+    getCardType = function(ccnumber) {
+      if (!ccnumber) {
+        return '';
+      }
+      ccnumber = ccnumber.toString().replace(/\s+/g, '');
+      if (/^(34)|^(37)/.test(ccnumber)) {
+        return "american_express";
+      }
+      if (/^(62)|^(88)/.test(ccnumber)) {
+        return "china_unionpay";
+      }
+      if (/^30[0-5]/.test(ccnumber)) {
+        return "diners_club_carte_blanche";
+      }
+      if (/^(2014)|^(2149)/.test(ccnumber)) {
+        return "diners_club_enroute";
+      }
+      if (/^36/.test(ccnumber)) {
+        return "diners_club_international";
+      }
+      if (/^(6011)|^(622(1(2[6-9]|[3-9][0-9])|[2-8][0-9]{2}|9([01][0-9]|2[0-5])))|^(64[4-9])|^65/.test(ccnumber)) {
+        return "discover";
+      }
+      if (/^35(2[89]|[3-8][0-9])/.test(ccnumber)) {
+        return "jcb";
+      }
+      if (/^(6304)|^(6706)|^(6771)|^(6709)/.test(ccnumber)) {
+        return "laser";
+      }
+      if (/^(5018)|^(5020)|^(5038)|^(5893)|^(6304)|^(6759)|^(6761)|^(6762)|^(6763)|^(0604)/.test(ccnumber)) {
+        return "maestro";
+      }
+      if (/^5[1-5]/.test(ccnumber)) {
+        return "master";
+      }
+      if (/^4/.test(ccnumber)) {
+        return "visa";
+      }
+      if (/^(4026)|^(417500)|^(4405)|^(4508)|^(4844)|^(4913)|^(4917)/.test(ccnumber)) {
+        return "visa_electron";
+      }
+    };
+    isValid = function(ccnumber) {
+      var len, mul, prodArr, sum;
+      if (!ccnumber) {
+        return false;
+      }
+      ccnumber = ccnumber.toString().replace(/\s+/g, '');
+      len = ccnumber.length;
+      mul = 0;
+      prodArr = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]];
+      sum = 0;
+      while (len--) {
+        sum += prodArr[mul][parseInt(ccnumber.charAt(len), 10)];
+        mul ^= 1;
+      }
+      return sum % 10 === 0 && sum > 0;
+    };
+    linker = function(scope, element, attributes, ngModel) {
+      return scope.$watch(function() {
+        return ngModel.$modelValue;
+      }, function(newValue) {
+        ngModel.$setValidity('card_number', isValid(newValue));
+        scope.cardType = getCardType(newValue);
+        if ((newValue != null) && newValue.length === 16) {
+          if (ngModel.$invalid) {
+            element.parent().addClass('has-error');
+            return element.parent().removeClass('has-success');
+          } else {
+            element.parent().removeClass('has-error');
+            return element.parent().addClass('has-success');
+          }
+        } else {
+          return element.parent().removeClass('has-success');
+        }
+      });
+    };
+    return {
+      restrict: "C",
+      require: "ngModel",
+      link: linker,
+      scope: {
+        'cardType': '='
+      }
+    };
+  });
+
+  app.directive("cardSecurityCode", function() {
+    var linker;
+    linker = function(scope, element, attributes) {
+      return scope.$watch('cardType', function(newValue) {
+        if (newValue === 'american_express') {
+          element.attr('maxlength', 4);
+          return element.attr('placeholder', "••••");
+        } else {
+          element.attr('maxlength', 3);
+          return element.attr('placeholder', "•••");
+        }
+      });
+    };
+    return {
+      restrict: "AC",
+      link: linker,
+      scope: {
+        'cardType': '='
+      }
+    };
+  });
+
+  app.directive('bbInputGroupManager', function(ValidatorService) {
+    return {
+      restrict: 'A',
+      controller: function($scope, $element, $attrs) {
+        $scope.input_manger = {
+          input_groups: {},
+          inputs: [],
+          registerInput: function(input, name) {
+            if (this.inputs.indexOf(input.$name) >= 0) {
+              return;
+            }
+            this.inputs.push(input.$name);
+            if (!this.input_groups[name]) {
+              this.input_groups[name] = {
+                inputs: [],
+                valid: false
+              };
+            }
+            return this.input_groups[name].inputs.push(input);
+          },
+          validateInputGroup: function(name) {
+            var i, input, is_valid, j, len1, len2, ref, ref1;
+            is_valid = false;
+            ref = this.input_groups[name].inputs;
+            for (i = 0, len1 = ref.length; i < len1; i++) {
+              input = ref[i];
+              is_valid = input.$modelValue;
+              if (is_valid) {
+                break;
+              }
+            }
+            if (is_valid === !this.input_groups[name].valid) {
+              ref1 = this.input_groups[name].inputs;
+              for (j = 0, len2 = ref1.length; j < len2; j++) {
+                input = ref1[j];
+                input.$setValidity(input.$name, is_valid);
+              }
+              return this.input_groups[name].valid = is_valid;
+            }
+          }
+        };
+        return $element.on("submit", function() {
+          var input_group, results;
+          results = [];
+          for (input_group in $scope.input_manger.input_groups) {
+            results.push($scope.input_manger.validateInputGroup(input_group));
+          }
+          return results;
+        });
+      }
+    };
+  });
+
+  app.directive("bbInputGroup", function() {
+    return {
+      restrict: "A",
+      require: 'ngModel',
+      link: function(scope, elem, attrs, ngModel) {
+        if (scope.input_manger.inputs.indexOf(ngModel.$name) >= 0) {
+          return;
+        }
+        scope.input_manger.registerInput(ngModel, attrs.bbInputGroup);
+        return scope.$watch(attrs.ngModel, function(newval, oldval) {
+          if (newval === !oldval) {
+            return scope.input_manger.validateInputGroup(attrs.bbInputGroup);
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbQuestionLabel', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      scope: false,
+      link: function(scope, element, attrs) {
+        return scope.$watch(attrs.bbQuestionLabel, function(question) {
+          if (question) {
+            if (question.detail_type === "check" || question.detail_type === "check-price") {
+              return element.html("");
+            }
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbQuestionLink', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var id;
+        id = parseInt(attrs.bbQuestionLink);
+        return scope.$watch("question_set", function(newval, oldval) {
+          var i, len1, q, ref, results;
+          if (newval) {
+            ref = scope.question_set;
+            results = [];
+            for (i = 0, len1 = ref.length; i < len1; i++) {
+              q = ref[i];
+              if (q.id === id) {
+                scope.question = q;
+                element.attr('ng-model', "question.answer");
+                element.attr('bb-question-link', null);
+                results.push($compile(element)(scope));
+              } else {
+                results.push(void 0);
+              }
+            }
+            return results;
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbQuestionSet', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var set;
+        set = attrs.bbQuestionSet;
+        element.addClass('ng-hide');
+        return scope.$watch(set, function(newval, oldval) {
+          if (newval) {
+            scope.question_set = newval;
+            return element.removeClass('ng-hide');
+          }
+        });
+      }
+    };
+  });
+
+  app.directive("bbMatchInput", function() {
+    return {
+      restrict: "A",
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl, ngModel) {
+        var compare;
+        scope.$watch(attrs.bbMatchInput, function() {
+          scope.val_1 = scope.$eval(attrs.bbMatchInput);
+          return compare(ctrl.$viewValue);
+        });
+        compare = function(value) {
+          ctrl.$setValidity('match', scope.val_1 === value);
+          return value;
+        };
+        return ctrl.$parsers.push(compare);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive("bbIntTelNumber", function($parse) {
+    return {
+      restrict: "A",
+      require: "ngModel",
+      link: function(scope, element, attrs, ctrl) {
+        var format, isValid, options, parse;
+        options = scope.$eval(attrs.bbIntTelNumber);
+        element.intlTelInput(options);
+        isValid = function(value) {
+          if (value) {
+            return element.intlTelInput("isValidNumber");
+          } else {
+            return true;
+          }
+        };
+        format = function(value) {
+          var str;
+          str = "";
+          if (scope.$eval(attrs.ngModel + '_prefix') != null) {
+            str += "+" + scope.$eval(attrs.ngModel + '_prefix') + " ";
+          }
+          if (scope.$eval(attrs.ngModel) != null) {
+            str += scope.$eval(attrs.ngModel);
+          }
+          if (str[0] === "+") {
+            element.intlTelInput("setNumber", "+" + (scope.$eval(attrs.ngModel + '_prefix')) + " " + (scope.$eval(attrs.ngModel)));
+            ctrl.$setValidity("phone", isValid(value));
+          }
+          return str;
+        };
+        parse = function(value) {
+          var getter, prefix;
+          prefix = element.intlTelInput("getSelectedCountryData").dialCode;
+          getter = $parse(attrs.ngModel + '_prefix');
+          getter.assign(scope, prefix);
+          ctrl.$setValidity("phone", isValid(value));
+          return value;
+        };
+        ctrl.$formatters.push(format);
+        return ctrl.$parsers.push(parse);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbLoader', function($rootScope, $compile, PathSvc, TemplateSvc) {
+    return {
+      restrict: 'A',
+      replace: false,
+      scope: {},
+      controllerAs: 'LoaderCtrl',
+      controller: function($scope) {
+        var addScopeId, hideLoader, parentScopeId, removeScopeId, scopeIdArr, showLoader;
+        parentScopeId = $scope.$parent.$id;
+        scopeIdArr = [];
+        addScopeId = function(id) {
+          scopeIdArr.push(id);
+          scopeIdArr = _.uniq(scopeIdArr);
+        };
+        removeScopeId = function(id) {
+          scopeIdArr = _.without(scopeIdArr, id);
+          return scopeIdArr.length;
+        };
+        showLoader = function(e, cscope) {
+          var sid;
+          sid = cscope.$id;
+          while (cscope) {
+            if (cscope.$id === parentScopeId) {
+              addScopeId(sid);
+              $scope.scopeLoaded = false;
+              break;
+            }
+            cscope = cscope.$parent;
+          }
+        };
+        hideLoader = function(e, cscope) {
+          if (!removeScopeId(cscope.$id)) {
+            $scope.scopeLoaded = true;
+          }
+        };
+        $rootScope.$on('show:loader', showLoader);
+        $rootScope.$on('hide:loader', hideLoader);
+        $scope.scopeLoaded = false;
+      },
+      link: function(scope, element, attrs) {
+        TemplateSvc.get(PathSvc.directivePartial("loader")).then(function(html) {
+          var str;
+          if (_.isString(attrs.bbLoader)) {
+            str = attrs.bbLoader.slice(1);
+            if (/^#/.test(attrs.bbLoader)) {
+              html.attr('id', str);
+            } else if (/^\./.test(attrs.bbLoader)) {
+              html.addClass(str);
+            }
+          }
+          element.prepend(html);
+          $compile(html)(scope);
+        });
+      }
+    };
+  });
+
+  app.directive('bbLoadingSpinner', function($compile) {
+    return {
+      transclude: true,
+      link: function(scope, element, attrs, controller, transclude) {
+        var loadingScopes;
+        loadingScopes = {};
+        scope.isLoading = false;
+        return scope.$on('isLoading', function(event, isLoading) {
+          event.stopPropagation();
+          loadingScopes[event.targetScope.$id] = isLoading;
+          return scope.isLoading = _.every(_.values(loadingScopes));
+        });
+      },
+      template: "<div ng-show=\"isLoading\" class=\"loader-wrapper\">\n  <div class=\"loader\"></div>\n</div>\n<div ng-transclude></div>"
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbContent', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        element.attr('ng-include', "bb_main");
+        element.attr('onLoad', "initPage()");
+        element.attr('bb-content', null);
+        element.attr('ng-hide', "hide_page");
+        scope.initPage = (function(_this) {
+          return function() {
+            scope.setPageLoaded();
+            return scope.setLoadingPage(false);
+          };
+        })(this);
+        return $compile(element)(scope);
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbLoading', function($compile) {
+    return {
+      link: function(scope, element, attrs) {
+        var positionLoadingIcon;
+        scope.scopeLoaded = scope.areScopesLoaded(scope);
+        element.attr("ng-hide", "scopeLoaded");
+        element.attr("bb-loading", null);
+        positionLoadingIcon = function() {
+          var center;
+          center = $(window).innerHeight() / 2 - $("#wait_graphic").height() / 2;
+          return $("#loading_icon").css("padding-top", center + "px");
+        };
+        positionLoadingIcon();
+        $(window).on("resize", function() {
+          return positionLoadingIcon();
+        });
+        scope.$on("page:loaded", function() {
+          return positionLoadingIcon();
+        });
+        $compile(element)(scope);
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbWaitFor', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      priority: 800,
+      link: function(scope, element, attrs) {
+        var name, prom;
+        name = attrs.bbWaitVar;
+        name || (name = "allDone");
+        scope[name] = false;
+        prom = scope.$eval(attrs.bbWaitFor);
+        prom.then(function() {
+          return scope[name] = true;
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        var always_scroll, bb_transition_time, evnts, scrollToCallback;
+        evnts = attrs.bbScrollTo.split(',');
+        always_scroll = (attrs.bbAlwaysScroll != null) || false;
+        bb_transition_time = attrs.bbTransitionTime != null ? parseInt(attrs.bbTransitionTime, 10) : 500;
+        if (angular.isArray(evnts)) {
+          angular.forEach(evnts, function(evnt) {
+            return scope.$on(evnt, function(e) {
+              return scrollToCallback(evnt);
+            });
+          });
+        } else {
+          scope.$on(evnts, function(e) {
+            return scrollToCallback(evnts);
+          });
+        }
+        return scrollToCallback = function(evnt) {
+          var current_step, scroll_to_element;
+          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
+            scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
+          } else {
+            scroll_to_element = $bbug(element);
+          }
+          current_step = BreadcrumbService.getCurrentStep();
+          if (scroll_to_element) {
+            if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!scroll_to_element.is(':visible') && scroll_to_element.offset().top !== 0)) {
+              if ('parentIFrame' in $window) {
+                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
+              } else {
+                return $bbug("html, body").animate({
+                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
+                }, bb_transition_time);
+              }
+            }
+          }
+        };
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbSlotGrouper', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var i, len, slot, slots;
+        slots = scope.$eval(attrs.slots);
+        if (!slots) {
+          return;
+        }
+        scope.grouped_slots = [];
+        for (i = 0, len = slots.length; i < len; i++) {
+          slot = slots[i];
+          if (slot.time >= scope.$eval(attrs.startTime) && slot.time < scope.$eval(attrs.endTime)) {
+            scope.grouped_slots.push(slot);
+          }
+        }
+        return scope.has_slots = scope.grouped_slots.length > 0;
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbForm
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with forms to add enhanced validation. When using with ng-form, submitForm 
+  * needs to be called manually as submit event is not raised.
+  
+  *
+  * @example
+  * <div ng-form name="example_form" bb-form></div>
+  * <form name="example_form" bb-form></form>
+  *
+   */
+
+  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
+    return {
+      restrict: 'A',
+      require: '^form',
+      scope: true,
+      link: function(scope, elem, attrs, ctrls) {
+        scope.form = ctrls;
+        elem.on("submit", function() {
+          scope.submitForm();
+          return scope.$apply();
+        });
+        return scope.submitForm = function() {
+          var property;
+          scope.form.submitted = true;
+          for (property in scope.form) {
+            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
+              scope.form[property].submitted = true;
+            }
+          }
+          $timeout(function() {
+            var invalid_form_group, invalid_input;
+            invalid_form_group = elem.find('.has-error:first');
+            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
+              if ('parentIFrame' in $window) {
+                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
+              } else {
+                $bbug("html, body").animate({
+                  scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
+                }, 1000);
+              }
+              invalid_input = invalid_form_group.find('.ng-invalid');
+              return invalid_input.focus();
+            }
+          }, 100);
+          return ValidatorService.validateForm(scope.form);
+        };
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
+    return {
+      restrict: 'A',
+      scope: true,
+      replace: true,
+      controller: function($scope, $element, $attrs) {
+        $scope.isDraggable = $document.width() > 480;
+        return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
+          var map_item;
+          if (!new_val) {
+            return;
+          }
+          map_item = new_val;
+          $scope.map = {
+            center: {
+              latitude: map_item.lat,
+              longitude: map_item.long
+            },
+            zoom: 15
+          };
+          $scope.options = {
+            scrollwheel: false,
+            draggable: $scope.isDraggable
+          };
+          return $scope.marker = {
+            id: 0,
+            coords: {
+              latitude: map_item.lat,
+              longitude: map_item.long
+            }
+          };
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbMergeDuplicateQuestions', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      controller: function($scope, $rootScope) {
+        $scope.questions = {};
+        return $rootScope.$on("item_details:loaded", function() {
+          var i, item, j, len, len1, question, ref, ref1;
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
+            if (item.item_details && item.item_details.questions) {
+              item.item_details.hide_questions = false;
+              ref1 = item.item_details.questions;
+              for (j = 0, len1 = ref1.length; j < len1; j++) {
+                question = ref1[j];
+                if ($scope.questions[question.id]) {
+                  item.setCloneAnswers($scope.questions[question.id].item);
+                  item.item_details.hide_questions = true;
+                  break;
+                } else {
+                  $scope.questions[question.id] = {
+                    question: question,
+                    item: item
+                  };
+                }
+              }
+            }
+          }
+          return $scope.has_questions = _.pluck($scope.questions, 'question').length > 0;
+        });
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbModal
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with modal templates to ensure modal height does not exceed window height
+  
+  *
+  * @example
+  * <div bb-modal></div>
+   */
+
+  angular.module('BB.Directives').directive('bbModal', function($window, $bbug, $timeout) {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, elem, attrs) {
+        var deregisterWatcher;
+        return $timeout(function() {
+          return elem.parent().parent().parent().css("z-index", 999999);
+        }, deregisterWatcher = scope.$watch(function() {
+          var height, modal_padding, new_height;
+          height = elem.height();
+          if ($bbug(window).width() >= 769) {
+            modal_padding = 200;
+          } else {
+            modal_padding = 20;
+          }
+          if (height > $bbug(window).height()) {
+            new_height = $bbug(window).height() - modal_padding;
+            elem.css({
+              "height": new_height + "px",
+              "overflow-y": "scroll"
+            });
+            return deregisterWatcher();
+          }
+        }));
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbBackgroundImage
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Adds a background-image to an element
+  
+  * @param
+  * {string} url
+  *
+  * @example
+  * <div bb-background-image='images/example.jpg'></div>
+   */
+
+  angular.module('BB.Directives').directive('bbBackgroundImage', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, el, attrs) {
+        var killWatch;
+        if (!attrs.bbBackgroundImage || attrs.bbBackgroundImage === "") {
+          return;
+        }
+        return killWatch = scope.$watch(attrs.bbBackgroundImage, function(new_val, old_val) {
+          if (new_val) {
+            killWatch();
+            return el.css('background-image', 'url("' + new_val + '")');
+          }
+        });
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCapacityView
+  * @restrict A
+  * @description
+  * Assigns an appropriate description of ticket availability based
+  * on the value of the "Select spaces view" dropdown in the admin console
+  * @param
+  * {object} The event object
+  * @attribute ticket-type-singular
+  * {String} Custom name for the ticket
+  * @example
+  * <span bb-capacity-view='event' ticket-type-singular='seat'></span>
+  * @example_result
+  * <span bb-capacity-view='event' ticket-type-singular='seat' class='ng-binding'>5 of 10 seats available</span>
+   */
+
+  angular.module('BB.Directives').directive('bbCapacityView', function() {
+    return {
+      restrict: 'A',
+      template: '{{capacity_view_description}}',
+      link: function(scope, el, attrs) {
+        var killWatch, ticket_type;
+        ticket_type = attrs.ticketTypeSingular || "ticket";
+        return killWatch = scope.$watch(attrs.bbCapacityView, function(item) {
+          var num_spaces_plural, spaces_left_plural;
+          if (item) {
+            killWatch();
+            num_spaces_plural = item.num_spaces > 1 ? "s" : "";
+            spaces_left_plural = item.spaces_left > 1 ? "s" : "";
+            switch (item.chain.capacity_view) {
+              case "NUM_SPACES":
+                return scope.capacity_view_description = scope.ticket_spaces = item.num_spaces + " " + ticket_type + num_spaces_plural;
+              case "NUM_SPACES_LEFT":
+                return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " " + ticket_type + spaces_left_plural + " available";
+              case "NUM_SPACES_AND_SPACES_LEFT":
+                return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " of " + item.num_spaces + " " + ticket_type + num_spaces_plural + " available";
+            }
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB').directive('bbMemberLogin', function(PathSvc) {
+    return {
+      restrict: 'A',
+      controller: 'MemberLogin',
+      templateUrl: function(elem, attrs) {
+        if (attrs.bbCustomLoginForm != null) {
+          return PathSvc.directivePartial("_member_login_form");
+        } else {
+          return PathSvc.directivePartial("_member_login_schema_form");
+        }
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
+    $scope.login_form = {};
+    $scope.validator = ValidatorService;
+    $rootScope.connection_started.then(function() {
+      if (LoginService.checkLogin()) {
+        $scope.setClient($rootScope.member);
+        if ($scope.bb.destination) {
+          return $scope.redirectTo($scope.bb.destination);
+        } else {
+          $scope.setLoaded($scope);
+          return $scope.decideNextPage();
+        }
+      } else {
+        return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
+          return root.$get("new_login").then(function(new_login) {
+            $scope.form = new_login.form;
+            return $scope.schema = new_login.schema;
+          }, function(err) {
+            return console.log('err ', err);
+          });
+        }, function(err) {
+          return console.log('err ', err);
+        });
+      }
+    });
+    $scope.submit = function(form) {
+      form['role'] = 'member';
+      return $scope.company.$post('login', {}, form).then(function(login) {
+        if (login.$has('members')) {
+          return login.$get('members').then(function(members) {
+            return $scope.handleLogin(members[0]);
+          });
+        } else if (login.$has('member')) {
+          return login.$get('member').then(function(member) {
+            return $scope.handleLogin(member);
+          });
+        }
+      }, function(err) {
+        if (err.data.error === "Account has been disabled") {
+          return AlertService.raise('ACCOUNT_DISABLED');
+        } else {
+          return AlertService.raise('LOGIN_FAILED');
+        }
+      });
+    };
+    return $scope.handleLogin = function(member) {
+      member = LoginService.setLogin(member, $scope.login_form.persist_login);
+      $scope.setClient(member);
+      if ($scope.bb.destination) {
+        return $scope.redirectTo($scope.bb.destination);
+      } else {
+        $scope.skipThisStep();
+        return $scope.decideNextPage();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc, $timeout) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      require: ['^?bbEvents', '^?bbMultiCompanyEvents'],
+      templateUrl: function(element, attrs) {
+        return PathSvc.directivePartial("_month_picker");
+      },
+      link: function(scope, el, attrs) {
+        var stopWatch;
+        scope.picker_settings = scope.$eval(attrs.bbMonthPicker) || {};
+        scope.picker_settings.months_to_show = scope.picker_settings.months_to_show || 3;
+        return stopWatch = scope.$watch(attrs.dayData, function(dates) {
+          if (dates) {
+            scope.processDates(dates);
+            return stopWatch();
+          }
+        });
+      },
+      controller: function($scope) {
+        $scope.processDates = function(dates) {
+          var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
+          datehash = {};
+          for (i = 0, len = dates.length; i < len; i++) {
+            date = dates[i];
+            datehash[date.date.format("DDMMYY")] = date;
+            if (!$scope.first_available_day && date.spaces > 0) {
+              $scope.first_available_day = date.date;
+            }
+          }
+          if ($scope.picker_settings.start_at_first_available_day) {
+            cur_month = $scope.first_available_day.clone().startOf('month');
+          } else {
+            cur_month = moment().startOf('month');
+          }
+          last_date = _.last(dates);
+          diff = last_date.date.diff(cur_month, 'months');
+          diff = diff > 0 ? diff + 1 : 1;
+          $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
+          months = [];
+          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
+            date = cur_month.clone().startOf('week');
+            month = {
+              weeks: []
+            };
+            month.index = m - 1;
+            for (w = k = 1; k <= 6; w = ++k) {
+              week = {
+                days: []
+              };
+              for (d = l = 1; l <= 7; d = ++l) {
+                if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
+                  month.start_date = date.clone();
+                }
+                day_data = datehash[date.format("DDMMYY")];
+                day = {
+                  date: date.clone(),
+                  data: day_data,
+                  available: day_data && day_data.spaces && day_data.spaces > 0,
+                  today: moment().isSame(date, 'day'),
+                  past: date.isBefore(moment(), 'day'),
+                  disabled: !month.start_date || !date.isSame(month.start_date, 'month')
+                };
+                week.days.push(day);
+                if ($scope.selected_date && day.date.isSame($scope.selected_date, 'day')) {
+                  day.selected = true;
+                  $scope.selected_day = day;
+                }
+                date.add(1, 'day');
+              }
+              month.weeks.push(week);
+            }
+            months.push(month);
+            cur_month.add(1, 'month');
+          }
+          $scope.months = months;
+          return $scope.slick_config = {
+            nextArrow: ".month-next",
+            prevArrow: ".month-prev",
+            slidesToShow: $scope.months.length >= $scope.picker_settings.months_to_show ? $scope.picker_settings.months_to_show : $scope.months.length,
+            infinite: false,
+            responsive: [
+              {
+                breakpoint: 1200,
+                settings: {
+                  slidesToShow: $scope.months.length >= 2 ? 2 : $scope.months.length
+                }
+              }, {
+                breakpoint: 992,
+                settings: {
+                  slidesToShow: 1
+                }
+              }
+            ],
+            method: {},
+            event: {
+              init: function(event, slick) {
+                return $timeout(function() {
+                  var len1, n, ref1, results;
+                  if ($scope.selected_day != null) {
+                    ref1 = $scope.months;
+                    results = [];
+                    for (n = 0, len1 = ref1.length; n < len1; n++) {
+                      m = ref1[n];
+                      if (m.start_date.month() === $scope.selected_day.date.month()) {
+                        results.push(slick.slickGoTo(m.index));
+                      } else {
+                        results.push(void 0);
+                      }
+                    }
+                    return results;
+                  }
+                });
+              }
+            }
+          };
+        };
+        $scope.$on('event_list_filter_date:changed', function(event, date) {
+          if ($scope.selected_day) {
+            return $scope.selected_day.selected = false;
+          }
+        });
+        return $scope.toggleDay = function(day) {
+          if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
+            return;
+          }
+          if ($scope.selected_day) {
+            $scope.selected_day.selected = false;
+          }
+          if (!$scope.selected_day || ($scope.selected_day && !day.date.isSame($scope.selected_day.date, 'day'))) {
+            day.selected = true;
+            $scope.selected_day = day;
+          }
+          return $scope.showDay(day.date);
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('ngOptions', function($sniffer, $rootScope) {
+    return {
+      restrict: 'A',
+      link: function(scope, el, attrs) {
+        var size;
+        size = parseInt(attrs['size'], 10);
+        if (!isNaN(size) && size > 1 && $sniffer.msie) {
+          return $rootScope.$on('loading:finished', function() {
+            el.focus();
+            return $('body').focus();
+          });
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('script', function($compile, halClient) {
+    return {
+      transclude: false,
+      restrict: 'E',
+      link: function(scope, element, attrs) {
+        var body, json, res;
+        if (attrs.type === 'text/hal-object') {
+          body = element[0].innerText;
+          json = $bbug.parseJSON(body);
+          return res = halClient.$parse(json);
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
+    var getButtonFormTemplate, getTemplate, linker, setClassAndValue;
+    getTemplate = function(type, scope) {
+      switch (type) {
+        case 'button_form':
+          return getButtonFormTemplate(scope);
+        case 'page':
+          return TemplateSvc.get("payment.html");
+        case 'location':
+          return "<a href='{{payment_link}}'>{{label}}</a>";
+        default:
+          return "";
+      }
+    };
+    getButtonFormTemplate = function(scope) {
+      var src;
+      src = $sce.parseAsResourceUrl("'" + scope.payment_link + "'")();
+      return $http.get(src, {}).then(function(response) {
+        return response.data;
+      });
+    };
+    setClassAndValue = function(scope, element, attributes) {
+      var c, i, inputs, j, len, main_tag, ref, results;
+      switch (scope.link_type) {
+        case 'button_form':
+          inputs = element.find("input");
+          main_tag = ((function() {
+            var j, len, results;
+            results = [];
+            for (j = 0, len = inputs.length; j < len; j++) {
+              i = inputs[j];
+              if ($(i).attr('type') === 'submit') {
+                results.push(i);
+              }
+            }
+            return results;
+          })())[0];
+          if (attributes.value) {
+            $(main_tag).attr('value', attributes.value);
+          }
+          break;
+        case 'page':
+        case 'location':
+          main_tag = element.find("a")[0];
+      }
+      if (attributes["class"]) {
+        ref = attributes["class"].split(" ");
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          c = ref[j];
+          $(main_tag).addClass(c);
+          results.push($(element).removeClass(c));
+        }
+        return results;
+      }
+    };
+    linker = function(scope, element, attributes) {
+      var killWatch;
+      return killWatch = scope.$watch('total', function(total) {
+        var url;
+        if (total) {
+          killWatch();
+          scope.bb.payment_status = "pending";
+          scope.bb.total = scope.total;
+          scope.link_type = scope.total.$link('new_payment').type;
+          scope.label = attributes.value || "Make Payment";
+          scope.payment_link = scope.total.$href('new_payment');
+          url = scope.total.$href('new_payment');
+          return $q.when(getTemplate(scope.link_type, scope)).then(function(template) {
+            element.html(template).show();
+            $compile(element.contents())(scope);
+            return setClassAndValue(scope, element, attributes);
+          }, function(err) {
+            $log.warn(err.data);
+            return element.remove();
+          });
+        }
+      });
+    };
+    return {
+      restrict: 'EA',
+      replace: true,
+      scope: {
+        total: '=',
+        bb: '=',
+        decideNextPage: '='
+      },
+      link: linker
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbPaypalExpressButton', function($compile, $sce, $http, $templateCache, $q, $log, $window, UriTemplate) {
+    var linker;
+    linker = function(scope, element, attributes) {
+      var paypalOptions, total;
+      total = scope.total;
+      paypalOptions = scope.paypalOptions;
+      scope.href = new UriTemplate(total.$link('paypal_express').href).fillFromObject(paypalOptions);
+      return scope.showLoader = function() {
+        if (scope.notLoaded) {
+          return scope.notLoaded(scope);
+        }
+      };
+    };
+    return {
+      restrict: 'EA',
+      replace: true,
+      template: "<a ng-href=\"{{href}}\" ng-click=\"showLoader()\">Pay</a>",
+      scope: {
+        total: '=',
+        bb: '=',
+        decideNextPage: '=',
+        paypalOptions: '=bbPaypalExpressButton',
+        notLoaded: '='
+      },
+      link: linker
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbPaypal', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: {
+        ppDetails: "=bbPaypal"
+      },
+      templateUrl: PathSvc.directivePartial("paypal_button"),
+      link: function(scope, element, attrs) {
+        var keys;
+        scope.inputs = [];
+        if (!scope.ppDetails) {
+          return;
+        }
+        keys = _.keys(scope.ppDetails);
+        return _.each(keys, function(keyName) {
+          var obj;
+          obj = {
+            name: keyName,
+            value: scope.ppDetails[keyName]
+          };
+          return scope.inputs.push(obj);
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('pricepicker', function() {
+    var controller, link;
+    controller = function($scope) {
+      return $scope.$watch('price', function(price) {
+        if (price != null) {
+          return $scope.updateModel(price);
+        }
+      });
+    };
+    link = function(scope, element, attrs, ngModel) {
+      ngModel.$render = function() {
+        if (ngModel.$viewValue) {
+          return scope.price = ngModel.$viewValue;
+        }
+      };
+      return scope.updateModel = function(value) {
+        return ngModel.$setViewValue(value);
+      };
+    };
+    return {
+      require: 'ngModel',
+      link: link,
+      controller: controller,
+      scope: {
+        currency: '@'
+      },
+      template: "<span>{{0 | currency: currency | limitTo: 1}}</span>\n<input type=\"number\" ng-model=\"price\" class=\"form-control\" step=\"0.01\">"
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
+    var scopeIt;
+    this.compat = (function() {
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
+      check = document.createElement('style');
+      if (typeof check.sheet !== 'undefined') {
+        DOMStyle = 'sheet';
+      } else if (typeof check.getSheet !== 'undefined') {
+        DOMStyle = 'getSheet';
+      } else {
+        DOMStyle = 'styleSheet';
+      }
+      scopeSupported = void 0 !== check.scoped;
+      document.body.appendChild(check);
+      testSheet = check[DOMStyle];
+      if (testSheet.addRule) {
+        testSheet.addRule('c', 'blink');
+      } else {
+        testSheet.insertRule('c{}', 0);
+      }
+      DOMRules = testSheet.rules ? 'rules' : 'cssRules';
+      testStyle = testSheet[DOMRules][0];
+      try {
+        testStyle.selectorText = 'd';
+      } catch (error) {
+        e = error;
+      }
+      changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
+      check.parentNode.removeChild(check);
+      return {
+        scopeSupported: scopeSupported,
+        rules: DOMRules,
+        sheet: DOMStyle,
+        changeSelectorTextAllowed: changeSelectorTextAllowed
+      };
+    })();
+    scopeIt = (function(_this) {
+      return function(element) {
+        var allRules, glue, id, idCounter, index, par, results, rule, selector, sheet, styleNode, styleRule;
+        styleNode = element[0];
+        idCounter = 0;
+        sheet = styleNode[_this.compat.sheet];
+        if (!sheet) {
+          return;
+        }
+        allRules = sheet[_this.compat.rules];
+        par = styleNode.parentNode;
+        id = par.id || (par.id = 'scopedByScopedPolyfill_' + ++idCounter);
+        glue = '';
+        index = allRules.length || 0;
+        while (par) {
+          if (par.id) {
+            glue = '#' + par.id + ' ' + glue;
+          }
+          par = par.parentNode;
+        }
+        results = [];
+        while (index--) {
+          rule = allRules[index];
+          if (rule.selectorText) {
+            if (!rule.selectorText.match(new RegExp(glue))) {
+              selector = glue + ' ' + rule.selectorText.split(',').join(', ' + glue);
+              selector = selector.replace(/[\ ]+:root/gi, '');
+              if (_this.compat.changeSelectorTextAllowed) {
+                results.push(rule.selectorText = selector);
+              } else {
+                if (!rule.type || 1 === rule.type) {
+                  styleRule = rule.style.cssText;
+                  if (styleRule) {
+                    if (sheet.removeRule) {
+                      sheet.removeRule(index);
+                    } else {
+                      sheet.deleteRule(index);
+                    }
+                    if (sheet.addRule) {
+                      results.push(sheet.addRule(selector, styleRule));
+                    } else {
+                      results.push(sheet.insertRule(selector + '{' + styleRule + '}', index));
+                    }
+                  } else {
+                    results.push(void 0);
+                  }
+                } else {
+                  results.push(void 0);
+                }
+              }
+            } else {
+              results.push(void 0);
+            }
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+    })(this);
+    return {
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        scope.scopeSupported = this.compat.scopeSupported;
+        if (!this.compat.scopeSupported) {
+          return $timeout(function() {
+            return scopeIt(element);
+          });
+        }
+      },
+      controller: function($scope, $element, $timeout) {
+        if (!$scope.scopeSupported) {
+          this.updateCss = function() {
+            return $timeout(function() {
+              return scopeIt($element);
+            });
+          };
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbDisplayMode', function($compile, $window, $bbug) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      template: '<span class="visible-xs"></span><span class="visible-sm"></span><span class="visible-md"></span><span class="visible-lg"></span>',
+      link: function(scope, elem, attrs) {
+        var getCurrentSize, isVisible, markers, t, update;
+        markers = elem.find('span');
+        $bbug(elem).addClass("bb-display-mode");
+        scope.display = {};
+        isVisible = function(element) {
+          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
+        };
+        getCurrentSize = function() {
+          var element, i, len;
+          for (i = 0, len = markers.length; i < len; i++) {
+            element = markers[i];
+            if (isVisible(element)) {
+              return element.className.slice(8, 11);
+            }
+            scope.display = {};
+            scope.display[element.className.slice(8, 11)] = true;
+            return false;
+          }
+        };
+        update = (function(_this) {
+          return function() {
+            var nsize;
+            nsize = getCurrentSize();
+            if (nsize !== _this.currentSize) {
+              _this.currentSize = nsize;
+              scope.display.xs = false;
+              scope.display.sm = false;
+              scope.display.md = false;
+              scope.display.lg = false;
+              scope.display.not_xs = true;
+              scope.display.not_sm = true;
+              scope.display.not_md = true;
+              scope.display.not_lg = true;
+              scope.display[nsize] = true;
+              scope.display["not_" + nsize] = false;
+              return true;
+            }
+            return false;
+          };
+        })(this);
+        t = null;
+        angular.element($window).bind('resize', (function(_this) {
+          return function() {
+            window.clearTimeout(t);
+            return t = setTimeout(function() {
+              if (update()) {
+                return scope.$apply();
+              }
+            }, 50);
+          };
+        })(this));
+        return angular.element($window).bind('load', (function(_this) {
+          return function() {
+            if (update()) {
+              return scope.$apply();
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbToggleEdit', function($compile, $window, $document) {
+    return {
+      restrict: 'AE',
+      link: function(scope, element, attr) {
+        scope.editing = false;
+        element.on('dblclick', (function(_this) {
+          return function(event) {
+            return scope.$apply(function() {
+              return scope.editing = true;
+            });
+          };
+        })(this));
+        $document.on('click', (function(_this) {
+          return function() {
+            if (!element.is(':hover')) {
+              return scope.$apply(function() {
+                return scope.editing = false;
+              });
+            }
+          };
+        })(this));
+        return true;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('popover', function() {
+    var openElement, openScope;
+    openElement = null;
+    openScope = null;
+    $('div[ng-controller="BBCtrl"]').off('.bbtooltip').on('click.bbtooltip', function(e) {
+      var target;
+      target = $(e.target).closest('[popover]')[0];
+      if (!target && openElement && openScope) {
+        $(openElement).next('.popover').remove();
+        openScope.tt_isOpen = false;
+      }
+      return true;
+    });
+    return {
+      restrict: 'EA',
+      priority: -1000,
+      link: function(scope, element) {
+        element.on('click.bbtooltip', function(e) {
+          if (openElement === $(e.target).closest('[popover]')[0]) {
+            e.preventDefault();
+            return;
+          }
+          if (openElement && openScope) {
+            $(openElement).next('.popover').remove();
+            openScope.tt_isOpen = false;
+          }
+          openElement = element[0];
+          return openScope = scope;
+        });
+        return scope.$on('$destroy', function() {
+          return $(element).off('.bbtooltip');
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function (angular) {
+  'use strict';
+
+  /* Directives */
+  var app = angular.module('BB.Directives');
+
+  app.directive('appVersion', function(version) {
+    return function(scope, elm, attrs) {
+      elm.text(version);
+    };
+  });
+}(window.angular));
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  angular.module('BB.Filters').filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  angular.module('BB.Filters').filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  angular.module('BB.Filters').filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  angular.module('BB.Filters').filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  angular.module('BB.Filters').filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('icurrency', function($window, $rootScope) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = $rootScope.bb_currency);
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  angular.module('BB.Filters').filter('ipretty_price', function($window, $rootScope) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[$rootScope.bb_currency];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, separator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      separator = options && angular.isString(options.separator) ? options.separator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        str = val + " " + min_string;
+        if (val > 1) {
+          str += "s";
+        }
+        return str;
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (separator.length > 0) {
+          str += " " + separator;
+        }
+        str += " " + mins + " " + min_string;
+        if (mins > 1) {
+          str += "s";
+        }
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, separator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      separator = options && options.separator ? options.separator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + separator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  angular.module('BB.Filters').filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
+    return function(phone_number) {
+      var cc;
+      if (!phone_number) {
+        return;
+      }
+      cc = SettingsService.getCountryCode();
+      switch (cc) {
+        case "gb":
+          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
+        case "us":
+          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
+        default:
+          return phone_number;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
+    return function(date, format) {
+      var cc, datestrings;
+      if (date && moment.isMoment(date)) {
+        datestrings = {
+          datetime_us: 'MM/DD/YYYY, h:mm a',
+          datetime_uk: 'DD/MM/YYYY, HH:mm',
+          date_us: 'MM/DD/YYYY',
+          date_uk: 'DD/MM/YYYY',
+          time_us: 'h:mm a',
+          time_uk: 'HH:mm'
+        };
+        cc = SettingsService.getCountryCode();
+        if (cc !== "us") {
+          cc = "uk";
+        }
+        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
+          return date.format(datestrings[format + "_" + cc]);
+        } else if (format) {
+          return date.format(format);
+        } else {
+          return date.format(datestrings["date_" + cc]);
+        }
+      } else {
+
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  angular.module('BB.Filters').filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+  angular.module('BB.Filters').filter('nl2br', function() {
+    return function(str) {
+      if (str) {
+        return str.replace(/\n/g, '<br/>');
+      }
+    };
+  });
+
+  app.filter('clearTimezone', function() {
+    return function(val, offset) {
+      if (val !== null && val.length > 19) {
+        return val.substring(0, 19);
+      }
+      return val;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Address
+  *
+  * @description
+  * Representation of an Address Object
+  *
+  * @property {string} address1 First line of the address 
+  * @property {string} address2 Second line of the address 
+  * @property {string} address3 Third line of the address 
+  * @property {string} address4 Fourth line of the address 
+  * @property {string} address5 Fifth line of the address 
+  * @property {string} postcode The Postcode/Zipcode
+  * @property {string} country The country
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("AddressModel", function($q, BBModel, BaseModel) {
+    var Address;
+    return Address = (function(superClass) {
+      extend(Address, superClass);
+
+      function Address(data) {
+        Address.__super__.constructor.call(this, data);
+        if (!this.map_url || this.map_url === "") {
+          if (this.lat && this.long) {
+            this.map_url = "https://www.google.com/maps/@" + this.lat + "," + this.long + ",17z";
+          }
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name addressSingleLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get a the address as a single comma sepeated line
+      *
+      * @returns {string} The returned address
+       */
+
+      Address.prototype.addressSingleLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += ", ";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasAddress
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this is considered a valid address
+      *
+      * @returns {boolean} If this is a valid address
+       */
+
+      Address.prototype.hasAddress = function() {
+        return this.address1 || this.address2 || this.postcode;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name addressCsvLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get all address fields as a single comma sepeated line - suitable for csv export
+      *
+      * @returns {string} The returned address
+       */
+
+      Address.prototype.addressCsvLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        str += ", ";
+        if (this.address2) {
+          str += this.address2;
+        }
+        str += ", ";
+        if (this.address3) {
+          str += this.address3;
+        }
+        str += ", ";
+        if (this.address4) {
+          str += this.address4;
+        }
+        str += ", ";
+        if (this.address5) {
+          str += this.address5;
+        }
+        str += ", ";
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        str += ", ";
+        if (this.country) {
+          str += this.country;
+        }
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name addressMultiLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get a the address as multiple lines with line feeds
+      *
+      * @returns {string} The returned address
+       */
+
+      Address.prototype.addressMultiLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+      return Address;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Affiliate
+  *
+  * @description
+  * Representation of an Affiliate Object
+  *
+  * @property {string} affiliate_id Id of the affiliated company
+  * @property {string} reference The reference of the affiliated company
+  * @property {integer} country_code Country code of the affiliated company
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("AffiliateModel", function($q, BBModel, BaseModel, halClient, $rootScope) {
+    var Affiliate;
+    return Affiliate = (function(superClass) {
+      extend(Affiliate, superClass);
+
+      function Affiliate(data) {
+        Affiliate.__super__.constructor.call(this, data);
+        this.test = 1;
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name getCompanyByRef
+      * @methodOf BB.Models:Affiliate
+      * @description
+      * Find a company in according to reference
+      *
+      * @param {string} ref A reference to find a company based on it
+      *
+      * @returns {promise} A promise for the company reference
+       */
+
+      Affiliate.prototype.getCompanyByRef = function(ref) {
+        var defer, href, prms, uri;
+        prms = {
+          id: this.cookie,
+          reference: ref
+        };
+        href = $rootScope.bb.api_url + "/api/v1/affiliates/{id}/companies/{reference}";
+        uri = new UriTemplate(href).fillFromObject(prms || {});
+        defer = $q.defer();
+        halClient.$get(uri, {}).then(function(company) {
+          if (company) {
+            return defer.resolve(new BBModel.Company(company));
+          } else {
+            return defer.reject('No company for ref ' + ref);
+          }
+        }, function(err) {
+          console.log('err ', err);
+          return defer.reject(err);
+        });
+        return defer.promise;
+      };
+
+      return Affiliate;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Answer
+  *
+  * @description
+  * Representation of an Answer Object
+  *
+  * @property {string} question The question that the answer belongs to
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("AnswerModel", function($q, BBModel, BaseModel, $bbug) {
+    var Answer;
+    return Answer = (function(superClass) {
+      extend(Answer, superClass);
+
+      function Answer(data) {
+        Answer.__super__.constructor.call(this, data);
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name getQuestion
+      * @methodOf BB.Models:Answer
+      * @description
+      * Build an array of questions 
+      *
+      * @returns {promise} A promise for the question/s
+       */
+
+      Answer.prototype.getQuestion = function() {
+        var defer;
+        defer = $q.defer();
+        if (this.question) {
+          defer.resolve(this.question);
+        }
+        if (this._data.$has('question')) {
+          this._data.$get('question').then((function(_this) {
+            return function(question) {
+              _this.question = question;
+              return defer.resolve(_this.question);
+            };
+          })(this));
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      return Answer;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Models').service("BBModel", function($q, $injector) {
+    var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase', 'Pagination'];
+    funcs = {};
+    fn = (function(_this) {
+      return function(model) {
+        return funcs[model] = function(p1, p2) {
+          return new ($injector.get(model + "Model"))(p1, p2);
+        };
+      };
+    })(this);
+    for (i = 0, len = models.length; i < len; i++) {
+      model = models[i];
+      fn(model);
+    }
+    purchase_models = ['Booking', 'Total', 'CourseBooking'];
+    pfuncs = {};
+    fn1 = (function(_this) {
+      return function(model) {
+        return pfuncs[model] = function(init) {
+          return new ($injector.get("Purchase." + model + "Model"))(init);
+        };
+      };
+    })(this);
+    for (j = 0, len1 = purchase_models.length; j < len1; j++) {
+      model = purchase_models[j];
+      fn1(model);
+    }
+    funcs['Purchase'] = pfuncs;
+    member_models = ['Member', 'Booking', 'PrePaidBooking', 'Wallet', 'WalletLog', 'Purchase', 'PurchaseItem', 'WalletPurchaseBand'];
+    mfuncs = {};
+    fn2 = (function(_this) {
+      return function(model) {
+        return mfuncs[model] = function(init) {
+          return new ($injector.get("Member." + model + "Model"))(init);
+        };
+      };
+    })(this);
+    for (k = 0, len2 = member_models.length; k < len2; k++) {
+      model = member_models[k];
+      fn2(model);
+    }
+    funcs['Member'] = mfuncs;
+    admin_models = ['Booking', 'Slot', 'User', 'Administrator', 'Schedule', 'Address', 'Resource', 'Person', 'Service', 'Login', 'EventChain', 'EventGroup', 'Event', 'Queuer', 'ClientQueue', 'Clinic'];
+    afuncs = {};
+    fn3 = (function(_this) {
+      return function(model) {
+        return afuncs[model] = function(init) {
+          return new ($injector.get("Admin." + model + "Model"))(init);
+        };
+      };
+    })(this);
+    for (l = 0, len3 = admin_models.length; l < len3; l++) {
+      model = admin_models[l];
+      fn3(model);
+    }
+    funcs['Admin'] = afuncs;
+    return funcs;
+  });
+
+  angular.module('BB.Models').service("BaseModel", function($q, $injector, $rootScope, $timeout) {
+    var Base;
+    return Base = (function() {
+      function Base(data) {
+        this.deleted = false;
+        this.updateModel(data);
+      }
+
+      Base.prototype.updateModel = function(data) {
+        var link, links, m, n, name, obj, results;
+        if (data) {
+          this._data = data;
+        }
+        if (data) {
+          for (n in data) {
+            m = data[n];
+            this[n] = m;
+          }
+        }
+        if (this._data && this._data.$href) {
+          this.self = this._data.$href("self");
+          links = this.$links();
+          this.__linkedData = {};
+          this.__linkedPromises = {};
+          results = [];
+          for (link in links) {
+            obj = links[link];
+            name = this._snakeToCamel("get_" + link);
+            results.push((function(_this) {
+              return function(link, obj, name) {
+                if (!_this[name]) {
+                  _this[name] = function() {
+                    return this.$buildOject(link);
+                  };
+                }
+                if (!_this[name + "Promise"]) {
+                  return _this[name + "Promise"] = function() {
+                    return this.$buildOjectPromise(link);
+                  };
+                }
+              };
+            })(this)(link, obj, name));
+          }
+          return results;
+        }
+      };
+
+      Base.prototype._snakeToCamel = function(s) {
+        return s.replace(/(\_\w)/g, function(m) {
+          return m[1].toUpperCase();
+        });
+      };
+
+      Base.prototype.$buildOject = function(link) {
+        if (this.__linkedData[link]) {
+          return this.__linkedData[link];
+        }
+        this.$buildOjectPromise(link).then((function(_this) {
+          return function(ans) {
+            _this.__linkedData[link] = ans;
+            return $timeout(function() {
+              return _this.__linkedData[link] = ans;
+            });
+          };
+        })(this));
+        return null;
+      };
+
+      Base.prototype.$buildOjectPromise = function(link) {
+        var prom;
+        if (this.__linkedPromises[link]) {
+          return this.__linkedPromises[link];
+        }
+        prom = $q.defer();
+        this.__linkedPromises[link] = prom.promise;
+        this.$get(link).then((function(_this) {
+          return function(res) {
+            var inj;
+            inj = $injector.get('BB.Service.' + link);
+            if (inj) {
+              if (inj.promise) {
+                return inj.unwrap(res).then(function(ans) {
+                  return prom.resolve(ans);
+                }, function(err) {
+                  return prom.reject(err);
+                });
+              } else {
+                return prom.resolve(inj.unwrap(res));
+              }
+            } else {
+              return prom.resolve(res);
+            }
+          };
+        })(this), function(err) {
+          return prom.reject(err);
+        });
+        return this.__linkedPromises[link];
+      };
+
+      Base.prototype.get = function(ikey) {
+        if (!this._data) {
+          return null;
+        }
+        return this._data[ikey];
+      };
+
+      Base.prototype.set = function(ikey, value) {
+        if (!this._data) {
+          return null;
+        }
+        return this._data[ikey] = value;
+      };
+
+      Base.prototype.$href = function(rel, params) {
+        if (this._data) {
+          return this._data.$href(rel, params);
+        }
+      };
+
+      Base.prototype.$has = function(rel) {
+        if (this._data) {
+          return this._data.$has(rel);
+        }
+      };
+
+      Base.prototype.$flush = function(rel, params) {
+        if (this._data) {
+          return this._data.$href(rel, params);
+        }
+      };
+
+      Base.prototype.$get = function(rel, params) {
+        if (this._data) {
+          return this._data.$get(rel, params);
+        }
+      };
+
+      Base.prototype.$post = function(rel, params, dat) {
+        if (this._data) {
+          return this._data.$post(rel, params, dat);
+        }
+      };
+
+      Base.prototype.$put = function(rel, params, dat) {
+        if (this._data) {
+          return this._data.$put(rel, params, dat);
+        }
+      };
+
+      Base.prototype.$patch = function(rel, params, dat) {
+        if (this._data) {
+          return this._data.$patch(rel, params, dat);
+        }
+      };
+
+      Base.prototype.$del = function(rel, params) {
+        if (this._data) {
+          return this._data.$del(rel, params);
+        }
+      };
+
+      Base.prototype.$links = function() {
+        if (this._data) {
+          return this._data.$links();
+        }
+      };
+
+      Base.prototype.$toStore = function() {
+        if (this._data) {
+          return this._data.$toStore();
+        }
+      };
+
+      return Base;
+
+    })();
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Basket
+  *
+  * @description
+  * Representation of an Basket Object
+  *
+  * @property {integer} company_id Company id that the basket belongs to 
+  * @property {integer} total_price Total price of the basket
+  * @property {integer} total_due_price Total price of the basket after applying discounts
+  * @property {array} items Array of items that are in the basket
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BasketModel", function($q, BBModel, BaseModel) {
+    var Basket;
+    return Basket = (function(superClass) {
+      extend(Basket, superClass);
+
+      function Basket(data, scope) {
+        if (scope && scope.isAdmin) {
+          this.is_admin = scope.isAdmin;
+        } else {
+          this.is_admin = false;
+        }
+        if ((scope != null) && scope.parent_client) {
+          this.parent_client_id = scope.parent_client.id;
+        }
+        this.items = [];
+        Basket.__super__.constructor.call(this, data);
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name addItem
+      * @methodOf BB.Models:Basket
+      * @description
+      * Adds an item to the items array of the basket
+      *
+       */
+
+      Basket.prototype.addItem = function(item) {
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i === item) {
+            return;
+          }
+          if (i.id && item.id && i.id === item.id) {
+            return;
+          }
+        }
+        return this.items.push(item);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clear
+      * @methodOf BB.Models:Basket
+      * @description
+      * Empty items array
+      *
+       */
+
+      Basket.prototype.clear = function() {
+        return this.items = [];
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearItem
+      * @methodOf BB.Models:Basket
+      * @description
+      * Remove a given item from the items array
+      *
+       */
+
+      Basket.prototype.clearItem = function(item) {
+        return this.items = this.items.filter(function(i) {
+          return i !== item;
+        });
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name readyToCheckout
+      * @methodOf BB.Models:Basket
+      * @description
+      * Use to check if the basket is ready to checkout
+      *
+      * @returns {boolean} Flag to indicate if basket is ready checkout
+       */
+
+      Basket.prototype.readyToCheckout = function() {
+        if (this.items.length > 0) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name timeItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Returns an array of time items (i.e. event and appointment bookings)
+      *
+      * @returns {array}
+       */
+
+      Basket.prototype.timeItems = function() {
+        var i, j, len, ref, titems;
+        titems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i.isTimeItem()) {
+            titems.push(i);
+          }
+        }
+        return titems;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasTimeItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Indicates if the basket contains time items (i.e. event and appointment bookings)
+      *
+      * @returns {boolean}
+       */
+
+      Basket.prototype.hasTimeItems = function() {
+        var i, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i.isTimeItem()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name basketItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Gets all BasketItem's that are not coupons
+      *
+      * @returns {array} array of basket items
+       */
+
+      Basket.prototype.basketItems = function() {
+        var bitems, i, j, len, ref;
+        bitems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (!i.is_coupon) {
+            bitems.push(i);
+          }
+        }
+        return bitems;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name externalPurchaseItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Gets all external purchases in the basket
+      *
+      * @returns {array} array of external purchases
+       */
+
+      Basket.prototype.externalPurchaseItems = function() {
+        var eitems, i, j, len, ref;
+        eitems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i.isExternalPurchase()) {
+            eitems.push(i);
+          }
+        }
+        return eitems;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name couponItems
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array of items that are coupons
+      *
+      * @returns {array} the newly build array of coupon items
+       */
+
+      Basket.prototype.couponItems = function() {
+        var citems, i, j, len, ref;
+        citems = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i.is_coupon) {
+            citems.push(i);
+          }
+        }
+        return citems;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name removeCoupons
+      * @methodOf BB.Models:Basket
+      * @description
+      * Remove coupon items from the items array
+      *
+      * @returns {array} the items array after removing items that are coupons
+       */
+
+      Basket.prototype.removeCoupons = function() {
+        return this.items = _.reject(this.items, function(x) {
+          return x.is_coupon;
+        });
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setSettings
+      * @methodOf BB.Models:Basket
+      * @description
+      * Extend the settings with the set param passed to the function
+      *
+      * @returns {object} settings object
+       */
+
+      Basket.prototype.setSettings = function(set) {
+        if (!set) {
+          return;
+        }
+        this.settings || (this.settings = {});
+        return $.extend(this.settings, set);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setClient
+      * @methodOf BB.Models:Basket
+      * @description
+      * Set the client
+      *
+      * @returns {object} client object
+       */
+
+      Basket.prototype.setClient = function(client) {
+        return this.client = client;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setClientDetails
+      * @methodOf BB.Models:Basket
+      * @description
+      * Set client details
+      *
+      * @returns {object} client details
+       */
+
+      Basket.prototype.setClientDetails = function(client_details) {
+        return this.client_details = new BBModel.PurchaseItem(client_details);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:Basket
+      * @description
+      * Build an array with details for every item in items array
+      *
+      * @returns {array} newly created details array
+       */
+
+      Basket.prototype.getPostData = function() {
+        var item, j, len, post, ref;
+        post = {
+          client: this.client.getPostData(),
+          settings: this.settings,
+          reference: this.reference
+        };
+        post.is_admin = this.is_admin;
+        post.parent_client_id = this.parent_client_id;
+        post.take_from_wallet = this.take_from_wallet;
+        post.items = [];
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          post.items.push(item.getPostData());
+        }
+        return post;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name dueTotal
+      * @methodOf BB.Models:Basket
+      * @description
+      * Total price after checking every item if it is on the wait list
+      *
+      * @returns {integer} total
+       */
+
+      Basket.prototype.dueTotal = function() {
+        var item, j, len, ref, total;
+        total = this.totalPrice();
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isWaitlist()) {
+            total -= item.price;
+          }
+        }
+        if (total < 0) {
+          total = 0;
+        }
+        return total;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name length
+      * @methodOf BB.Models:Basket
+      * @description
+      * Length of the items array
+      *
+      * @returns {integer} length
+       */
+
+      Basket.prototype.length = function() {
+        return this.items.length;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name questionPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates total question's price
+      *
+      * @returns {integer} question's price
+       */
+
+      Basket.prototype.questionPrice = function(options) {
+        var item, j, len, price, ref, unready;
+        unready = options && options.unready;
+        price = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if ((!item.ready && unready) || !unready) {
+            price += item.questionPrice();
+          }
+        }
+        return price;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates total price of the items after coupuns have been applied
+      *
+      * @returns {integer} total price
+       */
+
+      Basket.prototype.totalPrice = function(options) {
+        var item, j, len, price, ref, unready;
+        unready = options && options.unready;
+        price = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if ((!item.ready && unready) || !unready) {
+            price += item.totalPrice();
+          }
+        }
+        return price;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name updateTotalPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Update the total_price attribute using totalPrice method
+      *
+      * @returns {integer} the updated total_price variable
+       */
+
+      Basket.prototype.updateTotalPrice = function(options) {
+        return this.total_price = this.totalPrice(options);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name fullPrice
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates full price of all items, before applying any coupons or deals
+      *
+      * @returns {integer} full price
+       */
+
+      Basket.prototype.fullPrice = function() {
+        var item, j, len, price, ref;
+        price = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          price += item.fullPrice();
+        }
+        return price;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasCoupon
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is an item in items array, that is a coupon
+      *
+      * @returns {boolean} true or false if a coupon is found or not
+       */
+
+      Basket.prototype.hasCoupon = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.is_coupon) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalCoupons
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the full discount for the basket
+      *
+      * @returns {integer} full discount
+       */
+
+      Basket.prototype.totalCoupons = function() {
+        return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalDuration
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates total duration of all items in basket
+      *
+      * @returns {integer} total duration
+       */
+
+      Basket.prototype.totalDuration = function() {
+        var duration, item, j, len, ref;
+        duration = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.service && item.service.listed_duration) {
+            duration += item.service.listed_duration;
+          }
+        }
+        return duration;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name containsDeal
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is an item in items array, that is a deal
+      *
+      * @returns {boolean} true or false depending if a deal was found or not
+       */
+
+      Basket.prototype.containsDeal = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.deal_id) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasDeal
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if there is any item in items array with a deal code
+      *
+      * @returns {boolean} true or false depending if a deal code was found or not
+       */
+
+      Basket.prototype.hasDeal = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.deal_codes && item.deal_codes.length > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getDealCodes
+      * @methodOf BB.Models:Basket
+      * @description
+      * Builds an array of deal codes
+      *
+      * @returns {array} deal codes array
+       */
+
+      Basket.prototype.getDealCodes = function() {
+        this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
+        return this.deals;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalDeals
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the total amount of deal codes array
+      *
+      * @returns {integer} total amount of deals
+       */
+
+      Basket.prototype.totalDeals = function() {
+        var deal, j, len, ref, value;
+        value = 0;
+        ref = this.getDealCodes();
+        for (j = 0, len = ref.length; j < len; j++) {
+          deal = ref[j];
+          value += deal.value;
+        }
+        return value;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalDealPaid
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the amount paid by gift certificates
+      *
+      * @returns {integer} amount paid by deals
+       */
+
+      Basket.prototype.totalDealPaid = function() {
+        var item, j, len, ref, total_cert_paid;
+        total_cert_paid = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.certificate_paid) {
+            total_cert_paid += item.certificate_paid;
+          }
+        }
+        return total_cert_paid;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name remainingDealBalance
+      * @methodOf BB.Models:Basket
+      * @description
+      * Calculates the difference between total deals amount and amount paid by deals
+      *
+      * @returns {integer} The remaining deal (gift certificate) balance
+       */
+
+      Basket.prototype.remainingDealBalance = function() {
+        return this.totalDeals() - this.totalDealPaid();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasWaitlistItem
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if the basket contains an wait list event
+      *
+      * @returns {boolean} true or false
+       */
+
+      Basket.prototype.hasWaitlistItem = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isWaitlist()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasExternalPurchase
+      * @methodOf BB.Models:Basket
+      * @description
+      * Checks if the basket contains an external purchase
+      *
+      * @returns {boolean} true or false
+       */
+
+      Basket.prototype.hasExternalPurchase = function() {
+        var item, j, len, ref;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.isExternalPurchase()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name useWallet
+      * @methodOf BB.Models:Basket
+      * @description
+      * Indicates if a wallet should be used for payment
+      *
+      * @returns {boolean} true or false
+       */
+
+      Basket.prototype.useWallet = function(value, client) {
+        if (client && client.$has('wallet') && value) {
+          this.take_from_wallet = true;
+          return true;
+        } else {
+          this.take_from_wallet = false;
+          return false;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name voucherRemainder
+      * @methodOf BB.Models:Basket
+      * @description
+      * Remaining voucher value if used
+      *
+      * @returns {integer} remaining voucher value
+       */
+
+      Basket.prototype.voucherRemainder = function() {
+        var amount, item, j, len, ref;
+        amount = 0;
+        ref = this.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.voucher_remainder) {
+            amount += item.voucher_remainder;
+          }
+        }
+        return amount;
+      };
+
+      return Basket;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BasketItem
+  *
+  * @description
+  * Representation of an BasketItem Object
+  *
+  * @property {integer} company_id Company id that the basket item belongs to
+  * @property {integer} total_price Total price of the basket item
+  * @property {integer} total_due_price Total price of the basket item after applying discounts
+  * @property {array} items Arrays of items that are in the basket
+  * @property {integer} event_id The event id of the basket item
+  * @property {date} datetime Date and time of the event
+  * @property {integer} status Status of the items
+  *
+   */
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, SettingsService) {
+    var BasketItem;
+    return BasketItem = (function(superClass) {
+      extend(BasketItem, superClass);
+
+      function BasketItem(data, bb) {
+        this.fullPrice = bind(this.fullPrice, this);
+        this.totalPrice = bind(this.totalPrice, this);
+        this.getQty = bind(this.getQty, this);
+        this.questionPrice = bind(this.questionPrice, this);
+        var chain, comp, per, res, serv, t;
+        BasketItem.__super__.constructor.call(this, data);
+        this.ready = false;
+        this.days_link = null;
+        this.book_link = null;
+        this.parts_links = {};
+        this.settings || (this.settings = {});
+        this.has_questions = false;
+        if (bb) {
+          this.reserve_without_questions = bb.reserve_without_questions;
+        }
+        if (this.time) {
+          this.time = new BBModel.TimeSlot({
+            time: this.time,
+            event_id: this.event_id,
+            selected: true,
+            avail: 1,
+            price: this.price
+          });
+        }
+        if (this.date) {
+          this.date = new BBModel.Day({
+            date: this.date,
+            spaces: 1
+          });
+        }
+        if (this.datetime) {
+          this.date = new BBModel.Day({
+            date: this.datetime.toISODate(),
+            spaces: 1
+          });
+          t = this.datetime.hour() * 60 + this.datetime.minute();
+          this.time = new BBModel.TimeSlot({
+            time: t,
+            event_id: this.event_id,
+            selected: true,
+            avail: 1,
+            price: this.price
+          });
+        }
+        if (this.id) {
+          this.reserve_ready = true;
+          this.held = {
+            time: this.time,
+            date: this.date,
+            event_id: this.event_id
+          };
+        }
+        this.promises = [];
+        if (data) {
+          if (data.$has("answers")) {
+            data.$get("answers").then((function(_this) {
+              return function(answers) {
+                var a, i, len, results;
+                data.questions = [];
+                results = [];
+                for (i = 0, len = answers.length; i < len; i++) {
+                  a = answers[i];
+                  results.push(data.questions.push({
+                    id: a.question_id,
+                    answer: a.value
+                  }));
+                }
+                return results;
+              };
+            })(this));
+          }
+          if (data.$has('company')) {
+            comp = data.$get('company');
+            this.promises.push(comp);
+            comp.then((function(_this) {
+              return function(comp) {
+                var c;
+                c = new BBModel.Company(comp);
+                _this.promises.push(c.getSettings());
+                return _this.setCompany(c);
+              };
+            })(this));
+          }
+          if (data.$has('service')) {
+            serv = data.$get('service');
+            this.promises.push(serv);
+            serv.then((function(_this) {
+              return function(serv) {
+                var prom;
+                if (serv.$has('category')) {
+                  prom = serv.$get('category');
+                  _this.promises.push(prom);
+                  prom.then(function(cat) {
+                    return _this.setCategory(new BBModel.Category(cat));
+                  });
+                }
+                _this.setService(new BBModel.Service(serv), data.questions);
+                if (_this.duration) {
+                  _this.setDuration(_this.duration);
+                }
+                _this.checkReady();
+                if (_this.time) {
+                  return _this.time.service = _this.service;
+                }
+              };
+            })(this));
+          }
+          if (data.$has('event_group')) {
+            serv = data.$get('event_group');
+            this.promises.push(serv);
+            serv.then((function(_this) {
+              return function(serv) {
+                var prom;
+                if (serv.$has('category')) {
+                  prom = serv.$get('category');
+                  _this.promises.push(prom);
+                  prom.then(function(cat) {
+                    return _this.setCategory(new BBModel.Category(cat));
+                  });
+                }
+                _this.setEventGroup(new BBModel.EventGroup(serv));
+                if (_this.time) {
+                  return _this.time.service = _this.event_group;
+                }
+              };
+            })(this));
+          }
+          if (data.$has('event_chain')) {
+            chain = data.$get('event_chain');
+            this.promises.push(chain);
+            if (!data.$has('event')) {
+              chain.then((function(_this) {
+                return function(serv) {
+                  return _this.setEventChain(new BBModel.EventChain(serv), data.questions);
+                };
+              })(this));
+            }
+          }
+          if (data.$has('resource')) {
+            res = data.$get('resource');
+            this.promises.push(res);
+            res.then((function(_this) {
+              return function(res) {
+                return _this.setResource(new BBModel.Resource(res), false);
+              };
+            })(this));
+          }
+          if (data.$has('person')) {
+            per = data.$get('person');
+            this.promises.push(per);
+            per.then((function(_this) {
+              return function(per) {
+                return _this.setPerson(new BBModel.Person(per), false);
+              };
+            })(this));
+          }
+          if (data.$has('event')) {
+            data.$get('event').then((function(_this) {
+              return function(event) {
+                return _this.setEvent(new BBModel.Event(event));
+              };
+            })(this));
+          }
+          if (data.settings) {
+            this.settings = $bbug.extend(true, {}, data.settings);
+          }
+          if (data.attachment_id) {
+            this.attachment_id = data.attachment_id;
+          }
+          if (data.$has('product')) {
+            data.$get('product').then((function(_this) {
+              return function(product) {
+                return _this.setProduct(new BBModel.Product(product));
+              };
+            })(this));
+          }
+          if (data.$has('package_item')) {
+            data.$get('package_item').then((function(_this) {
+              return function(package_item) {
+                return _this.setPackageItem(new BBModel.PackageItem(package_item));
+              };
+            })(this));
+          }
+          if (data.$has('bulk_purchase')) {
+            data.$get('bulk_purchase').then((function(_this) {
+              return function(bulk_purchase) {
+                return _this.setBulkPurchase(new BBModel.BulkPurchase(bulk_purchase));
+              };
+            })(this));
+          }
+          if (data.$has('deal')) {
+            data.$get('deal').then((function(_this) {
+              return function(deal) {
+                return _this.setDeal(new BBModel.Deal(deal));
+              };
+            })(this));
+          }
+          if (data.$has('pre_paid_booking')) {
+            data.$get('pre_paid_booking').then((function(_this) {
+              return function(pre_paid_booking) {
+                return _this.setPrepaidBooking(new BBModel.PrePaidBooking(pre_paid_booking));
+              };
+            })(this));
+          }
+          if (data.clinic_id) {
+            this.clinic_id = data.clinic_id;
+          }
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name setDefaults
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the default settings
+      *
+      * @returns {object} Default settings
+       */
+
+      BasketItem.prototype.setDefaults = function(defaults) {
+        var date, time;
+        if (defaults.settings) {
+          this.settings = defaults.settings;
+        }
+        if (defaults.company) {
+          this.setCompany(defaults.company);
+        }
+        if (defaults.merge_resources) {
+          this.setResource(null);
+        }
+        if (defaults.merge_people) {
+          this.setPerson(null);
+        }
+        if (defaults.resource) {
+          this.setResource(defaults.resource);
+        }
+        if (defaults.person) {
+          this.setPerson(defaults.person);
+        }
+        if (defaults.service) {
+          this.setService(defaults.service);
+        }
+        if (defaults.category) {
+          this.setCategory(defaults.category);
+        }
+        if (defaults.date) {
+          defaults.date = moment(defaults.date);
+        }
+        if (defaults.time) {
+          date = defaults.date ? defaults.date : moment();
+          time = defaults.time ? parseInt(defaults.time) : 0;
+          defaults.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment({
+            date: defaults.date
+          }, {
+            time: time
+          });
+        }
+        if (defaults.service_ref) {
+          this.service_ref = defaults.service_ref;
+        }
+        if (defaults.group) {
+          this.group = defaults.group;
+        }
+        if (defaults.clinic) {
+          this.clinic = defaults.clinic;
+          this.clinic_id = defaults.clinic.id;
+        }
+        if (defaults.private_note) {
+          this.private_note = defaults.private_note;
+        }
+        if (defaults.event_group) {
+          this.setEventGroup(defaults.event_group);
+        }
+        if (defaults.event) {
+          this.setEvent(defaults.event);
+        }
+        return this.defaults = defaults;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name storeDefaults
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Store the default settings by attaching them to the current context
+      *
+      * @returns {array} defaults variable
+       */
+
+      BasketItem.prototype.storeDefaults = function(defaults) {
+        return this.defaults = defaults;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name defaultService
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Return the default service or event group
+      *
+      * @returns {Object} Default Service or EventGroup
+       */
+
+      BasketItem.prototype.defaultService = function() {
+        if (this.defaults && this.defaults.service) {
+          return this.defaults.service;
+        } else if (this.defaults && this.defaults.event_group) {
+          return this.defaults.event_group;
+        } else {
+          return null;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setSlot
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the current slot based on the passed parameter
+      *
+      * @param {object} slot A hash representing a slot object
+      * @returns {array} The available slot
+       */
+
+      BasketItem.prototype.setSlot = function(slot) {
+        var t;
+        this.date = new BBModel.Day({
+          date: slot.datetime.toISODate(),
+          spaces: 1
+        });
+        t = slot.datetime.hour() * 60 + slot.datetime.minute();
+        this.time = new BBModel.TimeSlot({
+          time: t,
+          avail: 1,
+          price: this.price
+        });
+        return this.available_slot = slot.id;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setCompany
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the current company based on the passed parameter
+      * @param {object} company a hash representing a company object
+       */
+
+      BasketItem.prototype.setCompany = function(company) {
+        this.company = company;
+        this.parts_links.company = this.company.$href('self');
+        if (this.item_details) {
+          return this.item_details.currency_code = this.company.currency_code;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearExistingItem
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Clear existing item
+       */
+
+      BasketItem.prototype.clearExistingItem = function() {
+        var prom;
+        if (this.$has('self') && this.event_id) {
+          prom = this.$del('self');
+          this.promises.push(prom);
+          prom.then(function() {});
+        }
+        delete this.earliest_time;
+        return delete this.event_id;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setItem
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set the current item based on the item object passed as parameter
+       */
+
+      BasketItem.prototype.setItem = function(item) {
+        if (!item) {
+          return;
+        }
+        if (item.type === "person") {
+          return this.setPerson(item);
+        } else if (item.type === "service") {
+          return this.setService(item);
+        } else if (item.type === "resource") {
+          return this.setResource(item);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setService
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set service in according of server parameter, if default_question is null
+      *
+      * @returns {array} The returned service set
+       */
+
+      BasketItem.prototype.setService = function(serv, default_questions) {
+        var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
+        if (this.service) {
+          if (this.service.self && serv.self && this.service.self === serv.self) {
+            if (this.service.$has('book')) {
+              this.book_link = this.service;
+            }
+            if (serv.$has('days')) {
+              this.days_link = serv;
+            }
+            if (serv.$has('book')) {
+              this.book_link = serv;
+            }
+            return;
+          }
+          this.item_details = null;
+          this.clearExistingItem();
+        }
+        if (this.service && serv && this.service.self && serv.self) {
+          if ((this.service.self !== serv.self) && serv.durations && serv.durations.length > 1) {
+            this.duration = null;
+            this.listed_duration = null;
+          }
+        }
+        this.service = serv;
+        if (serv && (serv instanceof BookableItemModel)) {
+          this.service = serv.item;
+        }
+        this.parts_links.service = this.service.$href('self');
+        if (this.service.$has('book')) {
+          this.book_link = this.service;
+        }
+        if (serv.$has('days')) {
+          this.days_link = serv;
+        }
+        if (serv.$has('book')) {
+          this.book_link = serv;
+        }
+        if (this.service.$has('questions')) {
+          this.has_questions = true;
+          prom = this.service.$get('questions');
+          this.promises.push(prom);
+          prom.then((function(_this) {
+            return function(details) {
+              if (_this.company) {
+                details.currency_code = _this.company.currency_code;
+              }
+              _this.item_details = new BBModel.ItemDetails(details);
+              _this.has_questions = _this.item_details.hasQuestions;
+              if (default_questions) {
+                _this.item_details.setAnswers(default_questions);
+                return _this.setAskedQuestions();
+              }
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return _this.has_questions = false;
+            };
+          })(this));
+        } else {
+          this.has_questions = false;
+        }
+        if (this.service && this.service.durations && this.service.durations.length === 1) {
+          this.setDuration(this.service.durations[0]);
+          this.listed_duration = this.service.durations[0];
+        }
+        if (this.service && this.service.listed_durations && this.service.listed_durations.length === 1) {
+          this.listed_duration = this.service.listed_durations[0];
+        }
+        if (this.service.$has('category')) {
+          prom = this.service.getCategoryPromise();
+          if (prom) {
+            return this.promises.push(prom);
+          }
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setEventGroup
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set event group based on the event_group param
+      *
+      * @param {object} event_group a hash
+       */
+
+      BasketItem.prototype.setEventGroup = function(event_group) {
+        var prom;
+        if (this.event_group) {
+          if (this.event_group.self && event_group.self && this.event_group.self === event_group.self) {
+            return;
+          }
+        }
+        this.event_group = event_group;
+        this.parts_links.event_group = this.event_group.$href('self').replace('event_group', 'service');
+        if (this.event_group.$has('category')) {
+          prom = this.event_group.getCategoryPromise();
+          if (prom) {
+            return this.promises.push(prom);
+          }
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setEventChain
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set event chain in according of event_chain parameter, default_qustions is null
+      *
+      * @returns {array} The returned set event chaint
+       */
+
+      BasketItem.prototype.setEventChain = function(event_chain, default_questions) {
+        var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
+        if (this.event_chain) {
+          if (this.event_chain.self && event_chain.self && this.event_chain.self === event_chain.self) {
+            return;
+          }
+        }
+        this.event_chain = event_chain;
+        this.base_price = parseFloat(event_chain.price);
+        if ((this.price != null) && this.price !== this.base_price) {
+          this.setPrice(this.price);
+        } else {
+          this.setPrice(this.base_price);
+        }
+        if (this.event_chain.isSingleBooking()) {
+          this.tickets = {
+            name: "Admittance",
+            max: 1,
+            type: "normal",
+            price: this.base_price
+          };
+          this.tickets.pre_paid_booking_id = this.pre_paid_booking_id;
+          if (this.num_book) {
+            this.tickets.qty = this.num_book;
+          }
+        }
+        if (this.event_chain.$has('questions')) {
+          this.has_questions = true;
+          prom = this.event_chain.$get('questions');
+          this.promises.push(prom);
+          return prom.then((function(_this) {
+            return function(details) {
+              var a, i, len, q, ref;
+              _this.item_details = new BBModel.ItemDetails(details);
+              _this.has_questions = _this.item_details.hasQuestions;
+              if (_this.questions) {
+                ref = _this.item_details.questions;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  q = ref[i];
+                  a = _.find(_this.questions, function(c) {
+                    return c.id === q.id;
+                  });
+                  if (a && q.answer === void 0 || a !== q.answer) {
+                    q.answer = a.answer;
+                  }
+                }
+                _this.setAskedQuestions();
+              }
+              if (default_questions) {
+                _this.item_details.setAnswers(default_questions);
+                return _this.setAskedQuestions();
+              }
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return _this.has_questions = false;
+            };
+          })(this));
+        } else {
+          return this.has_questions = false;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setEvent
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set event according to event parameter
+      *
+      * @param {object} event A hash representing an event object
+       */
+
+      BasketItem.prototype.setEvent = function(event, default_questions) {
+        var prom;
+        if (default_questions == null) {
+          default_questions = null;
+        }
+        if (this.event) {
+          this.event.unselect();
+        }
+        this.event = event;
+        this.event.select();
+        this.event_chain_id = event.event_chain_id;
+        this.setDate({
+          date: event.date
+        });
+        this.setTime(event.time);
+        this.setDuration(event.duration);
+        if (event.$has('book')) {
+          this.book_link = event;
+        }
+        if (event.qty) {
+          this.num_book = event.qty;
+        }
+        prom = this.event.getChain();
+        this.promises.push(prom);
+        prom.then((function(_this) {
+          return function(chain) {
+            return _this.setEventChain(chain, default_questions);
+          };
+        })(this));
+        prom = this.event.getGroup();
+        this.promises.push(prom);
+        prom.then((function(_this) {
+          return function(group) {
+            return _this.setEventGroup(group);
+          };
+        })(this));
+        if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
+          if (this.company.getSettings().has_waitlists) {
+            return this.status = 8;
+          }
+        } else if (this.event.getSpacesLeft() <= 0 && this.company.settings && this.company.settings.has_waitlists) {
+          return this.status = 8;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setCategory
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set category according to cat parameter
+      *
+      * @param {object} cat A hash representing a category object
+       */
+
+      BasketItem.prototype.setCategory = function(cat) {
+        return this.category = cat;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setPerson
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set person according to per parameter
+      *
+      * @param {object} per A hash representing a person object
+      
+      * @param {boolean} set_selected The returned set resource for basket item
+       */
+
+      BasketItem.prototype.setPerson = function(per, set_selected) {
+        if (set_selected == null) {
+          set_selected = true;
+        }
+        if (set_selected && this.earliest_time) {
+          delete this.earliest_time;
+        }
+        if (!per) {
+          this.person = true;
+          if (set_selected) {
+            this.settings.person = -1;
+          }
+          this.parts_links.person = null;
+          if (this.service) {
+            this.setService(this.service);
+          }
+          if (this.resource && !this.anyResource()) {
+            this.setResource(this.resource, false);
+          }
+          if (this.event_id) {
+            delete this.event_id;
+            if (this.resource && this.defaults && this.defaults.merge_resources) {
+              return this.setResource(null);
+            }
+          }
+        } else {
+          this.person = per;
+          if (set_selected) {
+            this.settings.person = this.person.id;
+          }
+          this.parts_links.person = this.person.$href('self');
+          if (per.$has('days')) {
+            this.days_link = per;
+          }
+          if (per.$has('book')) {
+            this.book_link = per;
+          }
+          if (this.event_id && this.$has('person') && this.$href('person') !== this.person.self) {
+            delete this.event_id;
+            if (this.resource && this.defaults && this.defaults.merge_resources) {
+              return this.setResource(null);
+            }
+          }
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setResource
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set resource in according of res parameter, if set_selected is true
+      *
+      * @returns {object} The returned set resource for basket item
+       */
+
+      BasketItem.prototype.setResource = function(res, set_selected) {
+        if (set_selected == null) {
+          set_selected = true;
+        }
+        if (set_selected && this.earliest_time) {
+          delete this.earliest_time;
+        }
+        if (!res) {
+          this.resource = true;
+          if (set_selected) {
+            this.settings.resource = -1;
+          }
+          this.parts_links.resource = null;
+          if (this.service) {
+            this.setService(this.service);
+          }
+          if (this.person && !this.anyPerson()) {
+            this.setPerson(this.person, false);
+          }
+          if (this.event_id) {
+            delete this.event_id;
+            if (this.person && this.defaults && this.defaults.merge_people) {
+              return this.setPerson(null);
+            }
+          }
+        } else {
+          this.resource = res;
+          if (set_selected) {
+            this.settings.resource = this.resource.id;
+          }
+          this.parts_links.resource = this.resource.$href('self');
+          if (res.$has('days')) {
+            this.days_link = res;
+          }
+          if (res.$has('book')) {
+            this.book_link = res;
+          }
+          if (this.event_id && this.$has('resource') && this.$href('resource') !== this.resource.self) {
+            delete this.event_id;
+            if (this.person && this.defaults && this.defaults.merge_people) {
+              return this.setPerson(null);
+            }
+          }
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setDuration
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set duration in according of dur parameter
+      *
+      * @returns {integer} The returned set duration for basket item
+       */
+
+      BasketItem.prototype.setDuration = function(dur) {
+        this.duration = dur;
+        if (this.service) {
+          this.base_price = this.service.getPriceByDuration(dur);
+        } else if (this.time && this.time.price) {
+          this.base_price = this.time.price;
+        } else if (this.price) {
+          this.base_price = this.price;
+        }
+        return this.setPrice(this.base_price);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_time
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print time
+      *
+      * @returns {date} The returned print time
+       */
+
+      BasketItem.prototype.print_time = function() {
+        if (this.time) {
+          return this.time.print_time();
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_end_time
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print end time
+      *
+      * @returns {date} The returned print end time
+       */
+
+      BasketItem.prototype.print_end_time = function() {
+        if (this.time) {
+          return this.time.print_end_time(this.duration);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_time12
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print time12 if show suffix is true
+      *
+      * @returns {date} The returned print time12
+       */
+
+      BasketItem.prototype.print_time12 = function(show_suffix) {
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        if (this.time) {
+          return this.time.print_time12(show_suffix);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_end_time12
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get to print end time12 if show_suffix is true
+      *
+      * @returns {date} The returned print end time12
+       */
+
+      BasketItem.prototype.print_end_time12 = function(show_suffix) {
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        if (this.time) {
+          return this.time.print_end_time12(show_suffix, this.duration);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set time in according of time parameter
+      *
+      * @returns {date} The returned set time
+       */
+
+      BasketItem.prototype.setTime = function(time) {
+        var hours, mins, val;
+        if (this.time) {
+          this.time.unselect();
+        }
+        this.time = time;
+        if (this.time) {
+          this.time.select();
+          if (this.datetime) {
+            val = parseInt(time.time);
+            hours = parseInt(val / 60);
+            mins = val % 60;
+            this.datetime.hour(hours);
+            this.datetime.minutes(mins);
+          }
+          if (this.price && this.time.price && (this.price !== this.time.price)) {
+            this.setPrice(this.time.price);
+          } else if (this.price && !this.time.price) {
+            this.setPrice(this.price);
+          } else if (this.time.price && !this.price) {
+            this.setPrice(this.time.price);
+          } else if (this.price && this.time.price) {
+            this.setPrice(this.price);
+          } else {
+            this.setPrice(null);
+          }
+        }
+        return this.checkReady();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setDate
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set date in according of date parameter
+      *
+      * @returns {date} The returned set date
+       */
+
+      BasketItem.prototype.setDate = function(date) {
+        this.date = date;
+        if (this.date) {
+          this.date.date = moment(this.date.date);
+          if (this.datetime) {
+            this.datetime.date(this.date.date.date());
+            this.datetime.month(this.date.date.month());
+            this.datetime.year(this.date.date.year());
+          }
+        }
+        return this.checkReady();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearDateTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Clear date and time
+      *
+      * @returns {date} The returned clear date and time
+       */
+
+      BasketItem.prototype.clearDateTime = function() {
+        delete this.date;
+        delete this.time;
+        delete this.datetime;
+        this.ready = false;
+        return this.reserve_ready = false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Clear time
+      *
+      * @returns {date} The returned clear time
+       */
+
+      BasketItem.prototype.clearTime = function() {
+        delete this.time;
+        this.ready = false;
+        return this.reserve_ready = false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearTime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set group in according of group parameter
+      *
+      * @returns {object} The returned set group
+       */
+
+      BasketItem.prototype.setGroup = function(group) {
+        return this.group = group;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setAskedQuestions
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set asked questions
+      *
+      * @returns {object} The returned set asked questions
+       */
+
+      BasketItem.prototype.setAskedQuestions = function() {
+        this.asked_questions = true;
+        return this.checkReady();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name checkReady
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Check if an item is ready for checking out
+      *
+      * @returns {date} The returned item has been ready for checking out
+       */
+
+      BasketItem.prototype.checkReady = function() {
+        if (((this.date && this.time && this.service) || this.event || this.product || this.package_item || this.bulk_purchase || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions)) {
+          this.ready = true;
+        }
+        if (((this.date && this.time && this.service) || this.event || this.product || this.package_item || this.bulk_purchase || this.external_purchase || this.deal || (this.date && this.service && this.service.duration_unit === 'day')) && (this.asked_questions || !this.has_questions || this.reserve_without_questions)) {
+          return this.reserve_ready = true;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Build an array with details for every basket item in items array
+      *
+      * @returns {array} Newly created details array
+       */
+
+      BasketItem.prototype.getPostData = function() {
+        var data, i, j, len, len1, m_question, o_question, ref, ref1;
+        if (this.cloneAnswersItem) {
+          ref = this.cloneAnswersItem.item_details.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            o_question = ref[i];
+            ref1 = this.item_details.questions;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              m_question = ref1[j];
+              if (m_question.id === o_question.id) {
+                m_question.answer = o_question.answer;
+                this.setAskedQuestions();
+              }
+            }
+          }
+        }
+        data = {};
+        if (this.date) {
+          data.date = this.date.date.toISODate();
+        }
+        if (this.time) {
+          data.time = this.time.time;
+          if (this.time.event_id) {
+            data.event_id = this.time.event_id;
+          } else if (this.time.event_ids) {
+            data.event_ids = this.time.event_ids;
+          }
+        } else if (this.date && this.date.event_id) {
+          data.event_id = this.date.event_id;
+        }
+        data.price = this.price;
+        data.paid = this.paid;
+        if (this.book_link) {
+          data.book = this.book_link.$href('book');
+        }
+        data.id = this.id;
+        data.duration = this.duration;
+        data.settings = this.settings;
+        data.settings || (data.settings = {});
+        if (this.earliest_time) {
+          data.settings.earliest_time = this.earliest_time;
+        }
+        if (this.item_details && this.asked_questions) {
+          data.questions = this.item_details.getPostData();
+        }
+        if (this.move_item_id) {
+          data.move_item_id = this.move_item_id;
+        }
+        if (this.srcBooking) {
+          data.move_item_id = this.srcBooking.id;
+        }
+        if (this.service) {
+          data.service_id = this.service.id;
+        }
+        if (this.resource) {
+          data.resource_id = this.resource.id;
+        }
+        if (this.person) {
+          data.person_id = this.person.id;
+        }
+        data.length = this.length;
+        if (this.event) {
+          data.event_id = this.event.id;
+          if (this.event.pre_paid_booking_id != null) {
+            data.pre_paid_booking_id = this.event.pre_paid_booking_id;
+          } else if (this.tickets && (this.tickets.pre_paid_booking_id != null)) {
+            data.pre_paid_booking_id = this.tickets.pre_paid_booking_id;
+          }
+          data.tickets = this.tickets;
+        }
+        if (this.pre_paid_booking_id != null) {
+          data.pre_paid_booking_id = this.pre_paid_booking_id;
+        }
+        data.event_chain_id = this.event_chain_id;
+        data.event_group_id = this.event_group_id;
+        data.qty = this.qty;
+        if (this.status) {
+          data.status = this.status;
+        }
+        if (this.num_resources != null) {
+          data.num_resources = parseInt(this.num_resources);
+        }
+        if (this.package_item) {
+          data.package_id = this.package_item.id;
+        }
+        if (this.bulk_purchase) {
+          data.bulk_purchase_id = this.bulk_purchase.id;
+        }
+        data.external_purchase = this.external_purchase;
+        if (this.deal) {
+          data.deal = this.deal;
+        }
+        if (this.deal && this.recipient) {
+          data.recipient = this.recipient;
+        }
+        if (this.deal && this.recipient && this.recipient_mail) {
+          data.recipient_mail = this.recipient_mail;
+        }
+        data.coupon_id = this.coupon_id;
+        data.is_coupon = this.is_coupon;
+        if (this.attachment_id) {
+          data.attachment_id = this.attachment_id;
+        }
+        if (this.deal_codes) {
+          data.vouchers = this.deal_codes;
+        }
+        if (this.product) {
+          data.product_id = this.product.id;
+        }
+        if (this.email) {
+          data.email = this.email;
+        }
+        if (this.first_name) {
+          data.first_name = this.first_name;
+        }
+        if (this.last_name) {
+          data.last_name = this.last_name;
+        }
+        if (this.email != null) {
+          data.email = this.email;
+        }
+        if (this.email_admin != null) {
+          data.email_admin = this.email_admin;
+        }
+        if (this.private_note) {
+          data.private_note = this.private_note;
+        }
+        if (this.available_slot) {
+          data.available_slot = this.available_slot;
+        }
+        if (this.clinic_id) {
+          data.clinic_id = this.clinic_id;
+        }
+        return data;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set price in according of nprice parameter
+      *
+      * @returns {integer} The returned set price
+       */
+
+      BasketItem.prototype.setPrice = function(nprice) {
+        var printed_price;
+        if (nprice != null) {
+          this.price = parseFloat(nprice);
+          printed_price = this.price / 100;
+          this.printed_price = printed_price % 1 === 0 ? "£" + parseInt(printed_price) : $window.sprintf("£%.2f", printed_price);
+          if (this.company && this.company.settings) {
+            this.printed_vat_cal = this.company.settings.payment_tax;
+          }
+          if (this.printed_vat_cal) {
+            this.printed_vat = this.printed_vat_cal / 100 * printed_price;
+          }
+          if (this.printed_vat_cal) {
+            return this.printed_vat_inc = this.printed_vat_cal / 100 * printed_price + printed_price;
+          }
+        } else {
+          this.price = null;
+          this.printed_price = null;
+          this.printed_vat_cal = null;
+          this.printed_vat = null;
+          return this.printed_vat_inc = null;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getStep
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Build a temp object with current step variables
+      *
+      * @returns {object} Temp hash
+       */
+
+      BasketItem.prototype.getStep = function() {
+        var temp;
+        temp = {};
+        temp.service = this.service;
+        temp.category = this.category;
+        temp.person = this.person;
+        temp.resource = this.resource;
+        temp.duration = this.duration;
+        temp.event = this.event;
+        temp.event_group = this.event_group;
+        temp.event_chain = this.event_chain;
+        temp.time = this.time;
+        temp.date = this.date;
+        temp.days_link = this.days_link;
+        temp.book_link = this.book_link;
+        temp.ready = this.ready;
+        return temp;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name loadStep
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Build current step variables based on a hash object passed as parameter
+      *
+      * @param {object} step Hash object representing a step
+      *
+      * @returns {object} The returned load step
+       */
+
+      BasketItem.prototype.loadStep = function(step) {
+        this.service = step.service;
+        this.category = step.category;
+        this.person = step.person;
+        this.resource = step.resource;
+        this.duration = step.duration;
+        this.event = step.event;
+        this.event_chain = step.event_chain;
+        this.event_group = step.event_group;
+        this.time = step.time;
+        this.date = step.date;
+        this.days_link = step.days_link;
+        this.book_link = step.book_link;
+        return this.ready = step.ready;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name describe
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get information about of the basket item
+      *
+      * @returns {object} The returned title
+       */
+
+      BasketItem.prototype.describe = function() {
+        var title;
+        title = "-";
+        if (this.service) {
+          title = this.service.name;
+        }
+        if (this.event_group && this.event && title === "-") {
+          title = this.event_group.name + " - " + this.event.description;
+        }
+        if (this.product) {
+          title = this.product.name;
+        }
+        if (this.external_purchase) {
+          title = this.external_purchase.name;
+        }
+        if (this.deal) {
+          title = this.deal.name;
+        }
+        if (this.package_item) {
+          title = this.package_item.name;
+        }
+        if (this.bulk_purchase) {
+          title = this.bulk_purchase.name;
+        }
+        return title;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name booking_date
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking date of the basket item, in according of format parameter
+      *
+      * @returns {date} The returned booking date
+       */
+
+      BasketItem.prototype.booking_date = function(format) {
+        if (!this.date || !this.date.date) {
+          return null;
+        }
+        return this.date.date.format(format);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name booking_time
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking time of the basket item in according with separator = '-'
+      *
+      * @returns {date} The returned booking time
+       */
+
+      BasketItem.prototype.booking_time = function(seperator) {
+        var duration;
+        if (seperator == null) {
+          seperator = '-';
+        }
+        if (!this.time) {
+          return null;
+        }
+        duration = this.listed_duration ? this.listed_duration : this.duration;
+        return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name duePrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get due price for the basket item
+      *
+      * @returns {string} The returned price
+       */
+
+      BasketItem.prototype.duePrice = function() {
+        if (this.isWaitlist()) {
+          return 0;
+        }
+        return this.price;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name isWaitlist
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Checks if this is a wait list
+      *
+      * @returns {boolean} If this is a wait list
+       */
+
+      BasketItem.prototype.isWaitlist = function() {
+        return this.status && this.status === 8;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name start_datetime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking start date and time
+      *
+      * @returns {date} The returned start date time
+       */
+
+      BasketItem.prototype.start_datetime = function() {
+        var start_datetime;
+        if (!this.date || !this.time) {
+          return null;
+        }
+        start_datetime = moment(this.date.date.toISODate());
+        start_datetime.minutes(this.time.time);
+        return start_datetime;
+      };
+
+      BasketItem.prototype.startDatetime = function() {
+        return this.start_datetime();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name end_datetime
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get booking end date and time
+      *
+      * @returns {date} The returned end date time
+       */
+
+      BasketItem.prototype.end_datetime = function() {
+        var duration, end_datetime;
+        if (!this.date || !this.time || (!this.listed_duration && !this.duration)) {
+          return null;
+        }
+        duration = this.listed_duration ? this.listed_duration : this.duration;
+        end_datetime = moment(this.date.date.toISODate());
+        end_datetime.minutes(this.time.time + duration);
+        return end_datetime;
+      };
+
+      BasketItem.prototype.endDatetime = function() {
+        return this.end_datetime();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setSrcBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set a booking are to be a move if according of booking parameter
+      *
+      * @returns {object} The returned end date time
+       */
+
+      BasketItem.prototype.setSrcBooking = function(booking) {
+        this.srcBooking = booking;
+        return this.duration = booking.duration;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name anyPerson
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Verify type of any person
+      *
+      * @returns {boolean} The returned any person
+       */
+
+      BasketItem.prototype.anyPerson = function() {
+        return this.person && (typeof this.person === 'boolean');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name anyResource
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Verify type of any resorce
+      *
+      * @returns {boolean} The returned any resource
+       */
+
+      BasketItem.prototype.anyResource = function() {
+        return this.resource && (typeof this.resource === 'boolean');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name isMovingBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Verify if booking has been moved
+      *
+      * @returns {boolean} The returned moving booking
+       */
+
+      BasketItem.prototype.isMovingBooking = function() {
+        return this.srcBooking || this.move_item_id;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setCloneAnswers
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Set clone answers in according of other item parameter
+      *
+      * @returns {object} The returned clone answers
+       */
+
+      BasketItem.prototype.setCloneAnswers = function(otherItem) {
+        return this.cloneAnswersItem = otherItem;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name questionPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Question price for the basket item
+      *
+      * @returns {integer} The returned question price
+       */
+
+      BasketItem.prototype.questionPrice = function() {
+        if (!this.item_details) {
+          return 0;
+        }
+        return this.item_details.questionPrice(this.getQty());
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getQty
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get quantity of tickets
+      *
+      * @returns {integer} The returned quatity of tickets
+       */
+
+      BasketItem.prototype.getQty = function() {
+        if (this.qty) {
+          return this.qty;
+        }
+        if (this.tickets) {
+          return this.tickets.qty;
+        }
+        return 1;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Total price of the basket item (price including discounts)
+      *
+      * @returns {integer} The returned total price
+       */
+
+      BasketItem.prototype.totalPrice = function() {
+        var pr;
+        if (this.tickets && this.tickets.pre_paid_booking_id) {
+          return 0;
+        }
+        if (this.pre_paid_booking_id) {
+          return 0;
+        }
+        if (this.discount_price != null) {
+          return this.discount_price + this.questionPrice();
+        }
+        pr = this.total_price;
+        if (!angular.isNumber(pr)) {
+          pr = this.price;
+        }
+        if (!angular.isNumber(pr)) {
+          pr = 0;
+        }
+        return pr + this.questionPrice();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name fullPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Full price for the basket item (price not including discounts)
+      *
+      * @returns {integer} The returned full price
+       */
+
+      BasketItem.prototype.fullPrice = function() {
+        var pr;
+        pr = this.base_price;
+        pr || (pr = this.total_price);
+        pr || (pr = this.price);
+        pr || (pr = 0);
+        return pr + this.questionPrice();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setProduct
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a product to the BasketItem
+      *
+       */
+
+      BasketItem.prototype.setProduct = function(product) {
+        this.product = product;
+        if (this.product.$has('book')) {
+          this.book_link = this.product;
+        }
+        if (product.price) {
+          return this.setPrice(product.price);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setPackageItem
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a package to the BasketItem
+      *
+       */
+
+      BasketItem.prototype.setPackageItem = function(package_item) {
+        this.package_item = package_item;
+        if (this.package_item.$has('book')) {
+          this.book_link = this.package_item;
+        }
+        if (package_item.price) {
+          return this.setPrice(package_item.price);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setBulkPurchase
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a bulk purchase to the BasketItem
+      *
+       */
+
+      BasketItem.prototype.setBulkPurchase = function(bulk_purchase) {
+        this.bulk_purchase = bulk_purchase;
+        if (this.bulk_purchase.$has('book')) {
+          this.book_link = this.bulk_purchase;
+        }
+        if (bulk_purchase.price) {
+          return this.setPrice(bulk_purchase.price);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setExternalPurchase
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply an external purchase to the BasketItem
+      *
+       */
+
+      BasketItem.prototype.setExternalPurchase = function(external_purchase) {
+        this.external_purchase = external_purchase;
+        this.book_link = this.company;
+        if (external_purchase.price) {
+          return this.setPrice(external_purchase.price);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setDeal
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a deal on to BasketItem
+      *
+       */
+
+      BasketItem.prototype.setDeal = function(deal) {
+        this.deal = deal;
+        if (this.deal.$has('book')) {
+          this.book_link = this.deal;
+        }
+        if (deal.price) {
+          return this.setPrice(deal.price);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasPrice
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Checks if the BasketItem has a price
+      *
+      * @returns {boolean}
+       */
+
+      BasketItem.prototype.hasPrice = function() {
+        return this.price != null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getAttachment
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get attachment of the basket item
+      *
+      * @returns {object} The attachment
+       */
+
+      BasketItem.prototype.getAttachment = function() {
+        if (this.attachment) {
+          return this.attachment;
+        }
+        if (this.$has('attachment') && this.attachment_id) {
+          return this._data.$get('attachment').then((function(_this) {
+            return function(att) {
+              _this.attachment = att;
+              return _this.attachment;
+            };
+          })(this));
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setPrepaidBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Apply a prepaid booking to BasketItem
+      *
+       */
+
+      BasketItem.prototype.setPrepaidBooking = function(pre_paid_booking) {
+        this.pre_paid_booking = pre_paid_booking;
+        return this.pre_paid_booking_id = pre_paid_booking.id;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasPrepaidBooking
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the basket item has a prepaid booking applied
+      *
+      * @returns {boolean} boolean indicating if the BasketItem has a prepaid booking
+       */
+
+      BasketItem.prototype.hasPrepaidBooking = function() {
+        return this.pre_paid_booking_id != null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getEventId
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Get the event id for the BasketItem
+      *
+      * @returns {string} The Event ID
+       */
+
+      BasketItem.prototype.getEventId = function() {
+        if (this.time && this.time.event_id) {
+          return this.time.event_id;
+        } else if (this.date && this.date.event_id) {
+          return this.date.event_id;
+        } else if (this.event) {
+          return this.event.id;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name isExternalPurchase
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the BasketItem is an external purchase
+      *
+      * @returns {boolean}
+       */
+
+      BasketItem.prototype.isExternalPurchase = function() {
+        return this.external_purchase != null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getName
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Returns the name
+      *
+      * @returns {String}
+       */
+
+      BasketItem.prototype.getName = function(client) {
+        if (this.first_name) {
+          return this.first_name + " " + this.last_name;
+        } else if (client) {
+          return client.getName();
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name isTimeItem
+      * @methodOf BB.Models:BasketItem
+      * @description
+      * Indicates if the BasketItem is a time item (i.e. either an event
+      * or appointment booking)
+      *
+      * @returns {boolean}
+       */
+
+      BasketItem.prototype.isTimeItem = function() {
+        return this.service || this.event;
+      };
+
+      return BasketItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BookableItem
+  *
+  * @description
+  * Representation of an BookableItem Object
+  *
+  * @property {string} name Property name display "-Waiting-"
+  * @property {string} ready The ready
+  * @property {string} promise The promise
+  * @property {string} item Bookable item
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BookableItemModel", function($q, BBModel, BaseModel) {
+    var BookableItem;
+    return BookableItem = (function(superClass) {
+      extend(BookableItem, superClass);
+
+      BookableItem.prototype.item = null;
+
+      BookableItem.prototype.promise = null;
+
+      function BookableItem(data) {
+        BookableItem.__super__.constructor.apply(this, arguments);
+        this.name = "-Waiting-";
+        this.ready = $q.defer();
+        this.promise = this._data.$get('item');
+        this.promise.then((function(_this) {
+          return function(val) {
+            var m, n, ref, ref1, ref2;
+            if (val.type === "person") {
+              _this.item = new BBModel.Person(val);
+              if (_this.item) {
+                ref = _this.item._data;
+                for (n in ref) {
+                  m = ref[n];
+                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
+                    _this[n] = m;
+                  }
+                }
+                return _this.ready.resolve();
+              } else {
+                return _this.ready.resolve();
+              }
+            } else if (val.type === "resource") {
+              _this.item = new BBModel.Resource(val);
+              if (_this.item) {
+                ref1 = _this.item._data;
+                for (n in ref1) {
+                  m = ref1[n];
+                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
+                    _this[n] = m;
+                  }
+                }
+                return _this.ready.resolve();
+              } else {
+                return _this.ready.resolve();
+              }
+            } else if (val.type === "service") {
+              _this.item = new BBModel.Service(val);
+              if (_this.item) {
+                ref2 = _this.item._data;
+                for (n in ref2) {
+                  m = ref2[n];
+                  if (_this.item._data.hasOwnProperty(n) && typeof m !== 'function') {
+                    _this[n] = m;
+                  }
+                }
+                return _this.ready.resolve();
+              } else {
+                return _this.ready.resolve();
+              }
+            }
+          };
+        })(this));
+      }
+
+      return BookableItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BulkPurchase
+  *
+  * @description
+  * Representation of a BulkPurchase Object
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BulkPurchaseModel", function($q, BBModel, BaseModel) {
+    var BulkPurchase;
+    return BulkPurchase = (function(superClass) {
+      extend(BulkPurchase, superClass);
+
+      function BulkPurchase() {
+        return BulkPurchase.__super__.constructor.apply(this, arguments);
+      }
+
+      return BulkPurchase;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BussinessQuestion
+  *
+  * @description
+  * Representation of an BussinessQuestion Object
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BusinessQuestionModel", function($q, $filter, BBModel, BaseModel) {
+    var BusinessQuestion;
+    return BusinessQuestion = (function(superClass) {
+      extend(BusinessQuestion, superClass);
+
+      function BusinessQuestion(data) {
+        BusinessQuestion.__super__.constructor.call(this, data);
+      }
+
+      return BusinessQuestion;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Category
+  *
+  * @description
+  * Representation of a Category Object
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("CategoryModel", function($q, BBModel, BaseModel) {
+    var Category;
+    return Category = (function(superClass) {
+      extend(Category, superClass);
+
+      function Category() {
+        return Category.__super__.constructor.apply(this, arguments);
+      }
+
+      return Category;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Client
+  *
+  * @description
+  * Representation of an Client Object
+  *
+  * @property {string} first_name Client first name
+  * @property {string} last_name Client last name
+  * @property {string} email Client email address
+  * @property {string} address1 The first line of client address
+  * @property {string} address2 The second line of client address
+  * @property {string} address3 The third line of client address
+  * @property {string} address4 The fourth line of client address
+  * @property {string} address4 The fifth line of client address
+  * @property {string} postcode Postcode of the client
+  * @property {string} country Country of the client
+  * @property {integer} phone The phone number of the client
+  * @property {integer} mobile The mobile phone number of the client
+  * @property {integer} id Id of the client
+  * @property {array} answers Answers of the client
+  * @property {boolean} deleted Verify if the client account is deleted or not
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
+    var Client;
+    return Client = (function(superClass) {
+      extend(Client, superClass);
+
+      function Client(data) {
+        Client.__super__.constructor.apply(this, arguments);
+        this.name = this.getName();
+        if (data) {
+          if (data.answers && data.$has('questions')) {
+            this.waitingQuestions = $q.defer();
+            this.gotQuestions = this.waitingQuestions.promise;
+            data.$get('questions').then((function(_this) {
+              return function(details) {
+                _this.client_details = new BBModel.ClientDetails(details);
+                _this.client_details.setAnswers(data.answers);
+                _this.questions = _this.client_details.questions;
+                _this.setAskedQuestions();
+                return _this.waitingQuestions.resolve();
+              };
+            })(this));
+          }
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name setClientDetails
+      * @methodOf BB.Models:Client
+      * @description
+      * Set client details in according to details parameter
+      *
+      * @returns {object} The returned client details
+       */
+
+      Client.prototype.setClientDetails = function(details) {
+        this.client_details = details;
+        return this.questions = this.client_details.questions;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setDefaults
+      * @methodOf BB.Models:Client
+      * @description
+      * Set client defaults in according of values parameter
+      *
+      * @returns {object} The returned client defaults
+       */
+
+      Client.prototype.setDefaults = function(values) {
+        if (values.name) {
+          this.name = values.name;
+        }
+        if (values.first_name) {
+          this.first_name = values.first_name;
+        }
+        if (values.last_name) {
+          this.last_name = values.last_name;
+        }
+        if (values.phone) {
+          this.phone = values.phone;
+        }
+        if (values.mobile) {
+          this.mobile = values.mobile;
+        }
+        if (values.email) {
+          this.email = values.email;
+        }
+        if (values.id) {
+          this.id = values.id;
+        }
+        if (values.ref) {
+          this.comp_ref = values.ref;
+        }
+        if (values.comp_ref) {
+          this.comp_ref = values.comp_ref;
+        }
+        if (values.address1) {
+          this.address1 = values.address1;
+        }
+        if (values.address2) {
+          this.address2 = values.address2;
+        }
+        if (values.address3) {
+          this.address3 = values.address3;
+        }
+        if (values.address4) {
+          this.address4 = values.address4;
+        }
+        if (values.address5) {
+          this.address5 = values.address5;
+        }
+        if (values.postcode) {
+          this.postcode = values.postcode;
+        }
+        if (values.country) {
+          this.country = values.country;
+        }
+        if (values.answers) {
+          return this.default_answers = values.answers;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name pre_fill_answers
+      * @methodOf BB.Models:Client
+      * @description
+      * Pre fill client answers according of details
+      *
+      * @returns {object} The returned pre fill answers
+       */
+
+      Client.prototype.pre_fill_answers = function(details) {
+        var i, len, q, ref, results;
+        if (!this.default_answers) {
+          return;
+        }
+        ref = details.questions;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
+          if (this.default_answers[q.name]) {
+            results.push(q.answer = this.default_answers[q.name]);
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getName
+      * @methodOf BB.Models:Client
+      * @description
+      * Get client first name and last name
+      *
+      * @returns {string} The returned client name
+       */
+
+      Client.prototype.getName = function() {
+        var str;
+        str = "";
+        if (this.first_name) {
+          str += this.first_name;
+        }
+        if (str.length > 0 && this.last_name) {
+          str += " ";
+        }
+        if (this.last_name) {
+          str += this.last_name;
+        }
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name addressSingleLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get the address and postcode of the client
+      *
+      * @returns {string} The returned address
+       */
+
+      Client.prototype.addressSingleLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += ", ";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += ", ";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasAddress
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this is considered a valid address
+      *
+      * @returns {boolean} If this is a valid address
+       */
+
+      Client.prototype.hasAddress = function() {
+        return this.address1 || this.address2 || this.postcode;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name addressCsvLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get all address fields, postcode and country for CSV file
+      *
+      * @returns {string} The returned address
+       */
+
+      Client.prototype.addressCsvLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        str += ", ";
+        if (this.address2) {
+          str += this.address2;
+        }
+        str += ", ";
+        if (this.address3) {
+          str += this.address3;
+        }
+        str += ", ";
+        if (this.address4) {
+          str += this.address4;
+        }
+        str += ", ";
+        if (this.address5) {
+          str += this.address5;
+        }
+        str += ", ";
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        str += ", ";
+        if (this.country) {
+          str += this.country;
+        }
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name addressMultiLine
+      * @methodOf BB.Models:Address
+      * @description
+      * Get address several lines separated by line breaks
+      *
+      * @returns {string} The returned address
+       */
+
+      Client.prototype.addressMultiLine = function() {
+        var str;
+        str = "";
+        if (this.address1) {
+          str += this.address1;
+        }
+        if (this.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address2) {
+          str += this.address2;
+        }
+        if (this.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address3) {
+          str += this.address3;
+        }
+        if (this.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address4) {
+          str += this.address4;
+        }
+        if (this.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.address5) {
+          str += this.address5;
+        }
+        if (this.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (this.postcode) {
+          str += this.postcode;
+        }
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:Address
+      * @description
+      * Build an array with details of the client
+      *
+      * @returns {array} newly created details array
+       */
+
+      Client.prototype.getPostData = function() {
+        var i, len, q, ref, x;
+        x = {};
+        x.first_name = this.first_name;
+        x.last_name = this.last_name;
+        if (this.house_number) {
+          x.address1 = this.house_number + " " + this.address1;
+        } else {
+          x.address1 = this.address1;
+        }
+        x.address2 = this.address2;
+        x.address3 = this.address3;
+        x.address4 = this.address4;
+        x.address5 = this.address5;
+        x.postcode = this.postcode;
+        x.country = this.country;
+        x.email = this.email;
+        x.id = this.id;
+        x.comp_ref = this.comp_ref;
+        x.parent_client_id = this.parent_client_id;
+        x.password = this.password;
+        x.notifications = this.notifications;
+        if (this.member_level_id) {
+          x.member_level_id = this.member_level_id;
+        }
+        if (this.send_welcome_email) {
+          x.send_welcome_email = this.send_welcome_email;
+        }
+        if (this.default_company_id) {
+          x.default_company_id = this.default_company_id;
+        }
+        if (this.phone) {
+          x.phone = this.phone;
+          if (this.phone_prefix) {
+            x.phone_prefix = this.phone_prefix;
+          }
+        }
+        if (this.mobile) {
+          this.remove_prefix();
+          x.mobile = this.mobile;
+          x.mobile_prefix = this.mobile_prefix;
+        }
+        if (this.questions) {
+          x.questions = [];
+          ref = this.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            x.questions.push(q.getPostData());
+          }
+        }
+        return x;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name valid
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this is considered a valid email
+      *
+      * @returns {boolean} If this is a valid email
+       */
+
+      Client.prototype.valid = function() {
+        if (this.isValid) {
+          return this.isValid;
+        }
+        if (this.email || this.hasServerId()) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setValid
+      * @methodOf BB.Models:Address
+      * @description
+      * Set valid client, according of val
+      *
+      * @returns {object} The returned valid client
+       */
+
+      Client.prototype.setValid = function(val) {
+        return this.isValid = val;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasServerId
+      * @methodOf BB.Models:Address
+      * @description
+      * Checks if this has a id
+      *
+      * @returns {boolean} If this has a id
+       */
+
+      Client.prototype.hasServerId = function() {
+        return this.id;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setAskedQuestions
+      * @methodOf BB.Models:Address
+      * @description
+      * Set asked questions of the client
+      *
+      * @returns {boolean} If this is set
+       */
+
+      Client.prototype.setAskedQuestions = function() {
+        return this.asked_questions = true;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name fullMobile
+      * @methodOf BB.Models:Address
+      * @description
+      * Full mobile phone number of the client
+      *
+      * @returns {object} The returned full mobile number
+       */
+
+      Client.prototype.fullMobile = function() {
+        if (!this.mobile) {
+          return;
+        }
+        if (!this.mobile_prefix) {
+          return this.mobile;
+        }
+        return "+" + this.mobile_prefix + this.mobile;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name remove_prefix
+      * @methodOf BB.Models:Address
+      * @description
+      * Remove prefix from mobile number of the client
+      *
+      * @returns {array} The returned full mobile number without prefix
+       */
+
+      Client.prototype.remove_prefix = function() {
+        var pref_arr;
+        pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
+        if (pref_arr) {
+          this.mobile.replace(pref_arr[0], "");
+          return this.mobile_prefix = pref_arr[0];
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getPrePaidBookingsPromise
+      * @methodOf BB.Models:Address
+      * @description
+      * Get pre paid bookings promise of the client
+      *
+      * @returns {promise} A promise for client pre paid bookings
+       */
+
+      Client.prototype.getPrePaidBookingsPromise = function(params) {
+        var defer;
+        defer = $q.defer();
+        if (this.$has('pre_paid_bookings')) {
+          this.$get('pre_paid_bookings', params).then(function(collection) {
+            return collection.$get('pre_paid_bookings').then(function(prepaids) {
+              var prepaid;
+              return defer.resolve((function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = prepaids.length; i < len; i++) {
+                  prepaid = prepaids[i];
+                  results.push(new BBModel.PrePaidBooking(prepaid));
+                }
+                return results;
+              })());
+            }, function(err) {
+              return defer.reject(err);
+            });
+          }, function(err) {
+            return defer.resolve([]);
+          });
+        } else {
+          defer.resolve([]);
+        }
+        return defer.promise;
+      };
+
+      return Client;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:ClientDetails
+  *
+  * @description
+  * Representation of an ClientDetails Object
+  *
+  * @property {array} questions Questions of the client
+  * @property {integer} company_id The company id of the client company
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClientDetailsModel", function($q, BBModel, BaseModel) {
+    var ClientDetails;
+    return ClientDetails = (function(superClass) {
+      extend(ClientDetails, superClass);
+
+      function ClientDetails(data) {
+        var i, len, q, ref;
+        ClientDetails.__super__.constructor.apply(this, arguments);
+        this.questions = [];
+        if (this._data) {
+          ref = data.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            this.questions.push(new BBModel.Question(q));
+          }
+        }
+        this.hasQuestions = this.questions.length > 0;
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:ClientDetails
+      * @description
+      * Get post data from client details according to questions
+      *
+      * @returns {object} The returned data
+       */
+
+      ClientDetails.prototype.getPostData = function(questions) {
+        var data, i, len, q;
+        data = [];
+        for (i = 0, len = questions.length; i < len; i++) {
+          q = questions[i];
+          data.push({
+            answer: q.answer,
+            id: q.id,
+            price: q.price
+          });
+        }
+        return data;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setAnswers
+      * @methodOf BB.Models:ClientDetails
+      * @description
+      * Set answers of the client details in function of answers
+      *
+      * @returns {object} The returned answers
+       */
+
+      ClientDetails.prototype.setAnswers = function(answers) {
+        var a, ahash, i, j, len, len1, q, ref, results;
+        ahash = {};
+        for (i = 0, len = answers.length; i < len; i++) {
+          a = answers[i];
+          ahash[a.question_id] = a;
+        }
+        ref = this.questions;
+        results = [];
+        for (j = 0, len1 = ref.length; j < len1; j++) {
+          q = ref[j];
+          if (ahash[q.id]) {
+            results.push(q.answer = ahash[q.id].answer);
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+
+      return ClientDetails;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Clinic
+  *
+  * @description
+  * Representation of an Clinic Object
+  *
+  * @property {string} setTimes Set times for the clinic
+  * @property {string} setResourcesAndPeople Set resources and people for the clinic 
+  * @property {object} settings Clinic settings
+  * @property {string} resources Clinic resources
+  * @property {integer} resource_ids Clinic resources ids
+  * @property {string} people Clinic people
+  * @property {integer} person_ids Clinic Person ids
+  * @property {string} services Clinic services
+  * @property {integer} services_ids Clinic service ids
+  * @property {string} uncovered The uncovered
+  * @property {string} className The class Name
+  * @property {string} start_time The clinic start thime
+  * @property {string} start The clinic start
+  * @property {string} end_time The clinic end time
+  * @property {string} end The clinic end
+  * @property {string} title The title
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
+    var Clinic;
+    return Clinic = (function(superClass) {
+      extend(Clinic, superClass);
+
+      function Clinic(data) {
+        Clinic.__super__.constructor.call(this, data);
+        this.setTimes();
+        this.setResourcesAndPeople();
+        this.settings || (this.settings = {});
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name setResourcesAndPeople
+      * @methodOf BB.Models:Clinic
+      * @description
+      * Set resources and people for clinic
+      *
+      * @returns {object} The returned resources and people
+       */
+
+      Clinic.prototype.setResourcesAndPeople = function() {
+        this.resources = _.reduce(this.resource_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.people = _.reduce(this.person_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.services = _.reduce(this.service_ids, function(h, id) {
+          h[id] = true;
+          return h;
+        }, {});
+        this.uncovered = !this.person_ids || this.person_ids.length === 0;
+        if (this.uncovered) {
+          return this.className = "clinic_uncovered";
+        } else {
+          return this.className = "clinic_covered";
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setTimes
+      * @methodOf BB.Models:Clinic
+      * @description
+      * Set time for clinic
+      *
+      * @returns {object} The returned time
+       */
+
+      Clinic.prototype.setTimes = function() {
+        if (this.start_time) {
+          this.start_time = moment(this.start_time);
+          this.start = this.start_time;
+        }
+        if (this.end_time) {
+          this.end_time = moment(this.end_time);
+          this.end = this.end_time;
+        }
+        return this.title = this.name;
+      };
+
+      return Clinic;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BBCollectionModel", function($q, BBModel, BaseModel) {
+    var BBCollection;
+    return BBCollection = (function(superClass) {
+      extend(BBCollection, superClass);
+
+      function BBCollection() {
+        this.getNextPage = bind(this.getNextPage, this);
+        return BBCollection.__super__.constructor.apply(this, arguments);
+      }
+
+      BBCollection.prototype.getNextPage = function(params) {
+        var deferred;
+        deferred = $q.defer();
+        this.$get('next', params).then(function(collection) {
+          return deferred.resolve(new BBModel.BBCollection(collection));
+        }, function() {
+          return deferred.reject();
+        });
+        return deferred.promise;
+      };
+
+      return BBCollection;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Company
+  *
+  * @description
+  * Representation of an Company Object
+  *
+  * @constructor
+  * @param {HALobject=} data A HAL object to initialise the company from
+  * 
+  * @property {string} name The company name
+  * @property {string} description The company description
+  * @property {string} country_code the Country code for thie company
+  * @property {string} currency_code A CCY for this company
+  * @property {string} reference A custom external reference for the company
+  * @property {integer} id The company ID
+  * @property {boolean} live If this company is set live
+  * @property {array} companies An array of child companies if this is a parent company
+  * @property {string} timezone The timezone for the business
+   */
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("CompanyModel", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
+    var Company;
+    return Company = (function(superClass) {
+      extend(Company, superClass);
+
+      function Company(data) {
+        this.getPusherChannel = bind(this.getPusherChannel, this);
+        this.pusherSubscribe = bind(this.pusherSubscribe, this);
+        var all_companies, c, child, comp, i, j, len, len1, ref1, ref2;
+        Company.__super__.constructor.call(this, data);
+        if (this.companies) {
+          all_companies = [];
+          this.child_companies = [];
+          ref1 = this.companies;
+          for (i = 0, len = ref1.length; i < len; i++) {
+            comp = ref1[i];
+            c = new BBModel.Company(halClient.$parse(comp));
+            this.child_companies.push(c);
+            if (c.companies) {
+              ref2 = c.companies;
+              for (j = 0, len1 = ref2.length; j < len1; j++) {
+                child = ref2[j];
+                all_companies.push(child);
+              }
+            } else {
+              all_companies.push(c);
+            }
+          }
+          this.companies = all_companies;
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name getCompanyByRef
+      * @methodOf BB.Models:Company
+      * @description
+      * Find a child company by reference
+      *
+      * @returns {promise} A promise for the child company
+       */
+
+      Company.prototype.getCompanyByRef = function(ref) {
+        var defer;
+        defer = $q.defer();
+        this.$get('companies').then(function(companies) {
+          var company;
+          company = _.find(companies, function(c) {
+            return c.reference === ref;
+          });
+          if (company) {
+            return defer.resolve(company);
+          } else {
+            return defer.reject('No company for ref ' + ref);
+          }
+        }, function(err) {
+          console.log('err ', err);
+          return defer.reject(err);
+        });
+        return defer.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name findChildCompany
+      * @methodOf BB.Models:Company
+      * @description
+      * Find a child company by id
+      *
+      * @returns {object} The child company
+       */
+
+      Company.prototype.findChildCompany = function(id) {
+        var c, cname, i, j, len, len1, name, ref1, ref2;
+        if (!this.companies) {
+          return null;
+        }
+        ref1 = this.companies;
+        for (i = 0, len = ref1.length; i < len; i++) {
+          c = ref1[i];
+          if (c.id === parseInt(id)) {
+            return c;
+          }
+          if (c.ref && c.ref === String(id)) {
+            return c;
+          }
+        }
+        if (typeof id === "string") {
+          name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
+          ref2 = this.companies;
+          for (j = 0, len1 = ref2.length; j < len1; j++) {
+            c = ref2[j];
+            cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
+            if (name === cname) {
+              return c;
+            }
+          }
+        }
+        return null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getSettings
+      * @methodOf BB.Models:Company
+      * @description
+      * Get settings company
+      *
+      * @returns {promise} A promise for settings company
+       */
+
+      Company.prototype.getSettings = function() {
+        var def;
+        def = $q.defer();
+        if (this.settings) {
+          def.resolve(this.settings);
+        } else {
+          if (this.$has('settings')) {
+            this.$get('settings').then((function(_this) {
+              return function(set) {
+                _this.settings = new BBModel.CompanySettings(set);
+                return def.resolve(_this.settings);
+              };
+            })(this));
+          } else {
+            def.reject("Company has no settings");
+          }
+        }
+        return def.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name pusherSubscribe
+      * @methodOf BB.Models:Company
+      * @description
+      * Push subscribe for company
+      *
+      * @returns {object} Subscriber company
+       */
+
+      Company.prototype.pusherSubscribe = function(callback, options) {
+        var channelName;
+        if (options == null) {
+          options = {};
+        }
+        if ((typeof Pusher !== "undefined" && Pusher !== null) && (this.pusher == null)) {
+          this.pusher = new Pusher('c8d8cea659cc46060608', {
+            encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
+            authEndpoint: this.$link('pusher').href,
+            auth: {
+              headers: {
+                'App-Id': AppConfig.appId,
+                'App-Key': AppConfig.appKey,
+                'Auth-Token': $sessionStorage.getItem('auth_token')
+              }
+            }
+          });
+        }
+        channelName = "private-c" + this.id + "-w" + this.numeric_widget_id;
+        if (this.pusher.channel(channelName) != null) {
+          this.pusher.unsubscribe(channelName);
+        }
+        this.pusher_channel = this.pusher.subscribe(channelName);
+        this.pusher_channel.bind('booking', callback);
+        this.pusher_channel.bind('cancellation', callback);
+        return this.pusher_channel.bind('updating', callback);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getPusherChannel
+      * @methodOf BB.Models:Company
+      *
+      * @returns {object} Pusher channel
+       */
+
+      Company.prototype.getPusherChannel = function(model, options) {
+        var channelName;
+        if (options == null) {
+          options = {};
+        }
+        if (!this.pusher) {
+          this.pusher = new Pusher('c8d8cea659cc46060608', {
+            encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
+            authEndpoint: this.$link('pusher').href,
+            auth: {
+              headers: {
+                'App-Id': AppConfig.appId,
+                'App-Key': AppConfig.appKey,
+                'Auth-Token': $sessionStorage.getItem('auth_token')
+              }
+            }
+          });
+        }
+        if (this.$has(model)) {
+          channelName = this.$href(model);
+          channelName = channelName.replace(/https?:\/\//, '').replace(/\//g, '-').replace(/:/g, '_');
+          if (this.pusher.channel(channelName)) {
+            return this.pusher.channel(channelName);
+          } else {
+            this.pusher.subscribe(channelName);
+            return this.pusher.channel(channelName);
+          }
+        }
+      };
+
+      return Company;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:CompanySettings
+  *
+  * @description
+  * Representation of an CompanySettings Object
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("CompanySettingsModel", function($q, BBModel, BaseModel) {
+    var CompanySettings;
+    return CompanySettings = (function(superClass) {
+      extend(CompanySettings, superClass);
+
+      function CompanySettings() {
+        return CompanySettings.__super__.constructor.apply(this, arguments);
+      }
+
+      return CompanySettings;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Day
+  *
+  * @description
+  * Representation of an Day Object
+  *
+  * @property {string} string_date The string date
+  * @property {date} date Second The date
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("DayModel", function($q, BBModel, BaseModel) {
+    var Day;
+    return Day = (function(superClass) {
+      extend(Day, superClass);
+
+      function Day(data) {
+        Day.__super__.constructor.apply(this, arguments);
+        this.string_date = this.date;
+        this.date = moment(this.date);
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name day
+      * @methodOf BB.Models:Day
+      * @description
+      * Get day date
+      *
+      * @returns {date} The returned day
+       */
+
+      Day.prototype.day = function() {
+        return this.date.date();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name off
+      * @methodOf BB.Models:Day
+      * @description
+      * Get off by month
+      *
+      * @returns {date} The returned off
+       */
+
+      Day.prototype.off = function(month) {
+        return this.date.month() !== month;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name class
+      * @methodOf BB.Models:Day
+      * @description
+      * Get class in according of month
+      *
+      * @returns {string} The returned class
+       */
+
+      Day.prototype["class"] = function(month) {
+        var str;
+        str = "";
+        if (this.date.month() < month) {
+          str += "off off-prev";
+        }
+        if (this.date.month() > month) {
+          str += "off off-next";
+        }
+        if (this.spaces === 0) {
+          str += " not-avail";
+        }
+        return str;
+      };
+
+      return Day;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("DealModel", function($q, BBModel, BaseModel) {
+    var Deal;
+    return Deal = (function(superClass) {
+      extend(Deal, superClass);
+
+      function Deal() {
+        return Deal.__super__.constructor.apply(this, arguments);
+      }
+
+      return Deal;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Models:Event
+*
+* @description
+* This is the event object returned by the API
+*
+* @property {integer} id The event id
+* @property {date} datetime The event date and time
+* @property {string} description Description of the event
+* @property {integer} status Status of the event
+* @property {integer} spaces_booked The booked spaces
+* @property {integer} duration Duration of the event
+ */
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUtilitiesService) {
+    var Event;
+    return Event = (function(superClass) {
+      extend(Event, superClass);
+
+      function Event(data) {
+        Event.__super__.constructor.call(this, data);
+        this.date = moment.parseZone(this.datetime);
+        this.time = new BBModel.TimeSlot({
+          time: DateTimeUtilitiesService.convertMomentToTime(this.date)
+        });
+        if (this.duration) {
+          this.end_datetime = this.date.clone().add(this.duration, 'minutes');
+        }
+        this.date_unix = this.date.unix();
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name getGroup
+      * @methodOf BB.Models:Event
+      * @description
+      * Get event groups
+      *
+      * @returns {promise} A promise for the group event
+       */
+
+      Event.prototype.getGroup = function() {
+        var defer, event_group;
+        defer = $q.defer();
+        if (this.group) {
+          defer.resolve(this.group);
+        } else if (this.$has('event_groups') || this.$has('event_group')) {
+          event_group = 'event_group';
+          if (this.$has('event_groups')) {
+            event_group = 'event_groups';
+          }
+          this.$get(event_group).then((function(_this) {
+            return function(group) {
+              _this.group = new BBModel.EventGroup(group);
+              return defer.resolve(_this.group);
+            };
+          })(this), function(err) {
+            return defer.reject(err);
+          });
+        } else {
+          defer.reject("No event group");
+        }
+        return defer.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getGroup
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the chains of the event
+      *
+      * @returns {promise} A promise for the chains event
+       */
+
+      Event.prototype.getChain = function() {
+        var defer, event_chain;
+        defer = $q.defer();
+        if (this.chain) {
+          defer.resolve(this.chain);
+        } else {
+          if (this.$has('event_chains') || this.$has('event_chain')) {
+            event_chain = 'event_chain';
+            if (this.$has('event_chains')) {
+              event_chain = 'event_chains';
+            }
+            this.$get(event_chain).then((function(_this) {
+              return function(chain) {
+                _this.chain = new BBModel.EventChain(chain);
+                return defer.resolve(_this.chain);
+              };
+            })(this));
+          } else {
+            defer.reject("No event chain");
+          }
+        }
+        return defer.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getDuration
+      * @methodOf BB.Models:Event
+      * @description
+      * Get duration of the event chains
+      *
+      * @returns {promise} A promise for duration of the event
+       */
+
+      Event.prototype.getDuration = function() {
+        var defer;
+        defer = new $q.defer();
+        if (this.duration) {
+          defer.resolve(this.duration);
+        } else {
+          this.getChain().then((function(_this) {
+            return function(chain) {
+              _this.duration = chain.duration;
+              return defer.resolve(_this.duration);
+            };
+          })(this));
+        }
+        return defer.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getNumBooked
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the number booked
+      *
+      * @returns {object} The returned number booked
+       */
+
+      Event.prototype.getNumBooked = function() {
+        return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getSpacesLeft
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the number of spaces left (possibly limited by a specific ticket pool)
+      *
+      * @returns {object} The returned spaces left
+       */
+
+      Event.prototype.getSpacesLeft = function(pool) {
+        if (pool == null) {
+          pool = null;
+        }
+        if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
+          return this.ticket_spaces[pool].left;
+        } else {
+          return this.num_spaces - this.getNumBooked();
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasSpace
+      * @methodOf BB.Models:Event
+      * @description
+      * Checks if this considered a valid space
+      *
+      * @returns {boolean} If this is a valid space
+       */
+
+      Event.prototype.hasSpace = function() {
+        return this.getSpacesLeft() > 0;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasWaitlistSpace
+      * @methodOf BB.Models:Event
+      * @description
+      * Checks if this considered a valid waiting list space
+      *
+      * @returns {boolean} If this is a valid waiting list space
+       */
+
+      Event.prototype.hasWaitlistSpace = function() {
+        return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getRemainingDescription
+      * @methodOf BB.Models:Event
+      * @description
+      * Get the remaining description
+      *
+      * @returns {object} The returned remaining description
+       */
+
+      Event.prototype.getRemainingDescription = function() {
+        var left;
+        left = this.getSpacesLeft();
+        if (left > 0 && left < 3) {
+          return "Only " + left + " " + (left > 1 ? "spaces" : "space") + " left";
+        }
+        if (this.hasWaitlistSpace()) {
+          return "Join Waitlist";
+        }
+        return "";
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name select
+      * @methodOf BB.Models:Event
+      * @description
+      * Checks is this considered a selected
+      *
+      * @returns {boolean} If this is a selected
+       */
+
+      Event.prototype.select = function() {
+        return this.selected = true;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name unselect
+      * @methodOf BB.Models:Event
+      * @description
+      * Unselect if is selected
+      *
+      * @returns {boolean} If this is a unselected
+       */
+
+      Event.prototype.unselect = function() {
+        if (this.selected) {
+          return delete this.selected;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name prepEvent
+      * @methodOf BB.Models:Event
+      * @description
+      * Prepare the event
+      *
+      * @returns {promise} A promise for the event
+       */
+
+      Event.prototype.prepEvent = function() {
+        var def;
+        def = $q.defer();
+        this.getChain().then((function(_this) {
+          return function() {
+            if (_this.chain.$has('address')) {
+              _this.chain.getAddressPromise().then(function(address) {
+                return _this.chain.address = address;
+              });
+            }
+            return _this.chain.getTickets().then(function(tickets) {
+              var i, len, ref, ticket;
+              _this.tickets = tickets;
+              _this.price_range = {};
+              if (tickets && tickets.length > 0) {
+                ref = _this.tickets;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  ticket = ref[i];
+                  if (!_this.price_range.from || (_this.price_range.from && ticket.price < _this.price_range.from)) {
+                    _this.price_range.from = ticket.price;
+                  }
+                  if (!_this.price_range.to || (_this.price_range.to && ticket.price > _this.price_range.to)) {
+                    _this.price_range.to = ticket.price;
+                  }
+                  ticket.old_price = ticket.price;
+                }
+              } else {
+                _this.price_range.from = _this.price;
+                _this.price_range.to = _this.price;
+              }
+              _this.ticket_prices = _.indexBy(tickets, 'name');
+              return def.resolve(_this);
+            });
+          };
+        })(this));
+        return def.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name updatePrice
+      * @methodOf BB.Models:Event
+      * @description
+      * Update price for the ticket
+      *
+      * @returns {object} The returned update price
+       */
+
+      Event.prototype.updatePrice = function() {
+        var i, len, ref, results, ticket;
+        ref = this.tickets;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
+          if (ticket.pre_paid_booking_id) {
+            results.push(ticket.price = 0);
+          } else {
+            results.push(ticket.price = ticket.old_price);
+          }
+        }
+        return results;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name numTicketsSelected
+      * @methodOf BB.Models:Event
+      * @description
+      * 
+      *
+      * @returns {object} get number of tickets selected
+       */
+
+      Event.prototype.numTicketsSelected = function() {
+        var i, len, num, ref, ticket;
+        num = 0;
+        ref = this.tickets;
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
+          num += ticket.qty;
+        }
+        return num;
+      };
+
+      return Event;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventChain
+  *
+  * @description
+  * Representation of an EventChain Object
+  * 
+  * @property {integer} id The id of event chain
+  * @property {string} name Name of the event chain
+  * @property {string} description The description of the event
+  * @property {integer} capacity_view The capacity view
+  * @property {date} start_date Event chain start date
+  * @property {date} finish_date Event chain finish date
+  * @property {integer} price The price of the event chain
+  * @property {string} ticket_type Type of the ticket
+  * @property {boolean} course Verify is couse exist or not
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel) {
+    var EventChain;
+    return EventChain = (function(superClass) {
+      var setCapacityView;
+
+      extend(EventChain, superClass);
+
+      function EventChain(data) {
+        EventChain.__super__.constructor.apply(this, arguments);
+        this.capacity_view = setCapacityView(this.capacity_view);
+      }
+
+      EventChain.prototype.name = function() {
+        return this._data.name;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name isSingleBooking
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Verify if is a single booking
+      *
+      * @returns {array} If maximum number of bookings is equal with 1 and not have an ticket sets
+       */
+
+      EventChain.prototype.isSingleBooking = function() {
+        return this.max_num_bookings === 1 && !this.$has('ticket_sets');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasTickets
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Checks if this is considered a valid tickets
+      *
+      * @returns {boolean} If this have an ticket sets
+       */
+
+      EventChain.prototype.hasTickets = function() {
+        return this.$has('ticket_sets');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getTickets
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Get the tickets of the event
+      *
+      * @returns {promise} A promise for the tickets
+       */
+
+      EventChain.prototype.getTickets = function() {
+        var def;
+        def = $q.defer();
+        if (this.tickets) {
+          def.resolve(this.tickets);
+        } else {
+          if (this.$has('ticket_sets')) {
+            this.$get('ticket_sets').then((function(_this) {
+              return function(tickets) {
+                var i, len, ticket;
+                _this.tickets = [];
+                for (i = 0, len = tickets.length; i < len; i++) {
+                  ticket = tickets[i];
+                  _this.tickets.push(new BBModel.EventTicket(ticket));
+                }
+                _this.adjustTicketsForRemaining();
+                return def.resolve(_this.tickets);
+              };
+            })(this));
+          } else {
+            this.tickets = [
+              new BBModel.EventTicket({
+                name: "Admittance",
+                min_num_bookings: 1,
+                max_num_bookings: this.max_num_bookings,
+                type: "normal",
+                price: this.price
+              })
+            ];
+            this.adjustTicketsForRemaining();
+            def.resolve(this.tickets);
+          }
+        }
+        return def.promise;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name adjustTicketsForRemaining
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Adjust the number of tickets that can be booked due to changes in the number of remaining spaces for each ticket set
+      *
+      * @returns {object} The returned adjust tickets for remaining
+       */
+
+      EventChain.prototype.adjustTicketsForRemaining = function() {
+        var i, len, ref, results;
+        if (this.tickets) {
+          ref = this.tickets;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            this.ticket = ref[i];
+            results.push(this.ticket.max_spaces = this.spaces);
+          }
+          return results;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setCapacityView
+      * @methodOf BB.Models:EventChain
+      * @description
+      * Sets the capacity_view (referred to as the "spaces view" in admin console) to a more helpful String
+      * @returns {String} code for the capacity_view
+       */
+
+      setCapacityView = function(capacity_view) {
+        var capacity_view_str;
+        switch (capacity_view) {
+          case 0:
+            capacity_view_str = "DO_NOT_DISPLAY";
+            break;
+          case 1:
+            capacity_view_str = "NUM_SPACES";
+            break;
+          case 2:
+            capacity_view_str = "NUM_SPACES_LEFT";
+            break;
+          case 3:
+            capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
+            break;
+          default:
+            capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
+        }
+        return capacity_view_str;
+      };
+
+      return EventChain;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventGroup
+  *
+  * @description
+  * Representation of an EventGroup Object
+  *
+  * @property {integer} total_entries The total of entries in  event groupst
+  * @property {array} event_chains An array with items of the event
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventGroupModel", function($q, BBModel, BaseModel) {
+    var EventGroup;
+    return EventGroup = (function(superClass) {
+      extend(EventGroup, superClass);
+
+      function EventGroup() {
+        return EventGroup.__super__.constructor.apply(this, arguments);
+      }
+
+      EventGroup.prototype.name = function() {
+        return this._data.name;
+      };
+
+      EventGroup.prototype.colour = function() {
+        return this._data.colour;
+      };
+
+      return EventGroup;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventSequence
+  *
+  * @description
+  * Representation of an EventSequence Object
+  *
+  * @property {integer} total_entries The total of entries in  event groupst
+  * @property {array} event_chains An array with items of the event
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventSequenceModel", function($q, BBModel, BaseModel) {
+    var EventSequence;
+    return EventSequence = (function(superClass) {
+      extend(EventSequence, superClass);
+
+      function EventSequence() {
+        return EventSequence.__super__.constructor.apply(this, arguments);
+      }
+
+      EventSequence.prototype.name = function() {
+        return this._data.name;
+      };
+
+      return EventSequence;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:EventTicket
+  *
+  * @description
+  * Representation of an EventTicket Object
+  *
+  * @property {integer} max The maximum of the event ticket
+  * @property {integer} max_num_bookings The maximum number of the bookings
+  * @property {integer} max_spaces The maximum spaces of the evenet
+  * @property {integer} counts_as The counts as
+  * @property {string} pool_name The pool name
+  * @property {string} name The name 
+  * @property {string} min_num_bookings The minimum number of the bookings
+  * @property {string} qty The quantity of the event ticket
+  * @property {string} totalQty The total quantity of the event ticket
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("EventTicketModel", function($q, BBModel, BaseModel) {
+    var EventTicket;
+    return EventTicket = (function(superClass) {
+      extend(EventTicket, superClass);
+
+      function EventTicket(data) {
+        var ms;
+        EventTicket.__super__.constructor.call(this, data);
+        this.max = this.max_num_bookings;
+        if (this.max_spaces) {
+          ms = this.max_spaces;
+          if (this.counts_as) {
+            ms = this.max_spaces / this.counts_as;
+          }
+          if (ms < max) {
+            this.max = ms;
+          }
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name fullName
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the full name
+      *
+      * @returns {object} The returned full name
+       */
+
+      EventTicket.prototype.fullName = function() {
+        if (this.pool_name) {
+          return this.pool_name + " - " + this.name;
+        }
+        return this.name;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getRange
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the range between minimum number of bookings and the maximum number of bookings
+      *
+      * @returns {array} The returned range
+       */
+
+      EventTicket.prototype.getRange = function(cap) {
+        var c, i, ref, ref1, results;
+        if (cap) {
+          c = cap;
+          if (this.counts_as) {
+            c = cap / this.counts_as;
+          }
+          if (c + this.min_num_bookings < this.max) {
+            this.max = c + this.min_num_bookings;
+          }
+        }
+        return [0].concat((function() {
+          results = [];
+          for (var i = ref = this.min_num_bookings, ref1 = this.max; ref <= ref1 ? i <= ref1 : i >= ref1; ref <= ref1 ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this));
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name isAvailable
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Check if there is an availability for at least one of the pools
+      *
+      * @returns {boolean} true if there is an availibity for at least one pool
+      *                    false otherwise
+       */
+
+      EventTicket.prototype.isAvailable = function(event) {
+        var i, len, ref, ticket;
+        ref = event.tickets;
+        for (i = 0, len = ref.length; i < len; i++) {
+          ticket = ref[i];
+          if (event.ticket_spaces[ticket.pool_id]) {
+            if (event.ticket_spaces[ticket.pool_id].left > 0) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getRangeTicketSpaces
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get a range base on the minimum number of bookings and the tickets left. This method
+      * is useful when you have multiple spaces for an event in complex tickets. 
+      *
+      * @returns {array} The returned range
+       */
+
+      EventTicket.prototype.getRangeTicketSpaces = function(pool_id, event) {
+        var i, max_left, min, results;
+        max_left = 0;
+        min = this.min_num_bookings;
+        if (this.isAvailable(event)) {
+          if (pool_id) {
+            max_left = event.ticket_spaces[pool_id].left;
+          }
+          if (max_left === 0) {
+            return [0];
+          } else {
+            return [0].concat((function() {
+              results = [];
+              for (var i = min; min <= max_left ? i <= max_left : i >= max_left; min <= max_left ? i++ : i--){ results.push(i); }
+              return results;
+            }).apply(this));
+          }
+        } else {
+          return this.getRange(20);
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalQty
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the total quantity of the event ticket
+      *
+      * @returns {array} The returned total quantity
+       */
+
+      EventTicket.prototype.totalQty = function() {
+        if (!this.qty) {
+          return 0;
+        }
+        if (!this.counts_as) {
+          return this.qty;
+        }
+        return this.qty * this.counts_as;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getMax
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
+      *
+      * @returns {array} The returned maximum
+       */
+
+      EventTicket.prototype.getMax = function(cap, ev) {
+        var c, i, len, live_max, ref, ticket, used;
+        if (ev == null) {
+          ev = null;
+        }
+        live_max = this.max;
+        if (ev) {
+          used = 0;
+          ref = ev.tickets;
+          for (i = 0, len = ref.length; i < len; i++) {
+            ticket = ref[i];
+            used += ticket.totalQty();
+          }
+          if (this.qty) {
+            used = used - this.totalQty();
+          }
+          if (this.counts_as) {
+            used = Math.ceil(used / this.counts_as);
+          }
+          live_max = live_max - used;
+          if (live_max < 0) {
+            live_max = 0;
+          }
+        }
+        if (cap) {
+          c = cap;
+          if (this.counts_as) {
+            c = cap / this.counts_as;
+          }
+          if (c + this.min_num_bookings < live_max) {
+            return c + this.min_num_bookings;
+          }
+        }
+        return live_max;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name add
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Add to the a quantity a new value
+      *
+      * @returns {array} The returned new quantity added
+       */
+
+      EventTicket.prototype.add = function(value) {
+        if (!this.qty) {
+          this.qty = 0;
+        }
+        this.qty = parseInt(this.qty);
+        if (angular.isNumber(this.qty) && (this.qty >= this.max && value > 0) || (this.qty === 0 && value < 0)) {
+          return;
+        }
+        return this.qty += value;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name subtract
+      * @methodOf BB.Models:EventTicket
+      * @description
+      * Subtract a value from the quantity
+      *
+      * @returns {array} The returned substract
+       */
+
+      EventTicket.prototype.subtract = function(value) {
+        return this.add(-value);
+      };
+
+      return EventTicket;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ExternalPurchaseModel", function($q, BBModel, BaseModel) {
+    var ExternalPurchase;
+    return ExternalPurchase = (function(superClass) {
+      extend(ExternalPurchase, superClass);
+
+      function ExternalPurchase() {
+        return ExternalPurchase.__super__.constructor.apply(this, arguments);
+      }
+
+      return ExternalPurchase;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Image
+  *
+  * @description
+  * Representation of an Image Object
+  *
+  * @property {array} iamges An array with event images
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ImageModel", function($q, $filter, BBModel, BaseModel) {
+    var Image;
+    return Image = (function(superClass) {
+      extend(Image, superClass);
+
+      function Image(data) {
+        Image.__super__.constructor.call(this, data);
+      }
+
+      return Image;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:ItemDetails
+  *
+  * @description
+  * Representation of an ItemDetails Object
+  *
+  * @property {string} self The self
+  * @property {array} questions The questions
+  * @property {array} survey_questions The survey questions
+  * @property {string} hasQuestions Has questions about the item details
+  * @property {string} hasSurveyQuestions Has survey questions about the item details
+  * @property {string} checkConditionalQuestions Check conditional questions about the item details
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ItemDetailsModel", function($q, BBModel, BaseModel, $bbug, QuestionService) {
+    var ItemDetails;
+    return ItemDetails = (function(superClass) {
+      extend(ItemDetails, superClass);
+
+      function ItemDetails(data) {
+        var i, len, q, ref;
+        this._data = data;
+        if (this._data) {
+          this.self = this._data.$href("self");
+        }
+        this.questions = [];
+        this.survey_questions = [];
+        if (data) {
+          ref = data.questions;
+          for (i = 0, len = ref.length; i < len; i++) {
+            q = ref[i];
+            if (q.outcome === false) {
+              if (data.currency_code) {
+                q.currency_code = data.currency_code;
+              }
+              this.questions.push(new BBModel.Question(q));
+            } else {
+              this.survey_questions.push(new BBModel.SurveyQuestion(q));
+            }
+          }
+        }
+        this.hasQuestions = this.questions.length > 0;
+        this.hasSurveyQuestions = this.survey_questions.length > 0;
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name questionPrice
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Get question about price in according of quantity
+      *
+      * @returns {integer} The returned price
+       */
+
+      ItemDetails.prototype.questionPrice = function(qty) {
+        var i, len, price, q, ref;
+        qty || (qty = 1);
+        this.checkConditionalQuestions();
+        price = 0;
+        ref = this.questions;
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
+          price += q.selectedPriceQty(qty);
+        }
+        return price;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name checkConditionalQuestions
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Checks if exist conditional questions 
+      *
+      * @returns {boolean} The returned existing conditional questions
+       */
+
+      ItemDetails.prototype.checkConditionalQuestions = function() {
+        return QuestionService.checkConditionalQuestions(this.questions);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getPostData
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Get data 
+      *
+      * @returns {array} The returned data
+       */
+
+      ItemDetails.prototype.getPostData = function() {
+        var data, i, len, q, ref;
+        data = [];
+        ref = this.questions;
+        for (i = 0, len = ref.length; i < len; i++) {
+          q = ref[i];
+          if (q.currentlyShown) {
+            data.push(q.getPostData());
+          }
+        }
+        return data;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setAnswers
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Load the answers from an answer set - probably from loading an existing basket item
+      *
+      * @returns {object} The returned answers set
+       */
+
+      ItemDetails.prototype.setAnswers = function(answers) {
+        var a, ahash, i, j, len, len1, q, ref;
+        ahash = {};
+        for (i = 0, len = answers.length; i < len; i++) {
+          a = answers[i];
+          ahash[a.id] = a;
+        }
+        ref = this.questions;
+        for (j = 0, len1 = ref.length; j < len1; j++) {
+          q = ref[j];
+          if (ahash[q.id]) {
+            q.answer = ahash[q.id].answer;
+          }
+        }
+        return this.checkConditionalQuestions();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getQuestion
+      * @methodOf BB.Models:ItemDetails
+      * @description
+      * Get question about item details by id
+      *
+      * @returns {object} The returned question
+       */
+
+      ItemDetails.prototype.getQuestion = function(id) {
+        return _.findWhere(this.questions, {
+          id: id
+        });
+      };
+
+      return ItemDetails;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
+    var MembershipLevel;
+    return MembershipLevel = (function(superClass) {
+      extend(MembershipLevel, superClass);
+
+      function MembershipLevel() {
+        return MembershipLevel.__super__.constructor.apply(this, arguments);
+      }
+
+      return MembershipLevel;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:PackageItem
+  *
+  * @description
+  * Representation of a PackageItem Object
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PackageItemModel", function($q, BBModel, BaseModel) {
+    var PackageItem;
+    return PackageItem = (function(superClass) {
+      extend(PackageItem, superClass);
+
+      function PackageItem() {
+        return PackageItem.__super__.constructor.apply(this, arguments);
+      }
+
+      return PackageItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Models:Service
+*
+* @description
+* Representation of an Pagination Object
+*
+* @property {integer} current_page The current page
+* @property {integer} page_size The number of items to show on each page
+* @property {integer} request_page_size The request page size. Defaults to page_size when not provided. This value must be a multiple of the page_size.
+* @property {integer} max_size Limit number for pagination size
+* @property {integer} num_pages The total number of pages
+* @property {integer} num_items The total number of items paginated
+* @property {integer} items The items to be paginated
+* @property {String} summary Summary of current page, i.e. 1 - 10 of 16
+* @example
+*  <example module="BB"> 
+*    <file name="index.html">
+*   <div bb-api-url='https://uk.bookingbug.com'>
+*   <div bb-widget='{company_id:21}'>
+*     <div bb-pagination-example>
+*        <ul>
+*          <li ng-repeat="item in pagination.items | startFrom: (pagination.current_page - 1) * pagination.page_size | limitTo: pagination.page_size | orderBy: sort_by track by $index">
+*        </ul>
+*     </div>
+*     </div>
+*     </div>
+*   </file>
+*   <file name="script.js">
+*  angular.module('BB').directive('bbPaginationExample', function() {
+*    return {
+*      restrict: 'AE',
+*      controller: function(BBModel, DataService) {
+*       $scope.pagination = new BBModel.Pagination({
+*         page_size: 10,
+*         max_size: 5,
+*         request_page_size: 10
+*       });
+*       $scope.getData = function(params, options) {
+*         if (options == null) {
+*           options = {};
+*         }
+*          $scope.params = {
+*            per_page: $scope.pagination.request_page_size,
+*           page: params.page || 1
+*         };
+*         return DataService.query($scope.params).then(function(result) {
+*            if (options.add) {
+*              return $scope.pagination.add(params.page, result.items);
+*           } else {
+*             return $scope.pagination.initialise(result.items, result.total_entries);
+*           }
+*         });
+*       };
+*        return $scope.pageChanged = function() {
+*         var items_present, page_to_load, ref;
+*         ref = $scope.pagination.update(), items_present = ref[0], page_to_load = ref[1];
+*         if (!items_present) {
+*            $scope.params.page = page_to_load;
+*            return $scope.getData($scope.params, {
+*              add: true
+*           });
+*         }
+*       };
+*     }
+*   };
+* });
+*       </file>
+*  </example>
+*
+ */
+
+(function() {
+  angular.module('BB.Models').factory("PaginationModel", function() {
+    var Pagination;
+    return Pagination = (function() {
+
+      /***
+      * @ngdoc method
+      * @name constructor
+      * @methodOf BB.Models:Service
+      * @description
+      * Constructor method
+      *
+      * @param {object} Options hash used to set page_size and max_size
+       */
+      function Pagination(options) {
+        this.current_page = 1;
+        this.page_size = options.page_size || 10;
+        this.request_page_size = options.request_page_size || this.page_size;
+        this.max_size = options.max_size || 5;
+        this.num_pages = null;
+        this.num_items = null;
+        this.items = [];
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name initialise
+      * @methodOf BB.Models:Service
+      * @description
+      * Initiailises the pagination instance when first page has been retrieved
+      *
+      * @param {array} The first page of items returned by the API
+      * @param {integer} The total number of items
+       */
+
+      Pagination.prototype.initialise = function(items, total_items) {
+        this.current_page = 1;
+        this.items = items;
+        this.num_items = total_items || 0;
+        return this.update();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name update
+      * @methodOf BB.Models:Service
+      * @description
+      * Updates the pagination summary when the page changes 
+      *
+      * @returns {boolean} Flag to indicate if items in current page are present
+      * @returns {integer} The page to load based on
+       */
+
+      Pagination.prototype.update = function() {
+        var end, page_to_load, start, total;
+        start = ((this.current_page - 1) * this.page_size) + 1;
+        end = this.current_page * this.page_size;
+        end = this.num_items < end ? this.num_items : end;
+        total = end >= 100 ? "100+" : end;
+        this.summary = start + " - " + end + " of " + total;
+        page_to_load = Math.ceil((this.current_page * this.page_size) / this.request_page_size);
+        return [this.items[start - 1] != null, page_to_load];
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name add
+      * @methodOf BB.Models:Service
+      * @description
+      * Appends additional items (from subsequent data requests) to items array
+      *
+      * @param {integer} The page number of the data request
+      * @param {array} The new items
+      *
+       */
+
+      Pagination.prototype.add = function(request_page, new_items) {
+        var i, index, item, len, results, start;
+        start = (request_page - 1) * this.request_page_size;
+        results = [];
+        for (index = i = 0, len = new_items.length; i < len; index = ++i) {
+          item = new_items[index];
+          results.push(this.items[start + index] = item);
+        }
+        return results;
+      };
+
+      return Pagination;
+
+    })();
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Person
+  *
+  * @description
+  * Representation of an Person Object
+  *
+  * @property {integer} id Person id
+  * @property {string} name Person name
+  * @property {boolean} deleted Verify if person is deleted or not
+  * @property {boolean} disabled Verify if person is disabled or not
+  * @property {integer} order The person order
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
+    var Person;
+    return Person = (function(superClass) {
+      extend(Person, superClass);
+
+      function Person() {
+        return Person.__super__.constructor.apply(this, arguments);
+      }
+
+      return Person;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Models:PrePaidBooking
+*
+* @description
+* Representation of an PrePaidBooking Object
+ */
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PrePaidBookingModel", function($q, BBModel, BaseModel) {
+    var PrePaidBooking;
+    return PrePaidBooking = (function(superClass) {
+      extend(PrePaidBooking, superClass);
+
+      function PrePaidBooking(data) {
+        PrePaidBooking.__super__.constructor.call(this, data);
+        if (this.book_by) {
+          this.book_by = moment(this.book_by);
+        }
+        if (this.use_by) {
+          this.use_by = moment(this.use_by);
+        }
+        if (this.use_from) {
+          this.use_from = moment(this.use_from);
+        }
+        this.expired = (this.book_by && moment().isAfter(this.book_by, 'day')) || (this.use_by && moment().isAfter(this.use_by, 'day')) || false;
+      }
+
+      PrePaidBooking.prototype.checkValidity = function(item) {
+        if (this.service_id && item.service_id && this.service_id !== item.service_id) {
+          return false;
+        } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
+          return false;
+        } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
+          return false;
+        } else {
+          return true;
+        }
+      };
+
+      return PrePaidBooking;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
+    var Product;
+    return Product = (function(superClass) {
+      extend(Product, superClass);
+
+      function Product() {
+        return Product.__super__.constructor.apply(this, arguments);
+      }
+
+      return Product;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:PurchaseItem
+  *
+  * @description
+  * Representation of an PurchaseItem Object
+  *
+  * @property {float} price Price of the purchase item
+  * @property {float} paid Purchase item paid
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PurchaseItemModel", function($q, BBModel, BaseModel) {
+    var PurchaseItem;
+    return PurchaseItem = (function(superClass) {
+      extend(PurchaseItem, superClass);
+
+      function PurchaseItem(data) {
+        PurchaseItem.__super__.constructor.call(this, data);
+        this.parts_links = {};
+        if (data) {
+          if (data.$has('service')) {
+            this.parts_links.service = data.$href('service');
+          }
+          if (data.$has('resource')) {
+            this.parts_links.resource = data.$href('resource');
+          }
+          if (data.$has('person')) {
+            this.parts_links.person = data.$href('person');
+          }
+          if (data.$has('company')) {
+            this.parts_links.company = data.$href('company');
+          }
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name describe
+      * @methodOf BB.Models:PurchaseItem
+      * @description
+      * Describe the item for purchase
+      *
+      * @returns {object} The returned describe
+       */
+
+      PurchaseItem.prototype.describe = function() {
+        return this.get('describe');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name full_describe
+      * @methodOf BB.Models:PurchaseItem
+      * @description
+      * Full description of the item purchase
+      *
+      * @returns {object} The returned full describe
+       */
+
+      PurchaseItem.prototype.full_describe = function() {
+        return this.get('full_describe');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name hasPrice
+      * @methodOf BB.Models:PurchaseItem
+      * @description
+      * Checks if the item for purchase have a price
+      *
+      * @returns {boolean} If the item for purchase have a price
+       */
+
+      PurchaseItem.prototype.hasPrice = function() {
+        return this.price && this.price > 0;
+      };
+
+      return PurchaseItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:PurchaseTotal
+  *
+  * @description
+  * Representation of an PurchaseTotal Object
+  *
+  * @property {float} total_price The total price of items
+  * @property {float} price Price of items
+  * @property {float} tax_payable_on_price The tax payable on price of the item
+  * @property {float} due_now The due now
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("PurchaseTotalModel", function($q, BBModel, BaseModel) {
+    var PurchaseTotal;
+    return PurchaseTotal = (function(superClass) {
+      extend(PurchaseTotal, superClass);
+
+      function PurchaseTotal(data) {
+        var cprom;
+        PurchaseTotal.__super__.constructor.call(this, data);
+        this.promise = this._data.$get('purchase_items');
+        this.purchase_items = [];
+        this.promise.then((function(_this) {
+          return function(items) {
+            var i, item, len, results;
+            results = [];
+            for (i = 0, len = items.length; i < len; i++) {
+              item = items[i];
+              results.push(_this.purchase_items.push(new BBModel.PurchaseItem(item)));
+            }
+            return results;
+          };
+        })(this));
+        if (this._data.$has('client')) {
+          cprom = data.$get('client');
+          cprom.then((function(_this) {
+            return function(client) {
+              return _this.client = new BBModel.Client(client);
+            };
+          })(this));
+        }
+        this.created_at = moment.parseZone(this.created_at);
+        if (this.time_zone) {
+          this.created_at.tz(this.time_zone);
+        }
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name icalLink
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get the icalLink
+      *
+      * @returns {object} The returned icalLink
+       */
+
+      PurchaseTotal.prototype.icalLink = function() {
+        return this._data.$href('ical');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name webcalLink
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get webcalLink
+      *
+      * @returns {object} The returned webcalLink
+       */
+
+      PurchaseTotal.prototype.webcalLink = function() {
+        return this._data.$href('ical');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name gcalLink
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get the gcalLink
+      *
+      * @returns {object} The returned gcalLink
+       */
+
+      PurchaseTotal.prototype.gcalLink = function() {
+        return this._data.$href('gcal');
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name id
+      * @methodOf BB.Models:PurchaseTotal
+      * @description
+      * Get the id
+      *
+      * @returns {object} The returned id
+       */
+
+      PurchaseTotal.prototype.id = function() {
+        return this.get('id');
+      };
+
+      return PurchaseTotal;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Question
+  *
+  * @description
+  * Representation of an Question Object
+  *
+  * @property {integer} company_id The company id
+  * @property {array} question An array with questions
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("QuestionModel", function($q, $filter, BBModel, BaseModel) {
+    var Question;
+    return Question = (function(superClass) {
+      extend(Question, superClass);
+
+      function Question(data) {
+        var currency, i, len, option, ref;
+        Question.__super__.constructor.call(this, data);
+        if (this.price) {
+          this.price = parseFloat(this.price);
+        }
+        if (this._data["default"]) {
+          this.answer = this._data["default"];
+        }
+        if (this._data.options) {
+          ref = this._data.options;
+          for (i = 0, len = ref.length; i < len; i++) {
+            option = ref[i];
+            if (option.is_default) {
+              this.answer = option.name;
+            }
+            if (this.hasPrice()) {
+              option.price = parseFloat(option.price);
+              currency = data.currency_code ? data.currency_code : 'GBP';
+              option.display_name = option.name + " (" + ($filter('currency')(option.price, currency)) + ")";
+            } else {
+              option.display_name = option.name;
+            }
+          }
+        }
+        if (this._data.detail_type === "check" || this._data.detail_type === "check-price") {
+          this.answer = this._data["default"] && this._data["default"] === "1";
+        }
+        this.currentlyShown = true;
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name hasPrice
+      * @methodOf BB.Models:Question
+      * @description
+      * Check if it contains one of the following: "check-price", "select-price", "radio-price"
+      *
+      * @returns {boolean} If this contains detail_type
+       */
+
+      Question.prototype.hasPrice = function() {
+        return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name selectedPrice
+      * @methodOf BB.Models:Question
+      * @description
+      * Select price if detail type si equal with check-price
+      *
+      * @returns {float} The returned selected price
+       */
+
+      Question.prototype.selectedPrice = function() {
+        var i, len, option, ref;
+        if (!this.hasPrice()) {
+          return 0;
+        }
+        if (this.detail_type === "check-price") {
+          return (this.answer ? this.price : 0);
+        }
+        ref = this._data.options;
+        for (i = 0, len = ref.length; i < len; i++) {
+          option = ref[i];
+          if (this.answer === option.name) {
+            return option.price;
+          }
+        }
+        return 0;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name selectedPriceQty
+      * @methodOf BB.Models:Question
+      * @description
+      * Select price quantity if selected price has been selected
+      *
+      * @returns {object} The returned selected price quantity
+       */
+
+      Question.prototype.selectedPriceQty = function(qty) {
+        var p;
+        qty || (qty = 1);
+        p = this.selectedPrice();
+        if (this.price_per_booking) {
+          p = p * qty;
+        }
+        return p;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getAnswerId
+      * @methodOf BB.Models:Question
+      * @description
+      * Get answer id
+      *
+      * @returns {object} The returned answer id
+       */
+
+      Question.prototype.getAnswerId = function() {
+        var i, len, o, ref;
+        if (!this.answer || !this.options || this.options.length === 0) {
+          return null;
+        }
+        ref = this.options;
+        for (i = 0, len = ref.length; i < len; i++) {
+          o = ref[i];
+          if (this.answer === o.name) {
+            return o.id;
+          }
+        }
+        return null;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name showElement
+      * @methodOf BB.Models:Question
+      * @description
+      * Show element
+      *
+      * @returns {boolean} If element is displayed
+       */
+
+      Question.prototype.showElement = function() {
+        return this.currentlyShown = true;
+      };
+
+
+      /***
+      * @ngdoc hideElement
+      * @name showElement
+      * @methodOf BB.Models:Question
+      * @description
+      * Hide element
+      *
+      * @returns {boolean} If element is hidden
+       */
+
+      Question.prototype.hideElement = function() {
+        return this.currentlyShown = false;
+      };
+
+
+      /***
+      * @ngdoc hideElement
+      * @name getPostData
+      * @methodOf BB.Models:Question
+      * @description
+      * Get post data
+      *
+      * @returns {object} The returned post data
+       */
+
+      Question.prototype.getPostData = function() {
+        var p, x;
+        x = {};
+        x.id = this.id;
+        x.answer = this.answer;
+        if (this.detail_type === "date" && this.answer) {
+          x.answer = moment(this.answer).toISODate();
+        }
+        p = this.selectedPrice();
+        if (p) {
+          x.price = p;
+        }
+        return x;
+      };
+
+      return Question;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Resource
+  *
+  * @description
+  * Representation of an Resource Object
+  *
+  * @property {integer} total_entries The total entries
+  * @property {array} resources An array with resources elements
+  * @property {integer} id The resources id
+  * @property {string} name Name of resources
+  * @propertu {string} type Type of resources
+  * @property {boolean} deleted Verify if resources is deleted or not
+  * @property {boolean} disabled Verify if resources is disabled or not
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ResourceModel", function($q, BBModel, BaseModel) {
+    var Resource;
+    return Resource = (function(superClass) {
+      extend(Resource, superClass);
+
+      function Resource() {
+        return Resource.__super__.constructor.apply(this, arguments);
+      }
+
+      return Resource;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Service
+  *
+  * @description
+  * Representation of an Service Object
+  *
+  * @property {integer} id Id of the service
+  * @property {string} name The name of service
+  * @property {date} duration Duration of the service
+  * @property {float} prices The prices of the service
+  * @property {integer} detail_group_id The detail group id
+  * @property {date} booking_time_step The time step of the booking
+  * @property {integer} min_bookings The minimum number of bookings
+  * @property {integer} max_booings The maximum number of bookings
+   */
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("ServiceModel", function($q, BBModel, BaseModel) {
+    var Service;
+    return Service = (function(superClass) {
+      extend(Service, superClass);
+
+      function Service(data) {
+        this.days_array = bind(this.days_array, this);
+        this.getCategoryPromise = bind(this.getCategoryPromise, this);
+        Service.__super__.constructor.apply(this, arguments);
+        if (this.prices && this.prices.length > 0) {
+          this.price = this.prices[0];
+        }
+        if (this.durations && this.durations.length > 0) {
+          this.duration = this.durations[0];
+        }
+        if (!this.listed_durations) {
+          this.listed_durations = this.durations;
+        }
+        if (this.listed_durations && this.listed_durations.length > 0) {
+          this.listed_duration = this.listed_durations[0];
+        }
+        this.min_advance_datetime = moment().add(this.min_advance_period, 'seconds');
+        this.max_advance_datetime = moment().add(this.max_advance_period, 'seconds');
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name getPriceByDuration
+      * @methodOf BB.Models:Service
+      * @description
+      * Get price by duration in function of duration
+      *
+      * @returns {object} The returning price by duration
+       */
+
+      Service.prototype.getPriceByDuration = function(dur) {
+        var d, i, j, len, ref;
+        ref = this.durations;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          d = ref[i];
+          if (d === dur) {
+            return this.prices[i];
+          }
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name getCategoryPromise
+      * @methodOf BB.Models:Service
+      * @description
+      * Get category promise
+      *
+      * @returns {object} The returning category promise
+       */
+
+      Service.prototype.getCategoryPromise = function() {
+        var prom;
+        if (!this.$has('category')) {
+          return null;
+        }
+        prom = this.$get('category');
+        prom.then((function(_this) {
+          return function(cat) {
+            return _this.category = new BBModel.Category(cat);
+          };
+        })(this));
+        return prom;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name days_array
+      * @methodOf BB.Models:Service
+      * @description
+      * Put days in array
+      *
+      * @returns {array} The returning days array
+       */
+
+      Service.prototype.days_array = function() {
+        var arr, j, ref, ref1, str, x;
+        arr = [];
+        for (x = j = ref = this.min_bookings, ref1 = this.max_bookings; ref <= ref1 ? j <= ref1 : j >= ref1; x = ref <= ref1 ? ++j : --j) {
+          str = "" + x + " day";
+          if (x > 1) {
+            str += "s";
+          }
+          arr.push({
+            name: str,
+            val: x
+          });
+        }
+        return arr;
+      };
+
+      return Service;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Slot
+  *
+  * @description
+  * Representation of an Slot Object
+  *
+  * @property {integer} total_entries The The total entries of the slot
+  * @property {array} slots An array with slots
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("SlotModel", function($q, BBModel, BaseModel) {
+    var Slot;
+    return Slot = (function(superClass) {
+      extend(Slot, superClass);
+
+      function Slot(data) {
+        Slot.__super__.constructor.call(this, data);
+        this.datetime = moment(data.datetime);
+      }
+
+      return Slot;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:Space
+  *
+  * @description
+  * Representation of an Space Object
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("SpaceModel", function($q, BBModel, BaseModel) {
+    var Space;
+    return Space = (function(superClass) {
+      extend(Space, superClass);
+
+      function Space() {
+        return Space.__super__.constructor.apply(this, arguments);
+      }
+
+      return Space;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:SurveyQuestion
+  *
+  * @description
+  * Representation of an SurveyQuestion Object
+  *
+  * @property {integer} company_id The company id
+  * @property {array} questions An array with questions
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("SurveyQuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
+    var SurveyQuestion;
+    return SurveyQuestion = (function(superClass) {
+      extend(SurveyQuestion, superClass);
+
+      function SurveyQuestion() {
+        return SurveyQuestion.__super__.constructor.apply(this, arguments);
+      }
+
+      return SurveyQuestion;
+
+    })(QuestionModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:TimeSlot
+  *
+  * @description
+  * Representation of an TimeSlot Object
+  *
+  * @property {string} service The service
+  * @property {date} time_12 The time_12 of time slot
+  * @property {date} time_24 The time_24 of time slot
+  * @property {date} start The start time of the slot
+  * @property {date} end The end time of the slot
+  * @property {string} service The service of time slot
+  * @property {string} get Get the time slot
+  * @property {string} selected The selected
+  * @property {boolean} disabled Verify if time slot are disabled or not
+  * @property {string} disabled_reason The disabled reason
+  * @property {string} availability The availability of time slot
+  * @property {string} avail The avail of time slot
+   */
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel, DateTimeUtilitiesService) {
+    var TimeSlot;
+    return TimeSlot = (function(superClass) {
+      extend(TimeSlot, superClass);
+
+      function TimeSlot(data, service) {
+        TimeSlot.__super__.constructor.call(this, data);
+        this.service = service;
+        this.time_12 = this.print_time12();
+        this.time_24 = this.print_time();
+        this.time_moment = DateTimeUtilitiesService.convertTimeSlotToMoment({
+          date: moment()
+        }, this);
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name print_time
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print time of the slot
+      *
+      * @returns {date} The returning time
+       */
+
+      TimeSlot.prototype.print_time = function() {
+        var min, t;
+        if (this.start) {
+          return this.start.format("h:mm");
+        } else {
+          t = this.get('time');
+          if (t % 60 < 10) {
+            min = "0" + t % 60;
+          } else {
+            min = t % 60;
+          }
+          return "" + Math.floor(t / 60) + ":" + min;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_end_time
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print end time of the slot
+      *
+      * @returns {date} The returning end time
+       */
+
+      TimeSlot.prototype.print_end_time = function(dur) {
+        var min, t;
+        if (this.end) {
+          return this.end.format("h:mm");
+        } else {
+          if (!dur) {
+            dur = this.service.listed_durations[0];
+          }
+          t = this.get('time') + dur;
+          if (t % 60 < 10) {
+            min = "0" + t % 60;
+          } else {
+            min = t % 60;
+          }
+          return "" + Math.floor(t / 60) + ":" + min;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_time12
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print 12 hour time
+      *
+      * @returns {date} The returning 12 hour time
+       */
+
+      TimeSlot.prototype.print_time12 = function(show_suffix) {
+        var h, m, suffix, t, time;
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        t = this.get('time');
+        h = Math.floor(t / 60);
+        m = t % 60;
+        suffix = 'am';
+        if (h >= 12) {
+          suffix = 'pm';
+        }
+        if (h > 12) {
+          h -= 12;
+        }
+        time = $window.sprintf("%d.%02d", h, m);
+        if (show_suffix) {
+          time += suffix;
+        }
+        return time;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name print_end_time12
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Print 12 hour end time
+      *
+      * @returns {date} The returning 12 hour end time
+       */
+
+      TimeSlot.prototype.print_end_time12 = function(show_suffix, dur) {
+        var end_time, h, m, suffix, t;
+        if (show_suffix == null) {
+          show_suffix = true;
+        }
+        dur = null;
+        if (!dur) {
+          if (this.service.listed_duration != null) {
+            dur = this.service.listed_duration;
+          } else {
+            dur = this.service.listed_durations[0];
+          }
+        }
+        t = this.get('time') + dur;
+        h = Math.floor(t / 60);
+        m = t % 60;
+        suffix = 'am';
+        if (h >= 12) {
+          suffix = 'pm';
+        }
+        if (h > 12) {
+          h -= 12;
+        }
+        end_time = $window.sprintf("%d.%02d", h, m);
+        if (show_suffix) {
+          end_time += suffix;
+        }
+        return end_time;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name availability
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Get availability
+      *
+      * @returns {object} The returning availability
+       */
+
+      TimeSlot.prototype.availability = function() {
+        return this.avail;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name select
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Checks if selected is true
+      *
+      * @returns {boolean} If this is checked
+       */
+
+      TimeSlot.prototype.select = function() {
+        return this.selected = true;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name unselect
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Unselect if is selected
+      *
+      * @returns {boolean} If this is unselect
+       */
+
+      TimeSlot.prototype.unselect = function() {
+        if (this.selected) {
+          return delete this.selected;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name disable
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Disable time slot by reason
+      *
+      * @returns {boolean} If this is a disabled
+       */
+
+      TimeSlot.prototype.disable = function(reason) {
+        this.disabled = true;
+        return this.disabled_reason = reason;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name enable
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Enable time slot
+      *
+      * @returns {boolean} If this is a enable
+       */
+
+      TimeSlot.prototype.enable = function() {
+        if (this.disabled) {
+          delete this.disabled;
+        }
+        if (this.disabled_reason) {
+          return delete this.disabled_reason;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name status
+      * @methodOf BB.Models:TimeSlot
+      * @description
+      * Get status of the time slot
+      *
+      * @returns {object} The returned status
+       */
+
+      TimeSlot.prototype.status = function() {
+        if (this.selected) {
+          return "selected";
+        }
+        if (this.disabled) {
+          return "disabled";
+        }
+        if (this.availability() > 0) {
+          return "enabled";
+        }
+        return "disabled";
+      };
+
+      return TimeSlot;
+
+    })(BaseModel);
   });
 
 }).call(this);
