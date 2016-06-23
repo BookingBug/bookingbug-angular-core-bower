@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "1.1.38",
+  "version": "1.2.0",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -42,7 +42,7 @@
     "angular-animate": "~1.2.6",
     "angular-cache": "~3.2.5",
     "angular-spectrum-colorpicker": "~1.4.2",
-    "bootstrap-sass-official": "~3.3.1",
+    "bootstrap-sass": "~3.3.6",
     "fontawesome": "~4.2.0",
     "fullcalendar": "~2.4.0",
     "ng-idle": "~0.3.5",
