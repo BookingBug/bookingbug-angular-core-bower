@@ -10446,6 +10446,172 @@ function getURIparam( name ){
 
   /***
   * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of payments for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+    var error, getHost, linker, sendLoadEvent;
+    error = function(scope, message) {
+      return scope.error(message);
+    };
+    getHost = function(url) {
+      var a;
+      a = document.createElement('a');
+      a.href = url;
+      return a['protocol'] + '//' + a['host'];
+    };
+    sendLoadEvent = function(element, origin, scope) {
+      var custom_stylesheet, payload, referrer;
+      referrer = $location.protocol() + "://" + $location.host();
+      if ($location.port()) {
+        referrer += ":" + $location.port();
+      }
+      if (scope.payment_options.custom_stylesheet) {
+        custom_stylesheet = scope.payment_options.custom_stylesheet;
+      }
+      payload = JSON.stringify({
+        'type': 'load',
+        'message': referrer,
+        'custom_partial_url': scope.bb.custom_partial_url,
+        'custom_stylesheet': custom_stylesheet,
+        'scroll_offset': SettingsService.getScrollOffset()
+      });
+      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+    };
+    linker = function(scope, element, attributes) {
+      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+      element.find('iframe').bind('load', (function(_this) {
+        return function(event) {
+          var origin, url;
+          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+            url = scope.bb.total.$href('new_payment');
+          }
+          origin = getHost(url);
+          sendLoadEvent(element, origin, scope);
+          return scope.$apply(function() {
+            return scope.callSetLoaded();
+          });
+        };
+      })(this));
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          var data;
+          if (angular.isObject(event.data)) {
+            data = event.data;
+          } else if (!event.data.match(/iFrameSizer/)) {
+            data = JSON.parse(event.data);
+          }
+          return scope.$apply(function() {
+            if (data) {
+              switch (data.type) {
+                case "submitting":
+                  return scope.callNotLoaded();
+                case "error":
+                  scope.$emit("payment:failed");
+                  scope.callNotLoaded();
+                  AlertService.raise('PAYMENT_FAILED');
+                  return document.getElementsByTagName("iframe")[0].src += '';
+                case "payment_complete":
+                  scope.callSetLoaded();
+                  return scope.paymentDone();
+              }
+            }
+          });
+        };
+      })(this), false);
+    };
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: linker
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if ($scope.total) {
+          $scope.bb.total = $scope.total;
+        }
+        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+        }
+      };
+    })(this));
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call not loaded
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call set loaded
+     */
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return $scope.setLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Payment done
+     */
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
   * @name BB.Directives:bbPayForm
   * @restrict AE
   * @scope true
@@ -10670,172 +10836,6 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of payments for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
-    var error, getHost, linker, sendLoadEvent;
-    error = function(scope, message) {
-      return scope.error(message);
-    };
-    getHost = function(url) {
-      var a;
-      a = document.createElement('a');
-      a.href = url;
-      return a['protocol'] + '//' + a['host'];
-    };
-    sendLoadEvent = function(element, origin, scope) {
-      var custom_stylesheet, payload, referrer;
-      referrer = $location.protocol() + "://" + $location.host();
-      if ($location.port()) {
-        referrer += ":" + $location.port();
-      }
-      if (scope.payment_options.custom_stylesheet) {
-        custom_stylesheet = scope.payment_options.custom_stylesheet;
-      }
-      payload = JSON.stringify({
-        'type': 'load',
-        'message': referrer,
-        'custom_partial_url': scope.bb.custom_partial_url,
-        'custom_stylesheet': custom_stylesheet,
-        'scroll_offset': SettingsService.getScrollOffset()
-      });
-      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-    };
-    linker = function(scope, element, attributes) {
-      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-      element.find('iframe').bind('load', (function(_this) {
-        return function(event) {
-          var origin, url;
-          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-            url = scope.bb.total.$href('new_payment');
-          }
-          origin = getHost(url);
-          sendLoadEvent(element, origin, scope);
-          return scope.$apply(function() {
-            return scope.callSetLoaded();
-          });
-        };
-      })(this));
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          var data;
-          if (angular.isObject(event.data)) {
-            data = event.data;
-          } else if (!event.data.match(/iFrameSizer/)) {
-            data = JSON.parse(event.data);
-          }
-          return scope.$apply(function() {
-            if (data) {
-              switch (data.type) {
-                case "submitting":
-                  return scope.callNotLoaded();
-                case "error":
-                  scope.$emit("payment:failed");
-                  scope.callNotLoaded();
-                  AlertService.raise('PAYMENT_FAILED');
-                  return document.getElementsByTagName("iframe")[0].src += '';
-                case "payment_complete":
-                  scope.callSetLoaded();
-                  return scope.paymentDone();
-              }
-            }
-          });
-        };
-      })(this), false);
-    };
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: linker
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if ($scope.total) {
-          $scope.bb.total = $scope.total;
-        }
-        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-        }
-      };
-    })(this));
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call not loaded
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call set loaded
-     */
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return $scope.setLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name paymentDone
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Payment done
-     */
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
   });
 
 }).call(this);
@@ -13016,7 +13016,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize) {
     var currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -13043,13 +13043,34 @@ function getURIparam( name ){
     *
      */
     $scope.initialise = function() {
-      var date, diff, selected_day, start_date;
+      var calculateDayNum, date, diff, selected_day, start_date;
       if ($attrs.bbTimeRangeLength != null) {
         $scope.time_range_length = $scope.$eval($attrs.bbTimeRangeLength);
       } else if ($scope.options && $scope.options.time_range_length) {
         $scope.time_range_length = $scope.options.time_range_length;
       } else {
-        $scope.time_range_length = 7;
+        calculateDayNum = function() {
+          var cal_days, days, size, timeRange;
+          cal_days = {
+            lg: 7,
+            md: 5,
+            sm: 3,
+            xs: 1
+          };
+          timeRange = 0;
+          for (size in cal_days) {
+            days = cal_days[size];
+            if (size === ViewportSize.getViewportSize()) {
+              timeRange = days;
+            }
+          }
+          return timeRange;
+        };
+        $scope.time_range_length = calculateDayNum();
+        $scope.$on('ViewportSize:changed', function() {
+          $scope.time_range_length = null;
+          return $scope.initialise();
+        });
       }
       if (($attrs.bbDayOfWeek != null) || ($scope.options && $scope.options.day_of_week)) {
         $scope.day_of_week = $attrs.bbDayOfWeek != null ? $scope.$eval($attrs.bbDayOfWeek) : $scope.options.day_of_week;
@@ -13375,6 +13396,11 @@ function getURIparam( name ){
         return promise.then(function(datetime_arr) {
           var d, day, dtimes, i, j, k, len, len1, len2, pad, pair, ref, ref1, requested_slot, slot, time_slots, v;
           $scope.days = [];
+          if (_.every(_.values(datetime_arr), _.isEmpty)) {
+            $scope.no_slots_in_week = true;
+          } else {
+            $scope.no_slots_in_week = false;
+          }
           ref = _.sortBy(_.pairs(datetime_arr), function(pair) {
             return pair[0];
           });
@@ -13428,6 +13454,15 @@ function getURIparam( name ){
       } else {
         return $scope.setLoaded($scope);
       }
+    };
+    $scope.showFirstAvailableDay = function() {
+      return SlotDates.getFirstDayWithSlots($scope.data_source, $scope.selected_day).then(function(day) {
+        $scope.no_slots_in_week = false;
+        setTimeRange(day);
+        return $scope.loadData();
+      }, function(err) {
+        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+      });
     };
 
     /***
@@ -16401,11 +16436,11 @@ function getURIparam( name ){
 
   app = angular.module('BB.Directives');
 
-  app.directive('bbDisplayMode', function($compile, $window, $bbug) {
+  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
     return {
       transclude: false,
       restrict: 'A',
-      template: '<span class="visible-xs"></span><span class="visible-sm"></span><span class="visible-md"></span><span class="visible-lg"></span>',
+      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
       link: function(scope, elem, attrs) {
         var getCurrentSize, isVisible, markers, t, update;
         markers = elem.find('span');
@@ -16415,16 +16450,17 @@ function getURIparam( name ){
           return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
         };
         getCurrentSize = function() {
-          var element, i, len;
+          var currentSize, element, i, len;
+          currentSize = false;
           for (i = 0, len = markers.length; i < len; i++) {
             element = markers[i];
             if (isVisible(element)) {
-              return element.className.slice(8, 11);
+              currentSize = element.className.slice(8, 11);
+              ViewportSize.setViewportSize(element.className.slice(8, 11));
+              break;
             }
-            scope.display = {};
-            scope.display[element.className.slice(8, 11)] = true;
-            return false;
           }
+          return currentSize;
         };
         update = (function(_this) {
           return function() {
@@ -27590,6 +27626,67 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BB.Services.service:SlotDates
+  *
+  * @description
+  * checks for the first date with available spaces
+   */
+  angular.module('BB.Services').factory('SlotDates', [
+    '$q', 'DayService', function($q, DayService) {
+      var cached;
+      cached = {
+        firstSlotDate: null,
+        timesQueried: 0
+      };
+      return {
+        getFirstDayWithSlots: function(cItem, selected_day) {
+          var deferred, endDate;
+          deferred = $q.defer();
+          if (cached.firstSlotDate != null) {
+            deferred.resolve(cached.firstSlotDate);
+            return deferred.promise;
+          }
+          endDate = selected_day.clone().add(3, 'month');
+          DayService.query({
+            cItem: cItem,
+            date: selected_day.format('YYYY-MM-DD'),
+            edate: endDate.format('YYYY-MM-DD')
+          }).then(function(days) {
+            var firstAvailableSlots;
+            cached.timesQueried++;
+            firstAvailableSlots = _.find(days, function(day) {
+              return day.spaces > 0;
+            });
+            if (firstAvailableSlots) {
+              cached.firstSlotDate = firstAvailableSlots.date;
+              return deferred.resolve(cached.firstSlotDate);
+            } else {
+              if (cached.timesQueried <= 4) {
+                return this.getFirstDayWithSlots(cItem, endDate).then(function(day) {
+                  return deferred.resolve(cached.firstSlotDate);
+                }, function(err) {
+                  return deferred.reject(err);
+                });
+              } else {
+                return deferred.reject(new Error('ERROR.NO_SLOT_AVAILABLE'));
+              }
+            }
+          }, function(err) {
+            return deferred.reject(new Error('ERROR.COULDNT_GET_AVAILABLE_DATES'));
+          });
+          return deferred.promise;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
   angular.module('BB.Services').config(function($provide) {
     return $provide.decorator('$sniffer', function($delegate) {
       var regexp, result, webkit_version;
@@ -29009,6 +29106,36 @@ function getURIparam( name ){
       }
     }
   });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BB.Services.service:ViewportSize
+  *
+  * @description
+  * Stores the current screen size breakpoint.
+   */
+  angular.module('BB.Services').factory('ViewportSize', [
+    '$rootScope', function($rootScope) {
+      var viewport_size;
+      viewport_size = null;
+      return {
+        setViewportSize: function(size) {
+          if (size !== viewport_size) {
+            viewport_size = size;
+            return $rootScope.$broadcast('ViewportSize:changed');
+          }
+        },
+        getViewportSize: function() {
+          return viewport_size;
+        }
+      };
+    }
+  ]);
 
 }).call(this);
 
