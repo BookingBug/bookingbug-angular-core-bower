@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -62,7 +62,8 @@
     "lodash": "3.10.1",
     "airbrake-js-client": "^0.5.8",
     "pusher-angular": "~0.1.4",
-    "pusher": "~2.2.4"
+    "pusher": "~2.2.4",
+    "ng-file-upload": "^12.0.4"
   },
   "resolutions": {
     "moment": "master",
