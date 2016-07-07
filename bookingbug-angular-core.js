@@ -25,7 +25,7 @@
   app.constant('UriTemplate', window.UriTemplate);
 
   app.config(function($locationProvider, $httpProvider, $provide, ie8HttpBackendProvider) {
-    var int, lowercase, msie, regexp, result, webkit;
+    var base, int, lowercase, msie, regexp, result, webkit;
     $httpProvider.defaults.headers.common = {
       'App-Id': 'f6b16c23',
       'App-Key': 'f0bc4f65f4fbfe7b4b3b7264b655f5eb'
@@ -50,10 +50,13 @@
       webkit = parseFloat(result[1]);
     }
     if ((msie && msie <= 9) || (webkit && webkit < 537)) {
-      return $provide.provider({
+      $provide.provider({
         $httpBackend: ie8HttpBackendProvider
       });
     }
+    return (base = moment.fn).toISODate || (base.toISODate = function() {
+      return this.locale('en').format('YYYY-MM-DD');
+    });
   });
 
   app.run(function($rootScope, $log, DebugUtilsService, FormDataStoreService, $bbug, $document, $sessionStorage, AppConfig) {
@@ -1918,6 +1921,516 @@ function getURIparam( name ){
     return results[1];
 }
 (function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  angular.module('BB.Filters').filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  angular.module('BB.Filters').filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  angular.module('BB.Filters').filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  angular.module('BB.Filters').filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  angular.module('BB.Filters').filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('icurrency', function($window, SettingsService) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = SettingsService.getCurrency());
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  angular.module('BB.Filters').filter('ipretty_price', function($window, SettingsService) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[SettingsService.getCurrency()];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, separator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      separator = options && angular.isString(options.separator) ? options.separator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        str = val + " " + min_string;
+        if (val > 1) {
+          str += "s";
+        }
+        return str;
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (separator.length > 0) {
+          str += " " + separator;
+        }
+        str += " " + mins + " " + min_string;
+        if (mins > 1) {
+          str += "s";
+        }
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, separator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      separator = options && options.separator ? options.separator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + separator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  angular.module('BB.Filters').filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
+    return function(phone_number) {
+      var cc;
+      if (!phone_number) {
+        return;
+      }
+      cc = SettingsService.getCountryCode();
+      switch (cc) {
+        case "gb":
+          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
+        case "us":
+          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
+        default:
+          return phone_number;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
+    var hardcoded_formats;
+    hardcoded_formats = {
+      datetime: {
+        us: 'MM/DD/YYYY, h:mm a',
+        uk: 'DD/MM/YYYY, HH:mm'
+      },
+      date: {
+        us: 'MM/DD/YYYY',
+        uk: 'DD/MM/YYYY'
+      },
+      time: {
+        us: 'h:mm a',
+        uk: 'HH:mm'
+      }
+    };
+    return function(date, format, show_time_zone) {
+      var cc, new_date;
+      if (format == null) {
+        format = "LLL";
+      }
+      if (show_time_zone == null) {
+        show_time_zone = false;
+      }
+      if (hardcoded_formats[format]) {
+        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
+        format = hardcoded_formats[format][cc];
+      }
+      if (date && moment.isMoment(date)) {
+        new_date = date.clone();
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          new_date.tz(SettingsService.getDisplayTimeZone());
+        }
+        if (show_time_zone) {
+          format += ' zz';
+        }
+        return new_date.format(format);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  angular.module('BB.Filters').filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+  angular.module('BB.Filters').filter('nl2br', function() {
+    return function(str) {
+      if (str) {
+        return str.replace(/\n/g, '<br/>');
+      }
+    };
+  });
+
+  app.filter('clearTimezone', function() {
+    return function(val, offset) {
+      if (val !== null && val.length > 19) {
+        return val.substring(0, 19);
+      }
+      return val;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -1969,7 +2482,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, SettingsService, DateTimeUtilitiesService) {
     var hasAvailability, setData, updateAvailability;
     $scope.controller = "public.controllers.AccordionRangeGroup";
     $scope.$watch('slots', function() {
@@ -2026,7 +2539,14 @@ function getURIparam( name ){
       $scope.is_selected = $scope.is_selected || false;
       if ($scope.slots) {
         angular.forEach($scope.slots, function(slot) {
-          if (slot.time >= $scope.start_time && slot.time < $scope.end_time && slot.avail === 1) {
+          var datetime, slot_time;
+          if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+            datetime = moment(slot.datetime).tz(SettingsService.getDisplayTimeZone());
+            slot_time = DateTimeUtilitiesService.convertMomentToTime(datetime);
+          } else {
+            slot_time = slot.time;
+          }
+          if (slot_time >= $scope.start_time && slot_time < $scope.end_time && slot.avail === 1) {
             return $scope.accordion_slots.push(slot);
           }
         });
@@ -2045,7 +2565,7 @@ function getURIparam( name ){
     * @param {string} slot The slot of range group
      */
     updateAvailability = function(day, slot) {
-      var i, j, len, len1, ref, ref1, relevent_slot, times;
+      var datetime, i, j, len, len1, ref, ref1, relevent_slot, slot_time, times;
       $scope.selected_slot = null;
       if ($scope.accordion_slots) {
         $scope.has_availability = hasAvailability();
@@ -2075,7 +2595,13 @@ function getURIparam( name ){
         }
       }
       if (day && slot) {
-        if (day.date.isSame($scope.day.date) && slot.time >= $scope.start_time && slot.time < $scope.end_time) {
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          datetime = moment(slot.datetime).tz(SettingsService.getDisplayTimeZone());
+          slot_time = DateTimeUtilitiesService.convertMomentToTime(datetime);
+        } else {
+          slot_time = slot.time;
+        }
+        if (day.date.isSame($scope.day.date) && slot_time >= $scope.start_time && slot_time < $scope.end_time) {
           $scope.selected_slot = slot;
         }
       } else {
@@ -2951,6 +3477,9 @@ function getURIparam( name ){
         if (prms.locale) {
           moment.locale(prms.locale);
         }
+        if (prms.use_local_timezone) {
+          SettingsService.setUseLocalTimezone(prms.use_local_timezone);
+        }
         if (prms.hide === true) {
           $scope.hide_page = true;
         } else {
@@ -3813,7 +4342,9 @@ function getURIparam( name ){
       $scope.bb.company = company;
       $scope.company = company;
       $scope.bb.item_defaults.company = $scope.bb.company;
-      SettingsService.setCountryCode($scope.bb.company.country_code);
+      SettingsService.setCountryCode(company.country_code);
+      SettingsService.setCurrency(company.currency_code);
+      SettingsService.setTimeZone(company.timezone);
       if (company.$has('settings')) {
         company.getSettings().then((function(_this) {
           return function(settings) {
@@ -10160,172 +10691,6 @@ function getURIparam( name ){
 
   /***
   * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of payments for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
-    var error, getHost, linker, sendLoadEvent;
-    error = function(scope, message) {
-      return scope.error(message);
-    };
-    getHost = function(url) {
-      var a;
-      a = document.createElement('a');
-      a.href = url;
-      return a['protocol'] + '//' + a['host'];
-    };
-    sendLoadEvent = function(element, origin, scope) {
-      var custom_stylesheet, payload, referrer;
-      referrer = $location.protocol() + "://" + $location.host();
-      if ($location.port()) {
-        referrer += ":" + $location.port();
-      }
-      if (scope.payment_options.custom_stylesheet) {
-        custom_stylesheet = scope.payment_options.custom_stylesheet;
-      }
-      payload = JSON.stringify({
-        'type': 'load',
-        'message': referrer,
-        'custom_partial_url': scope.bb.custom_partial_url,
-        'custom_stylesheet': custom_stylesheet,
-        'scroll_offset': SettingsService.getScrollOffset()
-      });
-      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-    };
-    linker = function(scope, element, attributes) {
-      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-      element.find('iframe').bind('load', (function(_this) {
-        return function(event) {
-          var origin, url;
-          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-            url = scope.bb.total.$href('new_payment');
-          }
-          origin = getHost(url);
-          sendLoadEvent(element, origin, scope);
-          return scope.$apply(function() {
-            return scope.callSetLoaded();
-          });
-        };
-      })(this));
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          var data;
-          if (angular.isObject(event.data)) {
-            data = event.data;
-          } else if (!event.data.match(/iFrameSizer/)) {
-            data = JSON.parse(event.data);
-          }
-          return scope.$apply(function() {
-            if (data) {
-              switch (data.type) {
-                case "submitting":
-                  return scope.callNotLoaded();
-                case "error":
-                  scope.$emit("payment:failed");
-                  scope.callNotLoaded();
-                  AlertService.raise('PAYMENT_FAILED');
-                  return document.getElementsByTagName("iframe")[0].src += '';
-                case "payment_complete":
-                  scope.callSetLoaded();
-                  return scope.paymentDone();
-              }
-            }
-          });
-        };
-      })(this), false);
-    };
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: linker
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if ($scope.total) {
-          $scope.bb.total = $scope.total;
-        }
-        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-        }
-      };
-    })(this));
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call not loaded
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Call set loaded
-     */
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return $scope.setLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name paymentDone
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Payment done
-     */
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
   * @name BB.Directives:bbPayForm
   * @restrict AE
   * @scope true
@@ -10550,6 +10915,172 @@ function getURIparam( name ){
         }
       };
     })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of payments for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+    var error, getHost, linker, sendLoadEvent;
+    error = function(scope, message) {
+      return scope.error(message);
+    };
+    getHost = function(url) {
+      var a;
+      a = document.createElement('a');
+      a.href = url;
+      return a['protocol'] + '//' + a['host'];
+    };
+    sendLoadEvent = function(element, origin, scope) {
+      var custom_stylesheet, payload, referrer;
+      referrer = $location.protocol() + "://" + $location.host();
+      if ($location.port()) {
+        referrer += ":" + $location.port();
+      }
+      if (scope.payment_options.custom_stylesheet) {
+        custom_stylesheet = scope.payment_options.custom_stylesheet;
+      }
+      payload = JSON.stringify({
+        'type': 'load',
+        'message': referrer,
+        'custom_partial_url': scope.bb.custom_partial_url,
+        'custom_stylesheet': custom_stylesheet,
+        'scroll_offset': SettingsService.getScrollOffset()
+      });
+      return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+    };
+    linker = function(scope, element, attributes) {
+      scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+      scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+      element.find('iframe').bind('load', (function(_this) {
+        return function(event) {
+          var origin, url;
+          if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+            url = scope.bb.total.$href('new_payment');
+          }
+          origin = getHost(url);
+          sendLoadEvent(element, origin, scope);
+          return scope.$apply(function() {
+            return scope.callSetLoaded();
+          });
+        };
+      })(this));
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          var data;
+          if (angular.isObject(event.data)) {
+            data = event.data;
+          } else if (!event.data.match(/iFrameSizer/)) {
+            data = JSON.parse(event.data);
+          }
+          return scope.$apply(function() {
+            if (data) {
+              switch (data.type) {
+                case "submitting":
+                  return scope.callNotLoaded();
+                case "error":
+                  scope.$emit("payment:failed");
+                  scope.callNotLoaded();
+                  AlertService.raise('PAYMENT_FAILED');
+                  return document.getElementsByTagName("iframe")[0].src += '';
+                case "payment_complete":
+                  scope.callSetLoaded();
+                  return scope.paymentDone();
+              }
+            }
+          });
+        };
+      })(this), false);
+    };
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: linker
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if ($scope.total) {
+          $scope.bb.total = $scope.total;
+        }
+        if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+          return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+        }
+      };
+    })(this));
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call not loaded
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Call set loaded
+     */
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return $scope.setLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Payment done
+     */
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
   });
 
 }).call(this);
@@ -12475,7 +13006,12 @@ function getURIparam( name ){
           if ($scope.item_link_source) {
             $scope.data_source.setItem($scope.item_link_source);
           }
-          if (day) {
+          if (slot.datetime) {
+            $scope.setLastSelectedDate(slot.datetime);
+            $scope.data_source.setDate({
+              date: slot.datetime
+            });
+          } else if (day) {
             $scope.setLastSelectedDate(day.date);
             $scope.data_source.setDate(day);
           }
@@ -12503,8 +13039,15 @@ function getURIparam( name ){
     $scope.highlightSlot = (function(_this) {
       return function(slot, day) {
         if (day && slot && slot.availability() > 0) {
-          $scope.setLastSelectedDate(day.date);
-          $scope.data_source.setDate(day);
+          if (slot.datetime) {
+            $scope.setLastSelectedDate(slot.datetime);
+            $scope.data_source.setDate({
+              date: slot.datetime
+            });
+          } else if (day) {
+            $scope.setLastSelectedDate(day.date);
+            $scope.data_source.setDate(day);
+          }
           $scope.data_source.setTime(slot);
           return $scope.$broadcast('slotChanged');
         }
@@ -13024,7 +13567,12 @@ function getURIparam( name ){
     $scope.selectSlot = function(slot, day, route) {
       if (slot && slot.availability() > 0) {
         $scope.bb.current_item.setTime(slot);
-        if (day) {
+        if (slot.datetime) {
+          $scope.setLastSelectedDate(slot.datetime);
+          $scope.bb.current_item.setDate({
+            date: slot.datetime
+          });
+        } else if (day) {
           $scope.setLastSelectedDate(day.date);
           $scope.bb.current_item.setDate(day);
         }
@@ -13056,7 +13604,12 @@ function getURIparam( name ){
       var current_item;
       current_item = $scope.bb.current_item;
       if (slot && slot.availability() > 0 && !slot.disabled) {
-        if (day) {
+        if (slot.datetime) {
+          $scope.setLastSelectedDate(slot.datetime);
+          current_item.setDate({
+            date: slot.datetime
+          });
+        } else if (day) {
           $scope.setLastSelectedDate(day.date);
           current_item.setDate(day);
         }
@@ -13098,10 +13651,6 @@ function getURIparam( name ){
       duration = $scope.bb.current_item.duration;
       if ($scope.bb.current_item.min_duration) {
         duration = $scope.bb.current_item.min_duration;
-      }
-      loc = null;
-      if ($scope.bb.postcode) {
-        loc = ",,,," + $scope.bb.postcode + ",";
       }
       if ($scope.data_source && $scope.data_source.days_link) {
         $scope.notLoaded($scope);
@@ -15590,6 +16139,35 @@ function getURIparam( name ){
     };
   });
 
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeZone
+  * @restrict A
+  * @description
+  * Timezone name helper
+  * @param {String} time_zone_name The name of the time zone
+  * @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
+  * @example
+  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in {{time_zone_name}}.</span>
+  * @example_result
+  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
+   */
+
+  angular.module('BB.Directives').directive('bbTimeZone', function(SettingsService) {
+    return {
+      restrict: 'A',
+      link: function(scope, el, attrs) {
+        var company_time_zone;
+        company_time_zone = SettingsService.getTimeZone();
+        scope.time_zone_name = moment().tz(company_time_zone).format('zz');
+        if (!SettingsService.getUseLocalTimezone() && moment.tz.guess() !== company_time_zone) {
+          return scope.is_time_zone_diff = true;
+        }
+      }
+    };
+  });
+
 }).call(this);
 
 (function() {
@@ -16318,504 +16896,6 @@ function getURIparam( name ){
     };
   });
 }(window.angular));
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  angular.module('BB.Filters').filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  angular.module('BB.Filters').filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  angular.module('BB.Filters').filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  angular.module('BB.Filters').filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  angular.module('BB.Filters').filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('icurrency', function($window, $rootScope) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = $rootScope.bb_currency);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  angular.module('BB.Filters').filter('ipretty_price', function($window, $rootScope) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[$rootScope.bb_currency];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val > 1) {
-          str += "s";
-        }
-        return str;
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins > 1) {
-          str += "s";
-        }
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, separator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      separator = options && options.separator ? options.separator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + separator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  angular.module('BB.Filters').filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
-      if (!phone_number) {
-        return;
-      }
-      cc = SettingsService.getCountryCode();
-      switch (cc) {
-        case "gb":
-          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
-        case "us":
-          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
-        default:
-          return phone_number;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
-    return function(date, format) {
-      var cc, datestrings;
-      if (date && moment.isMoment(date)) {
-        datestrings = {
-          datetime_us: 'MM/DD/YYYY, h:mm a',
-          datetime_uk: 'DD/MM/YYYY, HH:mm',
-          date_us: 'MM/DD/YYYY',
-          date_uk: 'DD/MM/YYYY',
-          time_us: 'h:mm a',
-          time_uk: 'HH:mm'
-        };
-        cc = SettingsService.getCountryCode();
-        if (cc !== "us") {
-          cc = "uk";
-        }
-        if (format && format.match(/(date(time_uk|time_us|_us|_uk)*|(time(_uk|_us)*))/)) {
-          return date.format(datestrings[format + "_" + cc]);
-        } else if (format) {
-          return date.format(format);
-        } else {
-          return date.format(datestrings["date_" + cc]);
-        }
-      } else {
-
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  angular.module('BB.Filters').filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-  angular.module('BB.Filters').filter('nl2br', function() {
-    return function(str) {
-      if (str) {
-        return str.replace(/\n/g, '<br/>');
-      }
-    };
-  });
-
-  app.filter('clearTimezone', function() {
-    return function(val, offset) {
-      if (val !== null && val.length > 19) {
-        return val.substring(0, 19);
-      }
-      return val;
-    };
-  });
-
-}).call(this);
 
 (function() {
   'use strict';
@@ -18200,9 +18280,9 @@ function getURIparam( name ){
           this.reserve_ready = true;
           this.held = {
             time: this.time,
-            id: this.id,
             date: this.date,
-            event_id: this.event_id
+            event_id: this.event_id,
+            id: this.id
           };
         }
         this.promises = [];
@@ -19049,7 +19129,6 @@ function getURIparam( name ){
        */
 
       BasketItem.prototype.setTime = function(time) {
-        var hours, mins, val;
         if (this.time) {
           this.time.unselect();
         }
@@ -19057,11 +19136,7 @@ function getURIparam( name ){
         if (this.time) {
           this.time.select();
           if (this.datetime) {
-            val = parseInt(time.time);
-            hours = parseInt(val / 60);
-            mins = val % 60;
-            this.datetime.hour(hours);
-            this.datetime.minutes(mins);
+            this.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(this.datetime, this.time);
           }
           if (this.price && this.time.price && (this.price !== this.time.price)) {
             this.setPrice(this.time.price);
@@ -19554,13 +19629,10 @@ function getURIparam( name ){
        */
 
       BasketItem.prototype.start_datetime = function() {
-        var start_datetime;
         if (!this.date || !this.time) {
           return null;
         }
-        start_datetime = moment(this.date.date.toISODate());
-        start_datetime.minutes(this.time.time);
-        return start_datetime;
+        return DateTimeUtilitiesService.convertTimeSlotToMoment(this.date, this.time);
       };
 
       BasketItem.prototype.startDatetime = function() {
@@ -19579,14 +19651,13 @@ function getURIparam( name ){
        */
 
       BasketItem.prototype.end_datetime = function() {
-        var duration, end_datetime;
+        var duration, time;
         if (!this.date || !this.time || (!this.listed_duration && !this.duration)) {
           return null;
         }
         duration = this.listed_duration ? this.listed_duration : this.duration;
-        end_datetime = moment(this.date.date.toISODate());
-        end_datetime.minutes(this.time.time + duration);
-        return end_datetime;
+        time = this.time.time + duration;
+        return DateTimeUtilitiesService.convertTimeSlotToMoment(this.date, time);
       };
 
       BasketItem.prototype.endDatetime = function() {
@@ -23512,9 +23583,8 @@ function getURIparam( name ){
         this.service = service;
         this.time_12 = this.print_time12();
         this.time_24 = this.print_time();
-        this.time_moment = DateTimeUtilitiesService.convertTimeSlotToMoment({
-          date: moment()
-        }, this);
+        this.datetime = moment.parseZone(this.datetime);
+        this.time_moment = this.datetime;
       }
 
 
@@ -24788,7 +24858,7 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("DateTimeUtilitiesService", function() {
+  angular.module('BB.Services').factory("DateTimeUtilitiesService", function(SettingsService) {
     return {
       convertTimeSlotToMoment: function(day, time_slot) {
         var datetime, hours, mins, val;
@@ -24796,6 +24866,9 @@ function getURIparam( name ){
           return;
         }
         datetime = moment();
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          datetime = datetime.tz(SettingsService.getTimeZone());
+        }
         val = parseInt(time_slot.time);
         hours = parseInt(val / 60);
         mins = val % 60;
@@ -27371,10 +27444,14 @@ function getURIparam( name ){
 
 (function() {
   angular.module('BB.Services').factory('SettingsService', function() {
-    var country_code, i18n, scroll_offset;
+    var company_time_zone, country_code, currency, display_time_zone, i18n, scroll_offset, use_local_timezone;
     i18n = false;
     scroll_offset = 0;
-    country_code = "";
+    country_code = null;
+    use_local_timezone = false;
+    currency = null;
+    company_time_zone = null;
+    display_time_zone = null;
     return {
       enableInternationalizaton: function() {
         return i18n = true;
@@ -27396,6 +27473,35 @@ function getURIparam( name ){
       },
       getCountryCode: function() {
         return country_code;
+      },
+      setUseLocalTimezone: function(value) {
+        use_local_timezone = value;
+        return display_time_zone = moment.tz.guess();
+      },
+      getUseLocalTimezone: function() {
+        return use_local_timezone;
+      },
+      setCurrency: function(value) {
+        return currency = value;
+      },
+      getCurrency: function() {
+        return currency;
+      },
+      setTimeZone: function(value) {
+        return company_time_zone = value;
+      },
+      getTimeZone: function() {
+        return company_time_zone;
+      },
+      setDisplayTimeZone: function(value) {
+        return display_time_zone = value;
+      },
+      getDisplayTimeZone: function() {
+        if (display_time_zone) {
+          return display_time_zone;
+        } else {
+          return company_time_zone;
+        }
       }
     };
   });
@@ -27648,20 +27754,34 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient) {
+  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient, SettingsService, DateTimeUtilitiesService) {
     return {
       query: function(prms) {
-        var date, deferred, extra, item_link;
+        var company_utc_offset, deferred, display_utc_offset, end_date, extra, item_link, start_date;
         deferred = $q.defer();
+        start_date = null;
+        end_date = null;
         if (prms.date) {
-          date = prms.date.toISODate();
+          prms.start_date = prms.date;
+        } else if (prms.cItem.date) {
+          prms.start_date = prms.cItem.date.date;
         } else {
-          if (!prms.cItem.date) {
-            deferred.reject("No date set");
-            return deferred.promise;
-          } else {
-            date = prms.cItem.date.date.toISODate();
+          deferred.reject("No date set");
+          return deferred.promise;
+        }
+        start_date = prms.start_date;
+        if (prms.end_date) {
+          end_date = prms.end_date;
+        }
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          display_utc_offset = moment().tz(SettingsService.getDisplayTimeZone()).utcOffset();
+          company_utc_offset = moment().tz(SettingsService.getTimeZone()).utcOffset();
+          if (company_utc_offset < display_utc_offset) {
+            start_date = prms.start_date.clone().subtract(1, 'day');
+          } else if (company_utc_offset > display_utc_offset && prms.end_date) {
+            end_date = prms.end_date.clone().add(1, 'day');
           }
+          prms.time_zone = SettingsService.getDisplayTimeZone();
         }
         if (prms.duration == null) {
           if (prms.cItem && prms.cItem.duration) {
@@ -27674,7 +27794,7 @@ function getURIparam( name ){
         }
         if (item_link) {
           extra = {
-            date: date
+            date: start_date.toISODate()
           };
           if (prms.location) {
             extra.location = prms.location;
@@ -27688,12 +27808,15 @@ function getURIparam( name ){
           if (prms.cItem.resource && !prms.cItem.anyResource() && !item_link.event_id && !extra.event_id) {
             extra.resource_id = prms.cItem.resource.id;
           }
-          if (prms.end_date) {
-            extra.end_date = prms.end_date.toISODate();
+          if (end_date) {
+            extra.end_date = end_date.toISODate();
           }
           extra.duration = prms.duration;
           extra.resource_ids = prms.resource_ids;
           extra.num_resources = prms.num_resources;
+          if (prms.time_zone) {
+            extra.time_zone = prms.time_zone;
+          }
           if (extra.event_id) {
             item_link = prms.company;
           }
@@ -27712,38 +27835,49 @@ function getURIparam( name ){
                     if (day.$has('event_links')) {
                       return day.$get('event_links').then(function(all_events) {
                         var times;
-                        times = _this.merge_times(all_events, prms.cItem.service, prms.cItem);
+                        times = _this.merge_times(all_events, prms.cItem.service, prms.cItem, day.date);
                         if (prms.available) {
                           times = _.filter(times, function(t) {
                             return t.avail >= prms.available;
                           });
                         }
-                        date_times[day.date] = times;
-                        return day.elink.resolve();
+                        return day.elink.resolve(times);
                       });
                     } else if (day.times) {
-                      times = _this.merge_times([day], prms.cItem.service, prms.cItem);
+                      times = _this.merge_times([day], prms.cItem.service, prms.cItem, day.date);
                       if (prms.available) {
                         times = _.filter(times, function(t) {
                           return t.avail >= prms.available;
                         });
                       }
-                      date_times[day.date] = times;
-                      return day.elink.resolve();
+                      return day.elink.resolve(times);
                     }
                   };
                   for (j = 0, len = all_days.length; j < len; j++) {
                     day = all_days[j];
                     fn(day);
                   }
-                  return $q.all(all_days_def).then(function() {
-                    return deferred.resolve(date_times);
+                  return $q.all(all_days_def).then(function(times) {
+                    var d, key, new_date_times;
+                    date_times = _.chain(times).flatten().sortBy(function(slot) {
+                      return slot.datetime.unix();
+                    }).groupBy(function(slot) {
+                      return slot.datetime.toISODate();
+                    }).value();
+                    new_date_times = {};
+                    d = prms.start_date.clone();
+                    while (d <= prms.end_date) {
+                      key = d.toISODate();
+                      new_date_times[key] = date_times[key] ? date_times[key] : [];
+                      d = d.clone().add(1, 'day');
+                    }
+                    return deferred.resolve(new_date_times);
                   });
                 });
               } else if (results.$has('event_links')) {
                 return results.$get('event_links').then(function(all_events) {
                   var times;
-                  times = _this.merge_times(all_events, prms.cItem.service, prms.cItem);
+                  times = _this.merge_times(all_events, prms.cItem.service, prms.cItem, prms.start_date);
                   if (prms.available) {
                     times = _.filter(times, function(t) {
                       return t.avail >= prms.available;
@@ -27752,7 +27886,7 @@ function getURIparam( name ){
                   return deferred.resolve(times);
                 });
               } else if (results.times) {
-                times = _this.merge_times([results], prms.cItem.service, prms.cItem);
+                times = _this.merge_times([results], prms.cItem.service, prms.cItem, prms.start_date);
                 if (prms.available) {
                   times = _.filter(times, function(t) {
                     return t.avail >= prms.available;
@@ -27792,7 +27926,7 @@ function getURIparam( name ){
         });
         return defer.promise;
       },
-      merge_times: function(all_events, service, item) {
+      merge_times: function(all_events, service, item, date) {
         var date_times, ev, i, j, k, l, len, len1, len2, ref, sorted_times, times;
         if (!all_events || all_events.length === 0) {
           return [];
@@ -27821,6 +27955,11 @@ function getURIparam( name ){
         for (l = 0, len2 = sorted_times.length; l < len2; l++) {
           i = sorted_times[l];
           if (i) {
+            if (!i.datetime) {
+              i.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment({
+                date: moment(date)
+              }, i);
+            }
             times.push(new BBModel.TimeSlot(i, service));
           }
         }
@@ -27828,6 +27967,7 @@ function getURIparam( name ){
       },
       checkCurrentItem: function(item, sorted_times, ev) {
         if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
+          item.time.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(item.date, item.time);
           sorted_times[item.time.time] = item.time;
           return halClient.clearCache(ev.$href("self"));
         } else if (item && item.id && item.event_id === ev.event_id && item.time && sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {

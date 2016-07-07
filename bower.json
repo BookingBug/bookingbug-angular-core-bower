@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "1.2.10",
+  "version": "1.2.12",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -22,7 +22,7 @@
   "dependencies": {
     "jquery": "~1.11.2",
     "jquery-ui": "~1.11.2",
-    "moment": "https://github.com/BookingBug/moment.git#master",
+    "moment": "~2.13.0",
     "moment-timezone": "~0.5.4",
     "accounting": "~0.3.2",
     "angular": "1.2.28",
