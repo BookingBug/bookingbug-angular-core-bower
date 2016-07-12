@@ -3670,13 +3670,14 @@ function getURIparam( name ){
       def = $q.defer();
       $scope.setBasketItem(new BBModel.BasketItem(null, $scope.bb));
       if ($scope.bb.default_setup_promises) {
-        $q.all($scope.bb.default_setup_promises)['finally'](function() {
+        $q.all($scope.bb.default_setup_promises)["finally"](function() {
           $scope.bb.current_item.setDefaults($scope.bb.item_defaults);
-          return $q.all($scope.bb.current_item.promises)['finally'](function() {
+          return $q.all($scope.bb.current_item.promises)["finally"](function() {
             return def.resolve();
           });
         });
       } else {
+        $scope.bb.current_item.setDefaults({});
         def.resolve();
       }
       return def.promise;
@@ -7371,7 +7372,7 @@ function getURIparam( name ){
   * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  angular.module('BB.Directives').directive('bbItemDetails', function() {
+  angular.module('BB.Directives').directive('bbItemDetails', function($q, $templateCache, $compile) {
     return {
       restrict: 'AE',
       replace: true,
@@ -14043,6 +14044,94 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbFileUpload
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  * File upload
+  *
+  * @example
+    <example>
+    <div bb-file-upload class="form-group"></div>
+    </example>
+   */
+  angular.module('BB.Directives').directive('bbFileUpload', function() {
+    return {
+      restrict: 'AE',
+      replace: false,
+      scope: true,
+      controller: 'FileUpload',
+      templateUrl: 'file_upload.html',
+      link: function(scope, element, attrs) {}
+    };
+  });
+
+  angular.module('BB.Controllers').controller('FileUpload', function($scope, Upload) {
+    $scope.controller = "public.controllers.FileUpload";
+
+    /***
+    * @ngdoc method
+    * @name uploadFile
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Upload a file
+    * For more information see https://github.com/danialfarid/ng-file-upload
+    * To use this module:
+    *
+    * @param {object} item basket item
+    * @param {object} file uploaded file
+    * @param {number} existing attachment id
+    * @param {array} errFiles errors array
+     */
+    return $scope.uploadFile = function(item, file, errFiles, existing) {
+      var att_id, method, onError, onProgress, onSuccess, url;
+      if (file) {
+        $scope.myFile = file;
+        if (existing) {
+          att_id = existing;
+        } else {
+          att_id = null;
+        }
+        method = "POST";
+        if (att_id) {
+          method = "PUT";
+        }
+        url = item.$href('add_attachment');
+        $scope.errFile = errFiles && errFiles[0];
+        onSuccess = function(response) {
+          file.result = response.data;
+          item.attachment = response.data;
+          item.attachment_id = response.data.id;
+          return file.progress = 100;
+        };
+        onError = function(response) {
+          $scope.showError = true;
+          return file.progress = 100;
+        };
+        onProgress = function(evt) {
+          return file.progress = Math.min(100, parseInt(99.0 * evt.loaded / evt.total));
+        };
+        file.upload = Upload.upload({
+          url: url,
+          method: method,
+          data: {
+            attachment_id: att_id
+          },
+          file: file
+        });
+        return file.upload.then(onSuccess, onError, onProgress);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Directives').directive('bbFormDataStore', function(FormDataStoreService) {
     return {
       require: '?bbWidget',
@@ -14283,20 +14372,28 @@ function getURIparam( name ){
     };
   });
 
-  app.directive('bbLocalNumber', function() {
+  app.directive('bbLocalNumber', function($filter) {
     return {
       restrict: 'A',
+      scope: {},
       require: 'ngModel',
       link: function(scope, element, attrs, ctrl) {
-        var prettyifyNumber;
-        prettyifyNumber = function(value) {
-          if (value && value[0] !== "0") {
-            value = "0" + value;
-          } else {
-            value;
+        var prettyifyNumber, storeNumber;
+        scope.userinput_mobile = null;
+        storeNumber = function(value) {
+          if (value) {
+            scope.userinput_mobile = value;
           }
           return value;
         };
+        prettyifyNumber = function(value) {
+          if (scope.userinput_mobile) {
+            return value = scope.userinput_mobile;
+          } else {
+            return $filter('local_phone_number')(value);
+          }
+        };
+        ctrl.$parsers.push(storeNumber);
         return ctrl.$formatters.push(prettyifyNumber);
       }
     };
@@ -19263,7 +19360,7 @@ function getURIparam( name ){
         if (this.time) {
           this.time.select();
           if (this.datetime) {
-            this.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(this.datetime, this.time);
+            this.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(this.date, this.time);
           }
           if (this.price && this.time.price && (this.price !== this.time.price)) {
             this.setPrice(this.time.price);
@@ -25897,94 +25994,6 @@ function getURIparam( name ){
         } else {
           return $sce.trustAsResourceUrl(fileName + ".html");
         }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbFileUpload
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  * File upload
-  *
-  * @example
-    <example>
-    <div bb-file-upload class="form-group"></div>
-    </example>
-   */
-  angular.module('BB.Directives').directive('bbFileUpload', function() {
-    return {
-      restrict: 'AE',
-      replace: false,
-      scope: true,
-      controller: 'FileUpload',
-      templateUrl: 'file_upload.html',
-      link: function(scope, element, attrs) {}
-    };
-  });
-
-  angular.module('BB.Controllers').controller('FileUpload', function($scope, Upload) {
-    $scope.controller = "public.controllers.FileUpload";
-
-    /***
-    * @ngdoc method
-    * @name uploadFile
-    * @methodOf BB.Directives:bbItemDetails
-    * @description
-    * Upload a file
-    * For more information see https://github.com/danialfarid/ng-file-upload
-    * To use this module:
-    *
-    * @param {object} item basket item
-    * @param {object} file uploaded file
-    * @param {number} existing attachment id
-    * @param {array} errFiles errors array
-     */
-    return $scope.uploadFile = function(item, file, errFiles, existing) {
-      var att_id, method, onError, onProgress, onSuccess, url;
-      if (file) {
-        $scope.myFile = file;
-        if (existing) {
-          att_id = existing;
-        } else {
-          att_id = null;
-        }
-        method = "POST";
-        if (att_id) {
-          method = "PUT";
-        }
-        url = item.$href('add_attachment');
-        $scope.errFile = errFiles && errFiles[0];
-        onSuccess = function(response) {
-          file.result = response.data;
-          item.attachment = response.data;
-          item.attachment_id = response.data.id;
-          return file.progress = 100;
-        };
-        onError = function(response) {
-          $scope.showError = true;
-          return file.progress = 100;
-        };
-        onProgress = function(evt) {
-          return file.progress = Math.min(100, parseInt(99.0 * evt.loaded / evt.total));
-        };
-        file.upload = Upload.upload({
-          url: url,
-          method: method,
-          data: {
-            attachment_id: att_id
-          },
-          file: file
-        });
-        return file.upload.then(onSuccess, onError, onProgress);
       }
     };
   });
