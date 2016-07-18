@@ -3568,7 +3568,8 @@ function getURIparam( name ){
       return add_defer.promise;
     };
     $scope.updateBasket = function() {
-      var add_defer, params;
+      var add_defer, current_item_ref, params;
+      current_item_ref = $scope.bb.current_item.ref;
       add_defer = $q.defer();
       params = {
         member_id: $scope.client.id,
@@ -3577,7 +3578,7 @@ function getURIparam( name ){
         bb: $scope.bb
       };
       BasketService.updateBasket($scope.bb.company, params).then(function(basket) {
-        var item, j, len, ref;
+        var current_item, item, j, len, ref;
         ref = basket.items;
         for (j = 0, len = ref.length; j < len; j++) {
           item = ref[j];
@@ -3587,7 +3588,10 @@ function getURIparam( name ){
         halClient.clearCache("events");
         basket.setSettings($scope.bb.basket.settings);
         $scope.setBasket(basket);
-        $scope.setBasketItem(basket.items[0]);
+        current_item = _.find(basket.items, function(item) {
+          return item.ref === current_item_ref;
+        });
+        $scope.setBasketItem(current_item);
         if (!$scope.bb.current_item) {
           return $scope.clearBasketItem().then(function() {
             return add_defer.resolve(basket);
@@ -4295,6 +4299,24 @@ function getURIparam( name ){
         return $scope.decideNextPage(route);
       };
     })(this);
+    $scope.groupPrice = function(items) {
+      var group_price, i, item, len;
+      group_price = 0;
+      for (i = 0, len = items.length; i < len; i++) {
+        item = items[i];
+        group_price += item.total_price;
+      }
+      return group_price;
+    };
+    $scope.groupTicketQty = function(items) {
+      var group_ticket_qty, i, item, len;
+      group_ticket_qty = 0;
+      for (i = 0, len = items.length; i < len; i++) {
+        item = items[i];
+        group_ticket_qty += item.tickets.qty;
+      }
+      return group_ticket_qty;
+    };
     groupBasketItems = function(items) {
       $scope.multi_basket_grouping = _.groupBy($scope.bb.basket.timeItems(), 'event_id');
       $scope.multi_basket_grouping = _.values($scope.multi_basket_grouping);
@@ -6228,13 +6250,14 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService) {
-    var init, initImage, initTickets;
+    var init, initImage, initTickets, ticket_refs;
     $scope.controller = "public.controllers.Event";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
     $scope.validator = ValidatorService;
     $scope.event_options = $scope.$eval($attrs.bbEvent) || {};
-    FormDataStoreService.init('ItemDetails', $scope, ['selected_tickets', 'event_options']);
+    ticket_refs = [];
+    FormDataStoreService.init('Event', $scope, ['selected_tickets', 'event_options']);
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
         return init($scope.bb.company);
@@ -6254,7 +6277,7 @@ function getURIparam( name ){
         promises.push($scope.getPrePaidsForEvent($scope.client, $scope.event));
       }
       return $q.all(promises).then(function(result) {
-        var event, i, images, item, len, prepaids, ref;
+        var event, images, item, prepaids;
         if (result[0] && result[0].length > 0) {
           images = result[0];
         }
@@ -6266,34 +6289,29 @@ function getURIparam( name ){
         if (images) {
           initImage(images);
         }
-        if ($scope.bb.current_item.tickets) {
+        if ($scope.bb.current_item.tickets && $scope.bb.current_item.tickets.qty > 0) {
           $scope.setLoaded($scope);
           $scope.selected_tickets = true;
+          $scope.current_ticket_items = _.filter($scope.bb.basket.timeItems(), function(item) {
+            return item.event_id === $scope.event.id;
+          });
           $scope.tickets = (function() {
-            var i, len, ref, results;
-            ref = $scope.bb.basket.items;
+            var i, len, ref1, results;
+            ref1 = $scope.current_ticket_items;
             results = [];
-            for (i = 0, len = ref.length; i < len; i++) {
-              item = ref[i];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              item = ref1[i];
               results.push(item.tickets);
             }
             return results;
           })();
-          $scope.current_ticket_items = [];
-          ref = $scope.bb.basket.timeItems();
-          for (i = 0, len = ref.length; i < len; i++) {
-            item = ref[i];
-            if (item.event_id === $scope.event.id) {
-              $scope.current_ticket_items.push(item);
-            }
-          }
-          $scope.$watch('bb.basket.items', function(items, olditems) {
-            $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
-            return item.tickets.price = item.totalPrice();
+          $scope.$watch('current_ticket_items', function(items, olditems) {
+            return $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
           }, true);
           return;
+        } else {
+          initTickets();
         }
-        initTickets();
         $scope.$broadcast("bbEvent:initialised");
         return $scope.setLoaded($scope);
       }, function(err) {
@@ -6309,19 +6327,22 @@ function getURIparam( name ){
     * Processes the selected tickets and adds them to the basket
      */
     $scope.selectTickets = function() {
-      var base_item, c, i, item, j, len, ref, ref1, ticket;
+      var base_item, c, i, item, j, len, ref, ref1, ref2, ticket;
       $scope.notLoaded($scope);
       $scope.bb.emptyStackedItems();
       base_item = $scope.current_item;
-      ref = $scope.event.tickets;
-      for (i = 0, len = ref.length; i < len; i++) {
-        ticket = ref[i];
+      ref1 = $scope.event.tickets;
+      for (i = 0, len = ref1.length; i < len; i++) {
+        ticket = ref1[i];
         if (ticket.qty) {
           switch ($scope.event.chain.ticket_type) {
             case "single_space":
-              for (c = j = 1, ref1 = ticket.qty; 1 <= ref1 ? j <= ref1 : j >= ref1; c = 1 <= ref1 ? ++j : --j) {
+              for (c = j = 1, ref2 = ticket.qty; 1 <= ref2 ? j <= ref2 : j >= ref2; c = 1 <= ref2 ? ++j : --j) {
                 item = new BBModel.BasketItem();
+                ref = item.ref;
                 angular.extend(item, base_item);
+                item.ref = ref;
+                ticket_refs.push(item.ref);
                 delete item.id;
                 item.tickets = angular.copy(ticket);
                 item.tickets.qty = 1;
@@ -6330,7 +6351,10 @@ function getURIparam( name ){
               break;
             case "multi_space":
               item = new BBModel.BasketItem();
+              ref = item.ref;
               angular.extend(item, base_item);
+              item.ref = ref;
+              ticket_refs.push(item.ref);
               item.tickets = angular.copy(ticket);
               delete item.id;
               item.tickets.qty = ticket.qty;
@@ -6345,31 +6369,24 @@ function getURIparam( name ){
       $scope.bb.pushStackToBasket();
       return $scope.updateBasket().then((function(_this) {
         return function() {
-          var k, len1, ref2;
           $scope.setLoaded($scope);
           $scope.selected_tickets = true;
           $scope.stopTicketWatch();
+          $scope.current_ticket_items = _.filter($scope.bb.basket.timeItems(), function(item) {
+            return _.contains(ticket_refs, item.ref);
+          });
           $scope.tickets = (function() {
-            var k, len1, ref2, results;
-            ref2 = $scope.bb.basket.items;
+            var k, len1, ref3, results;
+            ref3 = $scope.current_ticket_items;
             results = [];
-            for (k = 0, len1 = ref2.length; k < len1; k++) {
-              item = ref2[k];
+            for (k = 0, len1 = ref3.length; k < len1; k++) {
+              item = ref3[k];
               results.push(item.tickets);
             }
             return results;
           })();
-          $scope.current_ticket_items = [];
-          ref2 = $scope.bb.basket.timeItems();
-          for (k = 0, len1 = ref2.length; k < len1; k++) {
-            item = ref2[k];
-            if (item.event_id === $scope.event.id) {
-              $scope.current_ticket_items.push(item);
-            }
-          }
-          return $scope.$watch('bb.basket.items', function(items, olditems) {
-            $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
-            return item.tickets.price = item.totalPrice();
+          return $scope.$watch('current_ticket_items', function(items, olditems) {
+            return $scope.bb.basket.total_price = $scope.bb.basket.totalPrice();
           }, true);
         };
       })(this), function(err) {
@@ -6410,7 +6427,12 @@ function getURIparam( name ){
      */
     $scope.setReady = (function(_this) {
       return function() {
-        $scope.bb.current_item.setEvent($scope.event);
+        var i, item, len, ref1;
+        ref1 = $scope.current_ticket_items;
+        for (i = 0, len = ref1.length; i < len; i++) {
+          item = ref1[i];
+          item.setEvent($scope.event);
+        }
         $scope.bb.event_details = {
           name: $scope.event.chain.name,
           image: $scope.event.image,
@@ -6463,15 +6485,15 @@ function getURIparam( name ){
       }
     };
     return initTickets = function() {
-      var i, len, ref, ticket;
+      var i, len, ref1, ticket;
       if ($scope.selected_tickets) {
         return;
       }
       $scope.event.tickets[0].qty = $scope.event_options.default_num_tickets ? $scope.event_options.default_num_tickets : 0;
       if ($scope.event.tickets.length > 1) {
-        ref = $scope.event.tickets.slice(1);
-        for (i = 0, len = ref.length; i < len; i++) {
-          ticket = ref[i];
+        ref1 = $scope.event.tickets.slice(1);
+        for (i = 0, len = ref1.length; i < len; i++) {
+          ticket = ref1[i];
           ticket.qty = 0;
         }
       }
@@ -6721,7 +6743,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout) {
-    var buildDynamicFilters, filterEventsWithDynamicFilters, sort;
+    var buildDynamicFilters, sort;
     $scope.controller = "public.controllers.EventList";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
@@ -7170,10 +7192,10 @@ function getURIparam( name ){
      */
     $scope.filterEvents = function(item) {
       var result;
-      result = (moment($scope.filters.date).isSame(item.date, 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_sold_out_events && item.bookable) || !$scope.filters.hide_sold_out_events) && filterEventsWithDynamicFilters(item);
+      result = (moment($scope.filters.date).isSame(item.date, 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_sold_out_events && item.bookable) || !$scope.filters.hide_sold_out_events) && $scope.filterEventsWithDynamicFilters(item);
       return result;
     };
-    filterEventsWithDynamicFilters = function(item) {
+    $scope.filterEventsWithDynamicFilters = function(item) {
       var dynamic_filter, filter, i, j, k, l, len, len1, len2, len3, m, name, ref, ref1, ref2, ref3, result, type;
       if (!$scope.has_company_questions || !$scope.dynamic_filters) {
         return true;
@@ -18528,6 +18550,9 @@ function getURIparam( name ){
         this.parts_links = {};
         this.settings || (this.settings = {});
         this.has_questions = false;
+        if (!this.ref) {
+          this.ref = Math.ceil(moment().unix() * Math.random());
+        }
         if (this.time) {
           this.time = new BBModel.TimeSlot({
             time: this.time,
@@ -19683,6 +19708,7 @@ function getURIparam( name ){
         if (this.product) {
           data.product_id = this.product.id;
         }
+        data.ref = this.ref;
         if (this.email) {
           data.email = this.email;
         }
@@ -21971,22 +21997,13 @@ function getURIparam( name ){
       * @returns {object} The returned spaces left
        */
 
-      Event.prototype.getWaitSpacesLeft = function(pool) {
-        var pool_left, wait;
-        if (pool == null) {
-          pool = null;
-        }
-        wait = this.getChain().waitlength;
+      Event.prototype.getWaitSpacesLeft = function() {
+        var wait;
+        wait = this.chain.waitlength;
         wait || (wait = 0);
         wait = wait - this.spaces_wait;
         if (wait <= 0) {
           return 0;
-        }
-        if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
-          pool_left = this.ticket_spaces[pool].left;
-          if (wait > pool_left) {
-            return pool_left;
-          }
         }
         return wait;
       };
@@ -22273,6 +22290,7 @@ function getURIparam( name ){
                 _this.tickets = [];
                 for (i = 0, len = tickets.length; i < len; i++) {
                   ticket = tickets[i];
+                  ticket.ticket_set = true;
                   _this.tickets.push(new BBModel.EventTicket(ticket));
                 }
                 _this.adjustTicketsForRemaining();
@@ -22506,23 +22524,20 @@ function getURIparam( name ){
       * @returns {array} The returned range
        */
 
-      EventTicket.prototype.getRange = function(cap, event) {
-        var c, i, ref, ref1, results;
-        if (cap) {
-          c = cap;
-          if (this.counts_as) {
-            c = cap / this.counts_as;
-          }
-          c = event && cap > event.getSpacesLeft() ? event.getSpacesLeft() : cap;
-          if (c <= 0 && event.getWaitSpacesLeft() > 0) {
-            this.max = event.getWaitSpacesLeft();
-          } else if (c + this.min_num_bookings < this.max) {
-            this.max = c + this.min_num_bookings;
-          }
+      EventTicket.prototype.getRange = function(event, cap) {
+        var i, max, min, pool, results;
+        if (!event) {
+          return;
         }
-        return [0].concat((function() {
+        pool = null;
+        if (this.ticket_set) {
+          pool = this.pool_id;
+        }
+        max = this.getMax(event, pool, cap);
+        min = max <= this.min_num_bookings ? max : this.min_num_bookings;
+        return [].concat((function() {
           results = [];
-          for (var i = ref = this.min_num_bookings, ref1 = this.max; ref <= ref1 ? i <= ref1 : i >= ref1; ref <= ref1 ? i++ : i--){ results.push(i); }
+          for (var i = min; min <= max ? i <= max : i >= max; min <= max ? i++ : i--){ results.push(i); }
           return results;
         }).apply(this));
       };
@@ -22530,64 +22545,78 @@ function getURIparam( name ){
 
       /***
       * @ngdoc method
-      * @name isAvailable
+      * @name getMax
       * @methodOf BB.Models:EventTicket
       * @description
-      * Check if there is an availability for at least one of the pools
+      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
       *
-      * @returns {boolean} true if there is an availibity for at least one pool
-      *                    false otherwise
+      * @returns {Integer} The max number of tickets that can be selected
        */
 
-      EventTicket.prototype.isAvailable = function(event) {
-        var i, len, ref, ticket;
-        ref = event.tickets;
+      EventTicket.prototype.getMax = function(ev, pool, cap) {
+        var c, i, isAvailable, left, len, live_max, ref, spaces_left, ticket, used, wait_spaces;
+        if (pool == null) {
+          pool = null;
+        }
+        if (cap == null) {
+          cap = null;
+        }
+        isAvailable = function(event) {
+          _.each(event.ticket_spaces, function(ts) {
+            if (ts.left <= 0) {
+              return false;
+            }
+          });
+          return true;
+        };
+        if (!ev) {
+          return 0;
+        }
+        if (!isAvailable(ev) || ev.getSpacesLeft() <= 0) {
+          spaces_left = ev.getWaitSpacesLeft();
+          wait_spaces = true;
+        } else {
+          spaces_left = ev.getSpacesLeft(pool);
+        }
+        live_max = spaces_left <= this.max ? spaces_left : this.max;
+        used = 0;
+        ref = ev.tickets;
         for (i = 0, len = ref.length; i < len; i++) {
           ticket = ref[i];
-          if (event.ticket_spaces[this.pool_id]) {
-            if (event.ticket_spaces[this.pool_id].left > 0) {
-              return true;
-            }
+          if (ticket.pool_id === this.pool_id || wait_spaces) {
+            used += ticket.totalQty();
           }
         }
-        return false;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getRangeTicketSpaces
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get a range base on the minimum number of bookings and the tickets left. This method
-      * is useful when you have multiple spaces for an event in complex tickets. 
-      *
-      * @returns {array} The returned range
-       */
-
-      EventTicket.prototype.getRangeTicketSpaces = function(event, range) {
-        var i, max_left, min, results;
-        if (range == null) {
-          range = 10;
+        if (this.qty) {
+          used = used - this.totalQty();
         }
-        max_left = 0;
-        min = this.min_num_bookings;
-        if (this.isAvailable(event)) {
-          if (this.pool_id) {
-            max_left = event.ticket_spaces[this.pool_id].left;
-          }
-          if (max_left === 0) {
-            return [0];
-          } else {
-            return [0].concat((function() {
-              results = [];
-              for (var i = min; min <= max_left ? i <= max_left : i >= max_left; min <= max_left ? i++ : i--){ results.push(i); }
-              return results;
-            }).apply(this));
-          }
-        } else {
-          return this.getRange(range, event);
+        if (this.counts_as) {
+          used = Math.ceil(used / this.counts_as);
         }
+        live_max = live_max - used;
+        if (live_max < 0) {
+          live_max = 0;
+        }
+        left = left - used;
+        if (left < 0) {
+          left = 0;
+        }
+        if (this.cap) {
+          cap = this.cap;
+        }
+        if (!cap || cap > left) {
+          cap = left;
+        }
+        if (cap) {
+          c = cap;
+          if (this.counts_as) {
+            c = cap / this.counts_as;
+          }
+          if (c < live_max) {
+            return c;
+          }
+        }
+        return live_max;
       };
 
 
@@ -22609,53 +22638,6 @@ function getURIparam( name ){
           return this.qty;
         }
         return this.qty * this.counts_as;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name getMax
-      * @methodOf BB.Models:EventTicket
-      * @description
-      * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
-      *
-      * @returns {array} The returned maximum
-       */
-
-      EventTicket.prototype.getMax = function(cap, ev) {
-        var c, i, len, live_max, ref, ticket, used;
-        if (ev == null) {
-          ev = null;
-        }
-        live_max = this.max;
-        if (ev) {
-          used = 0;
-          ref = ev.tickets;
-          for (i = 0, len = ref.length; i < len; i++) {
-            ticket = ref[i];
-            used += ticket.totalQty();
-          }
-          if (this.qty) {
-            used = used - this.totalQty();
-          }
-          if (this.counts_as) {
-            used = Math.ceil(used / this.counts_as);
-          }
-          live_max = live_max - used;
-          if (live_max < 0) {
-            live_max = 0;
-          }
-        }
-        if (cap) {
-          c = cap;
-          if (this.counts_as) {
-            c = cap / this.counts_as;
-          }
-          if (c + this.min_num_bookings < live_max) {
-            return c + this.min_num_bookings;
-          }
-        }
-        return live_max;
       };
 
 
