@@ -1144,782 +1144,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-
-angular
-.module('angular-hal', []).provider('data_cache', function() {
- 
-    this.$get = function() {
-      data = [];
-
-      return {
-
-        set: function(key, val)
-        {
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        },
-        delMatching: function(str)
-        {
-          for (var k in data) {      
-            if (k.indexOf(str) != -1)
-              delete data[k]
-          }
-        }
-
-      }
-    };
- 
-})
-.provider('shared_header', function() {
-   this.$get = function() {
-      data = {};
-
-      return {
-
-        set: function(key, val, store)
-        {
-          // also store this in the session store
-          store.setItem(key, val)
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        }
-      }
-    };
-
-})
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', '$localStorage', function(
-    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage, $localStorage
-  ){
-
-    if ($sessionStorage.getItem('auth_token'))
-      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
-    else if ($cookies['Auth-Token'] && !shared_header.has('auth_token')){
-      shared_header.set('auth_token', $cookies['Auth-Token'], $sessionStorage)
-    }
-
-    return {
-      setCache: function(cache) {
-        data_cache = cache
-      },
-      clearCache: function(str) {
-        data_cache.delMatching(str)
-      },
-      createResource: function(store)
-      {
-        if (typeof store === 'string') {
-          store = JSON.parse(store)
-        }
-        resource = store.data
-        resource._links = store.links
-        key = store.links.self.href
-        options = store.options
-        return new BaseResource(key, options, resource)
-      },
-      $get: function(href, options){
-        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
-        return data_cache.set(href, callService('GET', href, options));
-//        return callService('GET', href, options);
-      }//get
-      , $post: function(href, options, data){
-        return callService('POST', href, options, data);
-      }//post
-      , $put: function(href, options, data){
-        return callService('PUT', href, options, data);
-      }//put
-      , $patch: function(href, options, data){
-        return callService('PATCH', href, options, data);
-      }//patch
-      , $del: function(href, options){
-        return callService('DELETE', href, options);
-      }//del
-      , $parse: function(data){
-        return parseHal(data)
-      }//parse
-    };
-
-
-
-    function BaseResource(href, options, data, extra){
-      if(!options) options = {};
-      if(!extra) extra = {};
-      var links = {};
-      var embedded = data_cache
-      if (data.hasOwnProperty('auth_token')) {
-        options['auth_token'] = data['auth_token'];
-      }
-
-      href = getSelfLink(href, data).href;
-
-      defineHiddenProperty(this, '$href', function(rel, params) {
-        if(!(rel in links)) return null;
-
-        return hrefLink(links[rel], params);
-      });
-      defineHiddenProperty(this, '$has', function(rel) {
-        return rel in links;
-      });
-      defineHiddenProperty(this, '$flush', function(rel, params) {
-        var link = links[rel];
-        return flushLink(link, params);
-      });
-      defineHiddenProperty(this, '$get', function(rel, params){
-        var link = links[rel];
-        return callLink('GET', link, params);
-      });
-      defineHiddenProperty(this, '$post', function(rel, params, data){
-        var link = links[rel];
-        return callLink('POST', link, params, data);
-      });
-      defineHiddenProperty(this, '$put', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PUT', link, params, data);
-      });
-      defineHiddenProperty(this, '$patch', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PATCH', link, params, data);
-      });
-      defineHiddenProperty(this, '$del', function(rel, params){
-        var link = links[rel];
-        return callLink('DELETE', link, params);
-      });
-      defineHiddenProperty(this, '$links', function(){
-        return links
-      });
-      defineHiddenProperty(this, '$toStore', function(){
-        return JSON.stringify({data: this, links: links, options:options})
-      });
-      defineHiddenProperty(this, 'setOption', function(key, value){
-        options[key] = value
-      });
-      defineHiddenProperty(this, 'getOption', function(key){
-        return options[key]
-      });
-      defineHiddenProperty(this, '$link', function(rel){
-        return links[rel]
-      });
-
-      Object.keys(data)
-      .filter(function(key){
-        return !~['_', '$'].indexOf(key[0]);
-      })
-      .forEach(function(key){
-        this[key] = data[key]
-//        Object.defineProperty(this, key, {
-  //        configurable: false
-  //        , enumerable: true
-  //        , value: data[key]
-   //     });
-      }, this)
-      ;
-
-
-      if(data._links) {
-        Object
-        .keys(data._links)
-        .forEach(function(rel){
-          var link = data._links[rel];          
-          link = normalizeLink(href, link);
-          links[rel] = link;
-        }, this)
-        ;
-      }
-
-      if(data._embedded) {
-        Object
-        .keys(data._embedded)
-        .forEach(function(rel){
-          var embedded = data._embedded[rel];
-          var link = getSelfLink(href, embedded);
-          links[rel] = link;
-
-          var resource = createResource(href, options, embedded);
-
-          embedResource(resource);
-
-        }, this);
-      }
-
-      if(extra.is_new) this.is_new = true;
-
-      function defineHiddenProperty(target, name, value) {
-        target[name] = value
-//        Object.defineProperty(target, name, {
-//          configurable: false
- //         , enumerable: false
-  //        , value: value
-   //     });
-      }//defineHiddenProperty
-
-
-      function embedResource(resource) {
-        if(angular.isArray(resource)) return resource.map(function(resource){
-          return embedResource(resource);
-        });
-        
-        var href = resource.$href('self');
-
-        embedded.set(href, $q.when(resource));
-      }//embedResource
-
-      function hrefLink(link, params) {
-        var href = link.templated
-        ? new UriTemplate(link.href).fillFromObject(params || {})
-        : link.href
-        ;
-
-        return href;
-      }//hrefLink
-
-      function callLink(method, link, params, data) {
-
-        if (params == null) {
-          params = {};
-        }
-          
-        if(angular.isArray(link)) return $q.all(link.map(function(link){
-          if(method !== 'GET') throw 'method is not supported for arrays';
-
-          return callLink(method, link, params, data);
-        }));
-
-        var linkHref = hrefLink(link, params);
-        if(method === 'GET') {
-          if(embedded.has(linkHref) && !params['no_cache']) {
-            return embedded.get(linkHref);
-          } else {
-            return embedded.set(linkHref, callService(method, linkHref, options, data));
-          }
-        }
-        else {
-          return callService(method, linkHref, options, data);  
-        }
-
-      }//callLink
-
-      function flushLink(link, params) {
-        if(angular.isArray(link)) return link.map(function(link){
-          return flushLink(link, params);
-        });
-
-        var linkHref = hrefLink(link, params);
-        if(embedded.has(linkHref)) embedded.del(linkHref);
-      }//flushLink
-
-    }//Resource
-
-
-
-
-    function createResource(href, options, data, extra){
-      if(angular.isArray(data)) return data.map(function(data){
-        return createResource(href, options, data, extra);
-      });
-
-      var resource = new BaseResource(href, options, data, extra);
-
-      return resource;
-
-    }//createResource
-
-
-    function normalizeLink(baseHref, link){
-      if(angular.isArray(link)) return link.map(function(link){
-        return normalizeLink(baseHref, link);
-      });
-
-      if(link) {
-        if(typeof link === 'string') link = { href: link };
-        link.href = resolveUrl(baseHref, link.href);
-      }
-      else {
-        link = { href: baseHref };      
-      }
-
-      return link;
-    }//normalizeLink
-
-
-    function getSelfLink(baseHref, resource){
-      if(angular.isArray(resource)) return resource.map(function(resource){
-        return getSelfLink(baseHref, resource);
-      });
-
-      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
-    }//getSelfLink
-
-
-
-    function callService(method, href, options, data){
-      if(!options) options = {};
-      var headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/hal+json,application/json'
-      };
-      if (options.authorization) headers.Authorization = options.authorization;
-      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
-      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
-      if (options.auth_token) {
-        $sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token, $sessionStorage);
-      }
-
-      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
-      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
-
-      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
-
-      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
-
-      var resource = (
-        $http({
-          method: method
-          , url: options.transformUrl ? options.transformUrl(href) : href
-          , headers: headers
-          , data: data
-        })
-        .then(function(res){
-
-          // copy out the auth token from the header if the response is new resource
-          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
-          if (res.headers('auth-token') && res.status == 201){
-            options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
-            // if auth token is present in local storage, set it there too
-            if ($localStorage.getItem('auth_token'))
-              $localStorage.setItem('auth_token', res.headers('Auth-Token'))
-          }
-          switch(res.status){
-            case 200:
-            //For back-ends that return `"null"` instead of `null` -_-
-            if(res.data && res.data !== '"null"') return createResource(href, options, res.data);
-            return null;
-
-            case 201:
-            extra = {is_new: true};
-            if(res.data) return createResource(href, options, res.data, extra);
-            if(res.headers('Content-Location')) return res.headers('Content-Location');
-            return null;
-
-            case 204:
-            return null
-
-            default:
-            return $q.reject(res);
-          }
-        }, function(res)
-        {
-          return $q.reject(res);
-        })
-      );
-
-      return resource;
-    }//callService
-
-    function parseHal(data){
-      var resource = createResource(data._links.self.href, null, data);
-      return resource;
-    }//parseHal
-
-
-
-    function resolveUrl(baseHref, href){
-      var resultHref = '';
-      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
-      var baseHrefMatch = reFullUrl.exec(baseHref);
-      var hrefMatch = reFullUrl.exec(href);
-
-      for(var partIndex = 1; partIndex < 5; partIndex++) {
-        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
-        else resultHref += baseHrefMatch[partIndex]
-      }
-
-      return resultHref;
-    }//resolveUrl
-
-  }
-])//service
-;
-
-angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  '$cookies',
-  function($cookies){
-    function FakeStorage() {};
-    FakeStorage.prototype.setItem = function (key, value) {
-      $cookies[key] = value;
-    };
-    FakeStorage.prototype.getItem = function (key) {
-      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
-    }
-    FakeStorage.prototype.removeItem = function (key) {
-      if ($cookies[key]){
-        delete $cookies[key];
-      }
-    };
-    FakeStorage.prototype.clear = function(){
-      for (var key in $cookies) {
-        if( $cookies.hasOwnProperty(key) )
-        {
-          delete $cookies[key];
-        }
-      }
-    };
-    FakeStorage.prototype.key = function(index){
-      return Object.keys($cookies)[index];
-    };
-    return new FakeStorage();
-  }
-])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-]);
-// THIS DOESN'T APPEAR TO BE USED?
-angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
-    data = {};
-
-    jsonData = function(data) {
-        return data && JSON.parse(data);
-    }
-
-    storage = function()
-    {
-      return $sessionStorage
-    } 
-    localSave = function(key, item){
-      storage().setItem(key, item.$toStore())   
-    } 
-    localLoad = function(key){
-      res =  jsonData(storage().getItem(key))
-      if (res)
-      {  
-        r = halClient.createResource(res)
-        def = $q.defer()
-        def.resolve(r)
-        return def.promise
-      }
-      return null
-    } 
-    localDelete = function(key) {
-      storage().removeItem(key)
-    }
-
-    return {
-
-      set: function(key, val)
-      {
-        data[key] = val
-        val.then(function(item){
-          localSave(key, item)
-        })
-        return val
-      },
-      get: function(key)
-      {
-        localLoad(key)
-        if (!data[key])
-          data[key] = localLoad(key)
-        return data[key]
-      },
-      del: function(key)
-      {
-        localDelete(key)
-        delete data[key]
-      },
-      has: function(key)
-      {
-        if (!data[key])
-        { 
-          res = localLoad(key)
-          if (res)
-            data[key] = res
-        }
-        return (key in data)
-      }      
-    }
-
-}]).
- factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
-    function LocalDataFactory(name) {
-      function LocalData(value){
-        this.setStore(value);
-      }
-
-      LocalData.prototype.jsonData = function(data) {
-          return data && JSON.parse(data);
-      }
-
-      LocalData.prototype.storage = function()
-      {
-        return $sessionStorage
-      }  
-
-      LocalData.prototype.localSave = function(item)
-      {
-        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
-      }
-
-
-      LocalData.prototype.localSaveIndex = function(ids)
-      {
-        this.storage().setItem(this.store_name, ids.join(","))
-        this.ids = ids;
-      }
-
-      LocalData.prototype.localLoadIndex = function()
-      {
-        store = this.storage().getItem(this.store_name)
-        records = (store && store.split(",")) || [];
-        return records
-      }
-
-      LocalData.prototype.localLoad = function( id)
-      {
-        return this.jsonData(this.storage().getItem(this.store_name + id))
-      }
-
-      LocalData.prototype.count = function()
-      {
-        return this.ids.length
-      }
-
-      LocalData.prototype.setStore = function(name)
-      {
-        this.store_name = name;
-        this.data_store = []
-        this.ids = this.localLoadIndex();
-        for (a = 0; a < this.ids.length; a++){
-          this.data_store.push(this.localLoad(this.ids[a]));
-        }
-    //    var channel = pusher.subscribe(name);
-    //    var ds = this;
-
-     //   channel.bind('add', function(data) {
-     //     ds.data_store.push(data);
-     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
-     //   });
-
-      }
-
-      LocalData.prototype.update = function(data)
-      {
-        ids = []
-        for (x in data){
-          if (data[x].id){
-           ids.push(data[x].id)
-           this.localSave(data[x])
-         }
-        }
-        this.localSaveIndex(ids)
-      }
-
-      return new LocalData(name)
-
-    };
-
-
-    
-    return LocalDataFactory
-}]);
-
-//! moment.js locale configuration
-//! locale : great britain english (en-gb)
-//! author : Chris Gedrim : https://github.com/chrisgedrim
-
-(function (global, factory) {
-   typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('../moment')) :
-   typeof define === 'function' && define.amd ? define(['moment'], factory) :
-   factory(global.moment)
-}(this, function (moment) { 'use strict';
-
-
-    var en_gb = moment.defineLocale('en-gb', {
-        months : 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_'),
-        monthsShort : 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
-        weekdays : 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
-        weekdaysShort : 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
-        weekdaysMin : 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
-        longDateFormat : {
-            LT : 'HH:mm',
-            LTS : 'HH:mm:ss',
-            L : 'DD/MM/YYYY',
-            LL : 'D MMMM YYYY',
-            LLL : 'D MMMM YYYY HH:mm',
-            LLLL : 'dddd, D MMMM YYYY HH:mm'
-        },
-        calendar : {
-            sameDay : '[Today at] LT',
-            nextDay : '[Tomorrow at] LT',
-            nextWeek : 'dddd [at] LT',
-            lastDay : '[Yesterday at] LT',
-            lastWeek : '[Last] dddd [at] LT',
-            sameElse : 'L'
-        },
-        relativeTime : {
-            future : 'in %s',
-            past : '%s ago',
-            s : 'a few seconds',
-            m : 'a minute',
-            mm : '%d minutes',
-            h : 'an hour',
-            hh : '%d hours',
-            d : 'a day',
-            dd : '%d days',
-            M : 'a month',
-            MM : '%d months',
-            y : 'a year',
-            yy : '%d years'
-        },
-        ordinalParse: /\d{1,2}(st|nd|rd|th)/,
-        ordinal : function (number) {
-            var b = number % 10,
-                output = (~~(number % 100 / 10) === 1) ? 'th' :
-                (b === 1) ? 'st' :
-                (b === 2) ? 'nd' :
-                (b === 3) ? 'rd' : 'th';
-            return number + output;
-        },
-        week : {
-            dow : 1, // Monday is the first day of the week.
-            doy : 4  // The week that contains Jan 4th is the first week of the year.
-        }
-    });
-
-    return en_gb;
-
-}));
-
-/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
-
-getControllerScope = function(controller, fn){
-  $(document).ready(function(){
-    var $element = $('div[data-ng-controller="' + controller + '"]');
-    var scope = angular.element($element).scope();
-    fn(scope); 
-  });
-}
-
-
-function getURIparam( name ){
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
 (function() {
   'use strict';
 
@@ -3994,7 +3218,9 @@ function getURIparam( name ){
       $rootScope.$broadcast('clear:formData');
       $rootScope.$broadcast('widget:restart');
       $scope.setLastSelectedDate(null);
-      $scope.client = new BBModel.Client();
+      if (!LoginService.isLoggedIn()) {
+        $scope.client = new BBModel.Client();
+      }
       $scope.bb.last_step_reached = false;
       return $scope.bb.steps.splice(1);
     };
@@ -10347,6 +9573,169 @@ function getURIparam( name ){
 
   /***
   * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Renders payment iframe (where integrated payment has been configured) and handles payment success/failure.
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: function(scope, element, attributes) {
+        var error, getHost, sendLoadEvent;
+        error = function(scope, message) {
+          return scope.error(message);
+        };
+        getHost = function(url) {
+          var a;
+          a = document.createElement('a');
+          a.href = url;
+          return a['protocol'] + '//' + a['host'];
+        };
+        sendLoadEvent = function(element, origin, scope) {
+          var custom_stylesheet, payload, referrer;
+          referrer = $location.protocol() + "://" + $location.host();
+          if ($location.port()) {
+            referrer += ":" + $location.port();
+          }
+          if (scope.payment_options.custom_stylesheet) {
+            custom_stylesheet = scope.payment_options.custom_stylesheet;
+          }
+          payload = JSON.stringify({
+            'type': 'load',
+            'message': referrer,
+            'custom_partial_url': scope.bb.custom_partial_url,
+            'custom_stylesheet': custom_stylesheet,
+            'scroll_offset': SettingsService.getScrollOffset()
+          });
+          return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+        };
+        scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+        scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+        element.find('iframe').bind('load', (function(_this) {
+          return function(event) {
+            var origin, url;
+            if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+              url = scope.bb.total.$href('new_payment');
+            }
+            origin = getHost(url);
+            sendLoadEvent(element, origin, scope);
+            return scope.$apply(function() {
+              return scope.callSetLoaded();
+            });
+          };
+        })(this));
+        return $window.addEventListener('message', (function(_this) {
+          return function(event) {
+            var data;
+            if (angular.isObject(event.data)) {
+              data = event.data;
+            } else if (!event.data.match(/iFrameSizer/)) {
+              data = JSON.parse(event.data);
+            }
+            return scope.$apply(function() {
+              if (data) {
+                switch (data.type) {
+                  case "submitting":
+                    return scope.callNotLoaded();
+                  case "error":
+                    scope.$emit("payment:failed");
+                    scope.callNotLoaded();
+                    AlertService.raise('PAYMENT_FAILED');
+                    return document.getElementsByTagName("iframe")[0].src += '';
+                  case "payment_complete":
+                    scope.callSetLoaded();
+                    return scope.paymentDone();
+                }
+              }
+            });
+          };
+        })(this), false);
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then(function() {
+      if ($scope.total) {
+        $scope.bb.total = $scope.total;
+      }
+      if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+      }
+    });
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Set not loaded state
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Set loaded state
+     */
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return $scope.setLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Handles payment success
+     */
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
   * @name BB.Directives:bbPayForm
   * @restrict AE
   * @scope true
@@ -10571,169 +9960,6 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Renders payment iframe (where integrated payment has been configured) and handles payment success/failure.
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: function(scope, element, attributes) {
-        var error, getHost, sendLoadEvent;
-        error = function(scope, message) {
-          return scope.error(message);
-        };
-        getHost = function(url) {
-          var a;
-          a = document.createElement('a');
-          a.href = url;
-          return a['protocol'] + '//' + a['host'];
-        };
-        sendLoadEvent = function(element, origin, scope) {
-          var custom_stylesheet, payload, referrer;
-          referrer = $location.protocol() + "://" + $location.host();
-          if ($location.port()) {
-            referrer += ":" + $location.port();
-          }
-          if (scope.payment_options.custom_stylesheet) {
-            custom_stylesheet = scope.payment_options.custom_stylesheet;
-          }
-          payload = JSON.stringify({
-            'type': 'load',
-            'message': referrer,
-            'custom_partial_url': scope.bb.custom_partial_url,
-            'custom_stylesheet': custom_stylesheet,
-            'scroll_offset': SettingsService.getScrollOffset()
-          });
-          return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-        };
-        scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-        scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-        element.find('iframe').bind('load', (function(_this) {
-          return function(event) {
-            var origin, url;
-            if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-              url = scope.bb.total.$href('new_payment');
-            }
-            origin = getHost(url);
-            sendLoadEvent(element, origin, scope);
-            return scope.$apply(function() {
-              return scope.callSetLoaded();
-            });
-          };
-        })(this));
-        return $window.addEventListener('message', (function(_this) {
-          return function(event) {
-            var data;
-            if (angular.isObject(event.data)) {
-              data = event.data;
-            } else if (!event.data.match(/iFrameSizer/)) {
-              data = JSON.parse(event.data);
-            }
-            return scope.$apply(function() {
-              if (data) {
-                switch (data.type) {
-                  case "submitting":
-                    return scope.callNotLoaded();
-                  case "error":
-                    scope.$emit("payment:failed");
-                    scope.callNotLoaded();
-                    AlertService.raise('PAYMENT_FAILED');
-                    return document.getElementsByTagName("iframe")[0].src += '';
-                  case "payment_complete":
-                    scope.callSetLoaded();
-                    return scope.paymentDone();
-                }
-              }
-            });
-          };
-        })(this), false);
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then(function() {
-      if ($scope.total) {
-        $scope.bb.total = $scope.total;
-      }
-      if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-      }
-    });
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Set not loaded state
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Set loaded state
-     */
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return $scope.setLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name paymentDone
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Handles payment success
-     */
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
   });
 
 }).call(this);
@@ -13566,527 +12792,782 @@ function getURIparam( name ){
 
 }).call(this);
 
-(function() {
-  var app;
 
-  app = angular.module('BB.Filters');
+angular
+.module('angular-hal', []).provider('data_cache', function() {
+ 
+    this.$get = function() {
+      data = [];
 
-  angular.module('BB.Filters').filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
+      return {
+
+        set: function(key, val)
+        {
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        },
+        delMatching: function(str)
+        {
+          for (var k in data) {      
+            if (k.indexOf(str) != -1)
+              delete data[k]
+          }
+        }
+
       }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
     };
-  });
+ 
+})
+.provider('shared_header', function() {
+   this.$get = function() {
+      data = {};
 
-  angular.module('BB.Filters').filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
+      return {
+
+        set: function(key, val, store)
+        {
+          // also store this in the session store
+          store.setItem(key, val)
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        }
       }
-      return response;
     };
-  });
 
-  angular.module('BB.Filters').filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
+})
+.factory('halClient', [
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', '$localStorage', function(
+    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage, $localStorage
+  ){
+
+    if ($sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
+    else if ($cookies['Auth-Token'] && !shared_header.has('auth_token')){
+      shared_header.set('auth_token', $cookies['Auth-Token'], $sessionStorage)
     }
-  ]);
 
-  angular.module('BB.Filters').filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
+    return {
+      setCache: function(cache) {
+        data_cache = cache
+      },
+      clearCache: function(str) {
+        data_cache.delMatching(str)
+      },
+      createResource: function(store)
+      {
+        if (typeof store === 'string') {
+          store = JSON.parse(store)
+        }
+        resource = store.data
+        resource._links = store.links
+        key = store.links.self.href
+        options = store.options
+        return new BaseResource(key, options, resource)
+      },
+      $get: function(href, options){
+        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
+        return data_cache.set(href, callService('GET', href, options));
+//        return callService('GET', href, options);
+      }//get
+      , $post: function(href, options, data){
+        return callService('POST', href, options, data);
+      }//post
+      , $put: function(href, options, data){
+        return callService('PUT', href, options, data);
+      }//put
+      , $patch: function(href, options, data){
+        return callService('PATCH', href, options, data);
+      }//patch
+      , $del: function(href, options){
+        return callService('DELETE', href, options);
+      }//del
+      , $parse: function(data){
+        return parseHal(data)
+      }//parse
     };
-  });
 
-  angular.module('BB.Filters').filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
 
-  angular.module('BB.Filters').filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
 
-  angular.module('BB.Filters').filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
+    function BaseResource(href, options, data, extra){
+      if(!options) options = {};
+      if(!extra) extra = {};
+      var links = {};
+      var embedded = data_cache
+      if (data.hasOwnProperty('auth_token')) {
+        options['auth_token'] = data['auth_token'];
+      }
 
-  angular.module('BB.Filters').filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
+      href = getSelfLink(href, data).href;
 
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
+      defineHiddenProperty(this, '$href', function(rel, params) {
+        if(!(rel in links)) return null;
 
-  angular.module('BB.Filters').filter('icurrency', function($window, SettingsService) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = SettingsService.getCurrency());
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  angular.module('BB.Filters').filter('ipretty_price', function($window, SettingsService) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[SettingsService.getCurrency()];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val > 1) {
-          str += "s";
-        }
-        return str;
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins > 1) {
-          str += "s";
-        }
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, separator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      separator = options && options.separator ? options.separator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + separator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  angular.module('BB.Filters').filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
+        return hrefLink(links[rel], params);
       });
-    };
-  });
+      defineHiddenProperty(this, '$has', function(rel) {
+        return rel in links;
+      });
+      defineHiddenProperty(this, '$flush', function(rel, params) {
+        var link = links[rel];
+        return flushLink(link, params);
+      });
+      defineHiddenProperty(this, '$get', function(rel, params){
+        var link = links[rel];
+        return callLink('GET', link, params);
+      });
+      defineHiddenProperty(this, '$post', function(rel, params, data){
+        var link = links[rel];
+        return callLink('POST', link, params, data);
+      });
+      defineHiddenProperty(this, '$put', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PUT', link, params, data);
+      });
+      defineHiddenProperty(this, '$patch', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PATCH', link, params, data);
+      });
+      defineHiddenProperty(this, '$del', function(rel, params){
+        var link = links[rel];
+        return callLink('DELETE', link, params);
+      });
+      defineHiddenProperty(this, '$links', function(){
+        return links
+      });
+      defineHiddenProperty(this, '$toStore', function(){
+        return JSON.stringify({data: this, links: links, options:options})
+      });
+      defineHiddenProperty(this, 'setOption', function(key, value){
+        options[key] = value
+      });
+      defineHiddenProperty(this, 'getOption', function(key){
+        return options[key]
+      });
+      defineHiddenProperty(this, '$link', function(rel){
+        return links[rel]
+      });
 
-  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
-      if (!phone_number) {
-        return;
-      }
-      cc = SettingsService.getCountryCode();
-      switch (cc) {
-        case "gb":
-          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
-        case "us":
-          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
-        default:
-          return phone_number;
-      }
-    };
-  });
+      Object.keys(data)
+      .filter(function(key){
+        return !~['_', '$'].indexOf(key[0]);
+      })
+      .forEach(function(key){
+        this[key] = data[key]
+//        Object.defineProperty(this, key, {
+  //        configurable: false
+  //        , enumerable: true
+  //        , value: data[key]
+   //     });
+      }, this)
+      ;
 
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
-    var hardcoded_formats;
-    hardcoded_formats = {
-      datetime: {
-        us: 'MM/DD/YYYY, h:mm a',
-        uk: 'DD/MM/YYYY, HH:mm'
-      },
-      date: {
-        us: 'MM/DD/YYYY',
-        uk: 'DD/MM/YYYY'
-      },
-      time: {
-        us: 'h:mm a',
-        uk: 'HH:mm'
+
+      if(data._links) {
+        Object
+        .keys(data._links)
+        .forEach(function(rel){
+          var link = data._links[rel];          
+          link = normalizeLink(href, link);
+          links[rel] = link;
+        }, this)
+        ;
       }
-    };
-    return function(date, format, show_time_zone) {
-      var cc, new_date;
-      if (format == null) {
-        format = "LLL";
+
+      if(data._embedded) {
+        Object
+        .keys(data._embedded)
+        .forEach(function(rel){
+          var embedded = data._embedded[rel];
+          var link = getSelfLink(href, embedded);
+          links[rel] = link;
+
+          var resource = createResource(href, options, embedded);
+
+          embedResource(resource);
+
+        }, this);
       }
-      if (show_time_zone == null) {
-        show_time_zone = false;
-      }
-      if (hardcoded_formats[format]) {
-        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
-        format = hardcoded_formats[format][cc];
-      }
-      if (date && moment.isMoment(date)) {
-        new_date = date.clone();
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          new_date.tz(SettingsService.getDisplayTimeZone());
+
+      if(extra.is_new) this.is_new = true;
+
+      function defineHiddenProperty(target, name, value) {
+        target[name] = value
+//        Object.defineProperty(target, name, {
+//          configurable: false
+ //         , enumerable: false
+  //        , value: value
+   //     });
+      }//defineHiddenProperty
+
+
+      function embedResource(resource) {
+        if(angular.isArray(resource)) return resource.map(function(resource){
+          return embedResource(resource);
+        });
+        
+        var href = resource.$href('self');
+
+        embedded.set(href, $q.when(resource));
+      }//embedResource
+
+      function hrefLink(link, params) {
+        var href = link.templated
+        ? new UriTemplate(link.href).fillFromObject(params || {})
+        : link.href
+        ;
+
+        return href;
+      }//hrefLink
+
+      function callLink(method, link, params, data) {
+
+        if (params == null) {
+          params = {};
         }
-        if (show_time_zone) {
-          format += ' zz';
-        }
-        return new_date.format(format);
-      }
-    };
-  });
+          
+        if(angular.isArray(link)) return $q.all(link.map(function(link){
+          if(method !== 'GET') throw 'method is not supported for arrays';
 
-  angular.module('BB.Filters').filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
+          return callLink(method, link, params, data);
+        }));
 
-  angular.module('BB.Filters').filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
+        var linkHref = hrefLink(link, params);
+        if(method === 'GET') {
+          if(embedded.has(linkHref) && !params['no_cache']) {
+            return embedded.get(linkHref);
+          } else {
+            return embedded.set(linkHref, callService(method, linkHref, options, data));
+          }
         }
+        else {
+          return callService(method, linkHref, options, data);  
+        }
+
+      }//callLink
+
+      function flushLink(link, params) {
+        if(angular.isArray(link)) return link.map(function(link){
+          return flushLink(link, params);
+        });
+
+        var linkHref = hrefLink(link, params);
+        if(embedded.has(linkHref)) embedded.del(linkHref);
+      }//flushLink
+
+    }//Resource
+
+
+
+
+    function createResource(href, options, data, extra){
+      if(angular.isArray(data)) return data.map(function(data){
+        return createResource(href, options, data, extra);
+      });
+
+      var resource = new BaseResource(href, options, data, extra);
+
+      return resource;
+
+    }//createResource
+
+
+    function normalizeLink(baseHref, link){
+      if(angular.isArray(link)) return link.map(function(link){
+        return normalizeLink(baseHref, link);
+      });
+
+      if(link) {
+        if(typeof link === 'string') link = { href: link };
+        link.href = resolveUrl(baseHref, link.href);
+      }
+      else {
+        link = { href: baseHref };      
+      }
+
+      return link;
+    }//normalizeLink
+
+
+    function getSelfLink(baseHref, resource){
+      if(angular.isArray(resource)) return resource.map(function(resource){
+        return getSelfLink(baseHref, resource);
+      });
+
+      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
+    }//getSelfLink
+
+
+
+    function callService(method, href, options, data){
+      if(!options) options = {};
+      var headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/hal+json,application/json'
       };
-    })(this);
-  });
+      if (options.authorization) headers.Authorization = options.authorization;
+      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
+      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
+      if (options.auth_token) {
+        $sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token, $sessionStorage);
+      }
 
-  angular.module('BB.Filters').filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
+      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
+      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+
+      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
+
+      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
+
+      var resource = (
+        $http({
+          method: method
+          , url: options.transformUrl ? options.transformUrl(href) : href
+          , headers: headers
+          , data: data
+        })
+        .then(function(res){
+
+          // copy out the auth token from the header if the response is new resource
+          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
+          if (res.headers('auth-token') && res.status == 201){
+            options.auth_token = res.headers('Auth-Token')
+            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
+            // if auth token is present in local storage, set it there too
+            if ($localStorage.getItem('auth_token'))
+              $localStorage.setItem('auth_token', res.headers('Auth-Token'))
+          }
+          switch(res.status){
+            case 200:
+            //For back-ends that return `"null"` instead of `null` -_-
+            if(res.data && res.data !== '"null"') return createResource(href, options, res.data);
+            return null;
+
+            case 201:
+            extra = {is_new: true};
+            if(res.data) return createResource(href, options, res.data, extra);
+            if(res.headers('Content-Location')) return res.headers('Content-Location');
+            return null;
+
+            case 204:
+            return null
+
+            default:
+            return $q.reject(res);
+          }
+        }, function(res)
+        {
+          return $q.reject(res);
+        })
+      );
+
+      return resource;
+    }//callService
+
+    function parseHal(data){
+      var resource = createResource(data._links.self.href, null, data);
+      return resource;
+    }//parseHal
+
+
+
+    function resolveUrl(baseHref, href){
+      var resultHref = '';
+      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
+      var baseHrefMatch = reFullUrl.exec(baseHref);
+      var hrefMatch = reFullUrl.exec(href);
+
+      for(var partIndex = 1; partIndex < 5; partIndex++) {
+        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
+        else resultHref += baseHrefMatch[partIndex]
+      }
+
+      return resultHref;
+    }//resolveUrl
+
+  }
+])//service
+;
+
+angular.module('ngStorage', [])
+.factory('$fakeStorage', [
+  '$cookies',
+  function($cookies){
+    function FakeStorage() {};
+    FakeStorage.prototype.setItem = function (key, value) {
+      $cookies[key] = value;
+    };
+    FakeStorage.prototype.getItem = function (key) {
+      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
+    }
+    FakeStorage.prototype.removeItem = function (key) {
+      if ($cookies[key]){
+        delete $cookies[key];
       }
     };
-  });
-
-  angular.module('BB.Filters').filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
+    FakeStorage.prototype.clear = function(){
+      for (var key in $cookies) {
+        if( $cookies.hasOwnProperty(key) )
+        {
+          delete $cookies[key];
         }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
       }
     };
-  });
-
-  angular.module('BB.Filters').filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
+    FakeStorage.prototype.key = function(index){
+      return Object.keys($cookies)[index];
     };
-  });
-
-  angular.module('BB.Filters').filter('nl2br', function() {
-    return function(str) {
-      if (str) {
-        return str.replace(/\n/g, '<br/>');
+    return new FakeStorage();
+  }
+])
+.factory('$localStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
       }
-    };
-  });
-
-  app.filter('clearTimezone', function() {
-    return function(val, offset) {
-      if (val !== null && val.length > 19) {
-        return val.substring(0, 19);
+    }
+    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
       }
-      return val;
-    };
-  });
-
-  app.filter("format_answer", function() {
-    return function(answer) {
-      if (typeof answer === "boolean") {
-        answer = answer === true ? "Yes" : "No";
-      } else if (moment(answer, 'YYYY-MM-DD', true).isValid()) {
-        answer = moment(answer).format("D MMMM YYYY");
+    }
+  }
+])
+.factory('$sessionStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
       }
-      return answer;
+    }
+    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+]);
+// THIS DOESN'T APPEAR TO BE USED?
+angular.module('ngLocalData', ['angular-hal']).
+ factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
+    data = {};
+
+    jsonData = function(data) {
+        return data && JSON.parse(data);
+    }
+
+    storage = function()
+    {
+      return $sessionStorage
+    } 
+    localSave = function(key, item){
+      storage().setItem(key, item.$toStore())   
+    } 
+    localLoad = function(key){
+      res =  jsonData(storage().getItem(key))
+      if (res)
+      {  
+        r = halClient.createResource(res)
+        def = $q.defer()
+        def.resolve(r)
+        return def.promise
+      }
+      return null
+    } 
+    localDelete = function(key) {
+      storage().removeItem(key)
+    }
+
+    return {
+
+      set: function(key, val)
+      {
+        data[key] = val
+        val.then(function(item){
+          localSave(key, item)
+        })
+        return val
+      },
+      get: function(key)
+      {
+        localLoad(key)
+        if (!data[key])
+          data[key] = localLoad(key)
+        return data[key]
+      },
+      del: function(key)
+      {
+        localDelete(key)
+        delete data[key]
+      },
+      has: function(key)
+      {
+        if (!data[key])
+        { 
+          res = localLoad(key)
+          if (res)
+            data[key] = res
+        }
+        return (key in data)
+      }      
+    }
+
+}]).
+ factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
+    function LocalDataFactory(name) {
+      function LocalData(value){
+        this.setStore(value);
+      }
+
+      LocalData.prototype.jsonData = function(data) {
+          return data && JSON.parse(data);
+      }
+
+      LocalData.prototype.storage = function()
+      {
+        return $sessionStorage
+      }  
+
+      LocalData.prototype.localSave = function(item)
+      {
+        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
+      }
+
+
+      LocalData.prototype.localSaveIndex = function(ids)
+      {
+        this.storage().setItem(this.store_name, ids.join(","))
+        this.ids = ids;
+      }
+
+      LocalData.prototype.localLoadIndex = function()
+      {
+        store = this.storage().getItem(this.store_name)
+        records = (store && store.split(",")) || [];
+        return records
+      }
+
+      LocalData.prototype.localLoad = function( id)
+      {
+        return this.jsonData(this.storage().getItem(this.store_name + id))
+      }
+
+      LocalData.prototype.count = function()
+      {
+        return this.ids.length
+      }
+
+      LocalData.prototype.setStore = function(name)
+      {
+        this.store_name = name;
+        this.data_store = []
+        this.ids = this.localLoadIndex();
+        for (a = 0; a < this.ids.length; a++){
+          this.data_store.push(this.localLoad(this.ids[a]));
+        }
+    //    var channel = pusher.subscribe(name);
+    //    var ds = this;
+
+     //   channel.bind('add', function(data) {
+     //     ds.data_store.push(data);
+     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
+     //   });
+
+      }
+
+      LocalData.prototype.update = function(data)
+      {
+        ids = []
+        for (x in data){
+          if (data[x].id){
+           ids.push(data[x].id)
+           this.localSave(data[x])
+         }
+        }
+        this.localSaveIndex(ids)
+      }
+
+      return new LocalData(name)
+
     };
+
+
+    
+    return LocalDataFactory
+}]);
+
+//! moment.js locale configuration
+//! locale : great britain english (en-gb)
+//! author : Chris Gedrim : https://github.com/chrisgedrim
+
+(function (global, factory) {
+   typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('../moment')) :
+   typeof define === 'function' && define.amd ? define(['moment'], factory) :
+   factory(global.moment)
+}(this, function (moment) { 'use strict';
+
+
+    var en_gb = moment.defineLocale('en-gb', {
+        months : 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_'),
+        monthsShort : 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
+        weekdays : 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
+        weekdaysShort : 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
+        weekdaysMin : 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
+        longDateFormat : {
+            LT : 'HH:mm',
+            LTS : 'HH:mm:ss',
+            L : 'DD/MM/YYYY',
+            LL : 'D MMMM YYYY',
+            LLL : 'D MMMM YYYY HH:mm',
+            LLLL : 'dddd, D MMMM YYYY HH:mm'
+        },
+        calendar : {
+            sameDay : '[Today at] LT',
+            nextDay : '[Tomorrow at] LT',
+            nextWeek : 'dddd [at] LT',
+            lastDay : '[Yesterday at] LT',
+            lastWeek : '[Last] dddd [at] LT',
+            sameElse : 'L'
+        },
+        relativeTime : {
+            future : 'in %s',
+            past : '%s ago',
+            s : 'a few seconds',
+            m : 'a minute',
+            mm : '%d minutes',
+            h : 'an hour',
+            hh : '%d hours',
+            d : 'a day',
+            dd : '%d days',
+            M : 'a month',
+            MM : '%d months',
+            y : 'a year',
+            yy : '%d years'
+        },
+        ordinalParse: /\d{1,2}(st|nd|rd|th)/,
+        ordinal : function (number) {
+            var b = number % 10,
+                output = (~~(number % 100 / 10) === 1) ? 'th' :
+                (b === 1) ? 'st' :
+                (b === 2) ? 'nd' :
+                (b === 3) ? 'rd' : 'th';
+            return number + output;
+        },
+        week : {
+            dow : 1, // Monday is the first day of the week.
+            doy : 4  // The week that contains Jan 4th is the first week of the year.
+        }
+    });
+
+    return en_gb;
+
+}));
+
+/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
+
+getControllerScope = function(controller, fn){
+  $(document).ready(function(){
+    var $element = $('div[data-ng-controller="' + controller + '"]');
+    var scope = angular.element($element).scope();
+    fn(scope); 
   });
+}
 
-}).call(this);
 
+function getURIparam( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
 (function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
@@ -17161,6 +16642,527 @@ function getURIparam( name ){
     };
   });
 }(window.angular));
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  angular.module('BB.Filters').filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  angular.module('BB.Filters').filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  angular.module('BB.Filters').filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  angular.module('BB.Filters').filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  angular.module('BB.Filters').filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('icurrency', function($window, SettingsService) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = SettingsService.getCurrency());
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  angular.module('BB.Filters').filter('ipretty_price', function($window, SettingsService) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[SettingsService.getCurrency()];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, separator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      separator = options && angular.isString(options.separator) ? options.separator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        str = val + " " + min_string;
+        if (val > 1) {
+          str += "s";
+        }
+        return str;
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (separator.length > 0) {
+          str += " " + separator;
+        }
+        str += " " + mins + " " + min_string;
+        if (mins > 1) {
+          str += "s";
+        }
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, separator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      separator = options && options.separator ? options.separator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + separator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  angular.module('BB.Filters').filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
+    return function(phone_number) {
+      var cc;
+      if (!phone_number) {
+        return;
+      }
+      cc = SettingsService.getCountryCode();
+      switch (cc) {
+        case "gb":
+          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
+        case "us":
+          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
+        default:
+          return phone_number;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
+    var hardcoded_formats;
+    hardcoded_formats = {
+      datetime: {
+        us: 'MM/DD/YYYY, h:mm a',
+        uk: 'DD/MM/YYYY, HH:mm'
+      },
+      date: {
+        us: 'MM/DD/YYYY',
+        uk: 'DD/MM/YYYY'
+      },
+      time: {
+        us: 'h:mm a',
+        uk: 'HH:mm'
+      }
+    };
+    return function(date, format, show_time_zone) {
+      var cc, new_date;
+      if (format == null) {
+        format = "LLL";
+      }
+      if (show_time_zone == null) {
+        show_time_zone = false;
+      }
+      if (hardcoded_formats[format]) {
+        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
+        format = hardcoded_formats[format][cc];
+      }
+      if (date && moment.isMoment(date)) {
+        new_date = date.clone();
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          new_date.tz(SettingsService.getDisplayTimeZone());
+        }
+        if (show_time_zone) {
+          format += ' zz';
+        }
+        return new_date.format(format);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  angular.module('BB.Filters').filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+  angular.module('BB.Filters').filter('nl2br', function() {
+    return function(str) {
+      if (str) {
+        return str.replace(/\n/g, '<br/>');
+      }
+    };
+  });
+
+  app.filter('clearTimezone', function() {
+    return function(val, offset) {
+      if (val !== null && val.length > 19) {
+        return val.substring(0, 19);
+      }
+      return val;
+    };
+  });
+
+  app.filter("format_answer", function() {
+    return function(answer) {
+      if (typeof answer === "boolean") {
+        answer = answer === true ? "Yes" : "No";
+      } else if (moment(answer, 'YYYY-MM-DD', true).isValid()) {
+        answer = moment(answer).format("D MMMM YYYY");
+      }
+      return answer;
+    };
+  });
+
+}).call(this);
 
 (function() {
   'use strict';
@@ -30076,6 +30078,473 @@ function getURIparam( name ){
 }).call(this);
 
 (function() {
+  var ModalDelete, ModalDeleteAll;
+
+  angular.module('BB.Directives').directive('bbPurchase', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Purchase',
+      link: function(scope, element, attrs) {
+        scope.init(scope.$eval(attrs.bbPurchase));
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, $sessionStorage, SettingsService, $translate) {
+    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
+    $scope.controller = "Purchase";
+    $scope.is_waitlist = false;
+    $scope.make_payment = false;
+    setPurchaseCompany = function(company) {
+      $scope.bb.company_id = company.id;
+      $scope.bb.company = new BBModel.Company(company);
+      $scope.company = $scope.bb.company;
+      $scope.bb.item_defaults.company = $scope.bb.company;
+      if (company.settings) {
+        if (company.settings.merge_resources) {
+          $scope.bb.item_defaults.merge_resources = true;
+        }
+        if (company.settings.merge_people) {
+          return $scope.bb.item_defaults.merge_people = true;
+        }
+      }
+    };
+    failMsg = function() {
+      if ($scope.fail_msg) {
+        return AlertService.danger({
+          msg: $scope.fail_msg
+        });
+      } else {
+        if (SettingsService.isInternationalizatonEnabled()) {
+          return $translate('ERROR.GENERIC', {}).then(function(translated_text) {
+            return AlertService.add("danger", {
+              msg: translated_text
+            });
+          });
+        } else {
+          return AlertService.raise('GENERIC');
+        }
+      }
+    };
+    $scope.init = function(options) {
+      if (!options) {
+        options = {};
+      }
+      $scope.notLoaded($scope);
+      if (options.move_route) {
+        $scope.move_route = options.move_route;
+      }
+      if (options.move_all) {
+        $scope.move_all = options.move_all;
+      }
+      if (options.fail_msg) {
+        $scope.fail_msg = options.fail_msg;
+      }
+      if ($scope.bb.total) {
+        return $scope.load($scope.bb.total.long_id);
+      } else if ($scope.bb.purchase) {
+        $scope.purchase = $scope.bb.purchase;
+        $scope.bookings = $scope.bb.purchase.bookings;
+        if ($scope.purchase.confirm_messages) {
+          $scope.messages = $scope.purchase.confirm_messages;
+        }
+        return $scope.setLoaded($scope);
+      } else {
+        if (options.member_sso) {
+          return SSOService.memberLogin(options).then(function(login) {
+            return $scope.load();
+          }, function(err) {
+            $scope.setLoaded($scope);
+            return failMsg();
+          });
+        } else {
+          return $scope.load();
+        }
+      }
+    };
+    $scope.load = function(id) {
+      $scope.notLoaded($scope);
+      id = getPurchaseID();
+      if (!($scope.loaded || !id)) {
+        $rootScope.widget_started.then((function(_this) {
+          return function() {
+            return $scope.waiting_for_conn_started.then(function() {
+              var auth_token, company_id, params;
+              company_id = getCompanyID();
+              if (company_id) {
+                CompanyService.query(company_id, {}).then(function(company) {
+                  return setPurchaseCompany(company);
+                });
+              }
+              params = {
+                purchase_id: id,
+                url_root: $scope.bb.api_url
+              };
+              auth_token = $sessionStorage.getItem('auth_token');
+              if (auth_token) {
+                params.auth_token = auth_token;
+              }
+              return PurchaseService.query(params).then(function(purchase) {
+                purchase.$get('company').then((function(_this) {
+                  return function(company) {
+                    return setPurchaseCompany(company);
+                  };
+                })(this));
+                $scope.purchase = purchase;
+                $scope.bb.purchase = purchase;
+                $scope.price = !($scope.purchase.price === 0);
+                $scope.purchase.getBookingsPromise().then(function(bookings) {
+                  var booking, i, len, ref, results;
+                  $scope.bookings = bookings;
+                  if (bookings[0]) {
+                    bookings[0].getCompanyPromise().then(function(company) {
+                      $scope.purchase.bookings[0].company = company;
+                      return company.getAddressPromise().then(function(address) {
+                        return $scope.purchase.bookings[0].company.address = address;
+                      });
+                    });
+                  }
+                  $scope.setLoaded($scope);
+                  checkIfMoveBooking(bookings);
+                  checkIfWaitlistBookings(bookings);
+                  ref = $scope.bookings;
+                  results = [];
+                  for (i = 0, len = ref.length; i < len; i++) {
+                    booking = ref[i];
+                    results.push(booking.getAnswersPromise().then(function(answers) {
+                      return booking.answers = answers;
+                    }));
+                  }
+                  return results;
+                }, function(err) {
+                  $scope.setLoaded($scope);
+                  return failMsg();
+                });
+                if (purchase.$has('client')) {
+                  purchase.$get('client').then((function(_this) {
+                    return function(client) {
+                      return $scope.setClient(new BBModel.Client(client));
+                    };
+                  })(this));
+                }
+                return $scope.purchase.getConfirmMessages().then(function(messages) {
+                  $scope.purchase.confirm_messages = messages;
+                  return $scope.messages = messages;
+                });
+              }, function(err) {
+                $scope.setLoaded($scope);
+                if (err && err.status === 401) {
+                  if (LoginService.isLoggedIn()) {
+                    return failMsg();
+                  } else {
+                    return loginRequired();
+                  }
+                } else {
+                  return failMsg();
+                }
+              });
+            }, function(err) {
+              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+            });
+          };
+        })(this), function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        });
+      }
+      return $scope.loaded = true;
+    };
+    checkIfMoveBooking = function(bookings) {
+      var b, id, matches, move_booking;
+      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        id = parseInt(matches[1]);
+      }
+      if (id) {
+        move_booking = (function() {
+          var i, len, results;
+          results = [];
+          for (i = 0, len = bookings.length; i < len; i++) {
+            b = bookings[i];
+            if (b.id === id) {
+              results.push(b);
+            }
+          }
+          return results;
+        })();
+        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
+          return $scope.move(move_booking[0]);
+        }
+      }
+    };
+    checkIfWaitlistBookings = function(bookings) {
+      var booking;
+      return $scope.waitlist_bookings = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = bookings.length; i < len; i++) {
+          booking = bookings[i];
+          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+            results.push(booking);
+          }
+        }
+        return results;
+      })();
+    };
+    loginRequired = (function(_this) {
+      return function() {
+        if (!$scope.bb.login_required) {
+          return window.location = window.location.href + "&login=true";
+        }
+      };
+    })(this);
+    getCompanyID = function() {
+      var company_id, matches;
+      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        company_id = matches[1];
+      }
+      return company_id;
+    };
+    getPurchaseID = function() {
+      var id, matches;
+      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (!matches) {
+        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (!matches) {
+        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
+      }
+      if (matches) {
+        id = matches[1];
+      } else {
+        if (QueryStringService('ref')) {
+          id = QueryStringService('ref');
+        }
+      }
+      if (QueryStringService('booking_id')) {
+        id = QueryStringService('booking_id');
+      }
+      return id;
+    };
+    $scope.move = function(booking, route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      if ($scope.move_all) {
+        return $scope.moveAll(route, options);
+      }
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: booking.company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var new_item, proms;
+            proms = [];
+            $scope.bb.moving_booking = booking;
+            $scope.quickEmptybasket();
+            new_item = new BBModel.BasketItem(booking, $scope.bb);
+            new_item.setSrcBooking(booking, $scope.bb);
+            new_item.ready = false;
+            Array.prototype.push.apply(proms, new_item.promises);
+            $scope.bb.basket.addItem(new_item);
+            $scope.setBasketItem(new_item);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              $rootScope.$broadcast("booking:move");
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.moveAll = function(route, options) {
+      if (options == null) {
+        options = {};
+      }
+      route || (route = $scope.move_route);
+      $scope.notLoaded($scope);
+      $scope.initWidget({
+        company_id: $scope.bookings[0].company_id,
+        no_route: true
+      });
+      return $timeout((function(_this) {
+        return function() {
+          return $rootScope.connection_started.then(function() {
+            var booking, i, len, new_item, proms, ref;
+            proms = [];
+            if ($scope.bookings.length === 1) {
+              $scope.bb.moving_booking = $scope.bookings[0];
+            } else {
+              $scope.bb.moving_booking = $scope.purchase;
+            }
+            if (_.every(_.map($scope.bookings, function(b) {
+              return b.event_id;
+            }), function(event_id) {
+              return event_id === $scope.bookings[0].event_id;
+            })) {
+              $scope.bb.moving_purchase = $scope.purchase;
+            }
+            $scope.quickEmptybasket();
+            ref = $scope.bookings;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              new_item = new BBModel.BasketItem(booking, $scope.bb);
+              new_item.setSrcBooking(booking);
+              new_item.ready = false;
+              new_item.move_done = false;
+              Array.prototype.push.apply(proms, new_item.promises);
+              $scope.bb.basket.addItem(new_item);
+            }
+            $scope.bb.sortStackedItems();
+            $scope.setBasketItem($scope.bb.basket.items[0]);
+            return $q.all(proms).then(function() {
+              $scope.setLoaded($scope);
+              return $scope.decideNextPage(route);
+            }, function(err) {
+              $scope.setLoaded($scope);
+              return failMsg();
+            });
+          }, function(err) {
+            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+          });
+        };
+      })(this));
+    };
+    $scope.bookWaitlistItem = function(booking) {
+      var params;
+      $scope.notLoaded($scope);
+      params = {
+        purchase: $scope.purchase,
+        booking: booking
+      };
+      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
+        $scope.purchase = purchase;
+        $scope.total = $scope.purchase;
+        $scope.bb.purchase = purchase;
+        return $scope.purchase.getBookingsPromise().then(function(bookings) {
+          $scope.bookings = bookings;
+          $scope.waitlist_bookings = (function() {
+            var i, len, ref, results;
+            ref = $scope.bookings;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+                results.push(booking);
+              }
+            }
+            return results;
+          })();
+          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
+            $scope.make_payment = true;
+          }
+          return $scope.setLoaded($scope);
+        }, function(err) {
+          $scope.setLoaded($scope);
+          return failMsg();
+        });
+      }, (function(_this) {
+        return function(err) {
+          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+        };
+      })(this));
+    };
+    $scope["delete"] = function(booking) {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDelete,
+        resolve: {
+          booking: function() {
+            return booking;
+          }
+        }
+      });
+      return modalInstance.result.then(function(booking) {
+        return booking.$del('self').then((function(_this) {
+          return function(service) {
+            $scope.bookings = _.without($scope.bookings, booking);
+            return $rootScope.$broadcast("booking:cancelled");
+          };
+        })(this));
+      });
+    };
+    $scope.deleteAll = function() {
+      var modalInstance;
+      modalInstance = $modal.open({
+        templateUrl: $scope.getPartial("_cancel_modal"),
+        controller: ModalDeleteAll,
+        resolve: {
+          purchase: function() {
+            return $scope.purchase;
+          }
+        }
+      });
+      return modalInstance.result.then(function(purchase) {
+        return PurchaseService.deleteAll(purchase).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.bookings = [];
+          return $rootScope.$broadcast("booking:cancelled");
+        });
+      });
+    };
+    $scope.isMovable = function(booking) {
+      if (booking.min_cancellation_time) {
+        return moment().isBefore(booking.min_cancellation_time);
+      }
+      return booking.datetime.isAfter(moment());
+    };
+    $scope.createBasketItem = function(booking) {
+      var item;
+      item = new BBModel.BasketItem(booking, $scope.bb);
+      item.setSrcBooking(booking);
+      return item;
+    };
+    $scope.checkAnswer = function(answer) {
+      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
+    };
+    return $scope.changeAttendees = function(route) {
+      return $scope.moveAll(route);
+    };
+  });
+
+  ModalDelete = function($scope, $rootScope, $modalInstance, booking, AlertService) {
+    $scope.controller = "ModalDelete";
+    $scope.booking = booking;
+    $scope.confirmDelete = function() {
+      AlertService.clear();
+      return $modalInstance.close(booking);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
+
+  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
+    $scope.controller = "ModalDeleteAll";
+    $scope.purchase = purchase;
+    $scope.confirmDelete = function() {
+      return $modalInstance.close(purchase);
+    };
+    return $scope.cancel = function() {
+      return $modalInstance.dismiss("cancel");
+    };
+  };
+
+}).call(this);
+
+(function() {
   'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -30739,473 +31208,6 @@ function getURIparam( name ){
 
     })(BaseModel);
   });
-
-}).call(this);
-
-(function() {
-  var ModalDelete, ModalDeleteAll;
-
-  angular.module('BB.Directives').directive('bbPurchase', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Purchase',
-      link: function(scope, element, attrs) {
-        scope.init(scope.$eval(attrs.bbPurchase));
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, $sessionStorage, SettingsService, $translate) {
-    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, loginRequired, setPurchaseCompany;
-    $scope.controller = "Purchase";
-    $scope.is_waitlist = false;
-    $scope.make_payment = false;
-    setPurchaseCompany = function(company) {
-      $scope.bb.company_id = company.id;
-      $scope.bb.company = new BBModel.Company(company);
-      $scope.company = $scope.bb.company;
-      $scope.bb.item_defaults.company = $scope.bb.company;
-      if (company.settings) {
-        if (company.settings.merge_resources) {
-          $scope.bb.item_defaults.merge_resources = true;
-        }
-        if (company.settings.merge_people) {
-          return $scope.bb.item_defaults.merge_people = true;
-        }
-      }
-    };
-    failMsg = function() {
-      if ($scope.fail_msg) {
-        return AlertService.danger({
-          msg: $scope.fail_msg
-        });
-      } else {
-        if (SettingsService.isInternationalizatonEnabled()) {
-          return $translate('ERROR.GENERIC', {}).then(function(translated_text) {
-            return AlertService.add("danger", {
-              msg: translated_text
-            });
-          });
-        } else {
-          return AlertService.raise('GENERIC');
-        }
-      }
-    };
-    $scope.init = function(options) {
-      if (!options) {
-        options = {};
-      }
-      $scope.notLoaded($scope);
-      if (options.move_route) {
-        $scope.move_route = options.move_route;
-      }
-      if (options.move_all) {
-        $scope.move_all = options.move_all;
-      }
-      if (options.fail_msg) {
-        $scope.fail_msg = options.fail_msg;
-      }
-      if ($scope.bb.total) {
-        return $scope.load($scope.bb.total.long_id);
-      } else if ($scope.bb.purchase) {
-        $scope.purchase = $scope.bb.purchase;
-        $scope.bookings = $scope.bb.purchase.bookings;
-        if ($scope.purchase.confirm_messages) {
-          $scope.messages = $scope.purchase.confirm_messages;
-        }
-        return $scope.setLoaded($scope);
-      } else {
-        if (options.member_sso) {
-          return SSOService.memberLogin(options).then(function(login) {
-            return $scope.load();
-          }, function(err) {
-            $scope.setLoaded($scope);
-            return failMsg();
-          });
-        } else {
-          return $scope.load();
-        }
-      }
-    };
-    $scope.load = function(id) {
-      $scope.notLoaded($scope);
-      id = getPurchaseID();
-      if (!($scope.loaded || !id)) {
-        $rootScope.widget_started.then((function(_this) {
-          return function() {
-            return $scope.waiting_for_conn_started.then(function() {
-              var auth_token, company_id, params;
-              company_id = getCompanyID();
-              if (company_id) {
-                CompanyService.query(company_id, {}).then(function(company) {
-                  return setPurchaseCompany(company);
-                });
-              }
-              params = {
-                purchase_id: id,
-                url_root: $scope.bb.api_url
-              };
-              auth_token = $sessionStorage.getItem('auth_token');
-              if (auth_token) {
-                params.auth_token = auth_token;
-              }
-              return PurchaseService.query(params).then(function(purchase) {
-                purchase.$get('company').then((function(_this) {
-                  return function(company) {
-                    return setPurchaseCompany(company);
-                  };
-                })(this));
-                $scope.purchase = purchase;
-                $scope.bb.purchase = purchase;
-                $scope.price = !($scope.purchase.price === 0);
-                $scope.purchase.getBookingsPromise().then(function(bookings) {
-                  var booking, i, len, ref, results;
-                  $scope.bookings = bookings;
-                  if (bookings[0]) {
-                    bookings[0].getCompanyPromise().then(function(company) {
-                      $scope.purchase.bookings[0].company = company;
-                      return company.getAddressPromise().then(function(address) {
-                        return $scope.purchase.bookings[0].company.address = address;
-                      });
-                    });
-                  }
-                  $scope.setLoaded($scope);
-                  checkIfMoveBooking(bookings);
-                  checkIfWaitlistBookings(bookings);
-                  ref = $scope.bookings;
-                  results = [];
-                  for (i = 0, len = ref.length; i < len; i++) {
-                    booking = ref[i];
-                    results.push(booking.getAnswersPromise().then(function(answers) {
-                      return booking.answers = answers;
-                    }));
-                  }
-                  return results;
-                }, function(err) {
-                  $scope.setLoaded($scope);
-                  return failMsg();
-                });
-                if (purchase.$has('client')) {
-                  purchase.$get('client').then((function(_this) {
-                    return function(client) {
-                      return $scope.setClient(new BBModel.Client(client));
-                    };
-                  })(this));
-                }
-                return $scope.purchase.getConfirmMessages().then(function(messages) {
-                  $scope.purchase.confirm_messages = messages;
-                  return $scope.messages = messages;
-                });
-              }, function(err) {
-                $scope.setLoaded($scope);
-                if (err && err.status === 401) {
-                  if (LoginService.isLoggedIn()) {
-                    return failMsg();
-                  } else {
-                    return loginRequired();
-                  }
-                } else {
-                  return failMsg();
-                }
-              });
-            }, function(err) {
-              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-            });
-          };
-        })(this), function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        });
-      }
-      return $scope.loaded = true;
-    };
-    checkIfMoveBooking = function(bookings) {
-      var b, id, matches, move_booking;
-      matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        id = parseInt(matches[1]);
-      }
-      if (id) {
-        move_booking = (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = bookings.length; i < len; i++) {
-            b = bookings[i];
-            if (b.id === id) {
-              results.push(b);
-            }
-          }
-          return results;
-        })();
-        if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
-          return $scope.move(move_booking[0]);
-        }
-      }
-    };
-    checkIfWaitlistBookings = function(bookings) {
-      var booking;
-      return $scope.waitlist_bookings = (function() {
-        var i, len, results;
-        results = [];
-        for (i = 0, len = bookings.length; i < len; i++) {
-          booking = bookings[i];
-          if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-            results.push(booking);
-          }
-        }
-        return results;
-      })();
-    };
-    loginRequired = (function(_this) {
-      return function() {
-        if (!$scope.bb.login_required) {
-          return window.location = window.location.href + "&login=true";
-        }
-      };
-    })(this);
-    getCompanyID = function() {
-      var company_id, matches;
-      matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        company_id = matches[1];
-      }
-      return company_id;
-    };
-    getPurchaseID = function() {
-      var id, matches;
-      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (!matches) {
-        matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (!matches) {
-        matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
-      }
-      if (matches) {
-        id = matches[1];
-      } else {
-        if (QueryStringService('ref')) {
-          id = QueryStringService('ref');
-        }
-      }
-      if (QueryStringService('booking_id')) {
-        id = QueryStringService('booking_id');
-      }
-      return id;
-    };
-    $scope.move = function(booking, route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      if ($scope.move_all) {
-        return $scope.moveAll(route, options);
-      }
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: booking.company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var new_item, proms;
-            proms = [];
-            $scope.bb.moving_booking = booking;
-            $scope.quickEmptybasket();
-            new_item = new BBModel.BasketItem(booking, $scope.bb);
-            new_item.setSrcBooking(booking, $scope.bb);
-            new_item.ready = false;
-            Array.prototype.push.apply(proms, new_item.promises);
-            $scope.bb.basket.addItem(new_item);
-            $scope.setBasketItem(new_item);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              $rootScope.$broadcast("booking:move");
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.moveAll = function(route, options) {
-      if (options == null) {
-        options = {};
-      }
-      route || (route = $scope.move_route);
-      $scope.notLoaded($scope);
-      $scope.initWidget({
-        company_id: $scope.bookings[0].company_id,
-        no_route: true
-      });
-      return $timeout((function(_this) {
-        return function() {
-          return $rootScope.connection_started.then(function() {
-            var booking, i, len, new_item, proms, ref;
-            proms = [];
-            if ($scope.bookings.length === 1) {
-              $scope.bb.moving_booking = $scope.bookings[0];
-            } else {
-              $scope.bb.moving_booking = $scope.purchase;
-            }
-            if (_.every(_.map($scope.bookings, function(b) {
-              return b.event_id;
-            }), function(event_id) {
-              return event_id === $scope.bookings[0].event_id;
-            })) {
-              $scope.bb.moving_purchase = $scope.purchase;
-            }
-            $scope.quickEmptybasket();
-            ref = $scope.bookings;
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              new_item = new BBModel.BasketItem(booking, $scope.bb);
-              new_item.setSrcBooking(booking);
-              new_item.ready = false;
-              new_item.move_done = false;
-              Array.prototype.push.apply(proms, new_item.promises);
-              $scope.bb.basket.addItem(new_item);
-            }
-            $scope.bb.sortStackedItems();
-            $scope.setBasketItem($scope.bb.basket.items[0]);
-            return $q.all(proms).then(function() {
-              $scope.setLoaded($scope);
-              return $scope.decideNextPage(route);
-            }, function(err) {
-              $scope.setLoaded($scope);
-              return failMsg();
-            });
-          }, function(err) {
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-          });
-        };
-      })(this));
-    };
-    $scope.bookWaitlistItem = function(booking) {
-      var params;
-      $scope.notLoaded($scope);
-      params = {
-        purchase: $scope.purchase,
-        booking: booking
-      };
-      return PurchaseService.bookWaitlistItem(params).then(function(purchase) {
-        $scope.purchase = purchase;
-        $scope.total = $scope.purchase;
-        $scope.bb.purchase = purchase;
-        return $scope.purchase.getBookingsPromise().then(function(bookings) {
-          $scope.bookings = bookings;
-          $scope.waitlist_bookings = (function() {
-            var i, len, ref, results;
-            ref = $scope.bookings;
-            results = [];
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-                results.push(booking);
-              }
-            }
-            return results;
-          })();
-          if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
-            $scope.make_payment = true;
-          }
-          return $scope.setLoaded($scope);
-        }, function(err) {
-          $scope.setLoaded($scope);
-          return failMsg();
-        });
-      }, (function(_this) {
-        return function(err) {
-          return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-        };
-      })(this));
-    };
-    $scope["delete"] = function(booking) {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDelete,
-        resolve: {
-          booking: function() {
-            return booking;
-          }
-        }
-      });
-      return modalInstance.result.then(function(booking) {
-        return booking.$del('self').then((function(_this) {
-          return function(service) {
-            $scope.bookings = _.without($scope.bookings, booking);
-            return $rootScope.$broadcast("booking:cancelled");
-          };
-        })(this));
-      });
-    };
-    $scope.deleteAll = function() {
-      var modalInstance;
-      modalInstance = $modal.open({
-        templateUrl: $scope.getPartial("_cancel_modal"),
-        controller: ModalDeleteAll,
-        resolve: {
-          purchase: function() {
-            return $scope.purchase;
-          }
-        }
-      });
-      return modalInstance.result.then(function(purchase) {
-        return PurchaseService.deleteAll(purchase).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.bookings = [];
-          return $rootScope.$broadcast("booking:cancelled");
-        });
-      });
-    };
-    $scope.isMovable = function(booking) {
-      if (booking.min_cancellation_time) {
-        return moment().isBefore(booking.min_cancellation_time);
-      }
-      return booking.datetime.isAfter(moment());
-    };
-    $scope.createBasketItem = function(booking) {
-      var item;
-      item = new BBModel.BasketItem(booking, $scope.bb);
-      item.setSrcBooking(booking);
-      return item;
-    };
-    $scope.checkAnswer = function(answer) {
-      return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
-    };
-    return $scope.changeAttendees = function(route) {
-      return $scope.moveAll(route);
-    };
-  });
-
-  ModalDelete = function($scope, $rootScope, $modalInstance, booking, AlertService) {
-    $scope.controller = "ModalDelete";
-    $scope.booking = booking;
-    $scope.confirmDelete = function() {
-      AlertService.clear();
-      return $modalInstance.close(booking);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
-
-  ModalDeleteAll = function($scope, $rootScope, $modalInstance, purchase) {
-    $scope.controller = "ModalDeleteAll";
-    $scope.purchase = purchase;
-    $scope.confirmDelete = function() {
-      return $modalInstance.close(purchase);
-    };
-    return $scope.cancel = function() {
-      return $modalInstance.dismiss("cancel");
-    };
-  };
 
 }).call(this);
 
