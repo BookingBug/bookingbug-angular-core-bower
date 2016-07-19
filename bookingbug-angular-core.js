@@ -1144,6 +1144,782 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
+
+angular
+.module('angular-hal', []).provider('data_cache', function() {
+ 
+    this.$get = function() {
+      data = [];
+
+      return {
+
+        set: function(key, val)
+        {
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        },
+        delMatching: function(str)
+        {
+          for (var k in data) {      
+            if (k.indexOf(str) != -1)
+              delete data[k]
+          }
+        }
+
+      }
+    };
+ 
+})
+.provider('shared_header', function() {
+   this.$get = function() {
+      data = {};
+
+      return {
+
+        set: function(key, val, store)
+        {
+          // also store this in the session store
+          store.setItem(key, val)
+          data[key] = val
+          return val
+        },
+        get: function(key)
+        {
+          return data[key]
+        },
+        del: function(key)
+        {
+          delete data[key]
+        },
+        has: function(key)
+        {
+          return (key in data)
+        }
+      }
+    };
+
+})
+.factory('halClient', [
+  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', '$localStorage', function(
+    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage, $localStorage
+  ){
+
+    if ($sessionStorage.getItem('auth_token'))
+      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
+    else if ($cookies['Auth-Token'] && !shared_header.has('auth_token')){
+      shared_header.set('auth_token', $cookies['Auth-Token'], $sessionStorage)
+    }
+
+    return {
+      setCache: function(cache) {
+        data_cache = cache
+      },
+      clearCache: function(str) {
+        data_cache.delMatching(str)
+      },
+      createResource: function(store)
+      {
+        if (typeof store === 'string') {
+          store = JSON.parse(store)
+        }
+        resource = store.data
+        resource._links = store.links
+        key = store.links.self.href
+        options = store.options
+        return new BaseResource(key, options, resource)
+      },
+      $get: function(href, options){
+        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
+        return data_cache.set(href, callService('GET', href, options));
+//        return callService('GET', href, options);
+      }//get
+      , $post: function(href, options, data){
+        return callService('POST', href, options, data);
+      }//post
+      , $put: function(href, options, data){
+        return callService('PUT', href, options, data);
+      }//put
+      , $patch: function(href, options, data){
+        return callService('PATCH', href, options, data);
+      }//patch
+      , $del: function(href, options){
+        return callService('DELETE', href, options);
+      }//del
+      , $parse: function(data){
+        return parseHal(data)
+      }//parse
+    };
+
+
+
+    function BaseResource(href, options, data, extra){
+      if(!options) options = {};
+      if(!extra) extra = {};
+      var links = {};
+      var embedded = data_cache
+      if (data.hasOwnProperty('auth_token')) {
+        options['auth_token'] = data['auth_token'];
+      }
+
+      href = getSelfLink(href, data).href;
+
+      defineHiddenProperty(this, '$href', function(rel, params) {
+        if(!(rel in links)) return null;
+
+        return hrefLink(links[rel], params);
+      });
+      defineHiddenProperty(this, '$has', function(rel) {
+        return rel in links;
+      });
+      defineHiddenProperty(this, '$flush', function(rel, params) {
+        var link = links[rel];
+        return flushLink(link, params);
+      });
+      defineHiddenProperty(this, '$get', function(rel, params){
+        var link = links[rel];
+        return callLink('GET', link, params);
+      });
+      defineHiddenProperty(this, '$post', function(rel, params, data){
+        var link = links[rel];
+        return callLink('POST', link, params, data);
+      });
+      defineHiddenProperty(this, '$put', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PUT', link, params, data);
+      });
+      defineHiddenProperty(this, '$patch', function(rel, params, data){
+        var link = links[rel];
+        return callLink('PATCH', link, params, data);
+      });
+      defineHiddenProperty(this, '$del', function(rel, params){
+        var link = links[rel];
+        return callLink('DELETE', link, params);
+      });
+      defineHiddenProperty(this, '$links', function(){
+        return links
+      });
+      defineHiddenProperty(this, '$toStore', function(){
+        return JSON.stringify({data: this, links: links, options:options})
+      });
+      defineHiddenProperty(this, 'setOption', function(key, value){
+        options[key] = value
+      });
+      defineHiddenProperty(this, 'getOption', function(key){
+        return options[key]
+      });
+      defineHiddenProperty(this, '$link', function(rel){
+        return links[rel]
+      });
+
+      Object.keys(data)
+      .filter(function(key){
+        return !~['_', '$'].indexOf(key[0]);
+      })
+      .forEach(function(key){
+        this[key] = data[key]
+//        Object.defineProperty(this, key, {
+  //        configurable: false
+  //        , enumerable: true
+  //        , value: data[key]
+   //     });
+      }, this)
+      ;
+
+
+      if(data._links) {
+        Object
+        .keys(data._links)
+        .forEach(function(rel){
+          var link = data._links[rel];          
+          link = normalizeLink(href, link);
+          links[rel] = link;
+        }, this)
+        ;
+      }
+
+      if(data._embedded) {
+        Object
+        .keys(data._embedded)
+        .forEach(function(rel){
+          var embedded = data._embedded[rel];
+          var link = getSelfLink(href, embedded);
+          links[rel] = link;
+
+          var resource = createResource(href, options, embedded);
+
+          embedResource(resource);
+
+        }, this);
+      }
+
+      if(extra.is_new) this.is_new = true;
+
+      function defineHiddenProperty(target, name, value) {
+        target[name] = value
+//        Object.defineProperty(target, name, {
+//          configurable: false
+ //         , enumerable: false
+  //        , value: value
+   //     });
+      }//defineHiddenProperty
+
+
+      function embedResource(resource) {
+        if(angular.isArray(resource)) return resource.map(function(resource){
+          return embedResource(resource);
+        });
+        
+        var href = resource.$href('self');
+
+        embedded.set(href, $q.when(resource));
+      }//embedResource
+
+      function hrefLink(link, params) {
+        var href = link.templated
+        ? new UriTemplate(link.href).fillFromObject(params || {})
+        : link.href
+        ;
+
+        return href;
+      }//hrefLink
+
+      function callLink(method, link, params, data) {
+
+        if (params == null) {
+          params = {};
+        }
+          
+        if(angular.isArray(link)) return $q.all(link.map(function(link){
+          if(method !== 'GET') throw 'method is not supported for arrays';
+
+          return callLink(method, link, params, data);
+        }));
+
+        var linkHref = hrefLink(link, params);
+        if(method === 'GET') {
+          if(embedded.has(linkHref) && !params['no_cache']) {
+            return embedded.get(linkHref);
+          } else {
+            return embedded.set(linkHref, callService(method, linkHref, options, data));
+          }
+        }
+        else {
+          return callService(method, linkHref, options, data);  
+        }
+
+      }//callLink
+
+      function flushLink(link, params) {
+        if(angular.isArray(link)) return link.map(function(link){
+          return flushLink(link, params);
+        });
+
+        var linkHref = hrefLink(link, params);
+        if(embedded.has(linkHref)) embedded.del(linkHref);
+      }//flushLink
+
+    }//Resource
+
+
+
+
+    function createResource(href, options, data, extra){
+      if(angular.isArray(data)) return data.map(function(data){
+        return createResource(href, options, data, extra);
+      });
+
+      var resource = new BaseResource(href, options, data, extra);
+
+      return resource;
+
+    }//createResource
+
+
+    function normalizeLink(baseHref, link){
+      if(angular.isArray(link)) return link.map(function(link){
+        return normalizeLink(baseHref, link);
+      });
+
+      if(link) {
+        if(typeof link === 'string') link = { href: link };
+        link.href = resolveUrl(baseHref, link.href);
+      }
+      else {
+        link = { href: baseHref };      
+      }
+
+      return link;
+    }//normalizeLink
+
+
+    function getSelfLink(baseHref, resource){
+      if(angular.isArray(resource)) return resource.map(function(resource){
+        return getSelfLink(baseHref, resource);
+      });
+
+      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
+    }//getSelfLink
+
+
+
+    function callService(method, href, options, data){
+      if(!options) options = {};
+      var headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/hal+json,application/json'
+      };
+      if (options.authorization) headers.Authorization = options.authorization;
+      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
+      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
+      if (options.auth_token) {
+        $sessionStorage.setItem('auth_token', options.auth_token);
+        shared_header.set('auth_token', options.auth_token, $sessionStorage);
+      }
+
+      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
+      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
+
+      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
+
+      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
+
+      var resource = (
+        $http({
+          method: method
+          , url: options.transformUrl ? options.transformUrl(href) : href
+          , headers: headers
+          , data: data
+        })
+        .then(function(res){
+
+          // copy out the auth token from the header if the response is new resource
+          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
+          if (res.headers('auth-token') && res.status == 201){
+            options.auth_token = res.headers('Auth-Token')
+            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
+            // if auth token is present in local storage, set it there too
+            if ($localStorage.getItem('auth_token'))
+              $localStorage.setItem('auth_token', res.headers('Auth-Token'))
+          }
+          switch(res.status){
+            case 200:
+            //For back-ends that return `"null"` instead of `null` -_-
+            if(res.data && res.data !== '"null"') return createResource(href, options, res.data);
+            return null;
+
+            case 201:
+            extra = {is_new: true};
+            if(res.data) return createResource(href, options, res.data, extra);
+            if(res.headers('Content-Location')) return res.headers('Content-Location');
+            return null;
+
+            case 204:
+            return null
+
+            default:
+            return $q.reject(res);
+          }
+        }, function(res)
+        {
+          return $q.reject(res);
+        })
+      );
+
+      return resource;
+    }//callService
+
+    function parseHal(data){
+      var resource = createResource(data._links.self.href, null, data);
+      return resource;
+    }//parseHal
+
+
+
+    function resolveUrl(baseHref, href){
+      var resultHref = '';
+      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
+      var baseHrefMatch = reFullUrl.exec(baseHref);
+      var hrefMatch = reFullUrl.exec(href);
+
+      for(var partIndex = 1; partIndex < 5; partIndex++) {
+        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
+        else resultHref += baseHrefMatch[partIndex]
+      }
+
+      return resultHref;
+    }//resolveUrl
+
+  }
+])//service
+;
+
+angular.module('ngStorage', [])
+.factory('$fakeStorage', [
+  '$cookies',
+  function($cookies){
+    function FakeStorage() {};
+    FakeStorage.prototype.setItem = function (key, value) {
+      $cookies[key] = value;
+    };
+    FakeStorage.prototype.getItem = function (key) {
+      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
+    }
+    FakeStorage.prototype.removeItem = function (key) {
+      if ($cookies[key]){
+        delete $cookies[key];
+      }
+    };
+    FakeStorage.prototype.clear = function(){
+      for (var key in $cookies) {
+        if( $cookies.hasOwnProperty(key) )
+        {
+          delete $cookies[key];
+        }
+      }
+    };
+    FakeStorage.prototype.key = function(index){
+      return Object.keys($cookies)[index];
+    };
+    return new FakeStorage();
+  }
+])
+.factory('$localStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+])
+.factory('$sessionStorage', [
+  '$window', '$fakeStorage',
+  function($window, $fakeStorage) {
+    function isStorageSupported(storageName) 
+    {
+      var testKey = 'test',
+        storage = $window[storageName];
+      try
+      {
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } 
+      catch (error) 
+      {
+        return false;
+      }
+    }
+    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
+    return {
+      setItem: function(key, value) {
+        storage.setItem(key, value);
+      },
+      getItem: function(key, defaultValue) {
+        return storage.getItem(key) || defaultValue;
+      },
+      setObject: function(key, value) {
+        storage.setItem(key, JSON.stringify(value));
+      },
+      getObject: function(key) {
+        return JSON.parse(storage.getItem(key) || '{}');
+      },
+      removeItem: function(key){
+        storage.removeItem(key);
+      },
+      clear: function() {
+        storage.clear();
+      },
+      key: function(index){
+        storage.key(index);
+      }
+    }
+  }
+]);
+// THIS DOESN'T APPEAR TO BE USED?
+angular.module('ngLocalData', ['angular-hal']).
+ factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
+    data = {};
+
+    jsonData = function(data) {
+        return data && JSON.parse(data);
+    }
+
+    storage = function()
+    {
+      return $sessionStorage
+    } 
+    localSave = function(key, item){
+      storage().setItem(key, item.$toStore())   
+    } 
+    localLoad = function(key){
+      res =  jsonData(storage().getItem(key))
+      if (res)
+      {  
+        r = halClient.createResource(res)
+        def = $q.defer()
+        def.resolve(r)
+        return def.promise
+      }
+      return null
+    } 
+    localDelete = function(key) {
+      storage().removeItem(key)
+    }
+
+    return {
+
+      set: function(key, val)
+      {
+        data[key] = val
+        val.then(function(item){
+          localSave(key, item)
+        })
+        return val
+      },
+      get: function(key)
+      {
+        localLoad(key)
+        if (!data[key])
+          data[key] = localLoad(key)
+        return data[key]
+      },
+      del: function(key)
+      {
+        localDelete(key)
+        delete data[key]
+      },
+      has: function(key)
+      {
+        if (!data[key])
+        { 
+          res = localLoad(key)
+          if (res)
+            data[key] = res
+        }
+        return (key in data)
+      }      
+    }
+
+}]).
+ factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
+    function LocalDataFactory(name) {
+      function LocalData(value){
+        this.setStore(value);
+      }
+
+      LocalData.prototype.jsonData = function(data) {
+          return data && JSON.parse(data);
+      }
+
+      LocalData.prototype.storage = function()
+      {
+        return $sessionStorage
+      }  
+
+      LocalData.prototype.localSave = function(item)
+      {
+        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
+      }
+
+
+      LocalData.prototype.localSaveIndex = function(ids)
+      {
+        this.storage().setItem(this.store_name, ids.join(","))
+        this.ids = ids;
+      }
+
+      LocalData.prototype.localLoadIndex = function()
+      {
+        store = this.storage().getItem(this.store_name)
+        records = (store && store.split(",")) || [];
+        return records
+      }
+
+      LocalData.prototype.localLoad = function( id)
+      {
+        return this.jsonData(this.storage().getItem(this.store_name + id))
+      }
+
+      LocalData.prototype.count = function()
+      {
+        return this.ids.length
+      }
+
+      LocalData.prototype.setStore = function(name)
+      {
+        this.store_name = name;
+        this.data_store = []
+        this.ids = this.localLoadIndex();
+        for (a = 0; a < this.ids.length; a++){
+          this.data_store.push(this.localLoad(this.ids[a]));
+        }
+    //    var channel = pusher.subscribe(name);
+    //    var ds = this;
+
+     //   channel.bind('add', function(data) {
+     //     ds.data_store.push(data);
+     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
+     //   });
+
+      }
+
+      LocalData.prototype.update = function(data)
+      {
+        ids = []
+        for (x in data){
+          if (data[x].id){
+           ids.push(data[x].id)
+           this.localSave(data[x])
+         }
+        }
+        this.localSaveIndex(ids)
+      }
+
+      return new LocalData(name)
+
+    };
+
+
+    
+    return LocalDataFactory
+}]);
+
+//! moment.js locale configuration
+//! locale : great britain english (en-gb)
+//! author : Chris Gedrim : https://github.com/chrisgedrim
+
+(function (global, factory) {
+   typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('../moment')) :
+   typeof define === 'function' && define.amd ? define(['moment'], factory) :
+   factory(global.moment)
+}(this, function (moment) { 'use strict';
+
+
+    var en_gb = moment.defineLocale('en-gb', {
+        months : 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_'),
+        monthsShort : 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
+        weekdays : 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
+        weekdaysShort : 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
+        weekdaysMin : 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
+        longDateFormat : {
+            LT : 'HH:mm',
+            LTS : 'HH:mm:ss',
+            L : 'DD/MM/YYYY',
+            LL : 'D MMMM YYYY',
+            LLL : 'D MMMM YYYY HH:mm',
+            LLLL : 'dddd, D MMMM YYYY HH:mm'
+        },
+        calendar : {
+            sameDay : '[Today at] LT',
+            nextDay : '[Tomorrow at] LT',
+            nextWeek : 'dddd [at] LT',
+            lastDay : '[Yesterday at] LT',
+            lastWeek : '[Last] dddd [at] LT',
+            sameElse : 'L'
+        },
+        relativeTime : {
+            future : 'in %s',
+            past : '%s ago',
+            s : 'a few seconds',
+            m : 'a minute',
+            mm : '%d minutes',
+            h : 'an hour',
+            hh : '%d hours',
+            d : 'a day',
+            dd : '%d days',
+            M : 'a month',
+            MM : '%d months',
+            y : 'a year',
+            yy : '%d years'
+        },
+        ordinalParse: /\d{1,2}(st|nd|rd|th)/,
+        ordinal : function (number) {
+            var b = number % 10,
+                output = (~~(number % 100 / 10) === 1) ? 'th' :
+                (b === 1) ? 'st' :
+                (b === 2) ? 'nd' :
+                (b === 3) ? 'rd' : 'th';
+            return number + output;
+        },
+        week : {
+            dow : 1, // Monday is the first day of the week.
+            doy : 4  // The week that contains Jan 4th is the first week of the year.
+        }
+    });
+
+    return en_gb;
+
+}));
+
+/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
+
+getControllerScope = function(controller, fn){
+  $(document).ready(function(){
+    var $element = $('div[data-ng-controller="' + controller + '"]');
+    var scope = angular.element($element).scope();
+    fn(scope); 
+  });
+}
+
+
+function getURIparam( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
 (function() {
   'use strict';
 
@@ -2200,6 +2976,18 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
         } else {
           $scope.hide_page = false;
         }
+        if (prms.from_datetime) {
+          $scope.bb.from_datetime = prms.from_datetime;
+        }
+        if (prms.to_datetime) {
+          $scope.bb.to_datetime = prms.to_datetime;
+        }
+        if (prms.min_date) {
+          $scope.bb.min_date = prms.min_date;
+        }
+        if (prms.max_date) {
+          $scope.bb.max_date = prms.max_date;
+        }
         if (!prms.custom_partial_url) {
           $scope.bb.path_setup = true;
         }
@@ -2740,6 +3528,8 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
           return;
         }
         return $scope.showPage('check_items');
+      } else if ($scope.bb.moving_booking && $scope.bb.basket.itemsReady()) {
+        return $scope.showPage('purchase');
       } else if (!$scope.bb.basket.readyToCheckout()) {
         if ($scope.setPageRoute($rootScope.Route.Summary)) {
           return;
@@ -2750,8 +3540,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
           return;
         }
         return $scope.showPage('basket');
-      } else if ($scope.bb.moving_booking && $scope.bb.basket.readyToCheckout()) {
-        return $scope.showPage('purchase');
       } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null && !$scope.bb.basket.waiting_for_checkout) {
         if ($scope.setPageRoute($rootScope.Route.Checkout)) {
           return;
@@ -6924,6 +7712,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
               }
             }
             $scope.setLoaded($scope);
+            $scope.bb.moved_booking = booking;
             $scope.item.move_done = true;
             $rootScope.$broadcast("booking:moved");
             $scope.decideNextPage(route);
@@ -9573,169 +10362,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
   /***
   * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Renders payment iframe (where integrated payment has been configured) and handles payment success/failure.
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: function(scope, element, attributes) {
-        var error, getHost, sendLoadEvent;
-        error = function(scope, message) {
-          return scope.error(message);
-        };
-        getHost = function(url) {
-          var a;
-          a = document.createElement('a');
-          a.href = url;
-          return a['protocol'] + '//' + a['host'];
-        };
-        sendLoadEvent = function(element, origin, scope) {
-          var custom_stylesheet, payload, referrer;
-          referrer = $location.protocol() + "://" + $location.host();
-          if ($location.port()) {
-            referrer += ":" + $location.port();
-          }
-          if (scope.payment_options.custom_stylesheet) {
-            custom_stylesheet = scope.payment_options.custom_stylesheet;
-          }
-          payload = JSON.stringify({
-            'type': 'load',
-            'message': referrer,
-            'custom_partial_url': scope.bb.custom_partial_url,
-            'custom_stylesheet': custom_stylesheet,
-            'scroll_offset': SettingsService.getScrollOffset()
-          });
-          return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-        };
-        scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-        scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-        element.find('iframe').bind('load', (function(_this) {
-          return function(event) {
-            var origin, url;
-            if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-              url = scope.bb.total.$href('new_payment');
-            }
-            origin = getHost(url);
-            sendLoadEvent(element, origin, scope);
-            return scope.$apply(function() {
-              return scope.callSetLoaded();
-            });
-          };
-        })(this));
-        return $window.addEventListener('message', (function(_this) {
-          return function(event) {
-            var data;
-            if (angular.isObject(event.data)) {
-              data = event.data;
-            } else if (!event.data.match(/iFrameSizer/)) {
-              data = JSON.parse(event.data);
-            }
-            return scope.$apply(function() {
-              if (data) {
-                switch (data.type) {
-                  case "submitting":
-                    return scope.callNotLoaded();
-                  case "error":
-                    scope.$emit("payment:failed");
-                    scope.callNotLoaded();
-                    AlertService.raise('PAYMENT_FAILED');
-                    return document.getElementsByTagName("iframe")[0].src += '';
-                  case "payment_complete":
-                    scope.callSetLoaded();
-                    return scope.paymentDone();
-                }
-              }
-            });
-          };
-        })(this), false);
-      }
-    };
-  });
-
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
-    $scope.controller = "public.controllers.Payment";
-    $scope.notLoaded($scope);
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then(function() {
-      if ($scope.total) {
-        $scope.bb.total = $scope.total;
-      }
-      if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-      }
-    });
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Set not loaded state
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return $scope.notLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Set loaded state
-     */
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return $scope.setLoaded($scope);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name paymentDone
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Handles payment success
-     */
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
   * @name BB.Directives:bbPayForm
   * @restrict AE
   * @scope true
@@ -9960,6 +10586,169 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
         }
       };
     })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Renders payment iframe (where integrated payment has been configured) and handles payment success/failure.
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: function(scope, element, attributes) {
+        var error, getHost, sendLoadEvent;
+        error = function(scope, message) {
+          return scope.error(message);
+        };
+        getHost = function(url) {
+          var a;
+          a = document.createElement('a');
+          a.href = url;
+          return a['protocol'] + '//' + a['host'];
+        };
+        sendLoadEvent = function(element, origin, scope) {
+          var custom_stylesheet, payload, referrer;
+          referrer = $location.protocol() + "://" + $location.host();
+          if ($location.port()) {
+            referrer += ":" + $location.port();
+          }
+          if (scope.payment_options.custom_stylesheet) {
+            custom_stylesheet = scope.payment_options.custom_stylesheet;
+          }
+          payload = JSON.stringify({
+            'type': 'load',
+            'message': referrer,
+            'custom_partial_url': scope.bb.custom_partial_url,
+            'custom_stylesheet': custom_stylesheet,
+            'scroll_offset': SettingsService.getScrollOffset()
+          });
+          return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+        };
+        scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+        scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+        element.find('iframe').bind('load', (function(_this) {
+          return function(event) {
+            var origin, url;
+            if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+              url = scope.bb.total.$href('new_payment');
+            }
+            origin = getHost(url);
+            sendLoadEvent(element, origin, scope);
+            return scope.$apply(function() {
+              return scope.callSetLoaded();
+            });
+          };
+        })(this));
+        return $window.addEventListener('message', (function(_this) {
+          return function(event) {
+            var data;
+            if (angular.isObject(event.data)) {
+              data = event.data;
+            } else if (!event.data.match(/iFrameSizer/)) {
+              data = JSON.parse(event.data);
+            }
+            return scope.$apply(function() {
+              if (data) {
+                switch (data.type) {
+                  case "submitting":
+                    return scope.callNotLoaded();
+                  case "error":
+                    scope.$emit("payment:failed");
+                    scope.callNotLoaded();
+                    AlertService.raise('PAYMENT_FAILED');
+                    return document.getElementsByTagName("iframe")[0].src += '';
+                  case "payment_complete":
+                    scope.callSetLoaded();
+                    return scope.paymentDone();
+                }
+              }
+            });
+          };
+        })(this), false);
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+    $scope.controller = "public.controllers.Payment";
+    $scope.notLoaded($scope);
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then(function() {
+      if ($scope.total) {
+        $scope.bb.total = $scope.total;
+      }
+      if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+      }
+    });
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Set not loaded state
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return $scope.notLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Set loaded state
+     */
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return $scope.setLoaded($scope);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Handles payment success
+     */
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
   });
 
 }).call(this);
@@ -12046,6 +12835,9 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     })(this);
     checkRequestedSlots = function(time_slots) {
       var requested_slot;
+      if (!$scope.bb.item_defaults || !$scope.bb.item_defaults.time) {
+        return;
+      }
       requested_slot = DateTimeUtilitiesService.checkDefaultTime($scope.selected_date, time_slots, $scope.data_source, $scope.bb.item_defaults);
       if (requested_slot.slot && requested_slot.slot.overbook || requested_slot.slot === null || requested_slot.match === null) {
         return $scope.availability_conflict = true;
@@ -12792,782 +13584,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-
-angular
-.module('angular-hal', []).provider('data_cache', function() {
- 
-    this.$get = function() {
-      data = [];
-
-      return {
-
-        set: function(key, val)
-        {
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        },
-        delMatching: function(str)
-        {
-          for (var k in data) {      
-            if (k.indexOf(str) != -1)
-              delete data[k]
-          }
-        }
-
-      }
-    };
- 
-})
-.provider('shared_header', function() {
-   this.$get = function() {
-      data = {};
-
-      return {
-
-        set: function(key, val, store)
-        {
-          // also store this in the session store
-          store.setItem(key, val)
-          data[key] = val
-          return val
-        },
-        get: function(key)
-        {
-          return data[key]
-        },
-        del: function(key)
-        {
-          delete data[key]
-        },
-        has: function(key)
-        {
-          return (key in data)
-        }
-      }
-    };
-
-})
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', '$localStorage', function(
-    $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage, $localStorage
-  ){
-
-    if ($sessionStorage.getItem('auth_token'))
-      shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
-    else if ($cookies['Auth-Token'] && !shared_header.has('auth_token')){
-      shared_header.set('auth_token', $cookies['Auth-Token'], $sessionStorage)
-    }
-
-    return {
-      setCache: function(cache) {
-        data_cache = cache
-      },
-      clearCache: function(str) {
-        data_cache.delMatching(str)
-      },
-      createResource: function(store)
-      {
-        if (typeof store === 'string') {
-          store = JSON.parse(store)
-        }
-        resource = store.data
-        resource._links = store.links
-        key = store.links.self.href
-        options = store.options
-        return new BaseResource(key, options, resource)
-      },
-      $get: function(href, options){
-        if(data_cache.has(href) && (!options || !options.no_cache)) return data_cache.get(href);
-        return data_cache.set(href, callService('GET', href, options));
-//        return callService('GET', href, options);
-      }//get
-      , $post: function(href, options, data){
-        return callService('POST', href, options, data);
-      }//post
-      , $put: function(href, options, data){
-        return callService('PUT', href, options, data);
-      }//put
-      , $patch: function(href, options, data){
-        return callService('PATCH', href, options, data);
-      }//patch
-      , $del: function(href, options){
-        return callService('DELETE', href, options);
-      }//del
-      , $parse: function(data){
-        return parseHal(data)
-      }//parse
-    };
-
-
-
-    function BaseResource(href, options, data, extra){
-      if(!options) options = {};
-      if(!extra) extra = {};
-      var links = {};
-      var embedded = data_cache
-      if (data.hasOwnProperty('auth_token')) {
-        options['auth_token'] = data['auth_token'];
-      }
-
-      href = getSelfLink(href, data).href;
-
-      defineHiddenProperty(this, '$href', function(rel, params) {
-        if(!(rel in links)) return null;
-
-        return hrefLink(links[rel], params);
-      });
-      defineHiddenProperty(this, '$has', function(rel) {
-        return rel in links;
-      });
-      defineHiddenProperty(this, '$flush', function(rel, params) {
-        var link = links[rel];
-        return flushLink(link, params);
-      });
-      defineHiddenProperty(this, '$get', function(rel, params){
-        var link = links[rel];
-        return callLink('GET', link, params);
-      });
-      defineHiddenProperty(this, '$post', function(rel, params, data){
-        var link = links[rel];
-        return callLink('POST', link, params, data);
-      });
-      defineHiddenProperty(this, '$put', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PUT', link, params, data);
-      });
-      defineHiddenProperty(this, '$patch', function(rel, params, data){
-        var link = links[rel];
-        return callLink('PATCH', link, params, data);
-      });
-      defineHiddenProperty(this, '$del', function(rel, params){
-        var link = links[rel];
-        return callLink('DELETE', link, params);
-      });
-      defineHiddenProperty(this, '$links', function(){
-        return links
-      });
-      defineHiddenProperty(this, '$toStore', function(){
-        return JSON.stringify({data: this, links: links, options:options})
-      });
-      defineHiddenProperty(this, 'setOption', function(key, value){
-        options[key] = value
-      });
-      defineHiddenProperty(this, 'getOption', function(key){
-        return options[key]
-      });
-      defineHiddenProperty(this, '$link', function(rel){
-        return links[rel]
-      });
-
-      Object.keys(data)
-      .filter(function(key){
-        return !~['_', '$'].indexOf(key[0]);
-      })
-      .forEach(function(key){
-        this[key] = data[key]
-//        Object.defineProperty(this, key, {
-  //        configurable: false
-  //        , enumerable: true
-  //        , value: data[key]
-   //     });
-      }, this)
-      ;
-
-
-      if(data._links) {
-        Object
-        .keys(data._links)
-        .forEach(function(rel){
-          var link = data._links[rel];          
-          link = normalizeLink(href, link);
-          links[rel] = link;
-        }, this)
-        ;
-      }
-
-      if(data._embedded) {
-        Object
-        .keys(data._embedded)
-        .forEach(function(rel){
-          var embedded = data._embedded[rel];
-          var link = getSelfLink(href, embedded);
-          links[rel] = link;
-
-          var resource = createResource(href, options, embedded);
-
-          embedResource(resource);
-
-        }, this);
-      }
-
-      if(extra.is_new) this.is_new = true;
-
-      function defineHiddenProperty(target, name, value) {
-        target[name] = value
-//        Object.defineProperty(target, name, {
-//          configurable: false
- //         , enumerable: false
-  //        , value: value
-   //     });
-      }//defineHiddenProperty
-
-
-      function embedResource(resource) {
-        if(angular.isArray(resource)) return resource.map(function(resource){
-          return embedResource(resource);
-        });
-        
-        var href = resource.$href('self');
-
-        embedded.set(href, $q.when(resource));
-      }//embedResource
-
-      function hrefLink(link, params) {
-        var href = link.templated
-        ? new UriTemplate(link.href).fillFromObject(params || {})
-        : link.href
-        ;
-
-        return href;
-      }//hrefLink
-
-      function callLink(method, link, params, data) {
-
-        if (params == null) {
-          params = {};
-        }
-          
-        if(angular.isArray(link)) return $q.all(link.map(function(link){
-          if(method !== 'GET') throw 'method is not supported for arrays';
-
-          return callLink(method, link, params, data);
-        }));
-
-        var linkHref = hrefLink(link, params);
-        if(method === 'GET') {
-          if(embedded.has(linkHref) && !params['no_cache']) {
-            return embedded.get(linkHref);
-          } else {
-            return embedded.set(linkHref, callService(method, linkHref, options, data));
-          }
-        }
-        else {
-          return callService(method, linkHref, options, data);  
-        }
-
-      }//callLink
-
-      function flushLink(link, params) {
-        if(angular.isArray(link)) return link.map(function(link){
-          return flushLink(link, params);
-        });
-
-        var linkHref = hrefLink(link, params);
-        if(embedded.has(linkHref)) embedded.del(linkHref);
-      }//flushLink
-
-    }//Resource
-
-
-
-
-    function createResource(href, options, data, extra){
-      if(angular.isArray(data)) return data.map(function(data){
-        return createResource(href, options, data, extra);
-      });
-
-      var resource = new BaseResource(href, options, data, extra);
-
-      return resource;
-
-    }//createResource
-
-
-    function normalizeLink(baseHref, link){
-      if(angular.isArray(link)) return link.map(function(link){
-        return normalizeLink(baseHref, link);
-      });
-
-      if(link) {
-        if(typeof link === 'string') link = { href: link };
-        link.href = resolveUrl(baseHref, link.href);
-      }
-      else {
-        link = { href: baseHref };      
-      }
-
-      return link;
-    }//normalizeLink
-
-
-    function getSelfLink(baseHref, resource){
-      if(angular.isArray(resource)) return resource.map(function(resource){
-        return getSelfLink(baseHref, resource);
-      });
-
-      return normalizeLink(baseHref, resource && resource._links && resource._links.self);
-    }//getSelfLink
-
-
-
-    function callService(method, href, options, data){
-      if(!options) options = {};
-      var headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/hal+json,application/json'
-      };
-      if (options.authorization) headers.Authorization = options.authorization;
-      if (options.app_id) shared_header.set('app_id', options.app_id, $sessionStorage);
-      if (options.app_key) shared_header.set('app_key', options.app_key, $sessionStorage);
-      if (options.auth_token) {
-        $sessionStorage.setItem('auth_token', options.auth_token);
-        shared_header.set('auth_token', options.auth_token, $sessionStorage);
-      }
-
-      if (shared_header.has('app_id')) headers['App-Id'] = shared_header.get('app_id');
-      if (shared_header.has('app_key')) headers['App-Key'] = shared_header.get('app_key');
-
-      if (shared_header.has('auth_token')) headers['Auth-Token'] = shared_header.get('auth_token');
-
-      if (options.bypass_auth) headers['Bypass-Auth'] = options.bypass_auth;
-
-      var resource = (
-        $http({
-          method: method
-          , url: options.transformUrl ? options.transformUrl(href) : href
-          , headers: headers
-          , data: data
-        })
-        .then(function(res){
-
-          // copy out the auth token from the header if the response is new resource
-          // Note: we only take the auth token from created responses as at the app layer, success responses might be cached results, thus we don't want to use the auth token from these 
-          if (res.headers('auth-token') && res.status == 201){
-            options.auth_token = res.headers('Auth-Token')
-            shared_header.set('auth_token', res.headers('Auth-Token'), $sessionStorage)
-            // if auth token is present in local storage, set it there too
-            if ($localStorage.getItem('auth_token'))
-              $localStorage.setItem('auth_token', res.headers('Auth-Token'))
-          }
-          switch(res.status){
-            case 200:
-            //For back-ends that return `"null"` instead of `null` -_-
-            if(res.data && res.data !== '"null"') return createResource(href, options, res.data);
-            return null;
-
-            case 201:
-            extra = {is_new: true};
-            if(res.data) return createResource(href, options, res.data, extra);
-            if(res.headers('Content-Location')) return res.headers('Content-Location');
-            return null;
-
-            case 204:
-            return null
-
-            default:
-            return $q.reject(res);
-          }
-        }, function(res)
-        {
-          return $q.reject(res);
-        })
-      );
-
-      return resource;
-    }//callService
-
-    function parseHal(data){
-      var resource = createResource(data._links.self.href, null, data);
-      return resource;
-    }//parseHal
-
-
-
-    function resolveUrl(baseHref, href){
-      var resultHref = '';
-      var reFullUrl = /^((?:\w+\:)?)((?:\/\/)?)([^\/]*)((?:\/.*)?)$/;
-      var baseHrefMatch = reFullUrl.exec(baseHref);
-      var hrefMatch = reFullUrl.exec(href);
-
-      for(var partIndex = 1; partIndex < 5; partIndex++) {
-        if(hrefMatch[partIndex]) resultHref += hrefMatch[partIndex];
-        else resultHref += baseHrefMatch[partIndex]
-      }
-
-      return resultHref;
-    }//resolveUrl
-
-  }
-])//service
-;
-
-angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  '$cookies',
-  function($cookies){
-    function FakeStorage() {};
-    FakeStorage.prototype.setItem = function (key, value) {
-      $cookies[key] = value;
-    };
-    FakeStorage.prototype.getItem = function (key) {
-      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
-    }
-    FakeStorage.prototype.removeItem = function (key) {
-      if ($cookies[key]){
-        delete $cookies[key];
-      }
-    };
-    FakeStorage.prototype.clear = function(){
-      for (var key in $cookies) {
-        if( $cookies.hasOwnProperty(key) )
-        {
-          delete $cookies[key];
-        }
-      }
-    };
-    FakeStorage.prototype.key = function(index){
-      return Object.keys($cookies)[index];
-    };
-    return new FakeStorage();
-  }
-])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('localStorage') ? $window.localStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
-    function isStorageSupported(storageName) 
-    {
-      var testKey = 'test',
-        storage = $window[storageName];
-      try
-      {
-        storage.setItem(testKey, '1');
-        storage.removeItem(testKey);
-        return true;
-      } 
-      catch (error) 
-      {
-        return false;
-      }
-    }
-    var storage = isStorageSupported('sessionStorage') ? $window.sessionStorage : $fakeStorage;
-    return {
-      setItem: function(key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function(key, defaultValue) {
-        return storage.getItem(key) || defaultValue;
-      },
-      setObject: function(key, value) {
-        storage.setItem(key, JSON.stringify(value));
-      },
-      getObject: function(key) {
-        return JSON.parse(storage.getItem(key) || '{}');
-      },
-      removeItem: function(key){
-        storage.removeItem(key);
-      },
-      clear: function() {
-        storage.clear();
-      },
-      key: function(index){
-        storage.key(index);
-      }
-    }
-  }
-]);
-// THIS DOESN'T APPEAR TO BE USED?
-angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
-    data = {};
-
-    jsonData = function(data) {
-        return data && JSON.parse(data);
-    }
-
-    storage = function()
-    {
-      return $sessionStorage
-    } 
-    localSave = function(key, item){
-      storage().setItem(key, item.$toStore())   
-    } 
-    localLoad = function(key){
-      res =  jsonData(storage().getItem(key))
-      if (res)
-      {  
-        r = halClient.createResource(res)
-        def = $q.defer()
-        def.resolve(r)
-        return def.promise
-      }
-      return null
-    } 
-    localDelete = function(key) {
-      storage().removeItem(key)
-    }
-
-    return {
-
-      set: function(key, val)
-      {
-        data[key] = val
-        val.then(function(item){
-          localSave(key, item)
-        })
-        return val
-      },
-      get: function(key)
-      {
-        localLoad(key)
-        if (!data[key])
-          data[key] = localLoad(key)
-        return data[key]
-      },
-      del: function(key)
-      {
-        localDelete(key)
-        delete data[key]
-      },
-      has: function(key)
-      {
-        if (!data[key])
-        { 
-          res = localLoad(key)
-          if (res)
-            data[key] = res
-        }
-        return (key in data)
-      }      
-    }
-
-}]).
- factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
-    function LocalDataFactory(name) {
-      function LocalData(value){
-        this.setStore(value);
-      }
-
-      LocalData.prototype.jsonData = function(data) {
-          return data && JSON.parse(data);
-      }
-
-      LocalData.prototype.storage = function()
-      {
-        return $sessionStorage
-      }  
-
-      LocalData.prototype.localSave = function(item)
-      {
-        this.storage().setItem(this.store_name + item.id, JSON.stringify(item))
-      }
-
-
-      LocalData.prototype.localSaveIndex = function(ids)
-      {
-        this.storage().setItem(this.store_name, ids.join(","))
-        this.ids = ids;
-      }
-
-      LocalData.prototype.localLoadIndex = function()
-      {
-        store = this.storage().getItem(this.store_name)
-        records = (store && store.split(",")) || [];
-        return records
-      }
-
-      LocalData.prototype.localLoad = function( id)
-      {
-        return this.jsonData(this.storage().getItem(this.store_name + id))
-      }
-
-      LocalData.prototype.count = function()
-      {
-        return this.ids.length
-      }
-
-      LocalData.prototype.setStore = function(name)
-      {
-        this.store_name = name;
-        this.data_store = []
-        this.ids = this.localLoadIndex();
-        for (a = 0; a < this.ids.length; a++){
-          this.data_store.push(this.localLoad(this.ids[a]));
-        }
-    //    var channel = pusher.subscribe(name);
-    //    var ds = this;
-
-     //   channel.bind('add', function(data) {
-     //     ds.data_store.push(data);
-     //     $rootScope.$broadcast("Refresh_" + ds.store_name, "Updated");          
-     //   });
-
-      }
-
-      LocalData.prototype.update = function(data)
-      {
-        ids = []
-        for (x in data){
-          if (data[x].id){
-           ids.push(data[x].id)
-           this.localSave(data[x])
-         }
-        }
-        this.localSaveIndex(ids)
-      }
-
-      return new LocalData(name)
-
-    };
-
-
-    
-    return LocalDataFactory
-}]);
-
-//! moment.js locale configuration
-//! locale : great britain english (en-gb)
-//! author : Chris Gedrim : https://github.com/chrisgedrim
-
-(function (global, factory) {
-   typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('../moment')) :
-   typeof define === 'function' && define.amd ? define(['moment'], factory) :
-   factory(global.moment)
-}(this, function (moment) { 'use strict';
-
-
-    var en_gb = moment.defineLocale('en-gb', {
-        months : 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_'),
-        monthsShort : 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
-        weekdays : 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
-        weekdaysShort : 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
-        weekdaysMin : 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
-        longDateFormat : {
-            LT : 'HH:mm',
-            LTS : 'HH:mm:ss',
-            L : 'DD/MM/YYYY',
-            LL : 'D MMMM YYYY',
-            LLL : 'D MMMM YYYY HH:mm',
-            LLLL : 'dddd, D MMMM YYYY HH:mm'
-        },
-        calendar : {
-            sameDay : '[Today at] LT',
-            nextDay : '[Tomorrow at] LT',
-            nextWeek : 'dddd [at] LT',
-            lastDay : '[Yesterday at] LT',
-            lastWeek : '[Last] dddd [at] LT',
-            sameElse : 'L'
-        },
-        relativeTime : {
-            future : 'in %s',
-            past : '%s ago',
-            s : 'a few seconds',
-            m : 'a minute',
-            mm : '%d minutes',
-            h : 'an hour',
-            hh : '%d hours',
-            d : 'a day',
-            dd : '%d days',
-            M : 'a month',
-            MM : '%d months',
-            y : 'a year',
-            yy : '%d years'
-        },
-        ordinalParse: /\d{1,2}(st|nd|rd|th)/,
-        ordinal : function (number) {
-            var b = number % 10,
-                output = (~~(number % 100 / 10) === 1) ? 'th' :
-                (b === 1) ? 'st' :
-                (b === 2) ? 'nd' :
-                (b === 3) ? 'rd' : 'th';
-            return number + output;
-        },
-        week : {
-            dow : 1, // Monday is the first day of the week.
-            doy : 4  // The week that contains Jan 4th is the first week of the year.
-        }
-    });
-
-    return en_gb;
-
-}));
-
-/* Usefull javascript functions usable directly withing html views - often for getting scope related data */
-
-getControllerScope = function(controller, fn){
-  $(document).ready(function(){
-    var $element = $('div[data-ng-controller="' + controller + '"]');
-    var scope = angular.element($element).scope();
-    fn(scope); 
-  });
-}
-
-
-function getURIparam( name ){
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
 (function() {
   'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
@@ -17572,7 +17588,7 @@ function getURIparam( name ){
         if (data) {
           for (n in data) {
             m = data[n];
-            this[n] = m;
+            this[n] || (this[n] = m);
           }
         }
         if (this._data && this._data.$href) {
