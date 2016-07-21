@@ -45,3 +45,10 @@ div.loader {
     }
   }
 }
+
+.form-group.has-success .form-control[disabled],
+.form-group.has-success .form-control[readonly],
+#bb .has-success .form-control[disabled],
+#bb .has-success .form-control[readonly]  {
+  border-color: #EEE !important;
+}
