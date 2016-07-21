@@ -28166,6 +28166,9 @@ function getURIparam( name ){
           if (prms.time_zone) {
             extra.time_zone = prms.time_zone;
           }
+          if (prms.cItem.id) {
+            extra.ignore_booking = prms.cItem.id;
+          }
           if (extra.event_id) {
             item_link = prms.company;
           }
