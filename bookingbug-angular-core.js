@@ -13598,6 +13598,38 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+  angular.module('BB.Directives').directive('bbAccordionGroup', function() {
+    return {
+      require: '^accordion',
+      restrict: 'EA',
+      transclude: true,
+      replace: false,
+      templateUrl: 'template/accordion/accordion-group.html',
+      scope: {
+        heading: '@',
+        isOpen: '=?',
+        isDisabled: '=?'
+      },
+      controller: function() {
+        return this.setHeading = function(element) {
+          return this.heading = element;
+        };
+      },
+      link: function(scope, element, attrs, accordionCtrl) {
+        accordionCtrl.addGroup(scope);
+        return scope.$watch('isOpen', function(value) {
+          if (value) {
+            return accordionCtrl.closeOthers(scope);
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
     return {
       restrict: 'A',
