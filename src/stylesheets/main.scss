@@ -51,19 +51,4 @@ div.loader {
 #bb .has-success .form-control[disabled],
 #bb .has-success .form-control[readonly]  {
   border-color: #EEE !important;
-
-
 }
-
-
-#bb  select.form-control[disabled]::-ms-expand,
-.form-group .form-control[disabled]::-ms-expand {  display: none; }
-
-#bb select.form-control[disabled],
-.form-group select.form-control[disabled]{
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.bb-display-mode {position: fixed}
-
