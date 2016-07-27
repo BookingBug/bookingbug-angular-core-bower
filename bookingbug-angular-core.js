@@ -13018,7 +13018,7 @@ function getURIparam( name ){
             sm: 3,
             xs: 1
           };
-          timeRange = 0;
+          timeRange = 7;
           for (size in cal_days) {
             days = cal_days[size];
             if (size === ViewportSize.getViewportSize()) {
@@ -15102,7 +15102,7 @@ angular.module('BB.Directives')
                   }
                   html += "</div>";
                 } else if (question.detail_type === "date") {
-                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
+                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' ng-change='recalc()' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
                 } else {
                   html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
                 }
@@ -28045,49 +28045,50 @@ angular.module('BB.Directives')
    */
   angular.module('BB.Services').factory('SlotDates', [
     '$q', 'DayService', function($q, DayService) {
-      var cached;
+      var cached, getFirstDayWithSlots;
       cached = {
         firstSlotDate: null,
         timesQueried: 0
       };
-      return {
-        getFirstDayWithSlots: function(cItem, selected_day) {
-          var deferred, endDate;
-          deferred = $q.defer();
-          if (cached.firstSlotDate != null) {
-            deferred.resolve(cached.firstSlotDate);
-            return deferred.promise;
-          }
-          endDate = selected_day.clone().add(3, 'month');
-          DayService.query({
-            cItem: cItem,
-            date: selected_day.format('YYYY-MM-DD'),
-            edate: endDate.format('YYYY-MM-DD')
-          }).then(function(days) {
-            var firstAvailableSlots;
-            cached.timesQueried++;
-            firstAvailableSlots = _.find(days, function(day) {
-              return day.spaces > 0;
-            });
-            if (firstAvailableSlots) {
-              cached.firstSlotDate = firstAvailableSlots.date;
-              return deferred.resolve(cached.firstSlotDate);
-            } else {
-              if (cached.timesQueried <= 4) {
-                return this.getFirstDayWithSlots(cItem, endDate).then(function(day) {
-                  return deferred.resolve(cached.firstSlotDate);
-                }, function(err) {
-                  return deferred.reject(err);
-                });
-              } else {
-                return deferred.reject(new Error('ERROR.NO_SLOT_AVAILABLE'));
-              }
-            }
-          }, function(err) {
-            return deferred.reject(new Error('ERROR.COULDNT_GET_AVAILABLE_DATES'));
-          });
+      getFirstDayWithSlots = function(cItem, selected_day) {
+        var deferred, endDate;
+        deferred = $q.defer();
+        if (cached.firstSlotDate != null) {
+          deferred.resolve(cached.firstSlotDate);
           return deferred.promise;
         }
+        endDate = selected_day.clone().add(3, 'month');
+        DayService.query({
+          cItem: cItem,
+          date: selected_day.format('YYYY-MM-DD'),
+          edate: endDate.format('YYYY-MM-DD')
+        }).then(function(days) {
+          var firstAvailableSlots;
+          cached.timesQueried++;
+          firstAvailableSlots = _.find(days, function(day) {
+            return day.spaces > 0;
+          });
+          if (firstAvailableSlots) {
+            cached.firstSlotDate = firstAvailableSlots.date;
+            return deferred.resolve(cached.firstSlotDate);
+          } else {
+            if (cached.timesQueried <= 4) {
+              return getFirstDayWithSlots(cItem, endDate).then(function(day) {
+                return deferred.resolve(cached.firstSlotDate);
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            } else {
+              return deferred.reject(new Error('ERROR.NO_SLOT_AVAILABLE'));
+            }
+          }
+        }, function(err) {
+          return deferred.reject(new Error('ERROR.COULDNT_GET_AVAILABLE_DATES'));
+        });
+        return deferred.promise;
+      };
+      return {
+        getFirstDayWithSlots: getFirstDayWithSlots
       };
     }
   ]);
