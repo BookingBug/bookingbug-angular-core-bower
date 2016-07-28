@@ -24,7 +24,7 @@
 
   app.constant('UriTemplate', window.UriTemplate);
 
-  app.config(function($locationProvider, $httpProvider, $provide, ie8HttpBackendProvider) {
+  app.config(["$locationProvider", "$httpProvider", "$provide", "ie8HttpBackendProvider", function($locationProvider, $httpProvider, $provide, ie8HttpBackendProvider) {
     var base, int, lowercase, msie, regexp, result, webkit;
     $httpProvider.defaults.headers.common = {
       'App-Id': 'f6b16c23',
@@ -57,9 +57,9 @@
     return (base = moment.fn).toISODate || (base.toISODate = function() {
       return this.locale('en').format('YYYY-MM-DD');
     });
-  });
+  }]);
 
-  app.run(function($rootScope, $log, DebugUtilsService, FormDataStoreService, $bbug, $document, $sessionStorage, AppConfig) {
+  app.run(["$rootScope", "$log", "DebugUtilsService", "FormDataStoreService", "$bbug", "$document", "$sessionStorage", "AppConfig", function($rootScope, $log, DebugUtilsService, FormDataStoreService, $bbug, $document, $sessionStorage, AppConfig) {
     $rootScope.$log = $log;
     $rootScope.$setIfUndefined = FormDataStoreService.setIfUndefined;
     $rootScope.bb || ($rootScope.bb = {});
@@ -70,7 +70,7 @@
       document.createElement('section');
       return document.createElement('footer');
     }
-  });
+  }]);
 
   angular.module('BB.Services', ['ngResource', 'ngSanitize', 'ngLocalData']);
 
@@ -127,7 +127,7 @@
 
 angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackendProvider() {
 
-  this.$get = ['$browser', '$window', '$document', '$sniffer', function ie8HttpBackendFactory($browser, $window, $document, $sniffer) {
+  this.$get = ["$browser", "$window", "$document", "$sniffer", function ie8HttpBackendFactory($browser, $window, $document, $sniffer) {
     var params = [$browser, createXhr, $browser.defer, $window.angular.callbacks, $document[0], $window.location.protocol.replace(':', ''), $sniffer];
     var param4ie = params.concat([createHttpBackend.apply(this,params)]);
     return (ieCreateHttpBackend && ieCreateHttpBackend.apply(this, param4ie)) ||
@@ -870,7 +870,7 @@ var NO_JQUERY = {};
  **/
 if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){return n<10?"0"+n:n}if(typeof Date.prototype.toJSON!=="function"){Date.prototype.toJSON=function(key){return this.getUTCFullYear()+"-"+f(this.getUTCMonth()+1)+"-"+f(this.getUTCDate())+"T"+f(this.getUTCHours())+":"+f(this.getUTCMinutes())+":"+f(this.getUTCSeconds())+"Z"};String.prototype.toJSON=Number.prototype.toJSON=Boolean.prototype.toJSON=function(key){return this.valueOf()}}var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,gap,indent,meta={"\b":"\\b","\t":"\\t","\n":"\\n","\f":"\\f","\r":"\\r",'"':'\\"',"\\":"\\\\"},rep;function quote(string){escapable.lastIndex=0;return escapable.test(string)?'"'+string.replace(escapable,function(a){var c=meta[a];return typeof c==="string"?c:"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})+'"':'"'+string+'"'}function str(key,holder){var i,k,v,length,mind=gap,partial,value=holder[key];if(value&&typeof value==="object"&&typeof value.toJSON==="function"){value=value.toJSON(key)}if(typeof rep==="function"){value=rep.call(holder,key,value)}switch(typeof value){case"string":return quote(value);case"number":return isFinite(value)?String(value):"null";case"boolean":case"null":return String(value);case"object":if(!value){return"null"}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==="[object Array]"){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||"null"}v=partial.length===0?"[]":gap?"[\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"]":"["+partial.join(",")+"]";gap=mind;return v}if(rep&&typeof rep==="object"){length=rep.length;for(i=0;i<length;i+=1){k=rep[i];if(typeof k==="string"){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}else{for(k in value){if(Object.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}v=partial.length===0?"{}":gap?"{\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"}":"{"+partial.join(",")+"}";gap=mind;return v}}if(typeof JSON.stringify!=="function"){JSON.stringify=function(value,replacer,space){var i;gap="";indent="";if(typeof space==="number"){for(i=0;i<space;i+=1){indent+=" "}}else{if(typeof space==="string"){indent=space}}rep=replacer;if(replacer&&typeof replacer!=="function"&&(typeof replacer!=="object"||typeof replacer.length!=="number")){throw new Error("JSON.stringify")}return str("",{"":value})}}if(typeof JSON.parse!=="function"){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==="object"){for(k in value){if(Object.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v}else{delete value[k]}}}}return reviver.call(holder,key,value)}cx.lastIndex=0;if(cx.test(text)){text=text.replace(cx,function(a){return"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})}if(/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,"@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,"]").replace(/(?:^|:|,)(?:\s*\[)+/g,""))){j=eval("("+text+")");return typeof reviver==="function"?walk({"":j},""):j}throw new SyntaxError("JSON.parse")}}}());
 (function() {
-  angular.module('schemaForm').config(function(schemaFormProvider, schemaFormDecoratorsProvider, sfPathProvider) {
+  angular.module('schemaForm').config(["schemaFormProvider", "schemaFormDecoratorsProvider", "sfPathProvider", function(schemaFormProvider, schemaFormDecoratorsProvider, sfPathProvider) {
     var datetimepicker, timepicker;
     timepicker = function(name, schema, options) {
       var f;
@@ -908,7 +908,7 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
     schemaFormDecoratorsProvider.createDirective('radios-inline', 'radios-inline.html');
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'radiobuttons', 'radio-buttons.html');
     return schemaFormDecoratorsProvider.createDirective('radiobuttons', 'radio-buttons.html');
-  });
+  }]);
 
 }).call(this);
 
@@ -1211,8 +1211,7 @@ angular
     };
 
 })
-.factory('halClient', [
-  '$http', '$q', 'data_cache', 'shared_header', 'UriTemplate', '$cookies', '$sessionStorage', '$localStorage', function(
+.factory('halClient', ["$http", "$q", "data_cache", "shared_header", "UriTemplate", "$cookies", "$sessionStorage", "$localStorage", function(
     $http, $q, data_cache, shared_header, UriTemplate, $cookies, $sessionStorage, $localStorage
   ){
 
@@ -1564,9 +1563,7 @@ angular
 ;
 
 angular.module('ngStorage', [])
-.factory('$fakeStorage', [
-  '$cookies',
-  function($cookies){
+.factory('$fakeStorage', ["$cookies", function($cookies){
     function FakeStorage() {};
     FakeStorage.prototype.setItem = function (key, value) {
       $cookies[key] = value;
@@ -1593,9 +1590,7 @@ angular.module('ngStorage', [])
     return new FakeStorage();
   }
 ])
-.factory('$localStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
+.factory('$localStorage', ["$window", "$fakeStorage", function($window, $fakeStorage) {
     function isStorageSupported(storageName) 
     {
       var testKey = 'test',
@@ -1637,9 +1632,7 @@ angular.module('ngStorage', [])
     }
   }
 ])
-.factory('$sessionStorage', [
-  '$window', '$fakeStorage',
-  function($window, $fakeStorage) {
+.factory('$sessionStorage', ["$window", "$fakeStorage", function($window, $fakeStorage) {
     function isStorageSupported(storageName) 
     {
       var testKey = 'test',
@@ -1683,7 +1676,7 @@ angular.module('ngStorage', [])
 ]);
 // THIS DOESN'T APPEAR TO BE USED?
 angular.module('ngLocalData', ['angular-hal']).
- factory('$localCache', ['halClient', '$q', '$sessionStorage', function( halClient, $q, $sessionStorage) {
+ factory('$localCache', ["halClient", "$q", "$sessionStorage", function( halClient, $q, $sessionStorage) {
     data = {};
 
     jsonData = function(data) {
@@ -1747,7 +1740,7 @@ angular.module('ngLocalData', ['angular-hal']).
     }
 
 }]).
- factory('$localData', ['$http', '$rootScope', '$sessionStorage', function($http, $rootScope, $sessionStorage) {
+ factory('$localData', ["$http", "$rootScope", "$sessionStorage", function($http, $rootScope, $sessionStorage) {
     function LocalDataFactory(name) {
       function LocalData(value){
         this.setStore(value);
@@ -1950,7 +1943,7 @@ function getURIparam( name ){
   * @property {boolean} selected_slot Range group selected slot
   * @property {boolean} hideHeading Range group hide heading
    */
-  angular.module('BB.Directives').directive('bbAccordionRangeGroup', function(PathSvc) {
+  angular.module('BB.Directives').directive('bbAccordionRangeGroup', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'AE',
       replace: false,
@@ -1968,9 +1961,9 @@ function getURIparam( name ){
         return PathSvc.directivePartial("_accordion_range_group");
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, SettingsService, DateTimeUtilitiesService) {
+  angular.module('BB.Controllers').controller('AccordionRangeGroup', ["$scope", "$attrs", "$rootScope", "$q", "FormDataStoreService", "SettingsService", "DateTimeUtilitiesService", function($scope, $attrs, $rootScope, $q, FormDataStoreService, SettingsService, DateTimeUtilitiesService) {
     var hasAvailability, setData, updateAvailability;
     $scope.controller = "public.controllers.AccordionRangeGroup";
     $scope.$watch('slots', function() {
@@ -2144,7 +2137,7 @@ function getURIparam( name ){
         return updateAvailability();
       }
     });
-  });
+  }]);
 
 }).call(this);
 
@@ -2188,7 +2181,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('AddressList', function($scope, $rootScope, $filter, $sniffer, AddressListService, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('AddressList', ["$scope", "$rootScope", "$filter", "$sniffer", "AddressListService", "FormDataStoreService", function($scope, $rootScope, $filter, $sniffer, AddressListService, FormDataStoreService) {
     $scope.controller = "public.controllers.AddressList";
     $scope.manual_postcode_entry = false;
     FormDataStoreService.init('AddressList', $scope, ['show_complete_address']);
@@ -2403,7 +2396,7 @@ function getURIparam( name ){
       $scope.postcode_submitted = false;
       return $scope.bb.address = $scope.addresses[0];
     });
-  });
+  }]);
 
 }).call(this);
 
@@ -2413,7 +2406,7 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: function($scope, $rootScope, $q, PurchaseService, BBModel, AlertService, ValidatorService, ClientService) {
+      controller: ["$scope", "$rootScope", "$q", "PurchaseService", "BBModel", "AlertService", "ValidatorService", "ClientService", function($scope, $rootScope, $q, PurchaseService, BBModel, AlertService, ValidatorService, ClientService) {
         var initialise, updateBooking;
         $scope.validator = ValidatorService;
         $rootScope.connection_started.then(function() {
@@ -2514,7 +2507,7 @@ function getURIparam( name ){
         return $scope.setReady = function() {
           return $scope.changeAttendees();
         };
-      }
+      }]
     };
   });
 
@@ -2549,7 +2542,7 @@ function getURIparam( name ){
   * @property {string} pusher_channel The pusher channel
   * @property {string} init_params Initialization of basic parameters
    */
-  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope) {
+  angular.module('BB.Directives').directive('bbWidget', ["PathSvc", "$http", "$log", "$templateCache", "$compile", "$q", "AppConfig", "$timeout", "$bbug", "$rootScope", function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope) {
 
     /***
     * @ngdoc method
@@ -2761,9 +2754,9 @@ function getURIparam( name ){
         })(this));
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('bbContentController', function($scope) {
+  angular.module('BB.Controllers').controller('bbContentController', ["$scope", function($scope) {
     $scope.controller = "public.controllers.bbContentController";
     return $scope.initPage = (function(_this) {
       return function() {
@@ -2771,9 +2764,9 @@ function getURIparam( name ){
         return $scope.setLoadingPage(false);
       };
     })(this);
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll, $localStorage) {
+  angular.module('BB.Controllers').controller('BBCtrl', ["$scope", "$location", "$rootScope", "halClient", "$window", "$http", "$localCache", "$q", "$timeout", "BasketService", "LoginService", "AlertService", "$sce", "$element", "$compile", "$sniffer", "$modal", "$log", "BBModel", "BBWidget", "SSOService", "ErrorService", "AppConfig", "QueryStringService", "QuestionService", "LocaleService", "PurchaseService", "$sessionStorage", "$bbug", "SettingsService", "UriTemplate", "$anchorScroll", "$localStorage", function($scope, $location, $rootScope, halClient, $window, $http, $localCache, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $modal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, $anchorScroll, $localStorage) {
     var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
@@ -3604,6 +3597,9 @@ function getURIparam( name ){
         current_item = _.find(basket.items, function(item) {
           return item.ref === current_item_ref;
         });
+        if (!current_item) {
+          current_item = _.last(basket.items);
+        }
         $scope.setBasketItem(current_item);
         if (!$scope.bb.current_item) {
           return $scope.clearBasketItem().then(function() {
@@ -3621,12 +3617,12 @@ function getURIparam( name ){
           $scope.bb.current_item.person = null;
           error_modal = $modal.open({
             templateUrl: $scope.getPartial('_error_modal'),
-            controller: function($scope, $modalInstance) {
+            controller: ["$scope", "$modalInstance", function($scope, $modalInstance) {
               $scope.message = ErrorService.getError('ITEM_NO_LONGER_AVAILABLE').msg;
               return $scope.ok = function() {
                 return $modalInstance.close();
               };
-            }
+            }]
           });
           return error_modal.result["finally"](function() {
             if ($scope.bb.nextSteps) {
@@ -4197,7 +4193,7 @@ function getURIparam( name ){
     return $scope.redirectTo = function(url) {
       return $window.location.href = url;
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -4226,10 +4222,10 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: function($scope, $rootScope, BasketService, $q) {
+      controller: ["$scope", "$rootScope", "BasketService", "$q", function($scope, $rootScope, BasketService, $q) {
         $scope.controller = "public.controllers.MiniBasket";
         return $scope.setUsingBasket(true);
-      }
+      }]
     };
   });
 
@@ -4242,7 +4238,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketList', function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, FormDataStoreService, LoginService) {
+  angular.module('BB.Controllers').controller('BasketList', ["$scope", "$element", "$attrs", "$rootScope", "BasketService", "$q", "AlertService", "FormDataStoreService", "LoginService", function($scope, $element, $attrs, $rootScope, BasketService, $q, AlertService, FormDataStoreService, LoginService) {
     var groupBasketItems;
     $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
@@ -4523,7 +4519,7 @@ function getURIparam( name ){
     return $scope.topUpWallet = function() {
       return $scope.decideNextPage("basket_wallet");
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -4549,7 +4545,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BasketSummary', function($scope) {
+  angular.module('BB.Controllers').controller('BasketSummary', ["$scope", function($scope) {
     $scope.controller = "public.controllers.BasketSummary";
     $scope.basket_items = $scope.bb.basket.items;
 
@@ -4566,7 +4562,7 @@ function getURIparam( name ){
         return $scope.decideNextPage();
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -4618,7 +4614,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('BulkPurchase', function($scope, $rootScope, BulkPurchaseService) {
+  angular.module('BB.Controllers').controller('BulkPurchase', ["$scope", "$rootScope", "BulkPurchaseService", function($scope, $rootScope, BulkPurchaseService) {
     $scope.controller = "public.controllers.BulkPurchase";
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
@@ -4670,7 +4666,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -4719,7 +4715,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('CategoryList', function($scope, $rootScope, CategoryService, $q, PageControllerService) {
+  angular.module('BB.Controllers').controller('CategoryList', ["$scope", "$rootScope", "CategoryService", "$q", "PageControllerService", function($scope, $rootScope, CategoryService, $q, PageControllerService) {
     $scope.controller = "public.controllers.CategoryList";
     $scope.notLoaded($scope);
     angular.extend(this, new PageControllerService($scope, $q));
@@ -4764,7 +4760,7 @@ function getURIparam( name ){
         return $scope.decideNextPage(route);
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -4804,7 +4800,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Checkout', function($scope, $rootScope, $attrs, BasketService, $q, $location, $window, $bbug, FormDataStoreService, $timeout) {
+  angular.module('BB.Controllers').controller('Checkout', ["$scope", "$rootScope", "$attrs", "BasketService", "$q", "$location", "$window", "$bbug", "FormDataStoreService", "$timeout", function($scope, $rootScope, $attrs, BasketService, $q, $location, $window, $bbug, FormDataStoreService, $timeout) {
     $scope.controller = "public.controllers.Checkout";
     $scope.notLoaded($scope);
     $scope.options = $scope.$eval($attrs.bbCheckout) || {};
@@ -4891,7 +4887,7 @@ function getURIparam( name ){
         }, 100);
       }, 2000);
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -4934,7 +4930,7 @@ function getURIparam( name ){
  */
 
 (function() {
-  angular.module('BB.Directives').directive('bbClientDetails', function($q, $templateCache, $compile) {
+  angular.module('BB.Directives').directive('bbClientDetails', ["$q", "$templateCache", "$compile", function($q, $templateCache, $compile) {
     return {
       restrict: 'AE',
       replace: true,
@@ -4958,9 +4954,9 @@ function getURIparam( name ){
         })(this));
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('ClientDetails', function($scope, $attrs, $rootScope, ClientDetailsService, ClientService, LoginService, BBModel, ValidatorService, QuestionService, AlertService) {
+  angular.module('BB.Controllers').controller('ClientDetails', ["$scope", "$attrs", "$rootScope", "ClientDetailsService", "ClientService", "LoginService", "BBModel", "ValidatorService", "QuestionService", "AlertService", function($scope, $attrs, $rootScope, ClientDetailsService, ClientService, LoginService, BBModel, ValidatorService, QuestionService, AlertService) {
     var handleError, options;
     $scope.controller = "public.controllers.ClientDetails";
     $scope.notLoaded($scope);
@@ -5222,7 +5218,7 @@ function getURIparam( name ){
       }
       return $scope.setLoaded($scope);
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -5361,7 +5357,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PostcodeLookup', function($scope, $rootScope, $q, ValidatorService, AlertService, $attrs) {
+  angular.module('BB.Controllers').controller('PostcodeLookup', ["$scope", "$rootScope", "$q", "ValidatorService", "AlertService", "$attrs", function($scope, $rootScope, $q, ValidatorService, AlertService, $attrs) {
     $scope.controller = "PostcodeLookup";
     angular.extend(this, new CompanyListBase($scope, $rootScope, $q, $attrs));
     $scope.validator = ValidatorService;
@@ -5443,7 +5439,7 @@ function getURIparam( name ){
         return distances[0];
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -5479,7 +5475,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('CustomBookingText', function($scope, $rootScope, CustomTextService, $q) {
+  angular.module('BB.Controllers').controller('CustomBookingText', ["$scope", "$rootScope", "CustomTextService", "$q", function($scope, $rootScope, CustomTextService, $q) {
     $scope.controller = "public.controllers.CustomBookingText";
     $scope.notLoaded($scope);
     return $rootScope.connection_started.then((function(_this) {
@@ -5494,7 +5490,7 @@ function getURIparam( name ){
     })(this), function(err) {
       return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
-  });
+  }]);
 
   angular.module('BB.Directives').directive('bbCustomConfirmationText', function() {
     return {
@@ -5505,7 +5501,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('CustomConfirmationText', function($scope, $rootScope, CustomTextService, $q, PageControllerService) {
+  angular.module('BB.Controllers').controller('CustomConfirmationText', ["$scope", "$rootScope", "CustomTextService", "$q", "PageControllerService", function($scope, $rootScope, CustomTextService, $q, PageControllerService) {
     $scope.controller = "public.controllers.CustomConfirmationText";
     $scope.notLoaded($scope);
     $rootScope.connection_started.then(function() {
@@ -5546,7 +5542,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -5583,7 +5579,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DayList', function($scope, $rootScope, $q, DayService, AlertService) {
+  angular.module('BB.Controllers').controller('DayList', ["$scope", "$rootScope", "$q", "DayService", "AlertService", function($scope, $rootScope, $q, DayService, AlertService) {
     $scope.controller = "public.controllers.DayList";
     $scope.notLoaded($scope);
     $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -5922,7 +5918,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -5958,7 +5954,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, DealService, $q, BBModel, AlertService, FormDataStoreService, ValidatorService, $modal) {
+  angular.module('BB.Controllers').controller('DealList', ["$scope", "$rootScope", "DealService", "$q", "BBModel", "AlertService", "FormDataStoreService", "ValidatorService", "$modal", function($scope, $rootScope, DealService, $q, BBModel, AlertService, FormDataStoreService, ValidatorService, $modal) {
     var ModalInstanceCtrl, init;
     $scope.controller = "public.controllers.DealList";
     FormDataStoreService.init('TimeRangeList', $scope, ['deals']);
@@ -6081,7 +6077,7 @@ function getURIparam( name ){
         });
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -6116,7 +6112,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, PageControllerService, $q, AlertService, $filter) {
+  angular.module('BB.Controllers').controller('DurationList', ["$scope", "$attrs", "$rootScope", "PageControllerService", "$q", "AlertService", "$filter", function($scope, $attrs, $rootScope, PageControllerService, $q, AlertService, $filter) {
     var options;
     $scope.controller = "public.controllers.DurationList";
     $scope.notLoaded($scope);
@@ -6230,7 +6226,7 @@ function getURIparam( name ){
     return $scope.$on("currentItemUpdate", function(event) {
       return $scope.loadData();
     });
-  });
+  }]);
 
 }).call(this);
 
@@ -6265,7 +6261,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('Event', ["$scope", "$attrs", "$rootScope", "EventService", "$q", "PageControllerService", "BBModel", "ValidatorService", "FormDataStoreService", function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService) {
     var init, initImage, initTickets, ticket_refs;
     $scope.controller = "public.controllers.Event";
     $scope.notLoaded($scope);
@@ -6523,7 +6519,7 @@ function getURIparam( name ){
         return $scope.event.updatePrice();
       }, true);
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -6568,7 +6564,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('EventGroupList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, halClient) {
+  angular.module('BB.Controllers').controller('EventGroupList', ["$scope", "$rootScope", "$q", "$attrs", "ItemService", "FormDataStoreService", "ValidatorService", "PageControllerService", "halClient", function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, halClient) {
     var setEventGroupItem;
     $scope.controller = "public.controllers.EventGroupList";
     FormDataStoreService.init('EventGroupList', $scope, ['event_group']);
@@ -6710,7 +6706,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -6757,7 +6753,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout) {
+  angular.module('BB.Controllers').controller('EventList', ["$scope", "$rootScope", "EventService", "EventChainService", "$q", "PageControllerService", "FormDataStoreService", "$filter", "PaginationService", "$timeout", function($scope, $rootScope, EventService, EventChainService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout) {
     var buildDynamicFilters, sort;
     $scope.controller = "public.controllers.EventList";
     $scope.notLoaded($scope);
@@ -7333,7 +7329,7 @@ function getURIparam( name ){
       PaginationService.update($scope.pagination, $scope.filtered_items.length);
       return $rootScope.$broadcast("page:changed");
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -7373,7 +7369,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('GetAvailability', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, halClient) {
+  angular.module('BB.Controllers').controller('GetAvailability', ["$scope", "$element", "$attrs", "$rootScope", "$q", "TimeService", "AlertService", "BBModel", "halClient", function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, halClient) {
 
     /***
     * @ngdoc method
@@ -7418,7 +7414,7 @@ function getURIparam( name ){
         });
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -7448,7 +7444,7 @@ function getURIparam( name ){
   * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  angular.module('BB.Directives').directive('bbItemDetails', function($q, $templateCache, $compile) {
+  angular.module('BB.Directives').directive('bbItemDetails', ["$q", "$templateCache", "$compile", function($q, $templateCache, $compile) {
     return {
       restrict: 'AE',
       replace: true,
@@ -7483,9 +7479,9 @@ function getURIparam( name ){
         })(this));
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, ItemDetailsService, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, QuestionService, $modal, $location, $translate, SettingsService, PurchaseService) {
+  angular.module('BB.Controllers').controller('ItemDetails', ["$scope", "$attrs", "$rootScope", "ItemDetailsService", "PurchaseBookingService", "AlertService", "BBModel", "FormDataStoreService", "ValidatorService", "QuestionService", "$modal", "$location", "$translate", "SettingsService", "PurchaseService", function($scope, $attrs, $rootScope, ItemDetailsService, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, QuestionService, $modal, $location, $translate, SettingsService, PurchaseService) {
     var confirming, setItemDetails;
     $scope.controller = "public.controllers.ItemDetails";
     $scope.suppress_basket_update = $attrs.bbSuppressBasketUpdate != null;
@@ -7840,7 +7836,7 @@ function getURIparam( name ){
     return $scope.editItem = function() {
       return $scope.item_details_updated = false;
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -7879,7 +7875,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location, AlertService) {
+  angular.module('BB.Controllers').controller('Login', ["$scope", "$rootScope", "LoginService", "$q", "ValidatorService", "BBModel", "$location", "AlertService", function($scope, $rootScope, LoginService, $q, ValidatorService, BBModel, $location, AlertService) {
     $scope.controller = "public.controllers.Login";
     $scope.validator = ValidatorService;
     $scope.login_form = {};
@@ -8021,7 +8017,7 @@ function getURIparam( name ){
         return AlertService.raise('PASSWORD_MISMATCH');
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -8068,7 +8064,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, $q, $window, $timeout, SettingsService) {
+  angular.module('BB.Controllers').controller('MapCtrl', ["$scope", "$element", "$attrs", "$rootScope", "AlertService", "FormDataStoreService", "$q", "$window", "$timeout", "SettingsService", function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, $q, $window, $timeout, SettingsService) {
     var cc, checkDataStore, du, filterByService, geolocateFail, haversine, mapInit, map_ready_def, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
     $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
@@ -8738,12 +8734,12 @@ function getURIparam( name ){
       $scope.reverse_geocode_address = null;
       return $scope.address = null;
     });
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbMembershipLevels', function($rootScope, MembershipLevelsService) {
+  angular.module('BB.Directives').directive('bbMembershipLevels', ["$rootScope", "MembershipLevelsService", function($rootScope, MembershipLevelsService) {
     var controller;
     ({
       restrict: 'AE',
@@ -8805,7 +8801,7 @@ function getURIparam( name ){
         });
       };
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -8846,7 +8842,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('MultiServiceSelect', function($scope, $rootScope, $q, $attrs, BBModel, AlertService, CategoryService, FormDataStoreService, $modal) {
+  angular.module('BB.Controllers').controller('MultiServiceSelect', ["$scope", "$rootScope", "$q", "$attrs", "BBModel", "AlertService", "CategoryService", "FormDataStoreService", "$modal", function($scope, $rootScope, $q, $attrs, BBModel, AlertService, CategoryService, FormDataStoreService, $modal) {
     var checkItemDefaults, initialise, initialiseCategories;
     FormDataStoreService.init('MultiServiceSelect', $scope, ['selected_category_name']);
     $scope.options = $scope.$eval($attrs.bbMultiServiceSelect) || {};
@@ -9223,7 +9219,7 @@ function getURIparam( name ){
         modalInstance = $modal.open({
           templateUrl: $scope.getPartial('_select_duration_modal'),
           scope: $scope,
-          controller: function($scope, $modalInstance, service) {
+          controller: ["$scope", "$modalInstance", "service", function($scope, $modalInstance, service) {
             $scope.durations = service.durations;
             $scope.duration = $scope.durations[0];
             $scope.service = service;
@@ -9236,7 +9232,7 @@ function getURIparam( name ){
                 duration: $scope.duration
               });
             };
-          },
+          }],
           resolve: {
             service: function() {
               return service;
@@ -9248,7 +9244,7 @@ function getURIparam( name ){
         });
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -9294,7 +9290,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeListStackedController', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, PersonService, PurchaseService, DateTimeUtilitiesService) {
+  angular.module('BB.Controllers').controller('TimeRangeListStackedController', ["$scope", "$element", "$attrs", "$rootScope", "$q", "TimeService", "AlertService", "BBModel", "FormDataStoreService", "PersonService", "PurchaseService", "DateTimeUtilitiesService", function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, PersonService, PurchaseService, DateTimeUtilitiesService) {
     var isSubtractValid, setEnabledSlots, setTimeRange, spliceExistingDateTimes, updateHideStatus;
     $scope.controller = "public.controllers.TimeRangeListStacked";
     FormDataStoreService.init('TimeRangeListStacked', $scope, ['selected_slot', 'original_start_date', 'start_at_week_start']);
@@ -9857,7 +9853,7 @@ function getURIparam( name ){
         do_not_route: true
       });
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -9911,7 +9907,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PackageItem', function($scope, $rootScope, PackageItemService) {
+  angular.module('BB.Controllers').controller('PackageItem', ["$scope", "$rootScope", "PackageItemService", function($scope, $rootScope, PackageItemService) {
     $scope.controller = "public.controllers.PackageItem";
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
@@ -9983,7 +9979,7 @@ function getURIparam( name ){
         return false;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -10021,7 +10017,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PackagePicker', function($scope, $rootScope, $q, TimeService, BBModel) {
+  angular.module('BB.Controllers').controller('PackagePicker', ["$scope", "$rootScope", "$q", "TimeService", "BBModel", function($scope, $rootScope, $q, TimeService, BBModel) {
     $scope.controller = "public.controllers.PackagePicker";
     $scope.sel_date = moment().add(1, 'days');
     $scope.selected_date = $scope.sel_date.toDate();
@@ -10234,7 +10230,7 @@ function getURIparam( name ){
     return $scope.confirm = (function(_this) {
       return function() {};
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -10393,7 +10389,7 @@ function getURIparam( name ){
   * @property {array} total The total pay_form price
   * @property {array} card The card is used to payment
    */
-  angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location, SettingsService) {
+  angular.module('BB.Directives').directive('bbPayForm', ["$window", "$timeout", "$sce", "$http", "$compile", "$document", "$location", "SettingsService", function($window, $timeout, $sce, $http, $compile, $document, $location, SettingsService) {
 
     /***
     * @ngdoc method
@@ -10506,9 +10502,9 @@ function getURIparam( name ){
       controller: 'PayForm',
       link: linker
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('PayForm', function($scope, $location) {
+  angular.module('BB.Controllers').controller('PayForm', ["$scope", "$location", function($scope, $location) {
     var sendSubmittingEvent, submitPaymentForm;
     $scope.controller = "public.controllers.PayForm";
 
@@ -10600,7 +10596,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -10625,7 +10621,7 @@ function getURIparam( name ){
   *
   * @property {array} total The total of payment
    */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+  angular.module('BB.Directives').directive('bbPayment', ["$window", "$location", "$sce", "SettingsService", "AlertService", function($window, $location, $sce, SettingsService, AlertService) {
     return {
       restrict: 'AE',
       replace: true,
@@ -10703,9 +10699,9 @@ function getURIparam( name ){
         })(this), false);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
+  angular.module('BB.Controllers').controller('Payment', ["$scope", "$rootScope", "$q", "$location", "$window", "$sce", "$log", "$timeout", function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout) {
     $scope.controller = "public.controllers.Payment";
     $scope.notLoaded($scope);
     if ($scope.purchase) {
@@ -10763,7 +10759,7 @@ function getURIparam( name ){
     return $scope.error = function(message) {
       return $log.warn("Payment Failure: " + message);
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -10811,7 +10807,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PersonList', function($scope, $rootScope, PageControllerService, PersonService, ItemService, $q, BBModel, PersonModel, FormDataStoreService) {
+  angular.module('BB.Controllers').controller('PersonList', ["$scope", "$rootScope", "PageControllerService", "PersonService", "ItemService", "$q", "BBModel", "PersonModel", "FormDataStoreService", function($scope, $rootScope, PageControllerService, PersonService, ItemService, $q, BBModel, PersonModel, FormDataStoreService) {
     var getItemFromPerson, loadData, setPerson;
     $scope.controller = "public.controllers.PersonList";
     $scope.notLoaded($scope);
@@ -11037,7 +11033,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -11082,7 +11078,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ProductList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, halClient) {
+  angular.module('BB.Controllers').controller('ProductList', ["$scope", "$rootScope", "$q", "$attrs", "ItemService", "FormDataStoreService", "ValidatorService", "PageControllerService", "halClient", function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, halClient) {
     $scope.controller = "public.controllers.ProductList";
     $scope.notLoaded($scope);
     $scope.validator = ValidatorService;
@@ -11123,7 +11119,7 @@ function getURIparam( name ){
         return true;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -11157,7 +11153,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PurchaseTotal', function($scope, $rootScope, $window, PurchaseTotalService, $q) {
+  angular.module('BB.Controllers').controller('PurchaseTotal', ["$scope", "$rootScope", "$window", "PurchaseTotalService", "$q", function($scope, $rootScope, $window, PurchaseTotalService, $q) {
     $scope.controller = "public.controllers.PurchaseTotal";
     angular.extend(this, new $window.PageController($scope, $q));
 
@@ -11183,7 +11179,7 @@ function getURIparam( name ){
         });
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -11232,7 +11228,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ResourceList', function($scope, $rootScope, $attrs, PageControllerService, ResourceService, ItemService, $q, BBModel, ResourceModel) {
+  angular.module('BB.Controllers').controller('ResourceList', ["$scope", "$rootScope", "$attrs", "PageControllerService", "ResourceService", "ItemService", "$q", "BBModel", "ResourceModel", function($scope, $rootScope, $attrs, PageControllerService, ResourceService, ItemService, $q, BBModel, ResourceModel) {
     var getItemFromResource, loadData;
     $scope.controller = "public.controllers.ResourceList";
     $scope.notLoaded($scope);
@@ -11426,7 +11422,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -11481,7 +11477,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ServiceList', function($scope, $rootScope, $q, $attrs, $modal, $sce, ItemService, FormDataStoreService, ValidatorService, PageControllerService, halClient, AlertService, ErrorService, $filter, CategoryService) {
+  angular.module('BB.Controllers').controller('ServiceList', ["$scope", "$rootScope", "$q", "$attrs", "$modal", "$sce", "ItemService", "FormDataStoreService", "ValidatorService", "PageControllerService", "halClient", "AlertService", "ErrorService", "$filter", "CategoryService", function($scope, $rootScope, $q, $attrs, $modal, $sce, ItemService, FormDataStoreService, ValidatorService, PageControllerService, halClient, AlertService, ErrorService, $filter, CategoryService) {
     var setServiceItem, setServicesDisplayName;
     $scope.controller = "public.controllers.ServiceList";
     FormDataStoreService.init('ServiceList', $scope, ['service']);
@@ -11771,12 +11767,12 @@ function getURIparam( name ){
       var error_modal;
       return error_modal = $modal.open({
         templateUrl: $scope.getPartial('_error_modal'),
-        controller: function($scope, $modalInstance) {
+        controller: ["$scope", "$modalInstance", function($scope, $modalInstance) {
           $scope.message = ErrorService.getError('GENERIC').msg;
           return $scope.ok = function() {
             return $modalInstance.close();
           };
-        }
+        }]
       });
     };
 
@@ -11858,7 +11854,7 @@ function getURIparam( name ){
     return $scope.filterChanged = function() {
       return $scope.filtered_items = $filter('filter')($scope.items, $scope.filterFunction);
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -11905,7 +11901,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeSlots', function($scope, $rootScope, $q, $attrs, SlotService, FormDataStoreService, ValidatorService, PageControllerService, halClient, BBModel) {
+  angular.module('BB.Controllers').controller('TimeSlots', ["$scope", "$rootScope", "$q", "$attrs", "SlotService", "FormDataStoreService", "ValidatorService", "PageControllerService", "halClient", "BBModel", function($scope, $rootScope, $q, $attrs, SlotService, FormDataStoreService, ValidatorService, PageControllerService, halClient, BBModel) {
     var setItem;
     $scope.controller = "public.controllers.SlotList";
     $scope.notLoaded($scope);
@@ -11955,7 +11951,7 @@ function getURIparam( name ){
         return true;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -11990,7 +11986,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('SpaceList', function($scope, $rootScope, ServiceService, SpaceService, $q) {
+  angular.module('BB.Controllers').controller('SpaceList', ["$scope", "$rootScope", "ServiceService", "SpaceService", "$q", function($scope, $rootScope, ServiceService, SpaceService, $q) {
     $scope.controller = "public.controllers.SpaceList";
     $rootScope.connection_started.then((function(_this) {
       return function() {
@@ -12039,7 +12035,7 @@ function getURIparam( name ){
         return $scope.decide_next_page(route);
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -12066,7 +12062,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Summary', function($scope, $rootScope, ClientService, $q) {
+  angular.module('BB.Controllers').controller('Summary', ["$scope", "$rootScope", "ClientService", "$q", function($scope, $rootScope, ClientService, $q) {
     $scope.controller = "public.controllers.Summary";
     $rootScope.connection_started.then((function(_this) {
       return function() {
@@ -12106,7 +12102,7 @@ function getURIparam( name ){
         });
       };
     })(this);
-  });
+  }]);
 
 }).call(this);
 
@@ -12144,7 +12140,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('SurveyQuestions', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, ValidatorService, PurchaseBookingService, $sessionStorage) {
+  angular.module('BB.Controllers').controller('SurveyQuestions', ["$scope", "$rootScope", "CompanyService", "PurchaseService", "ClientService", "$modal", "$location", "$timeout", "BBWidget", "BBModel", "$q", "QueryStringService", "SSOService", "AlertService", "LoginService", "$window", "ServiceService", "ValidatorService", "PurchaseBookingService", "$sessionStorage", function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, ValidatorService, PurchaseBookingService, $sessionStorage) {
     var getBookingAndSurvey, getBookingRef, getMember, getPurchaseID, init, setPurchaseCompany, showLoginError;
     $scope.controller = "SurveyQuestions";
     $scope.completed = false;
@@ -12551,7 +12547,7 @@ function getURIparam( name ){
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -12591,7 +12587,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, PageControllerService, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeList', ["$attrs", "$element", "$scope", "$rootScope", "$q", "TimeService", "AlertService", "BBModel", "DateTimeUtilitiesService", "PageControllerService", "ErrorService", function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, PageControllerService, ErrorService) {
     var checkRequestedSlots;
     $scope.controller = "public.controllers.TimeList";
     $scope.notLoaded($scope);
@@ -12920,7 +12916,7 @@ function getURIparam( name ){
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -12951,7 +12947,7 @@ function getURIparam( name ){
   * @property {date} start_at_week_start The start at week start
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  angular.module('BB.Directives').directive('bbTimeRanges', function($q, $templateCache, $compile) {
+  angular.module('BB.Directives').directive('bbTimeRanges', ["$q", "$templateCache", "$compile", function($q, $templateCache, $compile) {
     return {
       restrict: 'AE',
       replace: true,
@@ -12979,9 +12975,9 @@ function getURIparam( name ){
         })(this));
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize) {
+  angular.module('BB.Controllers').controller('TimeRangeList', ["$scope", "$element", "$attrs", "$rootScope", "$q", "TimeService", "AlertService", "BBModel", "FormDataStoreService", "DateTimeUtilitiesService", "SlotDates", "ViewportSize", function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize) {
     var currentPostcode, isSubtractValid, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -13546,7 +13542,7 @@ function getURIparam( name ){
         return $scope.highlightSlot(day, slot);
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -13582,7 +13578,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('Total', function($scope, $rootScope, $q, $location, $window, PurchaseService, QueryStringService) {
+  angular.module('BB.Controllers').controller('Total', ["$scope", "$rootScope", "$q", "$location", "$window", "PurchaseService", "QueryStringService", function($scope, $rootScope, $q, $location, $window, PurchaseService, QueryStringService) {
     $scope.controller = "public.controllers.Total";
     $scope.notLoaded($scope);
     $rootScope.connection_started.then((function(_this) {
@@ -13627,6 +13623,526 @@ function getURIparam( name ){
         return true;
       };
     })(this);
+  }]);
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  angular.module('BB.Filters').filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  angular.module('BB.Filters').filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  angular.module('BB.Filters').filter('interpolate', ["version", function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  angular.module('BB.Filters').filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time', ["$window", function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  }]);
+
+  angular.module('BB.Filters').filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('currency', ["$filter", function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  }]);
+
+  angular.module('BB.Filters').filter('icurrency', ["$window", "SettingsService", function($window, SettingsService) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = SettingsService.getCurrency());
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  }]);
+
+  angular.module('BB.Filters').filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('pretty_price', ["$filter", function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  }]);
+
+  angular.module('BB.Filters').filter('ipretty_price', ["$window", "SettingsService", function($window, SettingsService) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[SettingsService.getCurrency()];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  }]);
+
+  angular.module('BB.Filters').filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, separator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      separator = options && angular.isString(options.separator) ? options.separator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        str = val + " " + min_string;
+        if (val > 1) {
+          str += "s";
+        }
+        return str;
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (separator.length > 0) {
+          str += " " + separator;
+        }
+        str += " " + mins + " " + min_string;
+        if (mins > 1) {
+          str += "s";
+        }
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('twelve_hour_time', ["$window", function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, separator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      separator = options && options.separator ? options.separator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + separator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  }]);
+
+  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  angular.module('BB.Filters').filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  angular.module('BB.Filters').filter('local_phone_number', ["SettingsService", "ValidatorService", function(SettingsService, ValidatorService) {
+    return function(phone_number) {
+      var cc;
+      if (!phone_number) {
+        return;
+      }
+      cc = SettingsService.getCountryCode();
+      switch (cc) {
+        case "gb":
+          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
+        case "us":
+          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
+        default:
+          return phone_number;
+      }
+    };
+  }]);
+
+  angular.module('BB.Filters').filter('datetime', ["SettingsService", function(SettingsService) {
+    var hardcoded_formats;
+    hardcoded_formats = {
+      datetime: {
+        us: 'MM/DD/YYYY, h:mm a',
+        uk: 'DD/MM/YYYY, HH:mm'
+      },
+      date: {
+        us: 'MM/DD/YYYY',
+        uk: 'DD/MM/YYYY'
+      },
+      time: {
+        us: 'h:mm a',
+        uk: 'HH:mm'
+      }
+    };
+    return function(date, format, show_time_zone) {
+      var cc, new_date;
+      if (format == null) {
+        format = "LLL";
+      }
+      if (show_time_zone == null) {
+        show_time_zone = false;
+      }
+      if (hardcoded_formats[format]) {
+        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
+        format = hardcoded_formats[format][cc];
+      }
+      if (date && moment.isMoment(date)) {
+        new_date = date.clone();
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          new_date.tz(SettingsService.getDisplayTimeZone());
+        }
+        if (show_time_zone) {
+          format += ' zz';
+        }
+        return new_date.format(format);
+      }
+    };
+  }]);
+
+  angular.module('BB.Filters').filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  angular.module('BB.Filters').filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+  angular.module('BB.Filters').filter('nl2br', function() {
+    return function(str) {
+      if (str) {
+        return str.replace(/\n/g, '<br/>');
+      }
+    };
+  });
+
+  app.filter('clearTimezone', function() {
+    return function(val, offset) {
+      if (val !== null && val.length > 19) {
+        return val.substring(0, 19);
+      }
+      return val;
+    };
+  });
+
+  app.filter("format_answer", function() {
+    return function(answer) {
+      if (typeof answer === "boolean") {
+        answer = answer === true ? "Yes" : "No";
+      } else if (moment(answer, 'YYYY-MM-DD', true).isValid()) {
+        answer = moment(answer).format("D MMMM YYYY");
+      }
+      return answer;
+    };
   });
 
 }).call(this);
@@ -13717,7 +14233,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
+  angular.module('BB.Directives').directive('bbBasket', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'A',
       replace: true,
@@ -13730,7 +14246,7 @@ angular.module('BB.Directives')
         }
       },
       controllerAs: 'BasketCtrl',
-      controller: function($scope, $modal, BasketService) {
+      controller: ["$scope", "$modal", "BasketService", function($scope, $modal, BasketService) {
         var BasketInstanceCtrl;
         $scope.setUsingBasket(true);
         this.empty = function() {
@@ -13775,20 +14291,20 @@ angular.module('BB.Directives')
             }
           }
         });
-      },
+      }],
       link: function(scope, element, attrs) {
         return element.bind('click', function(e) {
           return e.preventDefault();
         });
       }
     };
-  });
+  }]);
 
   angular.module('BB.Directives').directive('bbMinSpend', function() {
     return {
       restrict: 'A',
       scope: true,
-      controller: function($scope, $element, $attrs, AlertService, $filter) {
+      controller: ["$scope", "$element", "$attrs", "AlertService", "$filter", function($scope, $element, $attrs, AlertService, $filter) {
         var checkMinSpend, options;
         options = $scope.$eval($attrs.bbMinSpend || {});
         $scope.min_spend = options.min_spend || 0;
@@ -13815,7 +14331,7 @@ angular.module('BB.Directives')
             return false;
           }
         };
-      }
+      }]
     };
   });
 
@@ -13840,7 +14356,7 @@ angular.module('BB.Directives')
  */
 
 (function() {
-  angular.module('BB.Directives').directive('bbDateTimePicker', function(PathSvc) {
+  angular.module('BB.Directives').directive('bbDateTimePicker', ["PathSvc", function(PathSvc) {
     return {
       scope: {
         date: '=',
@@ -13853,7 +14369,7 @@ angular.module('BB.Directives')
       },
       restrict: 'A',
       templateUrl: 'bb_date_time_picker.html',
-      controller: function($scope, $filter, $timeout, GeneralOptions) {
+      controller: ["$scope", "$filter", "$timeout", "GeneralOptions", function($scope, $filter, $timeout, GeneralOptions) {
         var filterDate;
         if ($scope.format == null) {
           $scope.format = 'dd/MM/yyyy';
@@ -13949,15 +14465,15 @@ angular.module('BB.Directives')
         };
         $scope.minDateClean = filterDate($scope.minDate);
         return $scope.maxDateClean = filterDate($scope.maxDate);
-      }
+      }]
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
+  angular.module('BB.Directives').directive('bbBreadcrumb', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'A',
       replace: true,
@@ -13972,9 +14488,9 @@ angular.module('BB.Directives')
       },
       link: function(scope) {}
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('Breadcrumbs', function($scope) {
+  angular.module('BB.Controllers').controller('Breadcrumbs', ["$scope", function($scope) {
     var atDisablePoint, currentStep, lastStep, loadStep;
     loadStep = $scope.loadStep;
     $scope.steps = $scope.bb.steps;
@@ -14003,7 +14519,7 @@ angular.module('BB.Directives')
         return false;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -14013,24 +14529,24 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive('bbContentNew', function(PathSvc) {
+  app.directive('bbContentNew', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'A',
       replace: true,
       scope: true,
       templateUrl: PathSvc.directivePartial("content_main"),
-      controller: function($scope) {
+      controller: ["$scope", function($scope) {
         $scope.initPage = function() {
           return $scope.$eval('setPageLoaded()');
         };
-      }
+      }]
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', ["$parse", "$document", "$timeout", "$bbug", function($parse, $document, $timeout, $bbug) {
     var e, error, ie8orLess;
     ie8orLess = false;
     try {
@@ -14159,12 +14675,12 @@ angular.module('BB.Directives')
         return f();
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, $window) {
+  angular.module("BB.Directives").directive("bbFbLogin", ["LoginService", "$rootScope", "AlertService", "$window", function(LoginService, $rootScope, AlertService, $window) {
     return {
       restrict: 'A',
       scope: true,
@@ -14233,7 +14749,7 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -14273,7 +14789,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Controllers').controller('FileUpload', function($scope, Upload) {
+  angular.module('BB.Controllers').controller('FileUpload', ["$scope", "Upload", function($scope, Upload) {
     $scope.controller = "public.controllers.FileUpload";
 
     /***
@@ -14330,20 +14846,20 @@ angular.module('BB.Directives')
         return file.upload.then(onSuccess, onError, onProgress);
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbFormDataStore', function(FormDataStoreService) {
+  angular.module('BB.Directives').directive('bbFormDataStore', ["FormDataStoreService", function(FormDataStoreService) {
     return {
       require: '?bbWidget',
       link: function(scope) {
         return FormDataStoreService.register(scope);
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -14369,7 +14885,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('ngValidInclude', function($compile) {
+  app.directive('ngValidInclude', ["$compile", function($compile) {
     return {
       link: function(scope, element, attr) {
         return scope[attr.watchValue].then((function(_this) {
@@ -14381,9 +14897,9 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
-  app.directive('ngDelayed', function($compile) {
+  app.directive('ngDelayed', ["$compile", function($compile) {
     return {
       link: function(scope, element, attr) {
         return scope[attr.ngDelayedWatch].then((function(_this) {
@@ -14400,13 +14916,12 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
   app.directive('ngInitial', function() {
     return {
       restrict: 'A',
-      controller: [
-        '$scope', '$element', '$attrs', '$parse', function($scope, $element, $attrs, $parse) {
+      controller: ["$scope", "$element", "$attrs", "$parse", function($scope, $element, $attrs, $parse) {
           var getter, setter, val;
           val = $attrs.ngInitial || $attrs.value;
           getter = $parse($attrs.ngModel);
@@ -14422,7 +14937,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbPrintPage', function($window, $timeout) {
+  app.directive('bbPrintPage', ["$window", "$timeout", function($window, $timeout) {
     return {
       restrict: 'A',
       link: function(scope, element, attr) {
@@ -14437,9 +14952,9 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
-  app.directive('bbInclude', function($compile, $rootScope) {
+  app.directive('bbInclude', ["$compile", "$rootScope", function($compile, $rootScope) {
     return {
       link: function(scope, element, attr) {
         var track_page;
@@ -14458,9 +14973,9 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
-  app.directive('bbRaiseAlertWhenInvalid', function($compile) {
+  app.directive('bbRaiseAlertWhenInvalid', ["$compile", function($compile) {
     return {
       require: '^form',
       link: function(scope, element, attr, ctrl) {
@@ -14472,9 +14987,9 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
-  app.directive('bbHeader', function($compile) {
+  app.directive('bbHeader', ["$compile", function($compile) {
     return {
       link: function(scope, element, attr) {
         scope.bb.waitForRoutes();
@@ -14489,7 +15004,7 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
   app.directive('bbDate', function() {
     return {
@@ -14553,7 +15068,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbDebounce', function($timeout) {
+  app.directive('bbDebounce', ["$timeout", function($timeout) {
     return {
       restrict: 'A',
       link: function(scope, element, attrs) {
@@ -14574,9 +15089,9 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
-  app.directive('bbLocalNumber', function($filter) {
+  app.directive('bbLocalNumber', ["$filter", function($filter) {
     return {
       restrict: 'A',
       scope: {},
@@ -14601,7 +15116,7 @@ angular.module('BB.Directives')
         return ctrl.$formatters.push(prettyifyNumber);
       }
     };
-  });
+  }]);
 
   app.directive('bbPadWithZeros', function() {
     return {
@@ -14628,10 +15143,10 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbFormResettable', function($parse) {
+  app.directive('bbFormResettable', ["$parse", function($parse) {
     return {
       restrict: 'A',
-      controller: function($scope, $element, $attrs) {
+      controller: ["$scope", "$element", "$attrs", function($scope, $element, $attrs) {
         $scope.inputs = [];
         $scope.resetForm = function(options) {
           var i, input, len, ref, results;
@@ -14657,9 +15172,9 @@ angular.module('BB.Directives')
             });
           }
         };
-      }
+      }]
     };
-  });
+  }]);
 
   app.directive('bbResettable', function() {
     return {
@@ -14674,7 +15189,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbDateSplit', function($parse) {
+  app.directive('bbDateSplit', ["$parse", function($parse) {
     return {
       restrict: 'A',
       require: ['ngModel'],
@@ -14714,7 +15229,7 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
   app.directive('bbCommPref', function() {
     return {
@@ -14741,7 +15256,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbCountTicketTypes', function($rootScope) {
+  app.directive('bbCountTicketTypes', ["$rootScope", function($rootScope) {
     return {
       restrict: 'A',
       scope: false,
@@ -14772,7 +15287,7 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
   app.directive('bbCapitaliseFirstLetter', function() {
     return {
@@ -14794,7 +15309,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbApiUrl', function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
+  app.directive('bbApiUrl', ["$rootScope", "$compile", "$sniffer", "$timeout", "$window", "$location", function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
     return {
       restrict: 'A',
       scope: {
@@ -14833,9 +15348,9 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
-  app.directive('bbPriceFilter', function(PathSvc) {
+  app.directive('bbPriceFilter', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'AE',
       replace: true,
@@ -14844,7 +15359,7 @@ angular.module('BB.Directives')
       templateUrl: function(element, attrs) {
         return PathSvc.directivePartial("_price_filter");
       },
-      controller: function($scope, $attrs) {
+      controller: ["$scope", "$attrs", function($scope, $attrs) {
         var setPricefilter, suitable_max;
         $scope.$watch('items', function(new_val, old_val) {
           if (new_val) {
@@ -14897,9 +15412,9 @@ angular.module('BB.Directives')
             return $scope.filterChanged();
           }
         });
-      }
+      }]
     };
-  });
+  }]);
 
   angular.module('BB.Directives').directive('bbBookingExport', function() {
     return {
@@ -14925,7 +15440,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Directives').directive('bbDynamicFooter', function($timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbDynamicFooter', ["$timeout", "$bbug", function($timeout, $bbug) {
     return function(scope, el, attrs) {
       scope.$on("page:loaded", function() {
         return $bbug('.content').css('height', 'auto');
@@ -14950,7 +15465,7 @@ angular.module('BB.Directives')
         return scope.setContentHeight();
       });
     };
-  });
+  }]);
 
 
   /***
@@ -14965,7 +15480,7 @@ angular.module('BB.Directives')
   * <input type='text' bb-blur-on-return></div>
    */
 
-  angular.module('BB.Directives').directive('bbBlurOnReturn', function($timeout) {
+  angular.module('BB.Directives').directive('bbBlurOnReturn', ["$timeout", function($timeout) {
     return {
       restrict: 'A',
       require: 'ngModel',
@@ -14983,7 +15498,7 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -14993,7 +15508,7 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive('bbQuestionLine', function($compile) {
+  app.directive('bbQuestionLine', ["$compile", function($compile) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15020,9 +15535,9 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
-  app.directive('bbQuestion', function($compile, $timeout) {
+  app.directive('bbQuestion', ["$compile", "$timeout", function($compile, $timeout) {
     return {
       priority: 0,
       replace: true,
@@ -15124,7 +15639,7 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
   app.directive('bbQuestionSetup', function() {
     return {
@@ -15156,8 +15671,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive("bbFocus", [
-    function() {
+  app.directive("bbFocus", function() {
       var FOCUS_CLASS;
       FOCUS_CLASS = "bb-focused";
       return {
@@ -15178,10 +15692,9 @@ angular.module('BB.Directives')
           });
         }
       };
-    }
-  ]);
+    });
 
-  app.directive('bbCurrencyField', function($filter) {
+  app.directive('bbCurrencyField', ["$filter", function($filter) {
     return {
       restrict: 'A',
       require: 'ngModel',
@@ -15197,7 +15710,7 @@ angular.module('BB.Directives')
         return ctrl.$parsers.push(convertToInteger);
       }
     };
-  });
+  }]);
 
   isEmpty = function(value) {
     return angular.isUndefined(value) || value === "" || value === null || value !== value;
@@ -15350,10 +15863,10 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbInputGroupManager', function(ValidatorService) {
+  app.directive('bbInputGroupManager', ["ValidatorService", function(ValidatorService) {
     return {
       restrict: 'A',
-      controller: function($scope, $element, $attrs) {
+      controller: ["$scope", "$element", "$attrs", function($scope, $element, $attrs) {
         $scope.input_manger = {
           input_groups: {},
           inputs: [],
@@ -15399,9 +15912,9 @@ angular.module('BB.Directives')
           }
           return results;
         });
-      }
+      }]
     };
-  });
+  }]);
 
   app.directive("bbInputGroup", function() {
     return {
@@ -15421,7 +15934,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.directive('bbQuestionLabel', function($compile) {
+  app.directive('bbQuestionLabel', ["$compile", function($compile) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15436,9 +15949,9 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
-  app.directive('bbQuestionLink', function($compile) {
+  app.directive('bbQuestionLink', ["$compile", function($compile) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15467,9 +15980,9 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
-  app.directive('bbQuestionSet', function($compile) {
+  app.directive('bbQuestionSet', ["$compile", function($compile) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15486,7 +15999,7 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
   app.directive("bbMatchInput", function() {
     return {
@@ -15514,7 +16027,7 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive("bbIntTelNumber", function($parse) {
+  app.directive("bbIntTelNumber", ["$parse", function($parse) {
     return {
       restrict: "A",
       require: "ngModel",
@@ -15556,7 +16069,7 @@ angular.module('BB.Directives')
         return ctrl.$parsers.push(parse);
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -15566,13 +16079,13 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive('bbLoader', function($rootScope, $compile, PathSvc, TemplateSvc) {
+  app.directive('bbLoader', ["$rootScope", "$compile", "PathSvc", "TemplateSvc", function($rootScope, $compile, PathSvc, TemplateSvc) {
     return {
       restrict: 'A',
       replace: false,
       scope: {},
       controllerAs: 'LoaderCtrl',
-      controller: function($scope) {
+      controller: ["$scope", function($scope) {
         var addScopeId, hideLoader, parentScopeId, removeScopeId, scopeIdArr, showLoader;
         parentScopeId = $scope.$parent.$id;
         scopeIdArr = [];
@@ -15604,7 +16117,7 @@ angular.module('BB.Directives')
         $rootScope.$on('show:loader', showLoader);
         $rootScope.$on('hide:loader', hideLoader);
         $scope.scopeLoaded = false;
-      },
+      }],
       link: function(scope, element, attrs) {
         TemplateSvc.get(PathSvc.directivePartial("loader")).then(function(html) {
           var str;
@@ -15621,9 +16134,9 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
-  app.directive('bbLoadingSpinner', function($compile) {
+  app.directive('bbLoadingSpinner', ["$compile", function($compile) {
     return {
       transclude: true,
       link: function(scope, element, attrs, controller, transclude) {
@@ -15638,13 +16151,13 @@ angular.module('BB.Directives')
       },
       template: "<div ng-show=\"isLoading\" class=\"loader-wrapper\">\n  <div class=\"loader\"></div>\n</div>\n<div ng-transclude></div>"
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbContent', function($compile) {
+  angular.module('BB.Directives').directive('bbContent', ["$compile", function($compile) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15662,9 +16175,9 @@ angular.module('BB.Directives')
         return $compile(element)(scope);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Directives').directive('bbLoading', function($compile, $timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbLoading', ["$compile", "$timeout", "$bbug", function($compile, $timeout, $bbug) {
     return {
       link: function(scope, element, attrs) {
         var positionLoadingIcon;
@@ -15698,9 +16211,9 @@ angular.module('BB.Directives')
         $compile(element)(scope);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Directives').directive('bbWaitFor', function($compile) {
+  angular.module('BB.Directives').directive('bbWaitFor', ["$compile", function($compile) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15716,9 +16229,9 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
+  angular.module('BB.Directives').directive('bbScrollTo', ["$rootScope", "AppConfig", "BreadcrumbService", "$bbug", "$window", "SettingsService", function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15760,7 +16273,7 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
   angular.module('BB.Directives').directive('bbSlotGrouper', function() {
     return {
@@ -15802,7 +16315,7 @@ angular.module('BB.Directives')
   *
    */
 
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
+  angular.module('BB.Directives').directive('bbForm', ["$bbug", "$window", "SettingsService", "ValidatorService", "$timeout", function($bbug, $window, SettingsService, ValidatorService, $timeout) {
     return {
       restrict: 'A',
       require: '^form',
@@ -15840,14 +16353,14 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
+  angular.module('BB.Directives').directive('bbAddressMap', ["$document", function($document) {
     return {
       restrict: 'A',
       scope: true,
       replace: true,
-      controller: function($scope, $element, $attrs) {
+      controller: ["$scope", "$element", "$attrs", function($scope, $element, $attrs) {
         $scope.isDraggable = $document.width() > 480;
         return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
           var map_item;
@@ -15874,15 +16387,15 @@ angular.module('BB.Directives')
             }
           };
         });
-      }
+      }]
     };
-  });
+  }]);
 
   angular.module('BB.Directives').directive('bbMergeDuplicateQuestions', function() {
     return {
       restrict: 'A',
       scope: true,
-      controller: function($scope, $rootScope) {
+      controller: ["$scope", "$rootScope", function($scope, $rootScope) {
         $scope.questions = {};
         return $rootScope.$on("item_details:loaded", function() {
           var i, item, j, len, len1, question, ref, ref1;
@@ -15909,7 +16422,7 @@ angular.module('BB.Directives')
           }
           return $scope.has_questions = _.pluck($scope.questions, 'question').length > 0;
         });
-      }
+      }]
     };
   });
 
@@ -15928,7 +16441,7 @@ angular.module('BB.Directives')
   * <div bb-modal></div>
    */
 
-  angular.module('BB.Directives').directive('bbModal', function($window, $bbug, $timeout) {
+  angular.module('BB.Directives').directive('bbModal', ["$window", "$bbug", "$timeout", function($window, $bbug, $timeout) {
     return {
       restrict: 'A',
       scope: true,
@@ -15955,7 +16468,7 @@ angular.module('BB.Directives')
         }));
       }
     };
-  });
+  }]);
 
 
   /***
@@ -16053,7 +16566,7 @@ angular.module('BB.Directives')
   * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
    */
 
-  angular.module('BB.Directives').directive('bbTimeZone', function(SettingsService) {
+  angular.module('BB.Directives').directive('bbTimeZone', ["SettingsService", function(SettingsService) {
     return {
       restrict: 'A',
       link: function(scope, el, attrs) {
@@ -16065,12 +16578,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB').directive('bbMemberLogin', function(PathSvc) {
+  angular.module('BB').directive('bbMemberLogin', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'A',
       controller: 'MemberLogin',
@@ -16082,9 +16595,9 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
+  angular.module('BB.Controllers').controller('MemberLogin', ["$scope", "$log", "$rootScope", "$templateCache", "$q", "halClient", "BBModel", "$sessionStorage", "$window", "AlertService", "LoginService", "ValidatorService", function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
     $scope.login = {};
     $scope.validator = ValidatorService;
     $rootScope.connection_started.then(function() {
@@ -16139,12 +16652,12 @@ angular.module('BB.Directives')
         return $scope.decideNextPage();
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc, $timeout) {
+  angular.module('BB.Directives').directive('bbMonthPicker', ["PathSvc", "$timeout", function(PathSvc, $timeout) {
     return {
       restrict: 'AE',
       replace: true,
@@ -16164,7 +16677,7 @@ angular.module('BB.Directives')
           }
         });
       },
-      controller: function($scope) {
+      controller: ["$scope", function($scope) {
         $scope.processDates = function(dates) {
           var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
           datehash = {};
@@ -16280,14 +16793,14 @@ angular.module('BB.Directives')
           }
           return $scope.showDay(day.date);
         };
-      }
+      }]
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('ngOptions', function($sniffer, $rootScope) {
+  angular.module('BB.Directives').directive('ngOptions', ["$sniffer", "$rootScope", function($sniffer, $rootScope) {
     return {
       restrict: 'A',
       link: function(scope, el, attrs) {
@@ -16301,7 +16814,7 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -16311,7 +16824,7 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive('script', function($compile, halClient) {
+  app.directive('script', ["$compile", "halClient", function($compile, halClient) {
     return {
       transclude: false,
       restrict: 'E',
@@ -16324,12 +16837,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
+  angular.module('BB.Directives').directive('bbPaymentButton', ["$compile", "$sce", "$http", "$templateCache", "$q", "$log", "TemplateSvc", function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
     return {
       restrict: 'EA',
       replace: true,
@@ -16418,9 +16931,9 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Directives').directive('bbPaypalExpressButton', function($compile, $sce, $http, $templateCache, $q, $log, $window, UriTemplate) {
+  angular.module('BB.Directives').directive('bbPaypalExpressButton', ["$compile", "$sce", "$http", "$templateCache", "$q", "$log", "$window", "UriTemplate", function($compile, $sce, $http, $templateCache, $q, $log, $window, UriTemplate) {
     return {
       restrict: 'EA',
       replace: true,
@@ -16444,7 +16957,7 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -16454,7 +16967,7 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive('bbPaypal', function(PathSvc) {
+  app.directive('bbPaypal', ["PathSvc", function(PathSvc) {
     return {
       restrict: 'A',
       replace: true,
@@ -16479,7 +16992,7 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -16517,7 +17030,7 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
+  angular.module("BB.Directives").directive('scoped', ["$document", "$timeout", function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
       var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
@@ -16623,7 +17136,7 @@ angular.module('BB.Directives')
           });
         }
       },
-      controller: function($scope, $element, $timeout) {
+      controller: ["$scope", "$element", "$timeout", function($scope, $element, $timeout) {
         if (!$scope.scopeSupported) {
           this.updateCss = function() {
             return $timeout(function() {
@@ -16631,9 +17144,9 @@ angular.module('BB.Directives')
             });
           };
         }
-      }
+      }]
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -16642,7 +17155,7 @@ angular.module('BB.Directives')
 
   app = angular.module('BB.Directives');
 
-  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
+  app.directive('bbDisplayMode', ["$compile", "$window", "$bbug", "ViewportSize", function($compile, $window, $bbug, ViewportSize) {
     return {
       transclude: false,
       restrict: 'A',
@@ -16709,12 +17222,12 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Directives').directive('bbToggleEdit', function($compile, $window, $document) {
+  angular.module('BB.Directives').directive('bbToggleEdit', ["$compile", "$window", "$document", function($compile, $window, $document) {
     return {
       restrict: 'AE',
       link: function(scope, element, attr) {
@@ -16738,7 +17251,7 @@ angular.module('BB.Directives')
         return true;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -16787,533 +17300,12 @@ angular.module('BB.Directives')
   /* Directives */
   var app = angular.module('BB.Directives');
 
-  app.directive('appVersion', function(version) {
+  app.directive('appVersion', ["version", function(version) {
     return function(scope, elm, attrs) {
       elm.text(version);
     };
-  });
+  }]);
 }(window.angular));
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Filters');
-
-  angular.module('BB.Filters').filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
-
-  angular.module('BB.Filters').filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  angular.module('BB.Filters').filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  angular.module('BB.Filters').filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  angular.module('BB.Filters').filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('icurrency', function($window, SettingsService) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = SettingsService.getCurrency());
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  angular.module('BB.Filters').filter('ipretty_price', function($window, SettingsService) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[SettingsService.getCurrency()];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val > 1) {
-          str += "s";
-        }
-        return str;
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins > 1) {
-          str += "s";
-        }
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, separator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      separator = options && options.separator ? options.separator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + separator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  angular.module('BB.Filters').filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
-      if (!phone_number) {
-        return;
-      }
-      cc = SettingsService.getCountryCode();
-      switch (cc) {
-        case "gb":
-          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
-        case "us":
-          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
-        default:
-          return phone_number;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
-    var hardcoded_formats;
-    hardcoded_formats = {
-      datetime: {
-        us: 'MM/DD/YYYY, h:mm a',
-        uk: 'DD/MM/YYYY, HH:mm'
-      },
-      date: {
-        us: 'MM/DD/YYYY',
-        uk: 'DD/MM/YYYY'
-      },
-      time: {
-        us: 'h:mm a',
-        uk: 'HH:mm'
-      }
-    };
-    return function(date, format, show_time_zone) {
-      var cc, new_date;
-      if (format == null) {
-        format = "LLL";
-      }
-      if (show_time_zone == null) {
-        show_time_zone = false;
-      }
-      if (hardcoded_formats[format]) {
-        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
-        format = hardcoded_formats[format][cc];
-      }
-      if (date && moment.isMoment(date)) {
-        new_date = date.clone();
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          new_date.tz(SettingsService.getDisplayTimeZone());
-        }
-        if (show_time_zone) {
-          format += ' zz';
-        }
-        return new_date.format(format);
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  angular.module('BB.Filters').filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-  angular.module('BB.Filters').filter('nl2br', function() {
-    return function(str) {
-      if (str) {
-        return str.replace(/\n/g, '<br/>');
-      }
-    };
-  });
-
-  app.filter('clearTimezone', function() {
-    return function(val, offset) {
-      if (val !== null && val.length > 19) {
-        return val.substring(0, 19);
-      }
-      return val;
-    };
-  });
-
-  app.filter("format_answer", function() {
-    return function(answer) {
-      if (typeof answer === "boolean") {
-        answer = answer === true ? "Yes" : "No";
-      } else if (moment(answer, 'YYYY-MM-DD', true).isValid()) {
-        answer = moment(answer).format("D MMMM YYYY");
-      }
-      return answer;
-    };
-  });
-
-}).call(this);
 
 (function() {
   'use strict';
@@ -17336,7 +17328,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("AddressModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("AddressModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Address;
     return Address = (function(superClass) {
       extend(Address, superClass);
@@ -17512,7 +17504,7 @@ angular.module('BB.Directives')
       return Address;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -17533,7 +17525,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("AffiliateModel", function($q, BBModel, BaseModel, halClient, $rootScope) {
+  angular.module('BB.Models').factory("AffiliateModel", ["$q", "BBModel", "BaseModel", "halClient", "$rootScope", function($q, BBModel, BaseModel, halClient, $rootScope) {
     var Affiliate;
     return Affiliate = (function(superClass) {
       extend(Affiliate, superClass);
@@ -17581,7 +17573,7 @@ angular.module('BB.Directives')
       return Affiliate;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -17600,7 +17592,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("AnswerModel", function($q, BBModel, BaseModel, $bbug) {
+  angular.module('BB.Models').factory("AnswerModel", ["$q", "BBModel", "BaseModel", "$bbug", function($q, BBModel, BaseModel, $bbug) {
     var Answer;
     return Answer = (function(superClass) {
       extend(Answer, superClass);
@@ -17642,12 +17634,12 @@ angular.module('BB.Directives')
       return Answer;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Models').service("BBModel", function($q, $injector) {
+  angular.module('BB.Models').service("BBModel", ["$q", "$injector", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
     models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase', 'Pagination', 'Reason'];
     funcs = {};
@@ -17705,9 +17697,9 @@ angular.module('BB.Directives')
     }
     funcs['Admin'] = afuncs;
     return funcs;
-  });
+  }]);
 
-  angular.module('BB.Models').service("BaseModel", function($q, $injector, $rootScope, $timeout) {
+  angular.module('BB.Models').service("BaseModel", ["$q", "$injector", "$rootScope", "$timeout", function($q, $injector, $rootScope, $timeout) {
     var Base;
     return Base = (function() {
       function Base(data) {
@@ -17883,7 +17875,7 @@ angular.module('BB.Directives')
       return Base;
 
     })();
-  });
+  }]);
 
 }).call(this);
 
@@ -17905,7 +17897,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BasketModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("BasketModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Basket;
     return Basket = (function(superClass) {
       extend(Basket, superClass);
@@ -18658,7 +18650,7 @@ angular.module('BB.Directives')
       return Basket;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -18685,7 +18677,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, SettingsService) {
+  angular.module('BB.Models').factory("BasketItemModel", ["$q", "$window", "BBModel", "BookableItemModel", "BaseModel", "$bbug", "DateTimeUtilitiesService", "SettingsService", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, SettingsService) {
     var BasketItem;
     return BasketItem = (function(superClass) {
       extend(BasketItem, superClass);
@@ -20591,7 +20583,7 @@ angular.module('BB.Directives')
       return BasketItem;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -20613,7 +20605,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BookableItemModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("BookableItemModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var BookableItem;
     return BookableItem = (function(superClass) {
       extend(BookableItem, superClass);
@@ -20680,7 +20672,7 @@ angular.module('BB.Directives')
       return BookableItem;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -20697,7 +20689,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BulkPurchaseModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("BulkPurchaseModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var BulkPurchase;
     return BulkPurchase = (function(superClass) {
       extend(BulkPurchase, superClass);
@@ -20709,7 +20701,7 @@ angular.module('BB.Directives')
       return BulkPurchase;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -20726,7 +20718,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BusinessQuestionModel", function($q, $filter, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("BusinessQuestionModel", ["$q", "$filter", "BBModel", "BaseModel", function($q, $filter, BBModel, BaseModel) {
     var BusinessQuestion;
     return BusinessQuestion = (function(superClass) {
       extend(BusinessQuestion, superClass);
@@ -20738,7 +20730,7 @@ angular.module('BB.Directives')
       return BusinessQuestion;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -20755,7 +20747,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("CategoryModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("CategoryModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Category;
     return Category = (function(superClass) {
       extend(Category, superClass);
@@ -20767,7 +20759,7 @@ angular.module('BB.Directives')
       return Category;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -20800,7 +20792,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, LocaleService) {
+  angular.module('BB.Models').factory("ClientModel", ["$q", "BBModel", "BaseModel", "LocaleService", function($q, BBModel, BaseModel, LocaleService) {
     var Client;
     return Client = (function(superClass) {
       extend(Client, superClass);
@@ -21340,7 +21332,7 @@ angular.module('BB.Directives')
       return Client;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21360,7 +21352,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ClientDetailsModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ClientDetailsModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var ClientDetails;
     return ClientDetails = (function(superClass) {
       extend(ClientDetails, superClass);
@@ -21438,7 +21430,7 @@ angular.module('BB.Directives')
       return ClientDetails;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21472,7 +21464,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ClinicModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ClinicModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Clinic;
     return Clinic = (function(superClass) {
       extend(Clinic, superClass);
@@ -21542,7 +21534,7 @@ angular.module('BB.Directives')
       return Clinic;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21552,7 +21544,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BBCollectionModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("BBCollectionModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var BBCollection;
     return BBCollection = (function(superClass) {
       extend(BBCollection, superClass);
@@ -21576,7 +21568,7 @@ angular.module('BB.Directives')
       return BBCollection;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21607,7 +21599,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("CompanyModel", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
+  angular.module('BB.Models').factory("CompanyModel", ["$q", "BBModel", "BaseModel", "halClient", "AppConfig", "$sessionStorage", function($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage) {
     var Company;
     return Company = (function(superClass) {
       extend(Company, superClass);
@@ -21822,7 +21814,7 @@ angular.module('BB.Directives')
       return Company;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21839,7 +21831,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("CompanySettingsModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("CompanySettingsModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var CompanySettings;
     return CompanySettings = (function(superClass) {
       extend(CompanySettings, superClass);
@@ -21851,7 +21843,7 @@ angular.module('BB.Directives')
       return CompanySettings;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21871,7 +21863,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("DayModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("DayModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Day;
     return Day = (function(superClass) {
       extend(Day, superClass);
@@ -21941,7 +21933,7 @@ angular.module('BB.Directives')
       return Day;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21950,7 +21942,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("DealModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("DealModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Deal;
     return Deal = (function(superClass) {
       extend(Deal, superClass);
@@ -21962,7 +21954,7 @@ angular.module('BB.Directives')
       return Deal;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -21986,7 +21978,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUtilitiesService) {
+  angular.module('BB.Models').factory("EventModel", ["$q", "BBModel", "BaseModel", "DateTimeUtilitiesService", function($q, BBModel, BaseModel, DateTimeUtilitiesService) {
     var Event;
     return Event = (function(superClass) {
       extend(Event, superClass);
@@ -22349,7 +22341,7 @@ angular.module('BB.Directives')
       return Event;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22376,7 +22368,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("EventChainModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var EventChain;
     return EventChain = (function(superClass) {
       var setCapacityView;
@@ -22528,7 +22520,7 @@ angular.module('BB.Directives')
       return EventChain;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22548,7 +22540,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventGroupModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("EventGroupModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var EventGroup;
     return EventGroup = (function(superClass) {
       extend(EventGroup, superClass);
@@ -22568,7 +22560,7 @@ angular.module('BB.Directives')
       return EventGroup;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22588,7 +22580,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventSequenceModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("EventSequenceModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var EventSequence;
     return EventSequence = (function(superClass) {
       extend(EventSequence, superClass);
@@ -22604,7 +22596,7 @@ angular.module('BB.Directives')
       return EventSequence;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22631,7 +22623,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventTicketModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("EventTicketModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var EventTicket;
     return EventTicket = (function(superClass) {
       extend(EventTicket, superClass);
@@ -22836,7 +22828,7 @@ angular.module('BB.Directives')
       return EventTicket;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22845,7 +22837,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ExternalPurchaseModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ExternalPurchaseModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var ExternalPurchase;
     return ExternalPurchase = (function(superClass) {
       extend(ExternalPurchase, superClass);
@@ -22857,7 +22849,7 @@ angular.module('BB.Directives')
       return ExternalPurchase;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22876,7 +22868,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ImageModel", function($q, $filter, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ImageModel", ["$q", "$filter", "BBModel", "BaseModel", function($q, $filter, BBModel, BaseModel) {
     var Image;
     return Image = (function(superClass) {
       extend(Image, superClass);
@@ -22888,7 +22880,7 @@ angular.module('BB.Directives')
       return Image;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -22912,7 +22904,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ItemDetailsModel", function($q, BBModel, BaseModel, $bbug, QuestionService) {
+  angular.module('BB.Models').factory("ItemDetailsModel", ["$q", "BBModel", "BaseModel", "$bbug", "QuestionService", function($q, BBModel, BaseModel, $bbug, QuestionService) {
     var ItemDetails;
     return ItemDetails = (function(superClass) {
       extend(ItemDetails, superClass);
@@ -23054,7 +23046,7 @@ angular.module('BB.Directives')
       return ItemDetails;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23063,7 +23055,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("MembershipLevelModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("MembershipLevelModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var MembershipLevel;
     return MembershipLevel = (function(superClass) {
       extend(MembershipLevel, superClass);
@@ -23075,7 +23067,7 @@ angular.module('BB.Directives')
       return MembershipLevel;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23092,7 +23084,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("PackageItemModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("PackageItemModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var PackageItem;
     return PackageItem = (function(superClass) {
       extend(PackageItem, superClass);
@@ -23104,7 +23096,7 @@ angular.module('BB.Directives')
       return PackageItem;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23297,7 +23289,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("PersonModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("PersonModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Person;
     return Person = (function(superClass) {
       extend(Person, superClass);
@@ -23309,7 +23301,7 @@ angular.module('BB.Directives')
       return Person;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23326,7 +23318,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("PrePaidBookingModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("PrePaidBookingModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var PrePaidBooking;
     return PrePaidBooking = (function(superClass) {
       extend(PrePaidBooking, superClass);
@@ -23360,7 +23352,7 @@ angular.module('BB.Directives')
       return PrePaidBooking;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23369,7 +23361,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ProductModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ProductModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Product;
     return Product = (function(superClass) {
       extend(Product, superClass);
@@ -23381,7 +23373,7 @@ angular.module('BB.Directives')
       return Product;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23401,7 +23393,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("PurchaseItemModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("PurchaseItemModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var PurchaseItem;
     return PurchaseItem = (function(superClass) {
       extend(PurchaseItem, superClass);
@@ -23473,7 +23465,7 @@ angular.module('BB.Directives')
       return PurchaseItem;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23495,7 +23487,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("PurchaseTotalModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("PurchaseTotalModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var PurchaseTotal;
     return PurchaseTotal = (function(superClass) {
       extend(PurchaseTotal, superClass);
@@ -23593,7 +23585,7 @@ angular.module('BB.Directives')
       return PurchaseTotal;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23613,7 +23605,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("QuestionModel", function($q, $filter, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("QuestionModel", ["$q", "$filter", "BBModel", "BaseModel", function($q, $filter, BBModel, BaseModel) {
     var Question;
     return Question = (function(superClass) {
       extend(Question, superClass);
@@ -23799,7 +23791,7 @@ angular.module('BB.Directives')
       return Question;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23808,7 +23800,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ReasonModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ReasonModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Reason;
     return Reason = (function(superClass) {
       extend(Reason, superClass);
@@ -23820,7 +23812,7 @@ angular.module('BB.Directives')
       return Reason;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23845,7 +23837,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ResourceModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ResourceModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Resource;
     return Resource = (function(superClass) {
       extend(Resource, superClass);
@@ -23857,7 +23849,7 @@ angular.module('BB.Directives')
       return Resource;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -23884,7 +23876,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ServiceModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("ServiceModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Service;
     return Service = (function(superClass) {
       extend(Service, superClass);
@@ -23986,7 +23978,7 @@ angular.module('BB.Directives')
       return Service;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -24006,7 +23998,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("SlotModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("SlotModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Slot;
     return Slot = (function(superClass) {
       extend(Slot, superClass);
@@ -24019,7 +24011,7 @@ angular.module('BB.Directives')
       return Slot;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -24036,7 +24028,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("SpaceModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("SpaceModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Space;
     return Space = (function(superClass) {
       extend(Space, superClass);
@@ -24048,7 +24040,7 @@ angular.module('BB.Directives')
       return Space;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -24068,7 +24060,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("SurveyQuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
+  angular.module('BB.Models').factory("SurveyQuestionModel", ["$q", "$window", "BBModel", "BaseModel", "QuestionModel", function($q, $window, BBModel, BaseModel, QuestionModel) {
     var SurveyQuestion;
     return SurveyQuestion = (function(superClass) {
       extend(SurveyQuestion, superClass);
@@ -24080,7 +24072,7 @@ angular.module('BB.Directives')
       return SurveyQuestion;
 
     })(QuestionModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -24110,7 +24102,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel, DateTimeUtilitiesService) {
+  angular.module('BB.Models').factory("TimeSlotModel", ["$q", "$window", "BBModel", "BaseModel", "DateTimeUtilitiesService", function($q, $window, BBModel, BaseModel, DateTimeUtilitiesService) {
     var TimeSlot;
     return TimeSlot = (function(superClass) {
       extend(TimeSlot, superClass);
@@ -24363,12 +24355,12 @@ angular.module('BB.Directives')
       return TimeSlot;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
+  angular.module('BB.Services').factory("AddressListService", ["$q", "$window", "halClient", "UriTemplate", function($q, $window, halClient, UriTemplate) {
     return {
       query: function(prms) {
         var deferred, href, uri;
@@ -24405,7 +24397,7 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -24420,7 +24412,7 @@ angular.module('BB.Directives')
  */
 
 (function() {
-  angular.module('BB.Services').factory('$exceptionHandler', function($log, AirbrakeConfig) {
+  angular.module('BB.Services').factory('$exceptionHandler', ["$log", "AirbrakeConfig", function($log, AirbrakeConfig) {
     var airbrake;
     airbrake = new airbrakeJs.Client({
       projectId: AirbrakeConfig.projectId,
@@ -24443,7 +24435,7 @@ angular.module('BB.Directives')
         }
       });
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -24460,7 +24452,7 @@ angular.module('BB.Directives')
  */
 
 (function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
+  angular.module('BB.Services').factory('AlertService', ["$rootScope", "ErrorService", "$timeout", function($rootScope, ErrorService, $timeout) {
     var alertService, titleLookup;
     $rootScope.alerts = [];
 
@@ -24675,12 +24667,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
+  angular.module('BB.Services').factory("BasketService", ["$q", "$rootScope", "BBModel", "MutexService", function($q, $rootScope, BBModel, MutexService) {
     return {
       addItem: function(company, params) {
         var data, deferred, lnk;
@@ -25057,7 +25049,7 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -25078,7 +25070,7 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("BulkPurchaseService", function($q, BBModel) {
+  angular.module('BB.Services').factory("BulkPurchaseService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -25108,12 +25100,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("CategoryService", function($q, BBModel) {
+  angular.module('BB.Services').factory("CategoryService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -25144,12 +25136,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ClientService", function($q, BBModel, MutexService) {
+  angular.module('BB.Services').factory("ClientService", ["$q", "BBModel", "MutexService", function($q, BBModel, MutexService) {
     return {
       create: function(company, client) {
         var deferred;
@@ -25221,12 +25213,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ClientDetailsService", function($q, BBModel) {
+  angular.module('BB.Services').factory("ClientDetailsService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -25247,12 +25239,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('ClinicService', function($q, BBModel, $window) {
+  angular.module('BB.Services').factory('ClinicService', ["$q", "BBModel", "$window", function($q, BBModel, $window) {
     return {
       query: function(params) {
         var company, defer;
@@ -25289,12 +25281,12 @@ angular.module('BB.Directives')
         return defer.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
+  angular.module('BB.Services').factory("CompanyService", ["$q", "halClient", "BBModel", function($q, halClient, BBModel) {
     return {
       query: function(company_id, options) {
         var deferred, url;
@@ -25339,12 +25331,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("CustomTextService", function($q, BBModel) {
+  angular.module('BB.Services').factory("CustomTextService", ["$q", "BBModel", function($q, BBModel) {
     return {
       BookingText: function(company, basketItem) {
         var deferred;
@@ -25393,12 +25385,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("DateTimeUtilitiesService", function(SettingsService) {
+  angular.module('BB.Services').factory("DateTimeUtilitiesService", ["SettingsService", function(SettingsService) {
     var checkPerson, checkResource;
     checkPerson = function(basket_item, item_defaults) {
       return (basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self) || _.isBoolean(basket_item.person) || item_defaults.merge_people;
@@ -25456,12 +25448,12 @@ angular.module('BB.Directives')
         };
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("DayService", function($q, BBModel) {
+  angular.module('BB.Services').factory("DayService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(prms) {
         var deferred, extra;
@@ -25504,12 +25496,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("DealService", function($q, BBModel) {
+  angular.module('BB.Services').factory("DealService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -25542,16 +25534,16 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB').config(function($logProvider, $injector) {
+  angular.module('BB').config(["$logProvider", "$injector", function($logProvider, $injector) {
     return $logProvider.debugEnabled(true);
-  });
+  }]);
 
-  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel, $bbug) {
+  angular.module('BB.Services').factory("DebugUtilsService", ["$rootScope", "$location", "$window", "$log", "BBModel", "$bbug", function($rootScope, $location, $window, $log, BBModel, $bbug) {
     var logObjectKeys, showScopeChain;
     logObjectKeys = function(obj, showValue) {
       var key, value;
@@ -25629,12 +25621,12 @@ angular.module('BB.Directives')
     return {
       logObjectKeys: logObjectKeys
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('Dialog', function($modal, $log) {
+  angular.module('BB.Services').factory('Dialog', ["$modal", "$log", function($modal, $log) {
     var controller;
     controller = function($scope, $modalInstance, model, title, success, fail, body) {
       $scope.body = body;
@@ -25687,12 +25679,12 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
+  angular.module('BB.Services').factory('ErrorService', ["SettingsService", function(SettingsService) {
     var alerts;
     alerts = [
       {
@@ -25970,12 +25962,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("EventService", function($q, BBModel) {
+  angular.module('BB.Services').factory("EventService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company, params) {
         var deferred;
@@ -26091,12 +26083,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("EventChainService", function($q, BBModel) {
+  angular.module('BB.Services').factory("EventChainService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company, params) {
         var deferred;
@@ -26149,12 +26141,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("EventGroupService", function($q, BBModel) {
+  angular.module('BB.Services').factory("EventGroupService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company, params) {
         var deferred;
@@ -26187,12 +26179,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("EventSequenceService", function($q, BBModel) {
+  angular.module('BB.Services').factory("EventSequenceService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company, params) {
         var deferred;
@@ -26225,12 +26217,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('PathSvc', function($sce, AppConfig) {
+  angular.module('BB.Services').factory('PathSvc', ["$sce", "AppConfig", function($sce, AppConfig) {
     return {
       directivePartial: function(fileName) {
         var partial_url;
@@ -26242,13 +26234,13 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
   "use strict";
-  angular.module('BB.Services').factory('FormDataStoreService', function($rootScope, $window, $log, $parse) {
+  angular.module('BB.Services').factory('FormDataStoreService', ["$rootScope", "$window", "$log", "$parse", function($rootScope, $window, $log, $parse) {
     var checkForListeners, checkRegisteredWidgets, clear, dataStore, div, getParentScope, init, log, register, registeredWidgetArr, removeWidget, resetValuesOnScope, setIfUndefined, setListeners, setValuesOnScope, showInfo, storeFormData, toId;
     registeredWidgetArr = [];
     dataStore = {};
@@ -26475,7 +26467,7 @@ angular.module('BB.Directives')
       register: register,
       setIfUndefined: setIfUndefined
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -26507,8 +26499,7 @@ angular.module('BB.Directives')
  */
 
 (function() {
-  angular.module('BB.Services').provider('GeneralOptions', [
-    function() {
+  angular.module('BB.Services').provider('GeneralOptions', function() {
       var options;
       options = {
         twelve_hour_format: false,
@@ -26525,13 +26516,12 @@ angular.module('BB.Directives')
       this.$get = function() {
         return options;
       };
-    }
-  ]);
+    });
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('GeolocationService', function($q) {
+  angular.module('BB.Services').factory('GeolocationService', ["$q", function($q) {
     return {
       haversine: function(position1, position2) {
         var R, a, c, chLat, chLon, d, dLat, dLon, distance, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
@@ -26588,12 +26578,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ItemService", function($q, BBModel) {
+  angular.module('BB.Services').factory("ItemService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(prms) {
         var deferred;
@@ -26669,12 +26659,12 @@ angular.module('BB.Directives')
         })(this));
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ItemDetailsService", function($q, BBModel) {
+  angular.module('BB.Services').factory("ItemDetailsService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(prms) {
         var deferred;
@@ -26727,12 +26717,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('LoadingService', function($q, $window, $log, $rootScope, AlertService) {
+  angular.module('BB.Services').factory('LoadingService', ["$q", "$window", "$log", "$rootScope", "AlertService", function($q, $window, $log, $rootScope, AlertService) {
     return {
       $loader: function(scope) {
         var item, lservice;
@@ -26808,12 +26798,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('LocaleService', function($window) {
+  angular.module('BB.Services').factory('LocaleService', ["$window", function($window) {
     var locale;
     locale = $window.getURIparam('locale');
     if (locale) {
@@ -26823,12 +26813,12 @@ angular.module('BB.Directives')
     } else {
       return "en";
     }
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage, $localStorage) {
+  angular.module('BB.Services').factory("LoginService", ["$q", "halClient", "$rootScope", "BBModel", "$sessionStorage", "$localStorage", function($q, halClient, $rootScope, BBModel, $sessionStorage, $localStorage) {
     return {
       companyLogin: function(company, params, form) {
         var deferred;
@@ -27036,12 +27026,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("MembershipLevelsService", function($q, BBModel) {
+  angular.module('BB.Services').factory("MembershipLevelsService", ["$q", "BBModel", function($q, BBModel) {
     return {
       getMembershipLevels: function(company) {
         var deferred;
@@ -27070,12 +27060,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('ModalForm', function($modal, $log, Dialog) {
+  angular.module('BB.Services').factory('ModalForm', ["$modal", "$log", "Dialog", function($modal, $log, Dialog) {
     var bookForm, editForm, newForm;
     newForm = function($scope, $modalInstance, company, title, new_rel, post_rel, success, fail) {
       $scope.loading = true;
@@ -27335,12 +27325,12 @@ angular.module('BB.Directives')
         });
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("MutexService", function($q, $window, $rootScope) {
+  angular.module('BB.Services').factory("MutexService", ["$q", "$window", "$rootScope", function($q, $window, $rootScope) {
     return {
       getLock: function(prms) {
         var iprom, mprom;
@@ -27375,12 +27365,12 @@ angular.module('BB.Directives')
         return mutex.resolve();
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("PackageItemService", function($q, BBModel) {
+  angular.module('BB.Services').factory("PackageItemService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -27433,7 +27423,7 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -27489,7 +27479,7 @@ angular.module('BB.Directives')
  */
 
 (function() {
-  angular.module('BB.Services').factory('PathHelper', function($urlMatcherFactory, $location) {
+  angular.module('BB.Services').factory('PathHelper', ["$urlMatcherFactory", "$location", function($urlMatcherFactory, $location) {
     return {
 
       /***
@@ -27523,12 +27513,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("PersonService", function($q, BBModel) {
+  angular.module('BB.Services').factory("PersonService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -27557,12 +27547,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate, BBModel, $log, $rootScope) {
+  angular.module('BB.Services').factory("ProductService", ["$q", "$window", "halClient", "UriTemplate", "BBModel", "$log", "$rootScope", function($q, $window, halClient, UriTemplate, BBModel, $log, $rootScope) {
     return {
       getProduct: function(prms) {
         var deferred, href, uri;
@@ -27619,12 +27609,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("PurchaseTotalService", function($q, BBModel) {
+  angular.module('BB.Services').factory("PurchaseTotalService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(prms) {
         var deferred;
@@ -27647,12 +27637,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('QueryStringService', function($window) {
+  angular.module('BB.Services').factory('QueryStringService', ["$window", function($window) {
     return function(keyName) {
       var hash, hashes, href, i, isNum, len, val, varObj;
       varObj = {};
@@ -27698,13 +27688,13 @@ angular.module('BB.Directives')
       }
       return varObj;
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('QuestionService', function($window, QueryStringService, $bbug) {
+  angular.module('BB.Services').factory('QuestionService', ["$window", "QueryStringService", "$bbug", function($window, QueryStringService, $bbug) {
     var addAnswersById, addAnswersByName, addAnswersFromDefaults, addDynamicAnswersByName, checkConditionalQuestions, convertDates, convertToSnakeCase, defaults, findByQuestionId, storeDefaults;
     defaults = QueryStringService() || {};
     convertDates = function(obj) {
@@ -27855,12 +27845,12 @@ angular.module('BB.Directives')
       convertToSnakeCase: convertToSnakeCase,
       checkConditionalQuestions: checkConditionalQuestions
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ReasonService", function($q, BBModel) {
+  angular.module('BB.Services').factory("ReasonService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -27890,12 +27880,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module("BB.Services").factory("RecaptchaService", function($q, halClient, UriTemplate) {
+  angular.module("BB.Services").factory("RecaptchaService", ["$q", "halClient", "UriTemplate", function($q, halClient, UriTemplate) {
     return {
       validateResponse: function(params) {
         var deferred, href, prms, uri;
@@ -27912,12 +27902,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ResourceService", function($q, BBModel) {
+  angular.module('BB.Services').factory("ResourceService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -27946,12 +27936,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("ServiceService", function($q, BBModel) {
+  angular.module('BB.Services').factory("ServiceService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company) {
         var deferred;
@@ -27980,7 +27970,7 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -28051,7 +28041,7 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("SlotService", function($q, BBModel) {
+  angular.module('BB.Services').factory("SlotService", ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(company, params) {
         var deferred;
@@ -28092,7 +28082,7 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -28106,8 +28096,7 @@ angular.module('BB.Directives')
   * @description
   * checks for the first date with available spaces
    */
-  angular.module('BB.Services').factory('SlotDates', [
-    '$q', 'DayService', function($q, DayService) {
+  angular.module('BB.Services').factory('SlotDates', ["$q", "DayService", function($q, DayService) {
       var cached, getFirstDayWithSlots;
       cached = {
         firstSlotDate: null,
@@ -28159,8 +28148,8 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').config(function($provide) {
-    return $provide.decorator('$sniffer', function($delegate) {
+  angular.module('BB.Services').config(["$provide", function($provide) {
+    return $provide.decorator('$sniffer', ["$delegate", function($delegate) {
       var regexp, result, webkit_version;
       regexp = /Safari\/([\d.]+)/;
       result = regexp.exec(navigator.userAgent);
@@ -28169,14 +28158,13 @@ angular.module('BB.Directives')
         webkit: webkit_version
       });
       return $delegate;
-    });
-  });
+    }]);
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("SpaceService", [
-    '$q', function($q, BBModel) {
+  angular.module('BB.Services').factory("SpaceService", ["$q", "BBModel", function($q, BBModel) {
       return {
         query: function(company) {
           var deferred;
@@ -28211,7 +28199,7 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("SSOService", function($q, $rootScope, halClient, LoginService) {
+  angular.module('BB.Services').factory("SSOService", ["$q", "$rootScope", "halClient", "LoginService", function($q, $rootScope, halClient, LoginService) {
     return {
       memberLogin: function(options) {
         var data, deferred, url;
@@ -28265,12 +28253,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("TemplateSvc", function($q, $http, $templateCache, BBModel) {
+  angular.module('BB.Services').factory("TemplateSvc", ["$q", "$http", "$templateCache", "BBModel", function($q, $http, $templateCache, BBModel) {
     return {
       get: function(path) {
         var cacheTmpl, deferred;
@@ -28292,12 +28280,12 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient, SettingsService, DateTimeUtilitiesService) {
+  angular.module('BB.Services').factory("TimeService", ["$q", "BBModel", "halClient", "SettingsService", "DateTimeUtilitiesService", function($q, BBModel, halClient, SettingsService, DateTimeUtilitiesService) {
     return {
       query: function(prms) {
         var company_utc_offset, deferred, display_utc_offset, end_date, extra, item_link, start_date;
@@ -28519,12 +28507,12 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('TimeSlotService', function($q, BBModel) {
+  angular.module('BB.Services').factory('TimeSlotService', ["$q", "BBModel", function($q, BBModel) {
     return {
       query: function(params) {
         var company, defer;
@@ -28552,28 +28540,28 @@ angular.module('BB.Directives')
         return defer.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.address", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Address(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.person", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Person(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.people", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28597,17 +28585,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.resource", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Resource(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.resources", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28631,17 +28619,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.service", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Service(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.services", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28678,17 +28666,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.package_item", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.package_item", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.PackageItem(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.package_items", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.package_items", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28712,17 +28700,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.bulk_purchase", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.bulk_purchase", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.BulkPurchase(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.bulk_purchases", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.bulk_purchases", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28759,17 +28747,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.event_group", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.EventGroup(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.event_groups", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28793,33 +28781,33 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.event_chain", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.EventChain(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.event_chains", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.EventChain(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.category", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Category(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.categories", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28845,17 +28833,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.client", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Client(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.child_clients", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28879,9 +28867,9 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.clients", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -28905,9 +28893,9 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.questions", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         var defer, i, j, k, len, len1, ref, results, results1;
@@ -28945,17 +28933,17 @@ angular.module('BB.Directives')
         }
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.question", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Question(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.answers", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: false,
       unwrap: function(items) {
@@ -28981,9 +28969,9 @@ angular.module('BB.Directives')
         return answers;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.administrators", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(items) {
         var i, j, len, results;
@@ -28995,25 +28983,25 @@ angular.module('BB.Directives')
         return results;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.company", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Company(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.parent", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Company(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.company_questions", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29037,17 +29025,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.company_question", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.BusinessQuestion(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.images", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29071,9 +29059,9 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.bookings", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29097,25 +29085,25 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.wallet", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Member.Wallet(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.product", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.Product(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.products", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29141,17 +29129,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.PrePaidBooking(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29188,17 +29176,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.external_purchase", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.external_purchase", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.ExternalPurchase(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.external_purchases", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.external_purchases", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29235,17 +29223,17 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.purchase_item", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.purchase_item", ["$q", "BBModel", function($q, BBModel) {
     return {
       unwrap: function(resource) {
         return new BBModel.PurchaseItem(resource);
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.purchase_items", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.purchase_items", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29282,9 +29270,9 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
-  angular.module('BB.Services').factory("BB.Service.events", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.events", ["$q", "BBModel", function($q, BBModel) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29321,7 +29309,7 @@ angular.module('BB.Directives')
         return deferred.promise;
       }
     };
-  });
+  }]);
 
 }).call(this);
 
@@ -29347,7 +29335,7 @@ angular.module('BB.Directives')
  */
 
 (function() {
-  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, SettingsService, BBModel, $q, $bbug) {
+  angular.module('BB.Services').factory('ValidatorService', ["$rootScope", "AlertService", "SettingsService", "BBModel", "$q", "$bbug", function($rootScope, AlertService, SettingsService, BBModel, $q, $bbug) {
     var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, standard_password, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient, us_postcode_regex;
     uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
     us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
@@ -29620,7 +29608,7 @@ angular.module('BB.Directives')
        * @returns {boolean} Checks if this is reset or not
        */
     };
-  });
+  }]);
 
   ({
     resetForm: function(form) {
@@ -29665,8 +29653,7 @@ angular.module('BB.Directives')
   * @description
   * Stores the current screen size breakpoint.
    */
-  angular.module('BB.Services').factory('ViewportSize', [
-    '$rootScope', function($rootScope) {
+  angular.module('BB.Services').factory('ViewportSize', ["$rootScope", function($rootScope) {
       var viewport_size;
       viewport_size = null;
       return {
@@ -29707,7 +29694,7 @@ angular.module('BB.Directives')
    */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper) {
+  angular.module('BB.Models').factory("BBWidget", ["$q", "BBModel", "BasketService", "$urlMatcherFactory", "$location", "BreadcrumbService", "$window", "$rootScope", "PathHelper", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper) {
     var Widget;
     return Widget = (function() {
       function Widget() {
@@ -30351,7 +30338,7 @@ angular.module('BB.Directives')
       return Widget;
 
     })();
-  });
+  }]);
 
 }).call(this);
 
@@ -30361,7 +30348,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("Purchase.BookingModel", function($q, $window, BBModel, BaseModel, $bbug) {
+  angular.module('BB.Models').factory("Purchase.BookingModel", ["$q", "$window", "BBModel", "BaseModel", "$bbug", function($q, $window, BBModel, BaseModel, $bbug) {
     var Purchase_Booking;
     return Purchase_Booking = (function(superClass) {
       extend(Purchase_Booking, superClass);
@@ -30637,7 +30624,7 @@ angular.module('BB.Directives')
       return Purchase_Booking;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -30646,7 +30633,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("Purchase.CourseBookingModel", function($q, BBModel, BaseModel) {
+  angular.module('BB.Models').factory("Purchase.CourseBookingModel", ["$q", "BBModel", "BaseModel", function($q, BBModel, BaseModel) {
     var Purchase_Course_Booking;
     return Purchase_Course_Booking = (function(superClass) {
       extend(Purchase_Course_Booking, superClass);
@@ -30691,7 +30678,7 @@ angular.module('BB.Directives')
       return Purchase_Course_Booking;
 
     })(BaseModel);
-  });
+  }]);
 
 }).call(this);
 
@@ -30701,7 +30688,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("Purchase.TotalModel", function($q, $window, BBModel, BaseModel, $sce) {
+  angular.module('BB.Models').factory("Purchase.TotalModel", ["$q", "$window", "BBModel", "BaseModel", "$sce", function($q, $window, BBModel, BaseModel, $sce) {
     var Purchase_Total;
     return Purchase_Total = (function(superClass) {
       extend(Purchase_Total, superClass);
@@ -31021,7 +31008,173 @@ angular.module('BB.Directives')
       return Purchase_Total;
 
     })(BaseModel);
-  });
+  }]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", ["$q", "halClient", "BBModel", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  }]);
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", ["$q", "halClient", "BBModel", "$window", "UriTemplate", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, j, len, len1, ref, ref1;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        if (params.move_reason) {
+          ref1 = data.bookings;
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            booking = ref1[j];
+            booking.move_reason = params.move_reason;
+          }
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer, uri;
+        defer = $q.defer();
+        if (!params.purchase && !params.purchase_id) {
+          defer.reject("No purchase or purchase_id present");
+        }
+        data = {};
+        data.booking_id = params.booking.id;
+        if (params.purchase) {
+          params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+            return function(purchase) {
+              purchase = new BBModel.Purchase.Total(purchase);
+              return defer.resolve(purchase);
+            };
+          })(this), function(err) {
+            return defer.reject(err);
+          });
+        } else if (params.purchase_id && params.url_root) {
+          uri = params.url_root + "/api/v1/purchases/" + params.purchase_id + '/book_waitlist_item';
+          halClient.$put(uri, {}, data).then(function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        }
+        return defer.promise;
+      },
+      deleteAll: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      deleteItem: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
+  }]);
 
 }).call(this);
 
@@ -31040,7 +31193,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, $sessionStorage, SettingsService, $translate, ReasonService) {
+  angular.module('BB.Controllers').controller('Purchase', ["$scope", "$rootScope", "CompanyService", "PurchaseService", "ClientService", "$modal", "$location", "$timeout", "BBWidget", "BBModel", "$q", "QueryStringService", "SSOService", "AlertService", "LoginService", "$window", "ServiceService", "$sessionStorage", "SettingsService", "$translate", "ReasonService", function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, $sessionStorage, SettingsService, $translate, ReasonService) {
     var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, getReasons, loginRequired, setCancelReasons, setCancelReasonsToBB, setMoveReasons, setMoveReasonsToBB, setPurchaseCompany;
     $scope.controller = "Purchase";
     $scope.is_waitlist = false;
@@ -31520,7 +31673,7 @@ angular.module('BB.Directives')
         return $scope.bb.cancel_reasons = $scope.cancel_reasons;
       }
     };
-  });
+  }]);
 
   ModalDelete = function($scope, $rootScope, $modalInstance, booking, AlertService, cancel_reasons) {
     $scope.controller = "ModalDelete";
@@ -31545,171 +31698,5 @@ angular.module('BB.Directives')
       return $modalInstance.dismiss("cancel");
     };
   };
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, j, len, len1, ref, ref1;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        if (params.move_reason) {
-          ref1 = data.bookings;
-          for (j = 0, len1 = ref1.length; j < len1; j++) {
-            booking = ref1[j];
-            booking.move_reason = params.move_reason;
-          }
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer, uri;
-        defer = $q.defer();
-        if (!params.purchase && !params.purchase_id) {
-          defer.reject("No purchase or purchase_id present");
-        }
-        data = {};
-        data.booking_id = params.booking.id;
-        if (params.purchase) {
-          params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-            return function(purchase) {
-              purchase = new BBModel.Purchase.Total(purchase);
-              return defer.resolve(purchase);
-            };
-          })(this), function(err) {
-            return defer.reject(err);
-          });
-        } else if (params.purchase_id && params.url_root) {
-          uri = params.url_root + "/api/v1/purchases/" + params.purchase_id + '/book_waitlist_item';
-          halClient.$put(uri, {}, data).then(function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          }, function(err) {
-            return defer.reject(err);
-          });
-        }
-        return defer.promise;
-      },
-      deleteAll: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      deleteItem: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
-  });
 
 }).call(this);
