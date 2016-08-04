@@ -29997,7 +29997,7 @@ angular.module('BB.Directives')
             step.passed = step.number < this.current_step;
             step.active = step.number === this.current_step;
           }
-          if (step.number === step_number) {
+          if (step && step.number === step_number) {
             this.calculatePercentageComplete(step.number);
           }
         }
