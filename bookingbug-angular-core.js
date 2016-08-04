@@ -3374,10 +3374,10 @@ function getURIparam( name ){
     })(this);
     $scope.$on('$locationChangeStart', function(angular_event, new_url, old_url) {
       var step_number;
-      if (!$scope.bb.routeFormat || SettingsService.isModalOpen()) {
+      if (!$scope.bb.routeFormat) {
         return;
       }
-      if (!$scope.bb.routing) {
+      if (!$scope.bb.routing || SettingsService.isModalOpen()) {
         step_number = $scope.bb.matchURLToStep();
         if ((step_number != null) && step_number > $scope.bb.current_step) {
           $scope.loadStep(step_number);
