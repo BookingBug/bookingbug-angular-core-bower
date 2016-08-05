@@ -3102,7 +3102,11 @@ function getURIparam( name ){
             });
             setup_promises.push(sso_admin_login);
           }
-          total_id = QueryStringService('total_id');
+          if ($scope.bb.item_defaults && $scope.bb.item_defaults.long_id) {
+            total_id = $scope.bb.item_defaults.long_id;
+          } else {
+            total_id = QueryStringService('total_id');
+          }
           if (total_id) {
             params = {
               purchase_id: total_id,
@@ -6221,7 +6225,7 @@ function getURIparam( name ){
       }
       $scope.event = $scope.bb.current_item.event;
       $scope.event_options.use_my_details = $scope.event_options.use_my_details == null ? true : $scope.event_options.use_my_details;
-      promises = [$scope.current_item.event_group.getImagesPromise(), $scope.event.prepEvent()];
+      promises = [$scope.bb.current_item.event_group.getImagesPromise(), $scope.event.prepEvent()];
       if ($scope.client) {
         promises.push($scope.getPrePaidsForEvent($scope.client, $scope.event));
       }
@@ -6280,7 +6284,7 @@ function getURIparam( name ){
       var base_item, c, i, item, j, len, ref, ref1, ref2, ticket;
       $scope.notLoaded($scope);
       $scope.bb.emptyStackedItems();
-      base_item = $scope.current_item;
+      base_item = $scope.bb.current_item;
       ref1 = $scope.event.tickets;
       for (i = 0, len = ref1.length; i < len; i++) {
         ticket = ref1[i];
@@ -22323,6 +22327,12 @@ angular.module('BB.Directives')
       function EventChain(data) {
         EventChain.__super__.constructor.apply(this, arguments);
         this.capacity_view = setCapacityView(this.capacity_view);
+        if (this.start_date) {
+          this.start_date = moment(this.start_date);
+        }
+        if (this.end_date) {
+          this.end_date = moment(this.end_date);
+        }
       }
 
       EventChain.prototype.name = function() {
@@ -30316,7 +30326,7 @@ angular.module('BB.Directives')
   });
 
   angular.module('BB.Controllers').controller('Purchase', ["$scope", "$rootScope", "CompanyService", "PurchaseService", "ClientService", "$modal", "$location", "$timeout", "BBWidget", "BBModel", "$q", "QueryStringService", "SSOService", "AlertService", "LoginService", "$window", "ServiceService", "$sessionStorage", "SettingsService", "$translate", "ReasonService", function($scope, $rootScope, CompanyService, PurchaseService, ClientService, $modal, $location, $timeout, BBWidget, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, ServiceService, $sessionStorage, SettingsService, $translate, ReasonService) {
-    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getCompanyID, getPurchaseID, getReasons, loginRequired, setCancelReasons, setCancelReasonsToBB, setMoveReasons, setMoveReasonsToBB, setPurchaseCompany;
+    var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getBookings, getCompanyID, getPurchase, getPurchaseID, getReasons, loginRequired, setCancelReasons, setCancelReasonsToBB, setMoveReasons, setMoveReasonsToBB, setPurchaseCompany;
     $scope.controller = "Purchase";
     $scope.is_waitlist = false;
     $scope.make_payment = false;
@@ -30393,9 +30403,86 @@ angular.module('BB.Directives')
         }
       }
     };
+    getPurchase = function(params) {
+      var deferred;
+      deferred = $q.defer();
+      PurchaseService.query(params).then(function(purchase) {
+        deferred.resolve(purchase);
+        purchase.$get('company').then((function(_this) {
+          return function(company) {
+            return setPurchaseCompany(company);
+          };
+        })(this));
+        $scope.purchase = purchase;
+        $scope.bb.purchase = purchase;
+        return $scope.price = !($scope.purchase.price === 0);
+      }, function(err) {
+        $scope.setLoaded($scope);
+        if (err && err.status === 401) {
+          if (LoginService.isLoggedIn()) {
+            return failMsg();
+          } else {
+            return loginRequired();
+          }
+        } else {
+          return failMsg();
+        }
+      });
+      return deferred.promise;
+    };
+    getBookings = function(purchase) {
+      $scope.purchase.getBookingsPromise().then(function(bookings) {
+        var booking, i, len, ref, results;
+        $scope.bookings = bookings;
+        if (bookings[0]) {
+          bookings[0].getCompanyPromise().then(function(company) {
+            $scope.purchase.bookings[0].company = company;
+            if (company.$has("reasons")) {
+              getReasons(company).then(function(reasons) {
+                setCancelReasons();
+                setMoveReasons();
+                setMoveReasonsToBB();
+                return setCancelReasonsToBB();
+              });
+            }
+            return company.getAddressPromise().then(function(address) {
+              return $scope.purchase.bookings[0].company.address = address;
+            });
+          });
+        }
+        $scope.setLoaded($scope);
+        checkIfMoveBooking(bookings);
+        checkIfWaitlistBookings(bookings);
+        ref = $scope.bookings;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          booking = ref[i];
+          results.push(booking.getAnswersPromise().then(function(answers) {
+            return booking.answers = answers;
+          }));
+        }
+        return results;
+      }, function(err) {
+        $scope.setLoaded($scope);
+        return failMsg();
+      });
+      if (purchase.$has('client')) {
+        purchase.$get('client').then((function(_this) {
+          return function(client) {
+            return $scope.setClient(new BBModel.Client(client));
+          };
+        })(this));
+      }
+      return $scope.purchase.getConfirmMessages().then(function(messages) {
+        $scope.purchase.confirm_messages = messages;
+        return $scope.messages = messages;
+      });
+    };
     $scope.load = function(id) {
       $scope.notLoaded($scope);
-      id = getPurchaseID();
+      if (!id) {
+        id = getPurchaseID();
+      }
       if (!($scope.loaded || !id)) {
         $rootScope.widget_started.then((function(_this) {
           return function() {
@@ -30415,72 +30502,8 @@ angular.module('BB.Directives')
               if (auth_token) {
                 params.auth_token = auth_token;
               }
-              return PurchaseService.query(params).then(function(purchase) {
-                purchase.$get('company').then((function(_this) {
-                  return function(company) {
-                    return setPurchaseCompany(company);
-                  };
-                })(this));
-                $scope.purchase = purchase;
-                $scope.bb.purchase = purchase;
-                $scope.price = !($scope.purchase.price === 0);
-                $scope.purchase.getBookingsPromise().then(function(bookings) {
-                  var booking, i, len, ref, results;
-                  $scope.bookings = bookings;
-                  if (bookings[0]) {
-                    bookings[0].getCompanyPromise().then(function(company) {
-                      $scope.purchase.bookings[0].company = company;
-                      if (company.$has("reasons")) {
-                        getReasons(company).then(function(reasons) {
-                          setCancelReasons();
-                          setMoveReasons();
-                          setMoveReasonsToBB();
-                          return setCancelReasonsToBB();
-                        });
-                      }
-                      return company.getAddressPromise().then(function(address) {
-                        return $scope.purchase.bookings[0].company.address = address;
-                      });
-                    });
-                  }
-                  $scope.setLoaded($scope);
-                  checkIfMoveBooking(bookings);
-                  checkIfWaitlistBookings(bookings);
-                  ref = $scope.bookings;
-                  results = [];
-                  for (i = 0, len = ref.length; i < len; i++) {
-                    booking = ref[i];
-                    results.push(booking.getAnswersPromise().then(function(answers) {
-                      return booking.answers = answers;
-                    }));
-                  }
-                  return results;
-                }, function(err) {
-                  $scope.setLoaded($scope);
-                  return failMsg();
-                });
-                if (purchase.$has('client')) {
-                  purchase.$get('client').then((function(_this) {
-                    return function(client) {
-                      return $scope.setClient(new BBModel.Client(client));
-                    };
-                  })(this));
-                }
-                return $scope.purchase.getConfirmMessages().then(function(messages) {
-                  $scope.purchase.confirm_messages = messages;
-                  return $scope.messages = messages;
-                });
-              }, function(err) {
-                $scope.setLoaded($scope);
-                if (err && err.status === 401) {
-                  if (LoginService.isLoggedIn()) {
-                    return failMsg();
-                  } else {
-                    return loginRequired();
-                  }
-                } else {
-                  return failMsg();
-                }
+              return getPurchase(params).then(function(purchase) {
+                return getBookings(purchase);
               });
             }, function(err) {
               return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
@@ -30820,172 +30843,6 @@ angular.module('BB.Directives')
       return $modalInstance.dismiss("cancel");
     };
   };
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", ["$q", "halClient", "BBModel", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  }]);
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", ["$q", "halClient", "BBModel", "$window", "UriTemplate", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, j, len, len1, ref, ref1;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        if (params.move_reason) {
-          ref1 = data.bookings;
-          for (j = 0, len1 = ref1.length; j < len1; j++) {
-            booking = ref1[j];
-            booking.move_reason = params.move_reason;
-          }
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer, uri;
-        defer = $q.defer();
-        if (!params.purchase && !params.purchase_id) {
-          defer.reject("No purchase or purchase_id present");
-        }
-        data = {};
-        data.booking_id = params.booking.id;
-        if (params.purchase) {
-          params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-            return function(purchase) {
-              purchase = new BBModel.Purchase.Total(purchase);
-              return defer.resolve(purchase);
-            };
-          })(this), function(err) {
-            return defer.reject(err);
-          });
-        } else if (params.purchase_id && params.url_root) {
-          uri = params.url_root + "/api/v1/purchases/" + params.purchase_id + '/book_waitlist_item';
-          halClient.$put(uri, {}, data).then(function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          }, function(err) {
-            return defer.reject(err);
-          });
-        }
-        return defer.promise;
-      },
-      deleteAll: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      deleteItem: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
-  }]);
 
 }).call(this);
 
@@ -31655,6 +31512,172 @@ angular.module('BB.Directives')
       return Purchase_Total;
 
     })(BaseModel);
+  }]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", ["$q", "halClient", "BBModel", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  }]);
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", ["$q", "halClient", "BBModel", "$window", "UriTemplate", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, j, len, len1, ref, ref1;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        if (params.move_reason) {
+          ref1 = data.bookings;
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            booking = ref1[j];
+            booking.move_reason = params.move_reason;
+          }
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer, uri;
+        defer = $q.defer();
+        if (!params.purchase && !params.purchase_id) {
+          defer.reject("No purchase or purchase_id present");
+        }
+        data = {};
+        data.booking_id = params.booking.id;
+        if (params.purchase) {
+          params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+            return function(purchase) {
+              purchase = new BBModel.Purchase.Total(purchase);
+              return defer.resolve(purchase);
+            };
+          })(this), function(err) {
+            return defer.reject(err);
+          });
+        } else if (params.purchase_id && params.url_root) {
+          uri = params.url_root + "/api/v1/purchases/" + params.purchase_id + '/book_waitlist_item';
+          halClient.$put(uri, {}, data).then(function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        }
+        return defer.promise;
+      },
+      deleteAll: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      deleteItem: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
   }]);
 
 }).call(this);
