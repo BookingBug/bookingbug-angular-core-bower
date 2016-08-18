@@ -15257,7 +15257,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.1";
+        return "2.0.3";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -26761,6 +26761,26 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
+  angular.module('BB.Services').provider('FormTransform', function() {
+    var options;
+    options = {
+      "new": {},
+      edit: {}
+    };
+    this.getTransform = function(type, model) {
+      return options[type][model];
+    };
+    this.setTransform = function(type, model, fn) {
+      return options[type][model] = fn;
+    };
+    this.$get = function() {
+      return options;
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /*
@@ -27361,7 +27381,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('ModalForm', function($uibModal, $document, $log, Dialog) {
+  angular.module('BB.Services').factory('ModalForm', function($uibModal, $document, $log, Dialog, FormTransform) {
     var bookForm, checkSchema, editForm, newForm;
     newForm = function($scope, $uibModalInstance, company, title, new_rel, post_rel, success, fail) {
       $scope.loading = true;
@@ -27446,14 +27466,21 @@ angular.module('BB.Directives')
       $scope.title = title;
       $scope.model = model;
       if ($scope.model.$has('edit')) {
-        $scope.model.$get('edit').then(function(schema) {
-          $scope.form = _.reject(schema.form, function(x) {
-            return x.type === 'submit';
-          });
-          $scope.schema = checkSchema(schema.schema);
-          $scope.form_model = $scope.model;
-          return $scope.loading = false;
-        });
+        $scope.model.$get('edit').then((function(_this) {
+          return function(schema) {
+            var model_type;
+            $scope.form = _.reject(schema.form, function(x) {
+              return x.type === 'submit';
+            });
+            model_type = model.constructor.name;
+            if (FormTransform['edit'][model_type]) {
+              $scope.form = FormTransform['edit'][model_type]($scope.form);
+            }
+            $scope.schema = checkSchema(schema.schema);
+            $scope.form_model = $scope.model;
+            return $scope.loading = false;
+          };
+        })(this));
       } else {
         $log.warn("model does not have 'edit' rel");
       }
