@@ -15257,7 +15257,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.3";
+        return "2.0.4";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -28960,95 +28960,9 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  'use strict';
-  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel) {
+  angular.module('BB.Services').factory("UnwrapService", function($q, BBModel) {
     return {
-      unwrap: function(resource) {
-        return new BBModel.Address(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Person(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('people').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Person(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Resource(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('resources').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Resource(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Service(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
+      unwrapCollection: function(model, key, resource) {
         var deferred, models, service;
         deferred = $q.defer();
         if (angular.isArray(resource)) {
@@ -29057,19 +28971,19 @@ angular.module('BB.Directives')
             results = [];
             for (j = 0, len = resource.length; j < len; j++) {
               service = resource[j];
-              results.push(new BBModel.Service(service));
+              results.push(new model(service));
             }
             return results;
           })();
           deferred.resolve(models);
-        } else {
-          resource.$get('services').then((function(_this) {
+        } else if (resource.$has(key)) {
+          resource.$get(key).then((function(_this) {
             return function(items) {
               var i, j, len;
               models = [];
               for (j = 0, len = items.length; j < len; j++) {
                 i = items[j];
-                models.push(new BBModel.Service(i));
+                models.push(new model(i));
               }
               return deferred.resolve(models);
             };
@@ -29078,288 +28992,203 @@ angular.module('BB.Directives')
               return deferred.reject(err);
             };
           })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.package_item", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.PackageItem(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.package_items", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('package_items').then((function(_this) {
-          return function(package_items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = package_items.length; j < len; j++) {
-              i = package_items[j];
-              models.push(new BBModel.PackageItem(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.bulk_purchase", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.BulkPurchase(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.bulk_purchases", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var bulk_purchase, deferred, models;
-        deferred = $q.defer();
-        if (angular.isArray(resource)) {
-          models = (function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = resource.length; j < len; j++) {
-              bulk_purchase = resource[j];
-              results.push(new BBModel.BulkPurchase(bulk_purchase));
-            }
-            return results;
-          })();
-          deferred.resolve(models);
         } else {
-          resource.$get('bulk_purchases').then((function(_this) {
-            return function(bulk_purchases) {
-              var i, j, len;
-              models = [];
-              for (j = 0, len = bulk_purchases.length; j < len; j++) {
-                i = bulk_purchases[j];
-                models.push(new BBModel.BulkPurchase(i));
-              }
-              return deferred.resolve(models);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
+          defer.reject();
         }
         return deferred.promise;
+      },
+      unwrapResource: function(model, resource) {
+        return new model(resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.EventGroup(resource);
+        return UnwrapService.unwrapResource(BBModel.Address, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('event_groups').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.EventGroup(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.EventChain(resource);
+        return UnwrapService.unwrapResource(BBModel.Person, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.EventChain(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.Category(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('categories').then((function(_this) {
-          return function(items) {
-            var cat, i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              cat = new BBModel.Category(i);
-              cat.order || (cat.order = _i);
-              models.push(cat);
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.Person, 'people', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.Client(resource);
+        return UnwrapService.unwrapResource(BBModel.Resource, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('clients').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Client(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.Resource, 'resources', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Service, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('clients').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Client(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.Service, 'services', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.package_item", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        var defer, i, j, k, len, len1, ref, results, results1;
-        if (resource.questions) {
-          ref = resource.questions;
-          results = [];
-          for (j = 0, len = ref.length; j < len; j++) {
-            i = ref[j];
-            results.push(new BBModel.Question(i));
-          }
-          return results;
-        } else if (resource.$has('questions')) {
-          defer = $q.defer();
-          resource.$get('questions').then(function(items) {
-            return defer.resolve((function() {
-              var k, len1, results1;
-              results1 = [];
-              for (k = 0, len1 = items.length; k < len1; k++) {
-                i = items[k];
-                results1.push(new BBModel.Question(i));
-              }
-              return results1;
-            })());
-          }, function(err) {
-            return defer.reject(err);
-          });
-          return defer.promise;
-        } else {
-          results1 = [];
-          for (k = 0, len1 = resource.length; k < len1; k++) {
-            i = resource[k];
-            results1.push(new BBModel.Question(i));
-          }
-          return results1;
-        }
+        return UnwrapService.unwrapResource(BBModel.PackageItem, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.package_items", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.PackageItem, 'package_items', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.bulk_purchase", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.Question(resource);
+        return UnwrapService.unwrapResource(BBModel.BulkPurchase, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.bulk_purchases", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.BulkPurchase, 'bulk_purchases', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.EventGroup, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.EventGroup, 'event_groups', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.EventChain, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.EventChain, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Category, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Category, 'categories', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Client, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Client, 'clients', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Client, 'clients', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return unwrapCollection(BBModel.Question, 'questions', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Question, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel, UnwrapService) {
     return {
       promise: false,
       unwrap: function(items) {
@@ -29387,7 +29216,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(items) {
         var i, j, len, results;
@@ -29401,125 +29230,74 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.Company(resource);
+        return UnwrapService.unwrapResource(BBModel.Company, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.Company(resource);
+        return UnwrapService.unwrapResource(BBModel.Company, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('company_questions').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.BusinessQuestion(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel) {
-    return {
-      unwrap: function(resource) {
-        return new BBModel.BusinessQuestion(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('images').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Image(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.BusinessQuestion, 'company_questions', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.BusinessQuestion, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('bookings').then((function(_this) {
-          return function(items) {
-            var i, j, len, models;
-            models = [];
-            for (j = 0, len = items.length; j < len; j++) {
-              i = items[j];
-              models.push(new BBModel.Member.Booking(i));
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.Image, 'images', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Member.Booking, 'bookings', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.Member.Wallet(resource);
+        return UnwrapService.unwrapResource(BBModel.Member.Wallet, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.Product(resource);
+        return UnwrapService.unwrapResource(BBModel.Product, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
@@ -29547,182 +29325,80 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.PrePaidBooking(resource);
+        return UnwrapService.unwrapResource(BBModel.PrePaidBooking, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred, models, pre_paid_booking;
-        deferred = $q.defer();
-        if (angular.isArray(resource)) {
-          models = (function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = resource.length; j < len; j++) {
-              pre_paid_booking = resource[j];
-              results.push(new BBModel.PrePaidBooking(pre_paid_booking));
-            }
-            return results;
-          })();
-          deferred.resolve(models);
-        } else {
-          resource.$get('pre_paid_bookings').then((function(_this) {
-            return function(items) {
-              var i, j, len;
-              models = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                models.push(new BBModel.PrePaidBooking(i));
-              }
-              return deferred.resolve(models);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.PrePaidBooking, 'pre_paid_bookings', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.external_purchase", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.external_purchase", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.ExternalPurchase(resource);
+        return UnwrapService.unwrapResource(BBModel.ExternalPurchase, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.external_purchases", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.external_purchases", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred, external_purchase, models;
-        deferred = $q.defer();
-        if (angular.isArray(resource)) {
-          models = (function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = resource.length; j < len; j++) {
-              external_purchase = resource[j];
-              results.push(new BBModel.ExternalPurchase(external_purchase));
-            }
-            return results;
-          })();
-          deferred.resolve(models);
-        } else {
-          resource.$get('external_purchases').then((function(_this) {
-            return function(items) {
-              var i, j, len;
-              models = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                models.push(new BBModel.ExternalPurchase(i));
-              }
-              return deferred.resolve(models);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
+        return UnwrapService.unwrapCollection(BBModel.ExternalPurchase, 'external_purchases', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.purchase_item", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.purchase_item", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return new BBModel.PurchaseItem(resource);
+        return UnwrapService.unwrapResource(BBModel.PurchaseItem, resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.purchase_items", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.purchase_items", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred, models, purchase_item;
-        deferred = $q.defer();
-        if (angular.isArray(resource)) {
-          models = (function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = resource.length; j < len; j++) {
-              purchase_item = resource[j];
-              results.push(new BBModel.PurchaseItem(purchase_item));
-            }
-            return results;
-          })();
-          deferred.resolve(models);
-        } else {
-          resource.$get('purchase_items').then((function(_this) {
-            return function(items) {
-              var i, j, len;
-              models = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                models.push(new BBModel.PurchaseItem(i));
-              }
-              return deferred.resolve(models);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
+        return unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
       }
     };
   });
 
-  angular.module('BB.Services').factory("BB.Service.events", function($q, BBModel) {
+  angular.module('BB.Services').factory("BB.Service.events", function($q, BBModel, UnwrapService) {
     return {
       promise: true,
       unwrap: function(resource) {
-        var deferred, event, models;
-        deferred = $q.defer();
-        if (angular.isArray(resource)) {
-          models = (function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = resource.length; j < len; j++) {
-              event = resource[j];
-              results.push(new BBModel.Event(event));
-            }
-            return results;
-          })();
-          deferred.resolve(models);
-        } else {
-          resource.$get('events').then((function(_this) {
-            return function(items) {
-              var i, j, len;
-              models = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                models.push(new BBModel.Event(i));
-              }
-              return deferred.resolve(models);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
+        return unwrapCollection(BModel.Event, 'events', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.all_children", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Service, 'services', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.child_services", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Service, 'child_services', resource);
       }
     };
   });
