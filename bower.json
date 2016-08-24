@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "2.0.4",
+  "version": "2.0.6",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -9,7 +9,8 @@
   "main": [
     "bookingbug-angular-core.js",
     "bookingbug-angular-core-templates.js",
-    "bookingbug-angular-core.css"
+    "bookingbug-angular-core.css",
+    "src/stylesheets/*"
   ],
   "license": "MIT",
   "ignore": [
