@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "2.0.11",
+  "version": "2.0.13",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -37,7 +37,7 @@
     "moment": "~2.14.0",
     "moment-timezone": "~0.5.4",
 
-    "fullcalendar": "~2.9.1",
+    "fullcalendar": "~3.0.0",
     "fontawesome": "~4.6.3",
     "angular-ui-router": "~0.2.18",
 
@@ -76,7 +76,7 @@
   "resolutions": {
     "jquery": "~1.11.3",
     "angular": "~1.5.8",
-    "fullcalendar": ">=2.9.1",
+    "fullcalendar": ">=3.0.0",
     "moment": "~2.14.0",
     "angular-ui-router": "^0.2.8"
   }
