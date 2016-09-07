@@ -15290,7 +15290,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.11";
+        return "2.0.13";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -17118,7 +17118,7 @@ angular.module('BB.Directives')
       val = parseInt(v);
       if (val < 60) {
         str = val + " " + min_string;
-        if (val > 1) {
+        if (val !== 1) {
           str += "s";
         }
         return str;
@@ -17133,7 +17133,7 @@ angular.module('BB.Directives')
         }
       } else {
         str = hours + " " + hour_string;
-        if (hours > 1) {
+        if (hours !== 1) {
           str += "s";
         }
         if (mins === 0) {
@@ -17143,7 +17143,7 @@ angular.module('BB.Directives')
           str += " " + separator;
         }
         str += " " + mins + " " + min_string;
-        if (mins > 1) {
+        if (mins !== 1) {
           str += "s";
         }
       }
