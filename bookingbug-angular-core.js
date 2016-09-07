@@ -15290,7 +15290,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.13";
+        return "2.0.14";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -26971,7 +26971,7 @@ angular.module('BB.Directives')
     var options;
     options = {
       twelve_hour_format: false,
-      calendar_minute_step: 10,
+      calendar_minute_step: 5,
       calendar_min_time: "09:00",
       calendar_max_time: "18:00",
       calendar_slot_duration: 5
