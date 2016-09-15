@@ -15228,7 +15228,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.61";
+        return "1.4.62";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
