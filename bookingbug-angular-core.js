@@ -2,7 +2,7 @@
   'use strict';
   var app;
 
-  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'slickCarousel']);
+  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'slickCarousel', 'ui.select', 'BB.i18n']);
 
   app.value('AppConfig', {
     appId: 'f6b16c23',
@@ -79,7 +79,7 @@
     }
   });
 
-  angular.module('BB.Services', ['ngResource', 'ngSanitize']);
+  angular.module('BB.Services', ['ngResource', 'ngSanitize', 'pascalprecht.translate']);
 
   angular.module('BB.Controllers', ['ngSanitize']);
 
@@ -129,6 +129,12 @@
     }
     return this.trim().replace(/\s/g, seperator).toLowerCase();
   };
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n', []);
 
 }).call(this);
 
@@ -13752,7 +13758,6 @@ angular.module('BB.Directives')
       link: function(scope, element, attr) {
         return $timeout(function() {
           if (attr.autofocus === '' || scope.$eval(attr.autofocus)) {
-            console.log('do autofocus');
             return element[0].focus();
           }
         });
@@ -15290,7 +15295,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.17";
+        return "2.0.18";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -17387,6 +17392,77 @@ angular.module('BB.Directives')
       }
       return answer;
     };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /**
+  * @ngdoc filter
+  * @name BB.Filters.filter:props
+  * @description
+  * Does an OR operation
+   */
+  angular.module('BB.Filters').filter('props', function($translate) {
+    'ngInject';
+    return function(items, props) {
+      var keys, out;
+      out = [];
+      if (angular.isArray(items)) {
+        keys = Object.keys(props);
+        items.forEach(function(item) {
+          var i, itemMatches, prop, text;
+          itemMatches = false;
+          i = 0;
+          while (i < keys.length) {
+            prop = keys[i];
+            text = props[prop].toLowerCase();
+            if ((item[prop] != null) && $translate.instant(item[prop]).toString().toLowerCase().indexOf(text) !== -1) {
+              itemMatches = true;
+              break;
+            }
+            i++;
+          }
+          if (itemMatches) {
+            out.push(item);
+          }
+        });
+      } else {
+        out = items;
+      }
+      return out;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n').config(function($translateProvider, TranslationOptionsProvider) {
+    'ngInject';
+    $translateProvider.useSanitizeValueStrategy('sanitizeParameters');
+    $translateProvider.useLocalStorage();
+    $translateProvider.addInterpolation('$translateMessageFormatInterpolation');
+    $translateProvider.fallbackLanguage(TranslationOptionsProvider.getOption('available_languages'));
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n').run(function($translate, TranslationOptions, RuntimeTranslate) {
+    'ngInject';
+    var browserLocale;
+    RuntimeTranslate.registerAvailableLanguageKeys(TranslationOptions.available_languages, TranslationOptions.available_language_associations);
+    $translate.preferredLanguage(TranslationOptions.default_language);
+    if (TranslationOptions.use_browser_language) {
+      browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
+      if (_.contains(TranslationOptions.available_languages, browserLocale)) {
+        $translate.preferredLanguage(browserLocale);
+      }
+    }
   });
 
 }).call(this);
@@ -27541,7 +27617,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('ModalForm', function($uibModal, $document, $log, Dialog, FormTransform) {
+  angular.module('BB.Services').factory('ModalForm', function($uibModal, $document, $log, Dialog, FormTransform, $translate) {
     var bookForm, checkSchema, editForm, newForm;
     newForm = function($scope, $uibModalInstance, company, title, new_rel, post_rel, success, fail) {
       $scope.loading = true;
@@ -27693,7 +27769,7 @@ angular.module('BB.Directives')
         }
       };
       return $scope.cancelEvent = function(event, type) {
-        var modal_instance;
+        var modal_instance, question;
         if (type == null) {
           type = 'booking';
         }
@@ -27724,10 +27800,18 @@ angular.module('BB.Directives')
             });
           });
         } else {
+          question = null;
+          if (type === 'appointment') {
+            question = $translate.instant('MODAL.CANCEL_BOOKING.QUESTION', {
+              type: type
+            });
+          } else {
+            question = $translate.instant('MODAL.CANCEL_BOOKING.APPOINTMENT_QUESTION');
+          }
           return Dialog.confirm({
             model: model,
-            title: 'Cancel',
-            body: "Are you sure you want to cancel this " + type + "?",
+            title: $translate.instant('MODAL.CANCEL_BOOKING.HEADER'),
+            body: question,
             success: function(model) {
               return model.$del('self').then(function(response) {
                 if (success) {
@@ -30624,6 +30708,188 @@ angular.module('BB.Directives')
       return Widget;
 
     })();
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: 'Cancel',
+            QUESTION: 'Are you sure you want to cancel this {{type}}?',
+            APPOINTMENT_QUESTION: 'Are you sure you want to cancel this appointment?'
+          }
+        }
+      },
+      COMMON: {
+        BTN: {
+          CANCEL: 'Cancel',
+          CLOSE: 'Close',
+          NO: 'No',
+          OK: 'OK',
+          YES: 'Yes'
+        },
+        LANGUAGE: {
+          EN: 'English',
+          FR: 'Français'
+        }
+      }
+    };
+    $translateProvider.translations('en', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n').controller('languagePickerController', function($scope, $translate, TranslationOptions, $rootScope) {
+    'ngInject';
+
+    /*jshint validthis: true */
+    var init, loadAvailableLanguages, pickLanguage, setCurrentLanguage, vm;
+    vm = this;
+    vm.language = null;
+    vm.availableLanguages = [];
+    init = function() {
+      vm.pickLanguage = pickLanguage;
+      setCurrentLanguage();
+      loadAvailableLanguages();
+      $scope.$on('LanguagePicker:updateLanguage', setCurrentLanguage);
+    };
+    setCurrentLanguage = function() {
+      var languageKey;
+      languageKey = $translate.use();
+      if (languageKey === 'undefined') {
+        languageKey = $translate.preferredLanguage();
+      }
+      vm.language = {
+        selected: {
+          identifier: languageKey,
+          label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
+        }
+      };
+    };
+    loadAvailableLanguages = function() {
+      angular.forEach(TranslationOptions.available_languages, function(languageKey, index) {
+        return vm.availableLanguages.push({
+          identifier: languageKey,
+          label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
+        });
+      });
+    };
+    pickLanguage = function(language) {
+      $translate.use(language);
+      $rootScope.$broadcast('LanguagePicker:changeLanguage');
+    };
+    init();
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /**
+   * @ngdoc directive
+   * @name BB.i18n:bbLanguagePicker
+   * @scope
+   * @restrict A
+   *
+   * @description
+   * Responsible for providing a ui representation of available translations
+   *
+   */
+  angular.module('BB.i18n').directive('bbLanguagePicker', function() {
+    'ngInject';
+    var link;
+    link = function(scope, element, attrs) {
+      if (scope.vm.availableLanguages.length <= 1) {
+        angular.element(element).addClass('hidden');
+      }
+    };
+    return {
+      controller: 'languagePickerController',
+      controllerAs: 'vm',
+      link: link,
+      restrict: 'A',
+      scope: true,
+      templateUrl: 'i18n/language_picker.html'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n').provider('TranslationOptions', function() {
+    'ngInject';
+    var options;
+    options = {
+      default_language: 'en',
+      use_browser_language: true,
+      available_languages: ['en'],
+      available_language_associations: {
+        'en_*': 'en'
+      }
+    };
+    this.setOption = function(option, value) {
+      if (options.hasOwnProperty(option)) {
+        options[option] = value;
+      }
+    };
+    this.getOption = function(option) {
+      if (options.hasOwnProperty(option)) {
+        return options[option];
+      }
+    };
+    this.$get = function() {
+      return options;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /**
+  * @ngdoc service
+  * @name BB.i18n.RuntimeTranslate
+  *
+  * @description
+  * Returns an instance of $translateProvider that allows late language binding (on runtime)
+   */
+
+  /**
+  * @ngdoc service
+  * @name BB.i18n.RuntimeTranslateProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <pre>
+    angular.module('ExampleModule').config ['RuntimeTranslateProvider', '$translateProvider', (RuntimeTranslateProvider, $translateProvider) ->
+      RuntimeTranslateProvider.setProvider($translateProvider)
+    ]
+    </pre>
+   */
+  angular.module('BB.i18n').provider('RuntimeTranslate', function($translateProvider) {
+    'ngInject';
+    var translateProvider;
+    translateProvider = $translateProvider;
+    this.setProvider = function(provider) {
+      return translateProvider = provider;
+    };
+    this.$get = function() {
+      return translateProvider;
+    };
   });
 
 }).call(this);
