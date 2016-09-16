@@ -15295,7 +15295,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.18";
+        return "2.0.19";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -24881,6 +24881,40 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: 'Cancel',
+            QUESTION: 'Are you sure you want to cancel this {{type}}?',
+            APPOINTMENT_QUESTION: 'Are you sure you want to cancel this appointment?'
+          }
+        }
+      },
+      COMMON: {
+        BTN: {
+          CANCEL: 'Cancel',
+          CLOSE: 'Close',
+          NO: 'No',
+          OK: 'OK',
+          YES: 'Yes'
+        },
+        LANGUAGE: {
+          EN: 'English',
+          FR: 'Français'
+        }
+      }
+    };
+    $translateProvider.translations('en', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
     return {
       query: function(prms) {
@@ -30708,40 +30742,6 @@ angular.module('BB.Directives')
       return Widget;
 
     })();
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').config(function($translateProvider) {
-    'ngInject';
-    var translations;
-    translations = {
-      CORE: {
-        MODAL: {
-          CANCEL_BOOKING: {
-            HEADER: 'Cancel',
-            QUESTION: 'Are you sure you want to cancel this {{type}}?',
-            APPOINTMENT_QUESTION: 'Are you sure you want to cancel this appointment?'
-          }
-        }
-      },
-      COMMON: {
-        BTN: {
-          CANCEL: 'Cancel',
-          CLOSE: 'Close',
-          NO: 'No',
-          OK: 'OK',
-          YES: 'Yes'
-        },
-        LANGUAGE: {
-          EN: 'English',
-          FR: 'Français'
-        }
-      }
-    };
-    $translateProvider.translations('en', translations);
   });
 
 }).call(this);
