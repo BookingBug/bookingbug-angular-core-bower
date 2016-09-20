@@ -2,7 +2,7 @@
   'use strict';
   var app;
 
-  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'slickCarousel', 'ui.select', 'BB.i18n']);
+  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'ui.select', 'BB.i18n']);
 
   app.value('AppConfig', {
     appId: 'f6b16c23',
@@ -134,7 +134,7 @@
 
 (function() {
   'use strict';
-  angular.module('BB.i18n', []);
+  angular.module('BB.i18n', ['tmh.dynamicLocale']);
 
 }).call(this);
 
@@ -2505,7 +2505,7 @@ function getURIparam( name ){
   * @property {string} pusher_channel The pusher channel
   * @property {string} init_params Initialization of basic parameters
    */
-  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope) {
+  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope, SettingsService) {
 
     /***
     * @ngdoc method
@@ -2651,7 +2651,7 @@ function getURIparam( name ){
       transclude: true,
       controller: 'BBCtrl',
       link: function(scope, element, attrs, controller, transclude) {
-        var evaluator, init_params;
+        var evaluator, init_params, notInModal;
         if (attrs.member != null) {
           scope.client = attrs.member;
         }
@@ -2661,7 +2661,7 @@ function getURIparam( name ){
         }
         init_params = evaluator.$eval(attrs.bbWidget);
         scope.initWidget(init_params);
-        return $rootScope.widget_started.then((function(_this) {
+        $rootScope.widget_started.then((function(_this) {
           return function() {
             var prms;
             prms = scope.bb;
@@ -2715,6 +2715,24 @@ function getURIparam( name ){
             });
           };
         })(this));
+        notInModal = function(p) {
+          if (p.length === 0 || p[0].attributes === void 0) {
+            return true;
+          } else if (p[0].attributes['uib-modal-window'] !== void 0) {
+            return false;
+          } else {
+            if (p.parent().length === 0) {
+              return true;
+            } else {
+              return notInModal(p.parent());
+            }
+          }
+        };
+        return scope.$watch(function() {
+          return SettingsService.isModalOpen();
+        }, function(modalOpen) {
+          return scope.coveredByModal = modalOpen && notInModal(element.parent());
+        });
       }
     };
   });
@@ -13876,6 +13894,29 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Directives').directive('bbMonthPickerListener', function(PathSvc, $timeout) {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, el, attrs) {
+        $(window).resize(function() {
+          return $timeout(function() {
+            return scope.carouselIndex = 0;
+          });
+        });
+        return scope.$on('event_list_filter:changed', function() {
+          return $timeout(function() {
+            return scope.carouselIndex = 0;
+          });
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
 
   /***
   * @ngdoc directive
@@ -15295,7 +15336,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.19";
+        return "2.0.20";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -16185,19 +16226,35 @@ angular.module('BB.Directives')
         return PathSvc.directivePartial("_month_picker");
       },
       link: function(scope, el, attrs) {
-        var stopWatch;
         scope.picker_settings = scope.$eval(attrs.bbMonthPicker) || {};
         scope.picker_settings.months_to_show = scope.picker_settings.months_to_show || 3;
-        return stopWatch = scope.$watch(attrs.dayData, function(dates) {
-          if (dates) {
-            scope.processDates(dates);
-            return stopWatch();
+        $(window).resize(function() {
+          return $timeout(function() {
+            var width;
+            width = el.width();
+            return scope.rebuildSlideToWidth(width);
+          }, 500);
+        });
+        return scope.$watch(attrs.dayData, function(dayData) {
+          var width;
+          if (dayData) {
+            if (!dayData.length) {
+              scope.months = null;
+            }
+            if (dayData.length) {
+              scope.processDates(dayData);
+            }
+            width = el.width();
+            return scope.rebuildSlideToWidth(width);
           }
         });
       },
       controller: function($scope) {
         $scope.processDates = function(dates) {
-          var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
+          var date, datehash, diff, first_carousel_month, i, last_date, len;
+          if (!dates.length) {
+            dates = null;
+          }
           datehash = {};
           for (i = 0, len = dates.length; i < len; i++) {
             date = dates[i];
@@ -16207,91 +16264,15 @@ angular.module('BB.Directives')
             }
           }
           if ($scope.picker_settings.start_at_first_available_day) {
-            cur_month = $scope.first_available_day.clone().startOf('month');
+            first_carousel_month = $scope.first_available_day.clone().startOf('month');
           } else {
-            cur_month = moment().startOf('month');
+            first_carousel_month = moment().startOf('month');
           }
           last_date = _.last(dates);
-          diff = last_date.date.diff(cur_month, 'months');
+          diff = last_date.date.diff(first_carousel_month, 'months');
           diff = diff > 0 ? diff + 1 : 1;
           $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
-          months = [];
-          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
-            date = cur_month.clone().startOf('week');
-            month = {
-              weeks: []
-            };
-            month.index = m - 1;
-            for (w = k = 1; k <= 6; w = ++k) {
-              week = {
-                days: []
-              };
-              for (d = l = 1; l <= 7; d = ++l) {
-                if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
-                  month.start_date = date.clone();
-                }
-                day_data = datehash[date.format("DDMMYY")];
-                day = {
-                  date: date.clone(),
-                  data: day_data,
-                  available: day_data && day_data.spaces && day_data.spaces > 0,
-                  today: moment().isSame(date, 'day'),
-                  past: date.isBefore(moment(), 'day'),
-                  disabled: !month.start_date || !date.isSame(month.start_date, 'month')
-                };
-                week.days.push(day);
-                if ($scope.selected_date && day.date.isSame($scope.selected_date, 'day')) {
-                  day.selected = true;
-                  $scope.selected_day = day;
-                }
-                date.add(1, 'day');
-              }
-              month.weeks.push(week);
-            }
-            months.push(month);
-            cur_month.add(1, 'month');
-          }
-          $scope.months = months;
-          return $scope.slick_config = {
-            nextArrow: ".month-next",
-            prevArrow: ".month-prev",
-            slidesToShow: $scope.months.length >= $scope.picker_settings.months_to_show ? $scope.picker_settings.months_to_show : $scope.months.length,
-            infinite: false,
-            responsive: [
-              {
-                breakpoint: 1200,
-                settings: {
-                  slidesToShow: $scope.months.length >= 2 ? 2 : $scope.months.length
-                }
-              }, {
-                breakpoint: 992,
-                settings: {
-                  slidesToShow: 1
-                }
-              }
-            ],
-            method: {},
-            event: {
-              init: function(event, slick) {
-                return $timeout(function() {
-                  var len1, n, ref1, results;
-                  if ($scope.selected_day != null) {
-                    ref1 = $scope.months;
-                    results = [];
-                    for (n = 0, len1 = ref1.length; n < len1; n++) {
-                      m = ref1[n];
-                      if (m.start_date.month() === $scope.selected_day.date.month()) {
-                        results.push(slick.slickGoTo(m.index));
-                      } else {
-                        results.push(void 0);
-                      }
-                    }
-                    return results;
-                  }
-                });
-              }
-            }
-          };
+          return $scope.months = $scope.getMonths($scope.num_months, first_carousel_month, datehash);
         };
         $scope.$on('event_list_filter_date:changed', function(event, date) {
           var newDay;
@@ -16335,6 +16316,109 @@ angular.module('BB.Directives')
             $scope.selected_day.selected = true;
           }
           return $scope.showDay(day.date);
+        };
+        $scope.rebuildSlide = function(n) {
+          var fillerMonths, i, j, last_carousel_month, len, len1, month, monthCollection, months, num_empty_months_to_add, ref, ref1, slide, value;
+          last_carousel_month = moment().startOf('month');
+          num_empty_months_to_add = 0;
+          if ($scope.months && $scope.months.length) {
+            months = [];
+            ref = $scope.months;
+            for (i = 0, len = ref.length; i < len; i++) {
+              month = ref[i];
+              if (month && !month.filler) {
+                months.push(month);
+              }
+            }
+            if (months.length) {
+              $scope.months = months;
+            }
+            last_carousel_month = angular.copy($scope.months[$scope.months.length - 1].start_date);
+            last_carousel_month.add(1, 'month');
+            num_empty_months_to_add = n - ($scope.months.length % n);
+            if (num_empty_months_to_add === n) {
+              num_empty_months_to_add = 0;
+            }
+          } else {
+            num_empty_months_to_add = n;
+            last_carousel_month = moment().startOf('month');
+          }
+          monthCollection = [];
+          slide = [];
+          if (!$scope.months) {
+            $scope.months = [];
+          }
+          fillerMonths = $scope.getMonths(num_empty_months_to_add, last_carousel_month);
+          $scope.months = $scope.months.concat(fillerMonths);
+          ref1 = $scope.months;
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            value = ref1[j];
+            if (slide.length === n) {
+              monthCollection.push(slide);
+              slide = [];
+            }
+            slide.push(value);
+          }
+          monthCollection.push(slide);
+          return $scope.monthCollection = monthCollection;
+        };
+        $scope.getMonths = function(months_to_display, start_month, datehash) {
+          var d, date, day, day_data, i, j, k, m, month, months, ref, w, week;
+          months = [];
+          for (m = i = 0, ref = months_to_display; 0 <= ref ? i < ref : i > ref; m = 0 <= ref ? ++i : --i) {
+            date = start_month.clone().startOf('week');
+            month = {
+              weeks: []
+            };
+            month.index = m - 1;
+            for (w = j = 1; j <= 6; w = ++j) {
+              week = {
+                days: []
+              };
+              for (d = k = 1; k <= 7; d = ++k) {
+                if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
+                  month.start_date = date.clone();
+                }
+                if (datehash) {
+                  day_data = datehash[date.format("DDMMYY")];
+                }
+                day = {
+                  date: date.clone(),
+                  data: datehash ? day_data : null,
+                  available: datehash ? day_data && day_data.spaces && day_data.spaces > 0 : false,
+                  today: moment().isSame(date, 'day'),
+                  past: date.isBefore(moment(), 'day'),
+                  disabled: !month.start_date || !date.isSame(month.start_date, 'month')
+                };
+                week.days.push(day);
+                if ($scope.selected_date && day.date.isSame($scope.selected_date, 'day')) {
+                  day.selected = true;
+                  $scope.selected_day = day;
+                }
+                date.add(1, 'day');
+              }
+              if (!datehash) {
+                month.filler = true;
+              }
+              month.weeks.push(week);
+            }
+            months.push(month);
+            start_month.add(1, 'month');
+          }
+          return months;
+        };
+        $scope.rebuildSlideToWidth = function(width) {
+          var num_slides_to_display;
+          if (width > 750) {
+            num_slides_to_display = 3;
+            return $scope.rebuildSlide(num_slides_to_display);
+          } else if (width > 550) {
+            num_slides_to_display = 2;
+            return $scope.rebuildSlide(num_slides_to_display);
+          } else {
+            num_slides_to_display = 1;
+            return $scope.rebuildSlide(num_slides_to_display);
+          }
         };
         return $scope.getDay = function(date) {
           var day, i, j, k, len, len1, len2, month, ref, ref1, ref2, week;
@@ -17440,12 +17524,14 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').config(function($translateProvider, TranslationOptionsProvider) {
+  angular.module('BB.i18n').config(function(tmhDynamicLocaleProvider, $translateProvider, TranslationOptionsProvider) {
     'ngInject';
     $translateProvider.useSanitizeValueStrategy('sanitizeParameters');
     $translateProvider.useLocalStorage();
     $translateProvider.addInterpolation('$translateMessageFormatInterpolation');
     $translateProvider.fallbackLanguage(TranslationOptionsProvider.getOption('available_languages'));
+    tmhDynamicLocaleProvider.localeLocationPattern('angular-i18n/angular-locale_{{locale}}.js');
+    tmhDynamicLocaleProvider.useCookieStorage();
   });
 
 }).call(this);
@@ -24881,40 +24967,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').config(function($translateProvider) {
-    'ngInject';
-    var translations;
-    translations = {
-      CORE: {
-        MODAL: {
-          CANCEL_BOOKING: {
-            HEADER: 'Cancel',
-            QUESTION: 'Are you sure you want to cancel this {{type}}?',
-            APPOINTMENT_QUESTION: 'Are you sure you want to cancel this appointment?'
-          }
-        }
-      },
-      COMMON: {
-        BTN: {
-          CANCEL: 'Cancel',
-          CLOSE: 'Close',
-          NO: 'No',
-          OK: 'OK',
-          YES: 'Yes'
-        },
-        LANGUAGE: {
-          EN: 'English',
-          FR: 'Français'
-        }
-      }
-    };
-    $translateProvider.translations('en', translations);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
     return {
       query: function(prms) {
@@ -27731,12 +27783,13 @@ angular.module('BB.Directives')
       }
       return schema;
     };
-    editForm = function($scope, $uibModalInstance, model, title, success, fail) {
+    editForm = function($scope, $uibModalInstance, model, title, success, fail, params) {
       $scope.loading = true;
       $scope.title = title;
       $scope.model = model;
+      params || (params = {});
       if ($scope.model.$has('edit')) {
-        $scope.model.$get('edit').then((function(_this) {
+        $scope.model.$get('edit', params).then((function(_this) {
           return function(schema) {
             var model_type;
             $scope.form = _.reject(schema.form, function(x) {
@@ -27959,6 +28012,9 @@ angular.module('BB.Directives')
             },
             fail: function() {
               return config.fail;
+            },
+            params: function() {
+              return config.params || {};
             }
           }
         });
@@ -30748,19 +30804,58 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').controller('languagePickerController', function($scope, $translate, TranslationOptions, $rootScope) {
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: 'Cancel',
+            QUESTION: 'Are you sure you want to cancel this {{type}}?',
+            APPOINTMENT_QUESTION: 'Are you sure you want to cancel this appointment?'
+          }
+        }
+      },
+      COMMON: {
+        BTN: {
+          CANCEL: 'Cancel',
+          CLOSE: 'Close',
+          NO: 'No',
+          OK: 'OK',
+          YES: 'Yes'
+        },
+        LANGUAGE: {
+          EN: 'English',
+          FR: 'Français'
+        }
+      }
+    };
+    $translateProvider.translations('en', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n').controller('languagePickerController', function($locale, $rootScope, tmhDynamicLocale, $translate, TranslationOptions, $scope) {
     'ngInject';
 
     /*jshint validthis: true */
-    var init, loadAvailableLanguages, pickLanguage, setCurrentLanguage, vm;
+    var createLanguage, init, pickLanguage, seAvailableLanguages, setCurrentLanguage, vm;
     vm = this;
     vm.language = null;
     vm.availableLanguages = [];
     init = function() {
-      vm.pickLanguage = pickLanguage;
+      seAvailableLanguages();
       setCurrentLanguage();
-      loadAvailableLanguages();
-      $scope.$on('LanguagePicker:updateLanguage', setCurrentLanguage);
+      $scope.$on('BBLanguagePicker:refresh', setCurrentLanguage);
+      vm.pickLanguage = pickLanguage;
+    };
+    seAvailableLanguages = function() {
+      angular.forEach(TranslationOptions.available_languages, function(languageKey) {
+        return vm.availableLanguages.push(createLanguage(languageKey));
+      });
     };
     setCurrentLanguage = function() {
       var languageKey;
@@ -30769,23 +30864,31 @@ angular.module('BB.Directives')
         languageKey = $translate.preferredLanguage();
       }
       vm.language = {
-        selected: {
-          identifier: languageKey,
-          label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
-        }
+        selected: createLanguage(languageKey)
+      };
+      if (languageKey !== $locale.id) {
+        pickLanguage(languageKey);
+      }
+    };
+
+    /*
+     * @param {String]
+     */
+    createLanguage = function(languageKey) {
+      return {
+        identifier: languageKey,
+        label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
       };
     };
-    loadAvailableLanguages = function() {
-      angular.forEach(TranslationOptions.available_languages, function(languageKey, index) {
-        return vm.availableLanguages.push({
-          identifier: languageKey,
-          label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
-        });
+
+    /*
+     * @param {String]
+     */
+    pickLanguage = function(languageKey) {
+      tmhDynamicLocale.set(languageKey).then(function() {
+        $translate.use(languageKey);
+        $rootScope.$broadcast('BBLanguagePicker:languageChanged');
       });
-    };
-    pickLanguage = function(language) {
-      $translate.use(language);
-      $rootScope.$broadcast('LanguagePicker:changeLanguage');
     };
     init();
   });
