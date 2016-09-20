@@ -11501,14 +11501,29 @@ function getURIparam( name ){
   *  </example>
   *
    */
-  angular.module('BB.Directives').directive('bbServices', function() {
+  angular.module('BB.Directives').directive('bbServices', function($q, $compile, $templateCache) {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
+      transclude: true,
       controller: 'ServiceList',
-      link: function(scope, element, attrs) {
-        return scope.directives = "public.ServiceList";
+      link: function(scope, element, attrs, ctrls, transclude) {
+        scope.directives = "public.ServiceList";
+        return transclude(scope, (function(_this) {
+          return function(clone) {
+            var has_content;
+            has_content = clone.length > 1 || (clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText)));
+            if (has_content) {
+              return element.html(clone).show();
+            } else {
+              return $q.when($templateCache.get('_services.html')).then(function(template) {
+                element.html(template).show();
+                return $compile(element.contents())(scope);
+              });
+            }
+          };
+        })(this));
       }
     };
   });
@@ -15336,7 +15351,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.20";
+        return "2.0.21";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
