@@ -15351,7 +15351,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.21";
+        return "2.0.22";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -27799,6 +27799,7 @@ angular.module('BB.Directives')
       return schema;
     };
     editForm = function($scope, $uibModalInstance, model, title, success, fail, params) {
+      var functionName;
       $scope.loading = true;
       $scope.title = title;
       $scope.model = model;
@@ -27810,7 +27811,7 @@ angular.module('BB.Directives')
             $scope.form = _.reject(schema.form, function(x) {
               return x.type === 'submit';
             });
-            model_type = model.constructor.name;
+            model_type = functionName(model.constructor);
             if (FormTransform['edit'][model_type]) {
               $scope.form = FormTransform['edit'][model_type]($scope.form);
             }
@@ -27822,6 +27823,15 @@ angular.module('BB.Directives')
       } else {
         $log.warn("model does not have 'edit' rel");
       }
+      functionName = function(func) {
+        var result;
+        result = /^function\s+([\w\$]+)\s*\(/.exec(func.toString());
+        if (result) {
+          return result[1];
+        } else {
+          return '';
+        }
+      };
       $scope.submit = function(form) {
         $scope.$broadcast('schemaFormValidate');
         $scope.loading = true;
@@ -27904,15 +27914,15 @@ angular.module('BB.Directives')
         } else {
           question = null;
           if (type === 'appointment') {
-            question = $translate.instant('MODAL.CANCEL_BOOKING.QUESTION', {
+            question = $translate.instant('CORE.MODAL.CANCEL_BOOKING.QUESTION', {
               type: type
             });
           } else {
-            question = $translate.instant('MODAL.CANCEL_BOOKING.APPOINTMENT_QUESTION');
+            question = $translate.instant('CORE.MODAL.CANCEL_BOOKING.APPOINTMENT_QUESTION');
           }
           return Dialog.confirm({
             model: model,
-            title: $translate.instant('MODAL.CANCEL_BOOKING.HEADER'),
+            title: $translate.instant('CORE.MODAL.CANCEL_BOOKING.HEADER'),
             body: question,
             success: function(model) {
               return model.$del('self').then(function(response) {
