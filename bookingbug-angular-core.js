@@ -2,7 +2,7 @@
   'use strict';
   var app;
 
-  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'ui.select', 'BB.i18n']);
+  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'ui.select', 'BB.i18n', 'angular-carousel']);
 
   app.value('AppConfig', {
     appId: 'f6b16c23',
@@ -10642,7 +10642,11 @@ function getURIparam( name ){
             referrer += ":" + $location.port();
           }
           if (scope.payment_options.custom_stylesheet) {
-            custom_stylesheet = scope.payment_options.custom_stylesheet;
+            if (custom_stylesheet.match(/http/)) {
+              custom_stylesheet = scope.payment_options.custom_stylesheet;
+            } else {
+              custom_stylesheet = $location.absUrl().match(/.+(?=#)/) + scope.payment_options.custom_stylesheet;
+            }
           }
           payload = JSON.stringify({
             'type': 'load',
@@ -14135,7 +14139,7 @@ angular.module('BB.Directives')
             attrs.uibDatepickerPopup = format.date_uk;
           }
         }
-        dateFormat = !!attrs.bbDatepickerPopup ? attrs.bbDatepickerPopup : 'DD/MM/YYYY';
+        dateFormat = attrs.bbDatepickerPopup ? attrs.bbDatepickerPopup : 'DD/MM/YYYY';
         yearNow = moment(new Date()).year();
         getter = $parse(attrs.ngModel);
         timeRangeScope = scope;
@@ -15351,7 +15355,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.22";
+        return "2.0.25";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -29378,7 +29382,7 @@ angular.module('BB.Directives')
             };
           })(this));
         } else {
-          defer.reject();
+          deferred.reject();
         }
         return deferred.promise;
       },
@@ -29560,7 +29564,7 @@ angular.module('BB.Directives')
   angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return unwrapCollection(BBModel.Question, 'questions', resource);
+        return UnwrapService.unwrapCollection(BBModel.Question, 'questions', resource);
       }
     };
   });
@@ -29756,7 +29760,7 @@ angular.module('BB.Directives')
     return {
       promise: true,
       unwrap: function(resource) {
-        return unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
+        return UnwrapService.unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
       }
     };
   });
@@ -29765,7 +29769,7 @@ angular.module('BB.Directives')
     return {
       promise: true,
       unwrap: function(resource) {
-        return unwrapCollection(BModel.Event, 'events', resource);
+        return UnwrapService.unwrapCollection(BBModel.Event, 'events', resource);
       }
     };
   });
