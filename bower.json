@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "2.0.22",
+  "version": "2.0.25",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -34,6 +34,7 @@
     "angular-sanitize": "~1.5.8",
     "angular-touch": "~1.5.8",
     "angular-bootstrap": "~2.0.0",
+    "angular-carousel": "~0.3.13",
 
     "moment": "~2.14.0",
     "moment-timezone": "~0.5.4",
