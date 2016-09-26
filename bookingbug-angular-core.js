@@ -2747,7 +2747,7 @@ function getURIparam( name ){
     })(this);
   });
 
-  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, LocaleService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document) {
+  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document) {
     var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
@@ -2779,7 +2779,6 @@ function getURIparam( name ){
     $rootScope.connection_started = con_started.promise;
     widget_started = $q.defer();
     $rootScope.widget_started = widget_started.promise;
-    moment.locale([LocaleService, "en"]);
     $rootScope.Route = {
       Company: 0,
       Category: 1,
@@ -2936,9 +2935,6 @@ function getURIparam( name ){
           if ($scope.bb_route_init) {
             $scope.bb_route_init();
           }
-        }
-        if (prms.locale) {
-          moment.locale(prms.locale);
         }
         if (prms.use_local_time_zone) {
           SettingsService.setUseLocalTimeZone(prms.use_local_time_zone);
@@ -13039,7 +13035,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, SettingsService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -13422,13 +13418,17 @@ function getURIparam( name ){
           return loader.setLoaded();
         });
         return promise.then(function(datetime_arr) {
-          var d, day, dtimes, i, j, k, len, len1, len2, pad, pair, ref, ref1, requested_slot, slot, time_slots, v;
+          var d, day, dtimes, i, j, k, len, len1, len2, pad, pair, ref, ref1, requested_slot, slot, time_slots, utc, utcHours, utcMinutes, utcSeconds, v;
           $scope.days = [];
           if (_.every(_.values(datetime_arr), _.isEmpty)) {
             $scope.no_slots_in_week = true;
           } else {
             $scope.no_slots_in_week = false;
           }
+          utc = moment().utc();
+          utcHours = utc.format('H');
+          utcMinutes = utc.format('m');
+          utcSeconds = utc.format('s');
           ref = _.sortBy(_.pairs(datetime_arr), function(pair) {
             return pair[0];
           });
@@ -13437,7 +13437,7 @@ function getURIparam( name ){
             d = pair[0];
             time_slots = pair[1];
             day = {
-              date: moment(d),
+              date: moment(d).add(utcHours, 'hours').add(utcMinutes, 'minutes').add(utcSeconds, 'seconds'),
               slots: time_slots
             };
             $scope.days.push(day);
@@ -15355,7 +15355,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.25";
+        return "2.0.26";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -17543,12 +17543,12 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').config(function(tmhDynamicLocaleProvider, $translateProvider, TranslationOptionsProvider) {
+  angular.module('BB.i18n').config(function(bbi18nOptionsProvider, tmhDynamicLocaleProvider, $translateProvider) {
     'ngInject';
     $translateProvider.useSanitizeValueStrategy('sanitizeParameters');
     $translateProvider.useLocalStorage();
     $translateProvider.addInterpolation('$translateMessageFormatInterpolation');
-    $translateProvider.fallbackLanguage(TranslationOptionsProvider.getOption('available_languages'));
+    $translateProvider.fallbackLanguage(bbi18nOptionsProvider.getOption('available_languages'));
     tmhDynamicLocaleProvider.localeLocationPattern('angular-i18n/angular-locale_{{locale}}.js');
     tmhDynamicLocaleProvider.useCookieStorage();
   });
@@ -17557,17 +17557,10 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').run(function($translate, TranslationOptions, RuntimeTranslate) {
+  angular.module('BB.i18n').run(function(bbi18nOptions, bbLocale, RuntimeTranslate, $translate) {
     'ngInject';
-    var browserLocale;
-    RuntimeTranslate.registerAvailableLanguageKeys(TranslationOptions.available_languages, TranslationOptions.available_language_associations);
-    $translate.preferredLanguage(TranslationOptions.default_language);
-    if (TranslationOptions.use_browser_language) {
-      browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
-      if (_.contains(TranslationOptions.available_languages, browserLocale)) {
-        $translate.preferredLanguage(browserLocale);
-      }
-    }
+    RuntimeTranslate.registerAvailableLanguageKeys(bbi18nOptions.available_languages, bbi18nOptions.available_language_associations);
+    bbLocale.determineLocale();
   });
 
 }).call(this);
@@ -21110,7 +21103,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, ClientService, LocaleService) {
+  angular.module('BB.Models').factory("ClientModel", function($q, BBModel, BaseModel, ClientService) {
     var Client;
     return Client = (function(superClass) {
       extend(Client, superClass);
@@ -27457,22 +27450,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('LocaleService', function($window) {
-    var locale;
-    locale = $window.getURIparam('locale');
-    if (locale) {
-      return locale;
-    } else if ($window.navigator.language) {
-      return $window.navigator.language;
-    } else {
-      return "en";
-    }
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage, $localStorage) {
     return {
       companyLogin: function(company, params, form) {
@@ -28770,7 +28747,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('SettingsService', function($uibModalStack) {
+  angular.module('BB.Services').factory('SettingsService', function($uibModalStack, bbLocale) {
     var company_time_zone, country_code, currency, display_time_zone, i18n, scroll_offset, use_local_time_zone;
     i18n = false;
     scroll_offset = 0;
@@ -28795,9 +28772,7 @@ angular.module('BB.Directives')
       },
       setCountryCode: function(value) {
         country_code = value;
-        if (country_code && country_code.match(/^(gb|au)$/)) {
-          return moment.locale('en-' + country_code);
-        }
+        bbLocale.setLocaleUsingCountryCode(country_code);
       },
       getCountryCode: function() {
         return country_code;
@@ -30867,7 +30842,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').controller('languagePickerController', function($locale, $rootScope, tmhDynamicLocale, $translate, TranslationOptions, $scope) {
+  angular.module('BB.i18n').controller('bbLanguagePickerController', function(bbLocale, $locale, $rootScope, tmhDynamicLocale, $translate, bbi18nOptions, $scope) {
     'ngInject';
 
     /*jshint validthis: true */
@@ -30882,22 +30857,14 @@ angular.module('BB.Directives')
       vm.pickLanguage = pickLanguage;
     };
     seAvailableLanguages = function() {
-      angular.forEach(TranslationOptions.available_languages, function(languageKey) {
+      angular.forEach(bbi18nOptions.available_languages, function(languageKey) {
         return vm.availableLanguages.push(createLanguage(languageKey));
       });
     };
     setCurrentLanguage = function() {
-      var languageKey;
-      languageKey = $translate.use();
-      if (languageKey === 'undefined') {
-        languageKey = $translate.preferredLanguage();
-      }
       vm.language = {
-        selected: createLanguage(languageKey)
+        selected: createLanguage(bbLocale.getLocale())
       };
-      if (languageKey !== $locale.id) {
-        pickLanguage(languageKey);
-      }
     };
 
     /*
@@ -30917,6 +30884,7 @@ angular.module('BB.Directives')
       tmhDynamicLocale.set(languageKey).then(function() {
         $translate.use(languageKey);
         $rootScope.$broadcast('BBLanguagePicker:languageChanged');
+        bbLocale.setLocale(languageKey, 'bbLanguagePicker.pickLanguage');
       });
     };
     init();
@@ -30946,7 +30914,7 @@ angular.module('BB.Directives')
       }
     };
     return {
-      controller: 'languagePickerController',
+      controller: 'bbLanguagePickerController',
       controllerAs: 'vm',
       link: link,
       restrict: 'A',
@@ -30959,7 +30927,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').provider('TranslationOptions', function() {
+  angular.module('BB.i18n').provider('bbi18nOptions', function() {
     'ngInject';
     var options;
     options = {
@@ -30982,6 +30950,88 @@ angular.module('BB.Directives')
     };
     this.$get = function() {
       return options;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.i18n').service('bbLocale', function(bbi18nOptions, $log, $translate, $window) {
+    'ngInject';
+    var _locale, _localeCompanyUsed, determineLocale, getLocale, isAvailable, setLocale, setLocaleUsingCountryCode;
+    _locale = null;
+    _localeCompanyUsed = false;
+    determineLocale = function() {
+      var URIParamLocale, browserLocale, defaultLocale;
+      if ($translate.use() !== 'undefined' && angular.isDefined($translate.use())) {
+        setLocale($translate.use(), '$translate.use()');
+      } else {
+        browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
+        defaultLocale = bbi18nOptions.default_language;
+        URIParamLocale = $window.getURIparam('locale');
+        if (URIParamLocale && isAvailable(URIParamLocale)) {
+          setLocale(URIParamLocale, 'URIParam locale');
+        } else if (bbi18nOptions.use_browser_language && isAvailable(browserLocale)) {
+          setLocale(browserLocale, 'browser locale');
+        } else {
+          setLocale(defaultLocale, 'default locale');
+        }
+      }
+      $translate.preferredLanguage(getLocale());
+    };
+
+    /*
+     * @param {String} locale
+     * @param {String} setWith
+     */
+    setLocale = function(locale, setWith) {
+      if (setWith == null) {
+        setWith = '';
+      }
+      if (!isAvailable(locale)) {
+        return;
+      }
+      _locale = locale;
+      moment.locale(_locale);
+      $translate.use(_locale);
+      console.info('bbLocale.locale = ', _locale, ', set with: ', setWith);
+    };
+
+    /*
+     * {String} locale
+     */
+    isAvailable = function(locale) {
+      return bbi18nOptions.available_languages.indexOf(locale) !== -1;
+    };
+
+    /*
+     * @returns {String}
+     */
+    getLocale = function() {
+      return _locale;
+    };
+
+    /*
+       * It's a hacky way to map country code to specific locale. Reason is moment default is set to en_US
+       * @param {String} countryCode
+     */
+    setLocaleUsingCountryCode = function(countryCode) {
+      var locale;
+      if (_localeCompanyUsed) {
+        return;
+      }
+      _localeCompanyUsed = true;
+      if (countryCode && countryCode.match(/^(gb|au)$/)) {
+        locale = 'en-' + countryCode;
+        setLocale(locale, 'countryCode');
+      }
+    };
+    return {
+      determineLocale: determineLocale,
+      getLocale: getLocale,
+      setLocale: setLocale,
+      setLocaleUsingCountryCode: setLocaleUsingCountryCode
     };
   });
 
