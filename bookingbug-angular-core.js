@@ -15355,7 +15355,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.26";
+        return "2.0.27";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -30964,7 +30964,7 @@ angular.module('BB.Directives')
     _localeCompanyUsed = false;
     determineLocale = function() {
       var URIParamLocale, browserLocale, defaultLocale;
-      if ($translate.use() !== 'undefined' && angular.isDefined($translate.use())) {
+      if ($translate.use() !== 'undefined' && angular.isDefined($translate.use()) && isAvailable($translate.use())) {
         setLocale($translate.use(), '$translate.use()');
       } else {
         browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
