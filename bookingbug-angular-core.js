@@ -15355,7 +15355,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.27";
+        return "2.0.28";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -30862,9 +30862,11 @@ angular.module('BB.Directives')
       });
     };
     setCurrentLanguage = function() {
-      vm.language = {
-        selected: createLanguage(bbLocale.getLocale())
-      };
+      tmhDynamicLocale.set(bbLocale.getLocale()).then(function() {
+        vm.language = {
+          selected: createLanguage(bbLocale.getLocale())
+        };
+      });
     };
 
     /*
@@ -30882,9 +30884,8 @@ angular.module('BB.Directives')
      */
     pickLanguage = function(languageKey) {
       tmhDynamicLocale.set(languageKey).then(function() {
-        $translate.use(languageKey);
-        $rootScope.$broadcast('BBLanguagePicker:languageChanged');
         bbLocale.setLocale(languageKey, 'bbLanguagePicker.pickLanguage');
+        $rootScope.$broadcast('BBLanguagePicker:languageChanged');
       });
     };
     init();
@@ -30959,13 +30960,12 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.i18n').service('bbLocale', function(bbi18nOptions, $log, $translate, $window) {
     'ngInject';
-    var _locale, _localeCompanyUsed, determineLocale, getLocale, isAvailable, setLocale, setLocaleUsingCountryCode;
-    _locale = null;
+    var _localeCompanyUsed, determineLocale, getLocale, isAvailable, setLocale, setLocaleUsingCountryCode;
     _localeCompanyUsed = false;
     determineLocale = function() {
       var URIParamLocale, browserLocale, defaultLocale;
       if ($translate.use() !== 'undefined' && angular.isDefined($translate.use()) && isAvailable($translate.use())) {
-        setLocale($translate.use(), '$translate.use()');
+        setLocale($translate.use(), '$translate.use() locale');
       } else {
         browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
         defaultLocale = bbi18nOptions.default_language;
@@ -30992,10 +30992,12 @@ angular.module('BB.Directives')
       if (!isAvailable(locale)) {
         return;
       }
-      _locale = locale;
-      moment.locale(_locale);
-      $translate.use(_locale);
-      console.info('bbLocale.locale = ', _locale, ', set with: ', setWith);
+      moment.locale(locale);
+      $translate.use(locale);
+      console.info('bbLocale.locale = ', locale, ', set with: ', setWith);
+      if (locale !== moment.locale() || locale !== $translate.use()) {
+        console.error('could not set locale properly, preferredLocale = ' + locale + ', moment.locale() = ', moment.locale(), '$translate.use() = ', $translate.use());
+      }
     };
 
     /*
@@ -31009,7 +31011,7 @@ angular.module('BB.Directives')
      * @returns {String}
      */
     getLocale = function() {
-      return _locale;
+      return $translate.use();
     };
 
     /*
