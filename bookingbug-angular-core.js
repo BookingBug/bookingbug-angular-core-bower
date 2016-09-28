@@ -6777,7 +6777,7 @@ function getURIparam( name ){
         delete $scope.selected_date;
       }
       if (!$scope.event_group_manually_set && ($scope.current_item.event_group == null)) {
-        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null) ? true : false;
+        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null);
       }
       if ($scope.bb.current_item.event) {
         event_group = $scope.current_item.event_group;
@@ -15355,7 +15355,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.28";
+        return "2.0.29";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -21578,7 +21578,7 @@ angular.module('BB.Directives')
         if (!this.mobile_prefix) {
           return this.mobile;
         }
-        return "+" + this.mobile_prefix + this.mobile;
+        return "+" + this.mobile_prefix + (this.mobile.substr(0, 1) === '0' ? this.mobile.substr(1) : this.mobile);
       };
 
 
