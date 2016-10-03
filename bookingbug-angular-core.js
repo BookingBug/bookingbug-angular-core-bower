@@ -2921,6 +2921,9 @@ function getURIparam( name ){
         if (prms.app_key) {
           $scope.bb.app_key = prms.app_key;
         }
+        if (prms.on_conflict) {
+          $scope.bb.on_conflict = prms.on_conflict;
+        }
         if (prms.item_defaults) {
           $scope.bb.original_item_defaults = prms.item_defaults;
           $scope.bb.item_defaults = angular.copy($scope.bb.original_item_defaults);
@@ -3607,16 +3610,20 @@ function getURIparam( name ){
             }
           });
           return error_modal.result["finally"](function() {
-            if ($scope.bb.nextSteps) {
-              if ($scope.setPageRoute($rootScope.Route.Date)) {
-
-              } else if ($scope.setPageRoute($rootScope.Route.Event)) {
-
-              } else {
-                return $scope.loadPreviousStep();
-              }
+            if ($scope.bb.on_conflict) {
+              return $scope.$eval($scope.bb.on_conflict);
             } else {
-              return $scope.decideNextPage();
+              if ($scope.bb.nextSteps) {
+                if ($scope.setPageRoute($rootScope.Route.Date)) {
+
+                } else if ($scope.setPageRoute($rootScope.Route.Event)) {
+
+                } else {
+                  return $scope.loadPreviousStep();
+                }
+              } else {
+                return $scope.decideNextPage();
+              }
             }
           });
         }
@@ -3625,19 +3632,20 @@ function getURIparam( name ){
     };
     $scope.emptyBasket = function() {
       var defer;
-      if (!$scope.bb.basket.items || ($scope.bb.basket.items && $scope.bb.basket.items.length === 0)) {
-        return;
-      }
       defer = $q.defer();
-      BBModel.Basket.$empty($scope.bb).then(function(basket) {
-        if ($scope.bb.current_item.id) {
-          delete $scope.bb.current_item.id;
-        }
-        $scope.setBasket(basket);
-        return defer.resolve();
-      }, function(err) {
-        return defer.reject();
-      });
+      if (!$scope.bb.basket.items || ($scope.bb.basket.items && $scope.bb.basket.items.length === 0)) {
+        defer.resolve();
+      } else {
+        BBModel.Basket.$empty($scope.bb).then(function(basket) {
+          if ($scope.bb.current_item.id) {
+            delete $scope.bb.current_item.id;
+          }
+          $scope.setBasket(basket);
+          return defer.resolve();
+        }, function(err) {
+          return defer.reject();
+        });
+      }
       return defer.promise;
     };
     $scope.deleteBasketItem = function(item) {
@@ -12927,8 +12935,6 @@ function getURIparam( name ){
         return;
       }
       requested_slot = DateTimeUtilitiesService.checkDefaultTime($scope.selected_date, time_slots, $scope.data_source, $scope.bb.item_defaults);
-      console.log($scope.bb.item_defaults);
-      console.log(requested_slot);
       if (requested_slot.slot === null || requested_slot.match === null) {
         return $scope.availability_conflict = true;
       } else if (requested_slot.slot && requested_slot.match === "full") {
@@ -15359,7 +15365,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.31";
+        return "2.0.32";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -15797,9 +15803,13 @@ angular.module('BB.Directives')
         name || (name = "allDone");
         scope[name] = false;
         prom = scope.$eval(attrs.bbWaitFor);
-        prom.then(function() {
-          return scope[name] = true;
-        });
+        if (!prom) {
+          scope[name] = true;
+        } else {
+          prom.then(function() {
+            return scope[name] = true;
+          });
+        }
       }
     };
   });
@@ -28755,18 +28765,18 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Services').factory('SettingsService', function($uibModalStack, bbLocale) {
-    var company_time_zone, country_code, currency, display_time_zone, scroll_offset, use_local_time_zone;
+    var company_time_zone, country_code, currency, display_time_zone, i18n, scroll_offset, use_local_time_zone;
     scroll_offset = 0;
     country_code = null;
     use_local_time_zone = false;
     currency = null;
     company_time_zone = null;
     display_time_zone = null;
+    i18n = false;
     return {
       update_document_title: false,
       company_settings: {},
       enableInternationalizaton: function() {
-        var i18n;
         return i18n = true;
       },
       isInternationalizatonEnabled: function() {
