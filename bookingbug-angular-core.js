@@ -15365,7 +15365,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.34";
+        return "2.0.35";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -30248,8 +30248,10 @@ angular.module('BB.Directives')
           if (this.current_item.time) {
             time = this.current_item.time.time;
           }
-          if (this.current_item.company) {
+          if (this.current_item.company.name) {
             company = this.convertToDashSnakeCase(this.current_item.company.name);
+          } else {
+            console.log('%c bb_warning: Make sure you are using a valid company_id', 'background: #c0392b; color: #fff');
           }
         }
         if (this.route_values) {
