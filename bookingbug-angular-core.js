@@ -2795,7 +2795,8 @@ function getURIparam( name ){
       Slot: 12,
       Event: 13,
       Login: 14,
-      Questions: 15
+      Questions: 15,
+      Confirmation: 16
     };
     $scope.Route = $rootScope.Route;
     $compile("<span bb-display-mode></span>")($scope, (function(_this) {
@@ -3429,7 +3430,10 @@ function getURIparam( name ){
           return;
         } else {
           if ($scope.bb.total && $scope.bb.payment_status === 'complete') {
-            $scope.showPage('confirmation');
+            if ($scope.setPageRoute($rootScope.Route.Confirmation)) {
+              return;
+            }
+            return $scope.showPage('confirmation');
           } else {
             return $scope.showPage(route);
           }
@@ -3447,6 +3451,9 @@ function getURIparam( name ){
         }
         return $scope.showPage('company_list');
       } else if ($scope.bb.total && $scope.bb.payment_status === "complete") {
+        if ($scope.setPageRoute($rootScope.Route.Confirmation)) {
+          return;
+        }
         return $scope.showPage('confirmation');
       } else if ($scope.bb.total && $scope.bb.payment_status === "pending") {
         return $scope.showPage('payment');
@@ -3524,6 +3531,9 @@ function getURIparam( name ){
         }
         return $scope.showPage('checkout');
       } else if ($scope.bb.payment_status === "complete") {
+        if ($scope.setPageRoute($rootScope.Route.Confirmation)) {
+          return;
+        }
         return $scope.showPage('confirmation');
       }
     };
@@ -10645,7 +10655,7 @@ function getURIparam( name ){
             referrer += ":" + $location.port();
           }
           if (scope.payment_options.custom_stylesheet) {
-            if (custom_stylesheet.match(/http/)) {
+            if (scope.payment_options.custom_stylesheet.match(/http/)) {
               custom_stylesheet = scope.payment_options.custom_stylesheet;
             } else {
               custom_stylesheet = $location.absUrl().match(/.+(?=#)/) + scope.payment_options.custom_stylesheet;
@@ -13043,7 +13053,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, SettingsService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, SettingsService, ErrorService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -15365,7 +15375,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.35";
+        return "2.0.36";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -19142,6 +19152,9 @@ angular.module('BB.Directives')
           if (data.attachment_id) {
             this.attachment_id = data.attachment_id;
           }
+          if (data.person_group_id) {
+            this.setPersonGroupId(data.person_group_id);
+          }
           if (data.$has('product')) {
             data.$get('product').then((function(_this) {
               return function(product) {
@@ -19728,6 +19741,18 @@ angular.module('BB.Directives')
 
       /***
       * @ngdoc method
+      * @name setStaffGroup
+      * @methodOf BB.Models:BasketItem
+      * @description Set the current staff group id
+       */
+
+      BasketItem.prototype.setPersonGroupId = function(id) {
+        return this.person_group_id = id;
+      };
+
+
+      /***
+      * @ngdoc method
       * @name setResource
       * @methodOf BB.Models:BasketItem
       * @description
@@ -20117,6 +20142,9 @@ angular.module('BB.Directives')
         }
         if (this.person) {
           data.person_id = this.person.id;
+        }
+        if (this.person_group_id) {
+          data.person_group_id = this.person_group_id;
         }
         data.length = this.length;
         if (this.event) {
@@ -29140,6 +29168,7 @@ angular.module('BB.Directives')
           }
           extra.duration = prms.duration;
           extra.resource_ids = prms.resource_ids;
+          extra.person_group_id = prms.cItem.person_group_id;
           extra.num_resources = prms.num_resources;
           if (prms.time_zone) {
             extra.time_zone = prms.time_zone;
