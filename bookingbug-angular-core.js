@@ -15186,7 +15186,7 @@ angular.module('BB.Directives')
                   ref1 = question.options;
                   for (j = 0, len2 = ref1.length; j < len2; j++) {
                     itemx = ref1[j];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "<span class='input-icon'></span></label></div>";
                   }
                   html += "</div>";
                 } else if (question.detail_type === "check") {
@@ -15203,7 +15203,7 @@ angular.module('BB.Directives')
                   ref2 = question.options;
                   for (k = 0, len3 = ref2.length; k < len3; k++) {
                     itemx = ref2[k];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "<span class='input-icon'></span></label></div>";
                   }
                   html += "</div>";
                 } else if (question.detail_type === "date") {
@@ -15375,7 +15375,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.36";
+        return "2.0.37";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -16225,7 +16225,7 @@ angular.module('BB.Directives')
     });
     $scope.submit = function() {
       $scope.login.role = 'member';
-      return $scope.company.$post('login', {}, $scope.login).then(function(login) {
+      return $scope.bb.company.$post('login', {}, $scope.login).then(function(login) {
         if (login.$has('members')) {
           return login.$get('members').then(function(members) {
             return $scope.handleLogin(members[0]);
@@ -16854,16 +16854,16 @@ angular.module('BB.Directives')
       restrict: 'A',
       template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
       link: function(scope, elem, attrs) {
-        var currentSize, getCurrentSize, isVisible, markers, t, update;
+        var getCurrentSize, isVisible, markers, previous_size, t, update;
         markers = elem.find('span');
         $bbug(elem).addClass("bb-display-mode");
         scope.display = {};
-        currentSize = null;
+        previous_size = null;
         isVisible = function(element) {
           return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
         };
         getCurrentSize = function() {
-          var element, i, len;
+          var currentSize, element, i, len;
           currentSize = false;
           for (i = 0, len = markers.length; i < len; i++) {
             element = markers[i];
@@ -16879,8 +16879,8 @@ angular.module('BB.Directives')
           return function() {
             var nsize;
             nsize = getCurrentSize();
-            if (nsize !== currentSize) {
-              currentSize = nsize;
+            if (nsize !== previous_size) {
+              previous_size = nsize;
               scope.display.xs = false;
               scope.display.sm = false;
               scope.display.md = false;
@@ -18894,7 +18894,7 @@ angular.module('BB.Directives')
         }
       };
 
-      Basket.prototype.$applyCoupon = function(company, params) {
+      Basket.$applyCoupon = function(company, params) {
         return BasketService.applyCoupon(company, params);
       };
 
@@ -18902,7 +18902,7 @@ angular.module('BB.Directives')
         return BasketService.updateBasket(company, params);
       };
 
-      Basket.prototype.$deleteItem = function(item, company, params) {
+      Basket.$deleteItem = function(item, company, params) {
         return BasketService.deleteItem(item, company, params);
       };
 
@@ -18910,15 +18910,15 @@ angular.module('BB.Directives')
         return BasketService.checkout(company, basket, params);
       };
 
-      Basket.prototype.$empty = function(bb) {
+      Basket.$empty = function(bb) {
         return BasketService.empty(bb);
       };
 
-      Basket.prototype.$applyDeal = function(company, params) {
+      Basket.$applyDeal = function(company, params) {
         return BasketService.applyDeal(company, params);
       };
 
-      Basket.prototype.$removeDeal = function(company, params) {
+      Basket.$removeDeal = function(company, params) {
         return BasketService.removeDeal(company, params);
       };
 
@@ -27920,6 +27920,7 @@ angular.module('BB.Directives')
         $uibModalInstance.close();
         if (type === 'booking') {
           modal_instance = $uibModal.open({
+            appendTo: angular.element($document[0].getElementById('bb')),
             templateUrl: 'cancel_booking_modal_form.html',
             controller: function($scope, booking) {
               $scope.booking = booking;
@@ -29854,7 +29855,7 @@ angular.module('BB.Directives')
     alphanumeric = /^[a-zA-Z0-9]*$/;
     geocode_result = null;
     return {
-      alpha: /^[a-zA-Z\s]*$/,
+      alpha: /^[a-zA-Z\s-]*$/,
       us_phone_number: /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/,
 
       /***
@@ -30277,7 +30278,7 @@ angular.module('BB.Directives')
           if (this.current_item.time) {
             time = this.current_item.time.time;
           }
-          if (this.current_item.company.name) {
+          if (this.current_item.company) {
             company = this.convertToDashSnakeCase(this.current_item.company.name);
           } else {
             console.log('%c bb_warning: Make sure you are using a valid company_id', 'background: #c0392b; color: #fff');
