@@ -7244,7 +7244,9 @@ function getURIparam( name ){
       if ($scope.has_company_questions) {
         $scope.dynamic_filters.values = {};
       }
-      return $scope.filterChanged();
+      $scope.filterChanged();
+      delete $scope.selected_date;
+      return $rootScope.$broadcast("event_list_filter_date:cleared");
     };
     buildDynamicFilters = function(questions) {
       $scope.dynamic_filters = _.groupBy(questions, 'question_type');
@@ -15228,7 +15230,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.62";
+        return "1.4.91";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -16218,22 +16220,65 @@ angular.module('BB.Directives')
           };
         };
         $scope.$on('event_list_filter_date:changed', function(event, date) {
+          var newDay;
+          newDay = $scope.getDay(date);
+          if ($scope.selected_day) {
+            if ($scope.selected_day.date.isSame(date)) {
+              return $scope.selected_day.selected = !$scope.selected_day.selected;
+            } else {
+              $scope.selected_day.selected = false;
+              if (newDay) {
+                $scope.selected_day = newDay;
+                return $scope.selected_day.selected = true;
+              }
+            }
+          } else {
+            if (newDay) {
+              $scope.selected_day = newDay;
+              return $scope.selected_day.selected = true;
+            }
+          }
+        });
+        $scope.$on('event_list_filter_date:cleared', function() {
           if ($scope.selected_day) {
             return $scope.selected_day.selected = false;
           }
         });
-        return $scope.toggleDay = function(day) {
+        $scope.toggleDay = function(day) {
           if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
             return;
           }
-          if ($scope.selected_day) {
-            $scope.selected_day.selected = false;
+          if ($scope.selected_day && $scope.selected_day.date.isSame(day.date)) {
+            $scope.selected_day.selected = !$scope.selected_day.selected;
           }
-          if (!$scope.selected_day || ($scope.selected_day && !day.date.isSame($scope.selected_day.date, 'day'))) {
-            day.selected = true;
+          if ($scope.selected_day && !$scope.selected_day.date.isSame(day.date)) {
+            $scope.selected_day.selected = false;
             $scope.selected_day = day;
+            $scope.selected_day.selected = true;
+          }
+          if (!$scope.selected_day) {
+            $scope.selected_day = day;
+            $scope.selected_day.selected = true;
           }
           return $scope.showDay(day.date);
+        };
+        return $scope.getDay = function(date) {
+          var day, i, j, k, len, len1, len2, month, ref, ref1, ref2, week;
+          ref = $scope.months;
+          for (i = 0, len = ref.length; i < len; i++) {
+            month = ref[i];
+            ref1 = month.weeks;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              week = ref1[j];
+              ref2 = week.days;
+              for (k = 0, len2 = ref2.length; k < len2; k++) {
+                day = ref2[k];
+                if (day.date.isSame(date) && !day.disabled) {
+                  return day;
+                }
+              }
+            }
+          }
         };
       }
     };
@@ -28553,7 +28598,7 @@ angular.module('BB.Directives')
             };
           })(this));
         } else {
-          defer.reject();
+          deferred.reject();
         }
         return deferred.promise;
       },
@@ -28735,7 +28780,7 @@ angular.module('BB.Directives')
   angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel, UnwrapService) {
     return {
       unwrap: function(resource) {
-        return unwrapCollection(BBModel.Question, 'questions', resource);
+        return UnwrapService.unwrapCollection(BBModel.Question, 'questions', resource);
       }
     };
   });
@@ -28931,7 +28976,7 @@ angular.module('BB.Directives')
     return {
       promise: true,
       unwrap: function(resource) {
-        return unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
+        return UnwrapService.unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
       }
     };
   });
@@ -28940,7 +28985,7 @@ angular.module('BB.Directives')
     return {
       promise: true,
       unwrap: function(resource) {
-        return unwrapCollection(BModel.Event, 'events', resource);
+        return UnwrapService.unwrapCollection(BBModel.Event, 'events', resource);
       }
     };
   });
