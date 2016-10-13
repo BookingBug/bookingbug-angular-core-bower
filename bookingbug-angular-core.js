@@ -2,7 +2,7 @@
   'use strict';
   var app;
 
-  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'ui.select', 'BB.i18n', 'angular-carousel']);
+  app = angular.module('BB', ['BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'ui.select', 'BB.i18n', 'BB.uib', 'angular-carousel']);
 
   app.value('AppConfig', {
     appId: 'f6b16c23',
@@ -135,6 +135,12 @@
 (function() {
   'use strict';
   angular.module('BB.i18n', ['tmh.dynamicLocale']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.uib', ['ui.bootstrap']);
 
 }).call(this);
 
@@ -3610,7 +3616,6 @@ function getURIparam( name ){
           halClient.clearCache("events");
           $scope.bb.current_item.person = null;
           error_modal = $uibModal.open({
-            appendTo: angular.element($document[0].getElementById('bb')),
             templateUrl: $scope.getPartial('_error_modal'),
             controller: function($scope, $uibModalInstance) {
               $scope.message = ErrorService.getError('ITEM_NO_LONGER_AVAILABLE').msg;
@@ -5985,7 +5990,6 @@ function getURIparam( name ){
       iitem.setDeal(deal);
       if (!$scope.bb.company_settings.no_recipient) {
         modalInstance = $uibModal.open({
-          appendTo: angular.element($document[0].getElementById('bb')),
           templateUrl: $scope.getPartial('_add_recipient'),
           scope: $scope,
           controller: ModalInstanceCtrl,
@@ -7617,7 +7621,8 @@ function getURIparam( name ){
       if (!bprice) {
         bprice = $scope.item.price;
       }
-      return $scope.item.setPrice(qprice + bprice);
+      $scope.item.setPrice(qprice + bprice);
+      return $scope.item.setAskedQuestions();
     };
 
     /***
@@ -7775,7 +7780,6 @@ function getURIparam( name ){
     $scope.openTermsAndConditions = function() {
       var modalInstance;
       return modalInstance = $uibModal.open({
-        appendTo: angular.element($document[0].getElementById('bb')),
         templateUrl: $scope.getPartial("terms_and_conditions"),
         scope: $scope
       });
@@ -9226,7 +9230,6 @@ function getURIparam( name ){
         return $scope.addItem(service);
       } else {
         modalInstance = $uibModal.open({
-          appendTo: angular.element($document[0].getElementById('bb')),
           templateUrl: $scope.getPartial('_select_duration_modal'),
           scope: $scope,
           controller: function($scope, $uibModalInstance, service) {
@@ -11837,7 +11840,6 @@ function getURIparam( name ){
     $scope.errorModal = function() {
       var error_modal;
       return error_modal = $uibModal.open({
-        appendTo: angular.element($document[0].getElementById('bb')),
         templateUrl: $scope.getPartial('_error_modal'),
         controller: function($scope, $uibModalInstance) {
           $scope.message = ErrorService.getError('GENERIC').msg;
@@ -13852,7 +13854,6 @@ angular.module('BB.Directives')
             return false;
           } else {
             return modalInstance = $uibModal.open({
-              appendTo: angular.element($document[0].getElementById('bb')),
               templateUrl: $scope.getPartial("_basket_details"),
               scope: $scope,
               controller: BasketInstanceCtrl,
@@ -15375,7 +15376,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.37";
+        return "2.0.38";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -17581,7 +17582,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.i18n').run(function(bbi18nOptions, bbLocale, RuntimeTranslate, $translate) {
+  angular.module('BB.i18n').run(function(bbi18nOptions, bbLocale, RuntimeTranslate) {
     'ngInject';
     RuntimeTranslate.registerAvailableLanguageKeys(bbi18nOptions.available_languages, bbi18nOptions.available_language_associations);
     bbLocale.determineLocale();
@@ -26337,7 +26338,6 @@ angular.module('BB.Directives')
         }
         templateUrl || (templateUrl = 'dialog.html');
         return $uibModal.open({
-          appendTo: angular.element($document[0].getElementById('bb')),
           templateUrl: templateUrl,
           controller: controller,
           size: config.size || 'sm',
@@ -27920,7 +27920,6 @@ angular.module('BB.Directives')
         $uibModalInstance.close();
         if (type === 'booking') {
           modal_instance = $uibModal.open({
-            appendTo: angular.element($document[0].getElementById('bb')),
             templateUrl: 'cancel_booking_modal_form.html',
             controller: function($scope, booking) {
               $scope.booking = booking;
@@ -28015,7 +28014,6 @@ angular.module('BB.Directives')
         }
         templateUrl || (templateUrl = 'modal_form.html');
         return $uibModal.open({
-          appendTo: angular.element($document[0].getElementById('bb')),
           templateUrl: templateUrl,
           controller: newForm,
           size: config.size,
@@ -28048,7 +28046,6 @@ angular.module('BB.Directives')
         }
         templateUrl || (templateUrl = 'modal_form.html');
         return $uibModal.open({
-          appendTo: angular.element($document[0].getElementById('bb')),
           templateUrl: templateUrl,
           controller: editForm,
           size: config.size,
@@ -28078,7 +28075,6 @@ angular.module('BB.Directives')
         }
         templateUrl || (templateUrl = 'modal_form.html');
         return $uibModal.open({
-          appendTo: angular.element($document[0].getElementById('bb')),
           templateUrl: templateUrl,
           controller: bookForm,
           size: config.size,
@@ -30891,6 +30887,22 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.uib').run(function($document, runtimeUibModal) {
+    'ngInject';
+    var init, setUibModalDefaults;
+    init = function() {
+      setUibModalDefaults();
+    };
+    setUibModalDefaults = function() {
+      runtimeUibModal.options.appendTo = angular.element($document[0].getElementById('bb'));
+    };
+    init();
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.i18n').controller('bbLanguagePickerController', function(bbLocale, $locale, $rootScope, tmhDynamicLocale, $translate, bbi18nOptions, $scope) {
     'ngInject';
 
@@ -31544,7 +31556,6 @@ angular.module('BB.Directives')
     $scope["delete"] = function(booking) {
       var modalInstance;
       modalInstance = $uibModal.open({
-        appendTo: angular.element($document[0].getElementById('bb')),
         templateUrl: $scope.getPartial("_cancel_modal"),
         controller: ModalDelete,
         resolve: {
@@ -31576,7 +31587,6 @@ angular.module('BB.Directives')
     $scope.deleteAll = function() {
       var modalInstance;
       modalInstance = $uibModal.open({
-        appendTo: angular.element($document[0].getElementById('bb')),
         templateUrl: $scope.getPartial("_cancel_modal"),
         controller: ModalDeleteAll,
         resolve: {
@@ -32506,6 +32516,30 @@ angular.module('BB.Directives')
         });
         return defer.promise;
       }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /**
+  * @ngdoc service
+  * @name BB.uib.runtimeUibModal
+  *
+  * @description
+  * Returns an instance of $uibModalProvider that allows to set modal default options (on runtime)
+   */
+  angular.module('BB.uib').provider('runtimeUibModal', function($uibModalProvider) {
+    'ngInject';
+    var uibModalProvider;
+    uibModalProvider = $uibModalProvider;
+    this.setProvider = function(provider) {
+      return uibModalProvider = provider;
+    };
+    this.$get = function() {
+      return uibModalProvider;
     };
   });
 
