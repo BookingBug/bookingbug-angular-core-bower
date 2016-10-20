@@ -1242,8 +1242,8 @@ angular
 
     if ($sessionStorage.getItem('auth_token'))
       shared_header.set('auth_token', $sessionStorage.getItem('auth_token'), $sessionStorage)
-    else if ($cookies['Auth-Token'] && !shared_header.has('auth_token')){
-      shared_header.set('auth_token', $cookies['Auth-Token'], $sessionStorage)
+    else if ($cookies.get('Auth-Token') && !shared_header.has('auth_token')){
+      shared_header.set('auth_token', $cookies.get('Auth-Token'), $sessionStorage)
     }
 
     return {
@@ -1593,26 +1593,23 @@ angular.module('ngStorage', [])
   function($cookies){
     function FakeStorage() {};
     FakeStorage.prototype.setItem = function (key, value) {
-      $cookies[key] = value;
+      $cookies.put(key, value);
     };
     FakeStorage.prototype.getItem = function (key) {
-      return typeof $cookies[key] == 'undefined' ? null : $cookies[key];
+      return typeof $cookies.get(key) == 'undefined' ? null : $cookies.get(key);
     }
     FakeStorage.prototype.removeItem = function (key) {
-      if ($cookies[key]){
-        delete $cookies[key];
+      if ($cookies.get(key)){
+        $cookies.remove(key);
       }
     };
     FakeStorage.prototype.clear = function(){
-      for (var key in $cookies) {
-        if( $cookies.hasOwnProperty(key) )
-        {
-          delete $cookies[key];
-        }
+      for (var key in $cookies.getAll()) {
+        $cookies.remove(key);
       }
     };
     FakeStorage.prototype.key = function(index){
-      return Object.keys($cookies)[index];
+      return Object.keys($cookies.getAll())[index];
     };
     return new FakeStorage();
   }
@@ -2550,11 +2547,6 @@ function getURIparam( name ){
         return $bbug($element).append(cloned);
       };
     })(this));
-    $scope.set_company = (function(_this) {
-      return function(prms) {
-        return $scope.initWidget(prms);
-      };
-    })(this);
     $scope.initWidget = (function(_this) {
       return function(prms) {
         var url;
@@ -7821,7 +7813,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, SettingsService) {
-    var cc, checkDataStore, filterByService, geolocateFail, haversine, loader, mapInit, map_ready_def, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
+    var cc, checkDataStore, filterByService, geolocateFail, haversine, loader, mapInit, map_ready_def, openDefaultMarker, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
     $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
     $scope.options = $scope.$eval($attrs.bbMap) || {};
@@ -8262,7 +8254,7 @@ function getURIparam( name ){
       });
     };
     setMarkers = function() {
-      var i, iconPath, index, latlong, len, localBounds, marker, open_marker, open_marker_index, ref;
+      var i, iconPath, index, latlong, len, localBounds, marker, ref;
       latlong = $scope.loc;
       localBounds = new google.maps.LatLngBounds();
       localBounds.extend(latlong);
@@ -8282,6 +8274,13 @@ function getURIparam( name ){
       $scope.$emit('map:shown_markers_updated', $scope.shownMarkers);
       google.maps.event.trigger($scope.myMap, 'resize');
       $scope.myMap.fitBounds(localBounds);
+      return openDefaultMarker();
+    };
+    openDefaultMarker = function() {
+      var open_marker, open_marker_index;
+      if ($scope.options && $scope.options.no_default_location_details) {
+        return;
+      }
       open_marker_index = 0;
       open_marker = _.find($scope.shownMarkers, function(obj) {
         open_marker_index++;
@@ -8307,8 +8306,17 @@ function getURIparam( name ){
      */
     $scope.openMarkerInfo = function(marker) {
       return $timeout(function() {
+        var i, len, ref, shown_marker;
         $scope.currentMarker = marker;
-        return $scope.myInfoWindow.open($scope.myMap, marker);
+        $scope.myInfoWindow.open($scope.myMap, marker);
+        ref = $scope.shownMarkers;
+        for (i = 0, len = ref.length; i < len; i++) {
+          shown_marker = ref[i];
+          if (shown_marker.company.id === marker.company.id) {
+            shown_marker.is_open = true;
+          }
+        }
+        return $scope.shownMarkers;
       }, 250);
     };
 
@@ -15116,7 +15124,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.39";
+        return "2.0.40";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
