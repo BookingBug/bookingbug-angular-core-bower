@@ -62,7 +62,7 @@
       });
     }
     return (base = moment.fn).toISODate || (base.toISODate = function() {
-      return this.locale('en').format('YYYY-MM-DD');
+      return this.clone().locale('en').format('YYYY-MM-DD');
     });
   });
 
@@ -3842,7 +3842,7 @@ function getURIparam( name ){
       return $scope.bb.isAdmin;
     };
     $scope.isAdminIFrame = function() {
-      var err, error, location;
+      var err, location;
       if (!$scope.bb.isAdmin) {
         return false;
       }
@@ -7818,7 +7818,7 @@ function getURIparam( name ){
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
     $scope.options = $scope.$eval($attrs.bbMap) || {};
     $scope.num_search_results = $scope.options.num_search_results || 6;
-    $scope.range_limit = $scope.options.range_limit || Infinity;
+    $scope.range_limit = $scope.options.range_limit || 2e308;
     $scope.hide_not_live_stores = $scope.options.hide_not_live_stores || false;
     $scope.can_filter_by_service = $scope.options.filter_by_service || false;
     $scope.filter_by_service = $scope.options.filter_by_service || false;
@@ -8475,7 +8475,7 @@ function getURIparam( name ){
     * Increase range, the range limit is infinity
      */
     $scope.increaseRange = function() {
-      $scope.range_limit = Infinity;
+      $scope.range_limit = 2e308;
       return $scope.searchAddress($scope.search_prms);
     };
     $scope.$watch('display.xs', (function(_this) {
@@ -8606,7 +8606,7 @@ function getURIparam( name ){
     var checkItemDefaults, initialise, initialiseCategories, loader;
     FormDataStoreService.init('MultiServiceSelect', $scope, ['selected_category_name']);
     $scope.options = $scope.$eval($attrs.bbMultiServiceSelect) || {};
-    $scope.options.max_services = $scope.options.max_services || Infinity;
+    $scope.options.max_services = $scope.options.max_services || 2e308;
     $scope.options.ordered_categories = $scope.options.ordered_categories || false;
     $scope.options.services = $scope.options.services || 'items';
     loader = LoadingService.$loader($scope);
@@ -13881,7 +13881,7 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, error, ie8orLess;
+    var e, ie8orLess;
     ie8orLess = false;
     try {
       ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
@@ -15124,7 +15124,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.40";
+        return "2.0.42";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -16474,7 +16474,7 @@ angular.module('BB.Directives')
   angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
       check = document.createElement('style');
       if (typeof check.sheet !== 'undefined') {
         DOMStyle = 'sheet';
@@ -25039,6 +25039,39 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: 'Cancel',
+            QUESTION: 'Are you sure you want to cancel this {{type}}?'
+          }
+        }
+      },
+      COMMON: {
+        BTN: {
+          CANCEL: 'Cancel',
+          CLOSE: 'Close',
+          NO: 'No',
+          OK: 'OK',
+          YES: 'Yes'
+        },
+        LANGUAGE: {
+          EN: 'English',
+          FR: 'Français'
+        }
+      }
+    };
+    $translateProvider.translations('en', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
     return {
       query: function(prms) {
@@ -27069,7 +27102,7 @@ angular.module('BB.Directives')
         _.each(listenerArr, function(item, index) {
           var func;
           func = $rootScope.$on(item[1], function() {
-            var e, error;
+            var e;
             try {
               return cpage[2][item[0]] = 'data:destroyed';
             } catch (error) {
@@ -30281,7 +30314,10 @@ angular.module('BB.Directives')
             event = this.current_item.event.id;
           }
           if (this.current_item.date) {
-            date = this.current_item.date.date.toISODate();
+            date = this.current_item.date.date;
+          }
+          if (date && moment.isMoment(date)) {
+            date = date.toISODate();
           }
           if (this.current_item.time) {
             time = this.current_item.time.time;
@@ -30357,7 +30393,7 @@ angular.module('BB.Directives')
             this.item_defaults.date = match.date;
           }
           if (match.time) {
-            this.item_defaults.time = match.time;
+            this.item_defaults.time = parseInt(match.time);
           }
           return this.route_matches = match;
         }
@@ -30860,39 +30896,6 @@ angular.module('BB.Directives')
       return Widget;
 
     })();
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').config(function($translateProvider) {
-    'ngInject';
-    var translations;
-    translations = {
-      CORE: {
-        MODAL: {
-          CANCEL_BOOKING: {
-            HEADER: 'Cancel',
-            QUESTION: 'Are you sure you want to cancel this {{type}}?'
-          }
-        }
-      },
-      COMMON: {
-        BTN: {
-          CANCEL: 'Cancel',
-          CLOSE: 'Close',
-          NO: 'No',
-          OK: 'OK',
-          YES: 'Yes'
-        },
-        LANGUAGE: {
-          EN: 'English',
-          FR: 'Français'
-        }
-      }
-    };
-    $translateProvider.translations('en', translations);
   });
 
 }).call(this);
