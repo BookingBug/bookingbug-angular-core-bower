@@ -436,7 +436,7 @@ angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackend
 
 (function() {
   'use strict';
-  angular.module('BB').run(function($bbug, DebugUtilsService, FormDataStoreService, $log, $rootScope, $sessionStorage) {
+  angular.module('BB').run(function($bbug, DebugUtilsService, FormDataStoreService, $log, $rootScope, $sessionStorage, GeneralOptions) {
     'ngInject';
     $rootScope.$log = $log;
     $rootScope.$setIfUndefined = FormDataStoreService.setIfUndefined;
@@ -447,6 +447,9 @@ angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackend
       document.createElement('nav');
       document.createElement('section');
       document.createElement('footer');
+    }
+    if (GeneralOptions.use_local_time_zone) {
+      GeneralOptions.display_time_zone = moment.tz.guess();
     }
   });
 
@@ -1969,7 +1972,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, SettingsService, DateTimeUtilitiesService, $translate) {
+  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, GeneralOptions, DateTimeUtilitiesService, $translate, CompanyStoreService) {
     var hasAvailability, setData, updateAvailability;
     $scope.controller = "public.controllers.AccordionRangeGroup";
     $scope.$watch('slots', function() {
@@ -2027,8 +2030,8 @@ function getURIparam( name ){
       if ($scope.slots) {
         angular.forEach($scope.slots, function(slot) {
           var datetime, slot_time;
-          if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-            datetime = moment(slot.datetime).tz(SettingsService.getDisplayTimeZone());
+          if ((GeneralOptions.display_time_zone != null) && GeneralOptions.display_time_zone !== CompanyStoreService.time_zone) {
+            datetime = moment(slot.datetime).tz(GeneralOptions.display_time_zone);
             slot_time = DateTimeUtilitiesService.convertMomentToTime(datetime);
           } else {
             slot_time = slot.time;
@@ -2082,8 +2085,8 @@ function getURIparam( name ){
         }
       }
       if (day && slot) {
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          datetime = moment(slot.datetime).tz(SettingsService.getDisplayTimeZone());
+        if ((GeneralOptions.display_time_zone != null) && GeneralOptions.display_time_zone !== CompanyStoreService.time_zone) {
+          datetime = moment(slot.datetime).tz(GeneralOptions.display_time_zone);
           slot_time = DateTimeUtilitiesService.convertMomentToTime(datetime);
         } else {
           slot_time = slot.time;
@@ -2534,8 +2537,8 @@ function getURIparam( name ){
     })(this);
   });
 
-  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, SettingsService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document) {
-    var base, base1, con_started, first_call, restoreBasket, setupDefaults, widget_started;
+  angular.module('BB.Controllers').controller('BBCtrl', function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService) {
+    var base, base1, con_started, first_call, restoreBasket, setActiveCompany, setupDefaults, widget_started;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
     $scope.bb = new BBWidget();
@@ -2722,9 +2725,6 @@ function getURIparam( name ){
             $scope.bb_route_init();
           }
         }
-        if (prms.use_local_time_zone) {
-          SettingsService.setUseLocalTimeZone(prms.use_local_time_zone);
-        }
         if (prms.hide === true) {
           $scope.hide_page = true;
         } else {
@@ -2775,10 +2775,6 @@ function getURIparam( name ){
         if (prms.qudini_booking_id) {
           $scope.bb.qudini_booking_id = prms.qudini_booking_id;
         }
-        if (prms.scroll_offset) {
-          SettingsService.setScrollOffset(prms.scroll_offset);
-        }
-        SettingsService.update_document_title = SettingsService.update_document_title || prms.update_document_title || false;
         _this.waiting_for_conn_started_def = $q.defer();
         $scope.waiting_for_conn_started = _this.waiting_for_conn_started_def.promise;
         if (company_id || $scope.bb.affiliate_id) {
@@ -3141,7 +3137,7 @@ function getURIparam( name ){
       if (!$scope.bb.routeFormat) {
         return;
       }
-      if (!$scope.bb.routing || SettingsService.isModalOpen()) {
+      if (!$scope.bb.routing || AppService.isModalOpen()) {
         step_number = $scope.bb.matchURLToStep();
         if (step_number > $scope.bb.current_step) {
           $scope.loadStep(step_number);
@@ -3629,14 +3625,11 @@ function getURIparam( name ){
       $scope.bb.company_id = company.id;
       $scope.bb.company = company;
       $scope.bb.item_defaults.company = $scope.bb.company;
-      SettingsService.setCountryCode(company.country_code);
-      SettingsService.setCurrency(company.currency_code);
-      SettingsService.setTimeZone(company.timezone);
       if (company.$has('settings')) {
         company.getSettings().then((function(_this) {
           return function(settings) {
             $scope.bb.company_settings = settings;
-            SettingsService.company_settings = settings;
+            setActiveCompany(company, settings);
             if ($scope.bb.company_settings.merge_resources) {
               $scope.bb.item_defaults.merge_resources = true;
             }
@@ -3667,8 +3660,15 @@ function getURIparam( name ){
           defer.resolve();
           $scope.$emit('company:setup');
         }
+        setActiveCompany(company);
       }
       return defer.promise;
+    };
+    setActiveCompany = function(company, settings) {
+      CompanyStoreService.currency_code = !settings ? company.currency_code : settings.currency;
+      CompanyStoreService.time_zone = company.timezone;
+      CompanyStoreService.country_code = company.country_code;
+      return CompanyStoreService.settings = settings;
     };
     $scope.recordStep = function(step, title) {
       return $scope.bb.recordStep(step, title);
@@ -6983,7 +6983,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, $uibModal, $document, $translate, SettingsService, PurchaseService, LoadingService) {
+  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, $uibModal, $document, $translate, GeneralOptions, PurchaseService, LoadingService) {
     var confirming, loader, setItemDetails;
     $scope.controller = "public.controllers.ItemDetails";
     loader = LoadingService.$loader($scope);
@@ -7562,8 +7562,8 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, SettingsService) {
-    var cc, checkDataStore, filterByService, geolocateFail, haversine, loader, mapInit, map_ready_def, openDefaultMarker, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
+  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, bbLocale) {
+    var checkDataStore, filterByService, geolocateFail, haversine, loader, locale, mapInit, map_ready_def, openDefaultMarker, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
     $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
     $scope.options = $scope.$eval($attrs.bbMap) || {};
@@ -7573,8 +7573,12 @@ function getURIparam( name ){
     $scope.can_filter_by_service = $scope.options.filter_by_service || false;
     $scope.filter_by_service = $scope.options.filter_by_service || false;
     $scope.default_zoom = $scope.options.default_zoom || 6;
-    cc = SettingsService.getCountryCode();
-    $scope.distance_unit = _.contains(["gb", "us", "jp"], cc) ? "miles" : "km";
+    locale = bbLocale.getLocale();
+    if (locale.match(/^(en|en-gb|en-us)$/gi)) {
+      "miles";
+    } else {
+      "km";
+    }
     map_ready_def = $q.defer();
     $scope.mapLoaded = $q.defer();
     $scope.mapReady = map_ready_def.promise;
@@ -10277,7 +10281,7 @@ function getURIparam( name ){
   * @property {array} total The total pay_form price
   * @property {array} card The card is used to payment
    */
-  angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location, SettingsService) {
+  angular.module('BB.Directives').directive('bbPayForm', function($window, $timeout, $sce, $http, $compile, $document, $location, GeneralOptions) {
 
     /***
     * @ngdoc method
@@ -10375,7 +10379,7 @@ function getURIparam( name ){
                     applyCustomStylesheet(data.custom_stylesheet);
                   }
                   if (data.scroll_offset) {
-                    return SettingsService.setScrollOffset(data.scroll_offset);
+                    return GeneralOptions.scroll_offset = data.scroll_offset;
                   }
                 });
             }
@@ -10509,7 +10513,7 @@ function getURIparam( name ){
   *
   * @property {array} total The total of payment
    */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, SettingsService, AlertService) {
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, GeneralOptions, AlertService) {
     return {
       restrict: 'AE',
       replace: true,
@@ -10544,7 +10548,7 @@ function getURIparam( name ){
             'message': referrer,
             'custom_partial_url': scope.bb.custom_partial_url,
             'custom_stylesheet': custom_stylesheet,
-            'scroll_offset': SettingsService.getScrollOffset()
+            'scroll_offset': GeneralOptions.scroll_offset
           });
           return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
         };
@@ -12930,7 +12934,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, SettingsService, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, ErrorService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -14043,7 +14047,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService) {
     var e, ie8orLess;
     ie8orLess = false;
     try {
@@ -14065,7 +14069,7 @@ angular.module('BB.Directives')
             date_us: "MM/dd/yyyy",
             date_uk: "dd/MM/yyyy"
           };
-          if (scope.bb.company.country_code === "us") {
+          if (CompanyStoreService.country_code === "us") {
             attrs.uibDatepickerPopup = format.date_us;
           } else {
             attrs.uibDatepickerPopup = format.date_uk;
@@ -15284,7 +15288,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.1.0-beta.4";
+        return "2.1.0-beta.5";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -15733,7 +15737,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
+  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15764,10 +15768,10 @@ angular.module('BB.Directives')
           if (scroll_to_element) {
             if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!scroll_to_element.is(':visible') && scroll_to_element.offset().top !== 0)) {
               if ('parentIFrame' in $window) {
-                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
+                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - GeneralOptions.scroll_offset);
               } else {
                 return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
+                  scrollTop: scroll_to_element.offset().top - GeneralOptions.scroll_offset
                 }, bb_transition_time);
               }
             }
@@ -15817,7 +15821,7 @@ angular.module('BB.Directives')
   *
    */
 
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
+  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
     return {
       restrict: 'A',
       require: '^form',
@@ -15841,10 +15845,10 @@ angular.module('BB.Directives')
             invalid_form_group = elem.find('.has-error:first');
             if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
               if ('parentIFrame' in $window) {
-                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
+                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - GeneralOptions.scroll_offset);
               } else {
                 $bbug("html, body").animate({
-                  scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
+                  scrollTop: invalid_form_group.offset().top - GeneralOptions.scroll_offset
                 }, 1000);
               }
               invalid_input = invalid_form_group.find('.ng-invalid');
@@ -16032,14 +16036,14 @@ angular.module('BB.Directives')
   * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
    */
 
-  angular.module('BB.Directives').directive('bbTimeZone', function(SettingsService) {
+  angular.module('BB.Directives').directive('bbTimeZone', function(GeneralOptions, CompanyStoreService) {
     return {
       restrict: 'A',
       link: function(scope, el, attrs) {
         var company_time_zone;
-        company_time_zone = SettingsService.getTimeZone();
+        company_time_zone = CompanyStoreService.time_zone;
         scope.time_zone_name = moment().tz(company_time_zone).format('zz');
-        if (!SettingsService.getUseLocalTimeZone() && moment.tz.guess() !== company_time_zone) {
+        if (!GeneralOptions.use_local_time_zone && GeneralOptions.display_time_zone !== company_time_zone) {
           return scope.is_time_zone_diff = true;
         }
       }
@@ -16902,7 +16906,7 @@ angular.module('BB.Directives')
   * @property {string} pusher_channel The pusher channel
   * @property {string} init_params Initialization of basic parameters
    */
-  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope, SettingsService) {
+  angular.module('BB.Directives').directive('bbWidget', function(PathSvc, $http, $log, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope, AppService) {
 
     /***
     * @ngdoc method
@@ -17117,7 +17121,7 @@ angular.module('BB.Directives')
         }
       };
       scope.$watch(function() {
-        return SettingsService.isModalOpen();
+        return AppService.isModalOpen();
       }, function(modalOpen) {
         return scope.coveredByModal = modalOpen && notInModal(element.parent());
       });
@@ -17319,8 +17323,8 @@ angular.module('BB.Directives')
    *
    * @param {integer} amount Input amount to format
    * @param {string} currency_code Optional currency symbol
-   * @param {boolean} pretty_price Set to true to omit decimal places when price is whole. Default is false
-   * @returns {string} Humanized duration.
+   * @param {boolean} pretty_price Use to omit decimal places when price is whole. Default is false
+   * @returns {string} Formatted currency.
    *
    *
    * @example
@@ -17339,7 +17343,7 @@ angular.module('BB.Directives')
      </example>
    */
 
-  angular.module('BB.Filters').filter('currency', function($window, $rootScope, SettingsService, $translate) {
+  angular.module('BB.Filters').filter('currency', function($window, $rootScope, CompanyStoreService, $translate) {
     return function(amount, currency_code, pretty_price) {
       var currency_codes, decimal_places, format, hide_decimal;
       if (pretty_price == null) {
@@ -17357,7 +17361,7 @@ angular.module('BB.Directives')
         MIXED: "~",
         RUB: "₽"
       };
-      currency_code || (currency_code = SettingsService.getCurrency());
+      currency_code || (currency_code = CompanyStoreService.currency_code);
       format = $translate.instant(['CORE.FILTERS.CURRENCY.THOUSANDS_SEPARATOR', 'CORE.FILTERS.CURRENCY.DECIMAL_SEPARATOR', 'CORE.FILTERS.CURRENCY.CURRENCY_FORMAT']);
       hide_decimal = pretty_price && (amount % 100 === 0);
       decimal_places = hide_decimal ? 0 : 2;
@@ -17544,14 +17548,43 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
+
+  /*
+   * @ngdoc filter
+   * @name local_phone_number
+   * @kind function
+   *
+   * @description
+   * Formats a phone number using provided country code. If no country code is passed in, the country of the current company is used.
+   *
+   * @param {string} phone_number The phone number to format
+   * @param {string} country_code (Optional) The country code in Alpha-2 ISO-3166 format
+   * @returns {string} Formatted phone number
+   *
+   *
+   * @example
+     <example module="localPhoneNumberExample">
+       <file name="index.html">
+         <script>
+           angular.module('localPhoneNumberExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.number = "+44 7877 123456";
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Phone Number: {{number | local_phone_number}}</span>
+         </div>
+       </file>
+     </example>
+   */
+
+  angular.module('BB.Filters').filter('local_phone_number', function(CompanyStoreService, ValidatorService) {
+    return function(phone_number, country_code) {
       if (!phone_number) {
         return;
       }
-      cc = SettingsService.getCountryCode();
-      switch (cc) {
+      country_code || (country_code = CompanyStoreService.country_code);
+      switch (country_code) {
         case "gb":
           return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
         case "us":
@@ -17592,7 +17625,7 @@ angular.module('BB.Directives')
      </example>
    */
 
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
+  angular.module('BB.Filters').filter('datetime', function(GeneralOptions) {
     return function(date, format, show_time_zone) {
       var new_date;
       if (format == null) {
@@ -17605,7 +17638,7 @@ angular.module('BB.Directives')
         return;
       }
       new_date = moment(date);
-      new_date.tz(SettingsService.getDisplayTimeZone());
+      new_date.tz(GeneralOptions.display_time_zone);
       if (show_time_zone) {
         format += ' zz';
       }
@@ -19164,7 +19197,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, SettingsService, $translate) {
+  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, $translate) {
     var BasketItem;
     return BasketItem = (function(superClass) {
       extend(BasketItem, superClass);
@@ -25409,6 +25442,18 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Services').factory('AppService', function($uibModalStack) {
+    return {
+      isModalOpen: function() {
+        return !!$uibModalStack.getTop();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
     return {
       addItem: function(company, params) {
@@ -26081,6 +26126,19 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Services').factory('CompanyStoreService', function() {
+    return {
+      country_code: null,
+      currency_code: null,
+      time_zone: null,
+      settings: null
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Services').factory("CustomTextService", function($q, BBModel) {
     return {
       BookingText: function(company, basketItem) {
@@ -26136,7 +26194,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("DateTimeUtilitiesService", function(SettingsService) {
+  angular.module('BB.Services').factory("DateTimeUtilitiesService", function(GeneralOptions, CompanyStoreService) {
     var checkPerson, checkResource;
     checkPerson = function(basket_item, item_defaults) {
       return (basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self) || _.isBoolean(basket_item.person) || item_defaults.merge_people;
@@ -26151,8 +26209,8 @@ angular.module('BB.Directives')
           return;
         }
         datetime = moment();
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          datetime = datetime.tz(SettingsService.getTimeZone());
+        if (GeneralOptions.display_time_zone !== CompanyStoreService.time_zone) {
+          datetime = datetime.tz(CompanyStoreService.time_zone);
         }
         val = parseInt(time_slot.time);
         hours = parseInt(val / 60);
@@ -27210,7 +27268,12 @@ angular.module('BB.Directives')
       calendar_minute_step: 5,
       calendar_min_time: "09:00",
       calendar_max_time: "18:00",
-      calendar_slot_duration: 5
+      calendar_slot_duration: 5,
+      use_local_time_zone: false,
+      display_time_zone: null,
+      use_i18n: false,
+      update_document_title: false,
+      scroll_offset: 0
     };
     this.setOption = function(option, value) {
       if (options.hasOwnProperty(option)) {
@@ -28807,70 +28870,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('SettingsService', function($uibModalStack, bbLocale) {
-    var company_time_zone, country_code, currency, display_time_zone, i18n, scroll_offset, use_local_time_zone;
-    scroll_offset = 0;
-    country_code = null;
-    use_local_time_zone = false;
-    currency = null;
-    company_time_zone = null;
-    display_time_zone = null;
-    i18n = false;
-    return {
-      update_document_title: false,
-      company_settings: {},
-      setScrollOffset: function(value) {
-        return scroll_offset = parseInt(value);
-      },
-      getScrollOffset: function() {
-        return scroll_offset;
-      },
-      setCountryCode: function(value) {
-        country_code = value;
-        bbLocale.setLocaleUsingCountryCode(country_code);
-      },
-      getCountryCode: function() {
-        return country_code;
-      },
-      setUseLocalTimeZone: function(value) {
-        use_local_time_zone = value;
-        return display_time_zone = moment.tz.guess();
-      },
-      getUseLocalTimeZone: function() {
-        return use_local_time_zone;
-      },
-      setCurrency: function(value) {
-        return currency = value;
-      },
-      getCurrency: function() {
-        return currency;
-      },
-      setTimeZone: function(value) {
-        return company_time_zone = value;
-      },
-      getTimeZone: function() {
-        return company_time_zone;
-      },
-      setDisplayTimeZone: function(value) {
-        return display_time_zone = value;
-      },
-      getDisplayTimeZone: function() {
-        if (display_time_zone) {
-          return display_time_zone;
-        } else {
-          return company_time_zone;
-        }
-      },
-      isModalOpen: function() {
-        return !!$uibModalStack.getTop();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Services').factory("SlotService", function($q, BBModel) {
     return {
       query: function(company, params) {
@@ -29118,10 +29117,10 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient, SettingsService, DateTimeUtilitiesService) {
+  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient, GeneralOptions, CompanyStoreService, DateTimeUtilitiesService) {
     return {
       query: function(prms) {
-        var company_utc_offset, deferred, display_utc_offset, end_date, extra, item_link, start_date;
+        var company_time_zone, company_utc_offset, deferred, display_time_zone, display_utc_offset, end_date, extra, item_link, start_date;
         deferred = $q.defer();
         start_date = null;
         end_date = null;
@@ -29137,15 +29136,17 @@ angular.module('BB.Directives')
         if (prms.end_date) {
           end_date = prms.end_date;
         }
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          display_utc_offset = moment().tz(SettingsService.getDisplayTimeZone()).utcOffset();
-          company_utc_offset = moment().tz(SettingsService.getTimeZone()).utcOffset();
+        display_time_zone = GeneralOptions.display_time_zone;
+        company_time_zone = CompanyStoreService.time_zone;
+        if ((display_time_zone != null) && display_time_zone !== company_time_zone) {
+          display_utc_offset = moment().tz(display_time_zone).utcOffset();
+          company_utc_offset = moment().tz(company_time_zone).utcOffset();
           if (company_utc_offset < display_utc_offset) {
             start_date = prms.start_date.clone().subtract(1, 'day');
           } else if (company_utc_offset > display_utc_offset && prms.end_date) {
             end_date = prms.end_date.clone().add(1, 'day');
           }
-          prms.time_zone = SettingsService.getDisplayTimeZone();
+          prms.time_zone = display_time_zone;
         }
         if (prms.duration == null) {
           if (prms.cItem && prms.cItem.duration) {
@@ -29835,19 +29836,11 @@ angular.module('BB.Directives')
   * @description
   * Representation of an Validator Object
   *
-  * @property {string} uk_postcode_regex The UK postcode regex
-  * @property {string} uk_postcode_regex_lenient The UK postcode regex (lenient)
-  * @property {string} number_only_regex The number only regex
-  * @property {integer} uk_mobile_regex_strict The UK mobile regex (strict)
-  * @property {integer} mobile_regex_lenient Mobile number regex (lenient)
-  * @property {integer} uk_landline_regex_strict The UK landline regex (strict)
-  * @property {integer} uk_landline_regex_lenient The UK landline regex (lenient)
-  * @property {integer} international_number The international number
-  * @property {string} alphanumeric The alphanumeric
-  * @property {string} alpha The letters and spaces
-  * @property {integer} us_phone_number The Us phone number
+  * @property {string} alpha Alpha pattern that accepts letters, hypens and spaces
+  * @property {string} us_phone_number US phone number regex
+  *
    */
-  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, SettingsService, BBModel, $q, $bbug) {
+  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, CompanyStoreService, BBModel, $q, $bbug) {
     var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, standard_password, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient, us_postcode_regex;
     uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
     us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
@@ -29871,9 +29864,9 @@ angular.module('BB.Directives')
         * @name getEmailPattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the email pattern
+        * Returns a pattern for matching email addresses
         *
-        * @returns {string} The returned the email pattern
+        * @returns {string} Email regex
        */
       getEmailPattern: function() {
         return email_regex;
@@ -29884,9 +29877,9 @@ angular.module('BB.Directives')
         * @name getStandardPassword
         * @methodOf BB.Services:Validator
         * @description
-        * Get the email pattern
+        * Returns a password pattern enforcing at least 7 characters and 1 number
         *
-        * @returns {string} Returns Password must contain at least 7 characters and 1 number password pattern
+        * @returns {string} Password regex
        */
       getStandardPassword: function() {
         return standard_password;
@@ -29897,30 +29890,33 @@ angular.module('BB.Directives')
         * @name getUKPostcodePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK postcode pattern
+        * Returns a pattern for matching UK postcodes
         *
-        * @returns {string} The returned the UK postcode regex lenient
+        * @returns {string} UK Postcode regex
        */
+      getUKPostcodePattern: function() {
+        return uk_postcode_regex_lenient;
+      },
 
       /***
         * @ngdoc method
         * @name getUKPostcodePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK postcode patternt
+        * Returns a pattern for matching local mailing codes based on current companies country
         *
-        * @returns {integer} Return the UK postcode pattern
+        * @returns {string} Mailing code regex
        */
-      getUKPostcodePattern: function() {
-        return uk_postcode_regex_lenient;
-      },
       getMailingPattern: function() {
         var cc;
-        cc = SettingsService.getCountryCode();
-        if (cc = "us") {
-          return us_postcode_regex;
-        } else {
-          return uk_postcode_regex_lenient;
+        cc = CompanyStoreService.country_code;
+        switch (cc) {
+          case "us":
+            return us_postcode_regex;
+          case "gb":
+            return uk_postcode_regex_lenient;
+          default:
+            return null;
         }
       },
 
@@ -29929,9 +29925,9 @@ angular.module('BB.Directives')
         * @name getNumberOnlyPattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the number only pattern
+        * Returns a pattern for matching numbers only
         *
-        * @returns {integer} Return the number only regex
+        * @returns {string} Number only regex
        */
       getNumberOnlyPattern: function() {
         return number_only_regex;
@@ -29942,7 +29938,7 @@ angular.module('BB.Directives')
         * @name getAlphaNumbericPattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the alphanumeric pattern
+        * Returns a pattern for matching alpha numeric strings
         *
         * @returns {string} The returned the alphanumeric regex
        */
@@ -29955,9 +29951,10 @@ angular.module('BB.Directives')
         * @name getUKMobilePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK mobile pattern if strict is equals with false
+        * Returns a pattern for mathing number like strings between 9 and 19 characters.  If the strict flag is used, the pattern matches UK mobile numbers
         *
-        * @returns {integer} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
+        * @param {boolean} strict Use strict validation. Defaults to false.
+        * @returns {string} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
        */
       getUKMobilePattern: function(strict) {
         if (strict == null) {
@@ -29974,9 +29971,9 @@ angular.module('BB.Directives')
         * @name getMobilePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the mobile pattern
+        * Returns a pattern for matching number like strings between 9 and 19 characters
         *
-        * @returns {integer} The returned the mobile regex lenient
+        * @returns {string} Mobile regex
        */
       getMobilePattern: function() {
         return mobile_regex_lenient;
@@ -29987,9 +29984,10 @@ angular.module('BB.Directives')
         * @name getUKLandlinePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK landline patternt if strict is equals with false
+        * Returns a pattern for matching number like strinsg between 9 and 19 characters.  If the strict flag is used, the pattern matches UK landline numbers
         *
-        * @returns {integer} The returned the UK landline regex strict if this is strict else return UK landline regex lenient
+        * @param {boolean} strict Use strict validation. Defaults to false.
+        * @returns {string} UK landline regex
        */
       getUKLandlinePattern: function(strict) {
         if (strict == null) {
@@ -30006,9 +30004,9 @@ angular.module('BB.Directives')
         * @name getIntPhonePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the international number
+        * Returns a pattern for matching number like strings between 9 and 19 characters
         *
-        * @returns {integer} The returned the international number
+        * @returns {string} International number regex
        */
       getIntPhonePattern: function() {
         return international_number;
@@ -30021,7 +30019,7 @@ angular.module('BB.Directives')
         * @description
         * Get the geocode result
         *
-        * @returns {string} The returned geocode result
+        * @returns {object} Geocoder result
        */
       getGeocodeResult: function() {
         if (geocode_result) {
@@ -30034,9 +30032,9 @@ angular.module('BB.Directives')
         * @name validatePostcode
         * @methodOf BB.Services:Validator
         * @description
-        * Validate the postcode in according with form and prm parameters
+        * Validates a postcode using the Google Maps API
         *
-        * @returns {promise} A promise for valid postocde
+        * @returns {promise|boolean} A promise that resolves to indicate the postcodes valdiity after it has been verified using the Google Maps API or a boolean indicating if the postcode is missing or invalid
        */
       validatePostcode: function(form, prms) {
         var deferred, geocoder, ne, postcode, req, sw;
@@ -30087,9 +30085,9 @@ angular.module('BB.Directives')
         * @name validateForm
         * @methodOf BB.Services:Validator
         * @description
-        * Validate the form in according with form parameter
+        * Validate a form
         *
-        * @returns {boolean} Checks if this is valid or not
+        * @returns {boolean} Validity of form
        */
       validateForm: function(form) {
         if (!form) {
@@ -30115,9 +30113,9 @@ angular.module('BB.Directives')
        * @name resetForm
        * @methodOf BB.Services:Validator
        * @description
-       * Reset the form in according with form parameter
+       * Set pristine state on a form
        *
-       * @returns {boolean} Checks if this is reset or not
+       * @param {form} A single instance of a form controller
        */
     };
   });
@@ -30135,9 +30133,9 @@ angular.module('BB.Directives')
       * @name resetForms
       * @methodOf BB.Services:Validator
       * @description
-      * Reset the forms in according with forms parameter
+      * Set pristine state on given array of forms
       *
-      * @returns {boolean} Checks if this is reset or not
+      * @param {array} Array of form controllers
      */
     resetForms: function(forms) {
       var form, i, len, results1;
@@ -30205,7 +30203,7 @@ angular.module('BB.Directives')
    */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper, SettingsService) {
+  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper, GeneralOptions) {
     var Widget;
     return Widget = (function() {
       function Widget() {
@@ -30424,7 +30422,7 @@ angular.module('BB.Directives')
       Widget.prototype.recordCurrentPage = function() {
         var j, k, l, len, len1, len2, match, ref, ref1, ref2, setDocumentTitle, step, title;
         setDocumentTitle = function(title) {
-          if (SettingsService.update_document_title && title) {
+          if (GeneralOptions.update_document_title && title) {
             return document.title = title;
           }
         };
