@@ -4093,7 +4093,7 @@ function getURIparam( name ){
       return $scope.bb.isAdmin;
     };
     $scope.isAdminIFrame = function() {
-      var err, error, location;
+      var err, location;
       if (!$scope.bb.isAdmin) {
         return false;
       }
@@ -8023,7 +8023,7 @@ function getURIparam( name ){
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
     $scope.options = $scope.$eval($attrs.bbMap) || {};
     $scope.num_search_results = $scope.options.num_search_results || 6;
-    $scope.range_limit = $scope.options.range_limit || Infinity;
+    $scope.range_limit = $scope.options.range_limit || 2e308;
     $scope.hide_not_live_stores = $scope.options.hide_not_live_stores || false;
     $scope.can_filter_by_service = $scope.options.filter_by_service || false;
     $scope.filter_by_service = $scope.options.filter_by_service || false;
@@ -8669,7 +8669,7 @@ function getURIparam( name ){
     * Increase range, the range limit is infinity
      */
     $scope.increaseRange = function() {
-      $scope.range_limit = Infinity;
+      $scope.range_limit = 2e308;
       return $scope.searchAddress($scope.search_prms);
     };
     $scope.$watch('display.xs', (function(_this) {
@@ -8799,7 +8799,7 @@ function getURIparam( name ){
     var checkItemDefaults, initialise, initialiseCategories;
     FormDataStoreService.init('MultiServiceSelect', $scope, ['selected_category_name']);
     $scope.options = $scope.$eval($attrs.bbMultiServiceSelect) || {};
-    $scope.options.max_services = $scope.options.max_services || Infinity;
+    $scope.options.max_services = $scope.options.max_services || 2e308;
     $scope.options.ordered_categories = $scope.options.ordered_categories || false;
     $scope.options.services = $scope.options.services || 'items';
     $rootScope.connection_started.then(function() {
@@ -13979,7 +13979,7 @@ angular.module('BB.Directives')
 
 (function() {
   angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, error, ie8orLess;
+    var e, ie8orLess;
     ie8orLess = false;
     try {
       ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
@@ -15230,7 +15230,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.91";
+        return "1.4.92";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -16520,7 +16520,7 @@ angular.module('BB.Directives')
   angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
     var scopeIt;
     this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, error, scopeSupported, testSheet, testStyle;
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
       check = document.createElement('style');
       if (typeof check.sheet !== 'undefined') {
         DOMStyle = 'sheet';
@@ -26399,7 +26399,7 @@ angular.module('BB.Directives')
         _.each(listenerArr, function(item, index) {
           var func;
           func = $rootScope.$on(item[1], function() {
-            var e, error;
+            var e;
             try {
               return cpage[2][item[0]] = 'data:destroyed';
             } catch (error) {
