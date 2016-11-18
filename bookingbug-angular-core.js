@@ -4046,7 +4046,11 @@ function getURIparam( name ){
       $log.warn(err, error_string);
       scope.setLoaded(scope);
       if (err && err.status === 409) {
-        return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+        if (err.data.error === 'Rule checking failed') {
+          return AlertService.danger(ErrorService.createCustomError(err.data.message));
+        } else {
+          return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+        }
       } else if (err && err.data && err.data.error === "Number of Bookings exceeds the maximum") {
         return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
       } else {
@@ -6681,6 +6685,7 @@ function getURIparam( name ){
   * @param {hash}  bbEvents A hash of options
   * @property {integer} total_entries The event total entries
   * @property {array} events The events array
+  * @property {boolean} hide_fully_booked_events Hide fully booked events (i.e. events with only waitlist spaces left). Default is false.
    */
   angular.module('BB.Directives').directive('bbEvents', function() {
     return {
@@ -6711,7 +6716,7 @@ function getURIparam( name ){
     $scope.start_date = moment();
     $scope.end_date = moment().add(1, 'year');
     $scope.filters = {
-      hide_sold_out_events: true
+      hide_fully_booked_events: false
     };
     $scope.pagination = PaginationService.initialise({
       page_size: 10,
@@ -7161,7 +7166,7 @@ function getURIparam( name ){
      */
     $scope.filterEvents = function(item) {
       var result;
-      result = item.bookable && (moment($scope.filters.date).isSame(item.date, 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_sold_out_events && item.getSpacesLeft() > 0) || !$scope.filters.hide_sold_out_events) && $scope.filterEventsWithDynamicFilters(item);
+      result = item.bookable && (moment($scope.filters.date).isSame(item.date, 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_fully_booked_events && item.getSpacesLeft() > 0) || !$scope.filters.hide_fully_booked_events) && $scope.filterEventsWithDynamicFilters(item);
       return result;
     };
     $scope.filterEventsWithDynamicFilters = function(item) {
@@ -15230,7 +15235,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.92";
+        return "1.4.93";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -25696,8 +25701,8 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  angular.module('BB.Services').factory('ErrorService', function(SettingsService) {
-    var alerts;
+  angular.module('BB.Services').factory('ErrorService', function(SettingsService, $translate) {
+    var alerts, createCustomError, getAlert, getError;
     alerts = [
       {
         key: 'GENERIC',
@@ -25935,44 +25940,57 @@ angular.module('BB.Directives')
         msg: "Sorry, resource does not offer this service, pelase select another"
       }
     ];
-    return {
-      getError: function(key) {
-        var error, translate;
-        error = _.findWhere(alerts, {
-          key: key
-        });
-        error.persist = true;
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (error && translate) {
-          return {
-            msg: "ERROR." + key
-          };
-        } else if (error && !translate) {
-          return error;
-        } else if (translate) {
-          return {
-            msg: 'GENERIC'
-          };
-        } else {
-          return alerts[0];
-        }
-      },
-      getAlert: function(key) {
-        var alert, translate;
-        alert = _.findWhere(alerts, {
-          key: key
-        });
-        translate = SettingsService.isInternationalizatonEnabled();
-        if (alert && translate) {
-          return {
-            msg: "ALERT." + key
-          };
-        } else if (alert && !translate) {
-          return alert;
-        } else {
-          return null;
-        }
+
+    /**
+     * @param {String} msg
+     * @returns {{msg: String}}
+     */
+    createCustomError = function(msg) {
+      return {
+        msg: msg
+      };
+    };
+    getError = function(key) {
+      var error, translate;
+      error = _.findWhere(alerts, {
+        key: key
+      });
+      error.persist = true;
+      translate = SettingsService.isInternationalizatonEnabled();
+      if (error && translate) {
+        return {
+          msg: $translate.instant('ERROR.' + key)
+        };
+      } else if (error && !translate) {
+        return error;
+      } else if (translate) {
+        return {
+          msg: 'GENERIC'
+        };
+      } else {
+        return alerts[0];
       }
+    };
+    getAlert = function(key) {
+      var alert, translate;
+      alert = _.findWhere(alerts, {
+        key: key
+      });
+      translate = SettingsService.isInternationalizatonEnabled();
+      if (alert && translate) {
+        return {
+          msg: $translate.instant('ALERT.' + key)
+        };
+      } else if (alert && !translate) {
+        return alert;
+      } else {
+        return null;
+      }
+    };
+    return {
+      createCustomError: createCustomError,
+      getAlert: getAlert,
+      getError: getError
     };
   });
 
