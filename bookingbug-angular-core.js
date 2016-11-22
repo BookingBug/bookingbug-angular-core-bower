@@ -10814,7 +10814,7 @@ function getURIparam( name ){
         }
         return $q.all(promises).then((function(_this) {
           return function(res) {
-            var k, len1, people;
+            var k, len1, people, person;
             people = [];
             for (k = 0, len1 = items.length; k < len1; k++) {
               i = items[k];
@@ -10827,13 +10827,17 @@ function getURIparam( name ){
               }
             }
             if (items.length === 1 && $scope.bb.company.settings && $scope.bb.company.settings.merge_people) {
-              if (!$scope.selectItem(items[0], $scope.nextRoute)) {
-                setPerson(people);
-                $scope.bookable_items = items;
-                $scope.selected_bookable_items = items;
-              } else {
-                $scope.skipThisStep();
-              }
+              person = items[0];
+            }
+            if ($scope.bb.item_defaults.person) {
+              person = $scope.bb.item_defaults.person;
+            }
+            if (person && !$scope.selectItem(person, $scope.nextRoute, {
+              skip_step: true
+            })) {
+              setPerson(people);
+              $scope.bookable_items = items;
+              $scope.selected_bookable_items = items;
             } else {
               setPerson(people);
               $scope.bookable_items = items;
@@ -10907,8 +10911,11 @@ function getURIparam( name ){
     * @param {string=} route A specific route to load
      */
     $scope.selectItem = (function(_this) {
-      return function(item, route) {
+      return function(item, route, options) {
         var new_person;
+        if (options == null) {
+          options = {};
+        }
         if ($scope.$parent.$has_page_control) {
           $scope.person = item;
           return false;
@@ -10917,6 +10924,9 @@ function getURIparam( name ){
           _.each($scope.booking_items, function(bi) {
             return bi.setPerson(new_person);
           });
+          if (options.skip_step) {
+            $scope.skipThisStep();
+          }
           $scope.decideNextPage(route);
           return true;
         }
@@ -11237,7 +11247,7 @@ function getURIparam( name ){
             promises.push(i.promise);
           }
           return $q.all(promises).then(function(res) {
-            var k, len1, resources;
+            var k, len1, resource, resources;
             resources = [];
             for (k = 0, len1 = items.length; k < len1; k++) {
               i = items[k];
@@ -11248,13 +11258,17 @@ function getURIparam( name ){
                 }
               }
             }
-            if (resources.length === 1 && !$scope.options.allow_single_pick) {
-              if (!$scope.selectItem(items[0].item, $scope.nextRoute, {
-                skip_step: true
-              })) {
-                $scope.bookable_resources = resources;
-                $scope.bookable_items = items;
-              }
+            if (resources.length === 1) {
+              resource = items[0];
+            }
+            if ($scope.bb.item_defaults.resource) {
+              resource = $scope.bb.item_defaults.resource;
+            }
+            if (resource && !$scope.selectItem(resource.item, $scope.nextRoute, {
+              skip_step: true
+            })) {
+              $scope.bookable_resources = resources;
+              $scope.bookable_items = items;
             } else {
               $scope.bookable_resources = resources;
               $scope.bookable_items = items;
@@ -15235,7 +15249,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.97";
+        return "1.4.98";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
