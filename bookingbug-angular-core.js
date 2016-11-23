@@ -13107,10 +13107,9 @@ function getURIparam( name ){
         $element.removeClass('subtract');
         $element.addClass('add');
       }
-      $scope.selected_day = moment($scope.selected_date);
       switch (type) {
         case 'days':
-          setTimeRange($scope.selected_day.add(amount, 'days'));
+          setTimeRange($scope.start_date.add(amount, 'days'));
           break;
         case 'weeks':
           $scope.start_date.add(amount, type);
@@ -15249,7 +15248,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.102";
+        return "1.4.104";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
