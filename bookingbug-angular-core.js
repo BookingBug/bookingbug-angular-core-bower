@@ -13381,6 +13381,7 @@ function getURIparam( name ){
             }
             requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, current_item, $scope.bb.item_defaults);
             if (requested_slot.slot && requested_slot.match === "full") {
+              $scope.skipThisStep();
               $scope.selectSlot(requested_slot.slot, day);
             } else if (requested_slot.slot) {
               $scope.highlightSlot(requested_slot.slot, day);
@@ -15248,7 +15249,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.105";
+        return "1.4.106";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
