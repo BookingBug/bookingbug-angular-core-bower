@@ -6455,6 +6455,7 @@ function getURIparam( name ){
   * @param {hash}  bbEvents A hash of options
   * @property {integer} total_entries The event total entries
   * @property {array} events The events array
+  * @property {boolean} hide_fully_booked_events Hide fully booked events (i.e. events with only waitlist spaces left). Default is false.
    */
   angular.module('BB.Directives').directive('bbEvents', function() {
     return {
@@ -6485,7 +6486,7 @@ function getURIparam( name ){
     $scope.start_date = moment();
     $scope.end_date = moment().add(1, 'year');
     $scope.filters = {
-      hide_sold_out_events: true
+      hide_fully_booked_events: false
     };
     $scope.pagination = PaginationService.initialise({
       page_size: 10,
@@ -6943,7 +6944,7 @@ function getURIparam( name ){
      */
     $scope.filterEvents = function(item) {
       var result;
-      result = item.bookable && (moment($scope.filters.date).isSame(item.date, 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_sold_out_events && item.getSpacesLeft() > 0) || !$scope.filters.hide_sold_out_events) && $scope.filterEventsWithDynamicFilters(item);
+      result = item.bookable && (moment($scope.filters.date).isSame(item.date, 'day') || ($scope.filters.date == null)) && (($scope.filters.event_group && item.service_id === $scope.filters.event_group.id) || ($scope.filters.event_group == null)) && ((($scope.filters.price != null) && (item.price_range.from <= $scope.filters.price)) || ($scope.filters.price == null)) && (($scope.filters.hide_fully_booked_events && item.getSpacesLeft() > 0) || !$scope.filters.hide_fully_booked_events) && $scope.filterEventsWithDynamicFilters(item);
       return result;
     };
     $scope.filterEventsWithDynamicFilters = function(item) {
@@ -7031,6 +7032,9 @@ function getURIparam( name ){
       return $rootScope.$broadcast("event_list_filter_date:cleared");
     };
     buildDynamicFilters = function(questions) {
+      questions = _.each(questions, function(question) {
+        return question.name = $filter('wordCharactersAndSpaces')(question.name);
+      });
       $scope.dynamic_filters = _.groupBy(questions, 'question_type');
       $scope.dynamic_filters.question_types = _.uniq(_.pluck(questions, 'question_type'));
       return $scope.dynamic_filters.values = {};
@@ -8137,6 +8141,7 @@ function getURIparam( name ){
       AlertService.clear();
       $scope.search_failed = false;
       $scope.loc = result.geometry.location;
+      $scope.formatted_address = result.formatted_address;
       $scope.myMap.setCenter($scope.loc);
       $scope.myMap.setZoom(15);
       $scope.showClosestMarkers($scope.loc);
@@ -9378,7 +9383,7 @@ function getURIparam( name ){
       if (!stacked_item.datetime && !stacked_item.date) {
         return;
       }
-      datetime = stacked_item.datetime || DateTimeUtilitiesService.convertTimeSlotToMoment(stacked_item.date.date, stacked_item.time);
+      datetime = stacked_item.datetime || DateTimeUtilitiesService.convertTimeToMoment(stacked_item.date.date, stacked_item.time.time);
       if ($scope.start_date <= datetime && $scope.end_date >= datetime) {
         time = DateTimeUtilitiesService.convertMomentToTime(datetime);
         time_slot = _.findWhere(slots[datetime.toISODate()], {
@@ -10631,7 +10636,7 @@ function getURIparam( name ){
         }
         $q.all(promises).then((function(_this) {
           return function(res) {
-            var k, len1, people;
+            var k, len1, people, person;
             people = [];
             for (k = 0, len1 = items.length; k < len1; k++) {
               i = items[k];
@@ -10644,13 +10649,17 @@ function getURIparam( name ){
               }
             }
             if (items.length === 1 && $scope.bb.company.settings && $scope.bb.company.settings.merge_people) {
-              if (!$scope.selectItem(items[0], $scope.nextRoute)) {
-                setPerson(people);
-                $scope.bookable_items = items;
-                $scope.selected_bookable_items = items;
-              } else {
-                $scope.skipThisStep();
-              }
+              person = items[0];
+            }
+            if ($scope.bb.item_defaults.person) {
+              person = $scope.bb.item_defaults.person;
+            }
+            if (person && !$scope.selectItem(person, $scope.nextRoute, {
+              skip_step: true
+            })) {
+              setPerson(people);
+              $scope.bookable_items = items;
+              $scope.selected_bookable_items = items;
             } else {
               setPerson(people);
               $scope.bookable_items = items;
@@ -10727,8 +10736,11 @@ function getURIparam( name ){
     * @param {string=} route A specific route to load
      */
     $scope.selectItem = (function(_this) {
-      return function(item, route) {
+      return function(item, route, options) {
         var new_person;
+        if (options == null) {
+          options = {};
+        }
         if ($scope.$parent.$has_page_control) {
           $scope.person = item;
           return false;
@@ -10737,6 +10749,9 @@ function getURIparam( name ){
           _.each($scope.booking_items, function(bi) {
             return bi.setPerson(new_person);
           });
+          if (options.skip_step) {
+            $scope.skipThisStep();
+          }
           $scope.decideNextPage(route);
           return true;
         }
@@ -11075,7 +11090,7 @@ function getURIparam( name ){
             promises.push(i.promise);
           }
           return $q.all(promises).then(function(res) {
-            var k, len1, resources;
+            var k, len1, resource, resources;
             resources = [];
             for (k = 0, len1 = items.length; k < len1; k++) {
               i = items[k];
@@ -11086,13 +11101,17 @@ function getURIparam( name ){
                 }
               }
             }
-            if (resources.length === 1 && !$scope.options.allow_single_pick) {
-              if (!$scope.selectItem(items[0].item, $scope.nextRoute, {
-                skip_step: true
-              })) {
-                $scope.bookable_resources = resources;
-                $scope.bookable_items = items;
-              }
+            if (resources.length === 1) {
+              resource = items[0];
+            }
+            if ($scope.bb.item_defaults.resource) {
+              resource = $scope.bb.item_defaults.resource;
+            }
+            if (resource && !$scope.selectItem(resource.item, $scope.nextRoute, {
+              skip_step: true
+            })) {
+              $scope.bookable_resources = resources;
+              $scope.bookable_items = items;
             } else {
               $scope.bookable_resources = resources;
               $scope.bookable_items = items;
@@ -12777,6 +12796,12 @@ function getURIparam( name ){
       transclude: true,
       controller: 'TimeRangeList',
       link: function(scope, element, attrs, controller, transclude) {
+        scope.$on('time:selected', function() {
+          var btn;
+          btn = angular.element('#btn-continue');
+          btn[0].disabled = false;
+          return btn[0].focus();
+        });
         scope.today = moment().toDate();
         scope.tomorrow = moment().add(1, 'days').toDate();
         scope.options = scope.$eval(attrs.bbTimeRanges) || {};
@@ -13234,6 +13259,7 @@ function getURIparam( name ){
             }
             requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, current_item, $scope.bb.item_defaults);
             if (requested_slot.slot && requested_slot.match === "full") {
+              $scope.skipThisStep();
               $scope.selectSlot(requested_slot.slot, day);
             } else if (requested_slot.slot) {
               $scope.highlightSlot(requested_slot.slot, day);
@@ -14091,8 +14117,8 @@ angular.module('BB.Directives')
         bb-file-upload
         item="item"
         max-size="100KB"
-        pertty-accept="images, .pdf, .doc/docx"
-        accept="application/pdf,application/msword,image/*">
+        pretty-accept="images, .pdf, .doc/docx"
+        accept="'application/pdf,application/msword,image/*'">
       </div>
     </example>
    */
@@ -15115,7 +15141,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.1.0-beta.6";
+        return "2.0.43";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -17525,6 +17551,18 @@ angular.module('BB.Directives')
     };
   });
 
+  angular.module('BB.Filters').filter('snakeCase', function() {
+    return function(string) {
+      return string.trim().replace(/\s/g, '_').toLowerCase();
+    };
+  });
+
+  angular.module('BB.Filters').filter('wordCharactersAndSpaces', function() {
+    return function(string) {
+      return string.replace(/[^a-zA-Z0-9\_\s]+/, '');
+    };
+  });
+
 }).call(this);
 
 (function() {
@@ -19246,9 +19284,7 @@ angular.module('BB.Directives')
         if (defaults.time) {
           date = defaults.date ? defaults.date : moment();
           time = defaults.time ? parseInt(defaults.time) : 0;
-          defaults.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(defaults.date, {
-            time: time
-          });
+          defaults.datetime = DateTimeUtilitiesService.convertTimeToMoment(defaults.date, time);
         }
         if (defaults.service_ref) {
           this.service_ref = defaults.service_ref;
@@ -19930,7 +19966,7 @@ angular.module('BB.Directives')
         if (this.time) {
           this.time.select();
           if (this.datetime) {
-            this.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(this.date.date, this.time);
+            this.datetime = DateTimeUtilitiesService.convertTimeToMoment(this.date.date, this.time.time);
           }
           if (this.price && this.time.price && (this.price !== this.time.price)) {
             this.setPrice(this.time.price);
@@ -20458,7 +20494,7 @@ angular.module('BB.Directives')
         if (!this.date || !this.time) {
           return null;
         }
-        return DateTimeUtilitiesService.convertTimeSlotToMoment(this.date.date, this.time);
+        return DateTimeUtilitiesService.convertTimeToMoment(this.date.date, this.time.time);
       };
 
       BasketItem.prototype.startDatetime = function() {
@@ -20483,7 +20519,7 @@ angular.module('BB.Directives')
         }
         duration = this.listed_duration ? this.listed_duration : this.duration;
         time = this.time.time + duration;
-        return DateTimeUtilitiesService.convertTimeSlotToMoment(this.date.date, time);
+        return DateTimeUtilitiesService.convertTimeToMoment(this.date.date, time);
       };
 
       BasketItem.prototype.endDatetime = function() {
@@ -26098,25 +26134,70 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Services:DateTimeUtilities
+  *
+  * @description
+  * Service for manipulating datetime objects
+  *
+   */
   angular.module('BB.Services').factory("DateTimeUtilitiesService", function(GeneralOptions, CompanyStoreService) {
+
+    /***
+    * @ngdoc method
+    * @name checkPerson
+    * @methodOf BB.Services:DateTimeUtilities
+    * @description
+    * Checks if basket_item has default person 
+    * @param {Object} basket_item The basket item object
+    * @param {Object} item_defaults The item defaults object
+    *
+    * @returns {boolean}
+     */
     var checkPerson, checkResource;
     checkPerson = function(basket_item, item_defaults) {
       return (basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self) || _.isBoolean(basket_item.person) || item_defaults.merge_people;
     };
+
+    /***
+    * @ngdoc method
+    * @name checkResource
+    * @methodOf BB.Services:DateTimeUtilities
+    * @description
+    * Checks if basket_item has default resource
+    * @param {Object} basket_item The basket item object
+    * @param {Object} item_defaults The item defaults object
+    *
+    * @returns {boolean}
+     */
     checkResource = function(basket_item, item_defaults) {
       return (basket_item.defaults.resource && basket_item.defaults.resource.self === basket_item.resource.self) || _.isBoolean(basket_item.resource) || item_defaults.merge_resources;
     };
     return {
-      convertTimeSlotToMoment: function(date, time_slot) {
+
+      /***
+      * @ngdoc method
+      * @name convertTimeToMoment
+      * @methodOf BB.Services:DateTimeUtilities
+      * @description
+      * Converts date and time to valid moment object
+      * @param {Moment} date The date object to convert
+      * @param {integer} time The time integer to convert
+      *
+      * @returns {object} Moment object converted from date/time
+       */
+      convertTimeToMoment: function(date, time) {
         var datetime, hours, mins, val;
-        if (!(date && moment.isMoment(date) && time_slot)) {
+        if (!(date && moment.isMoment(date) && angular.isNumber(time))) {
           return;
         }
         datetime = moment();
         if (GeneralOptions.display_time_zone !== CompanyStoreService.time_zone) {
           datetime = datetime.tz(CompanyStoreService.time_zone);
         }
-        val = parseInt(time_slot.time);
+        val = parseInt(time);
         hours = parseInt(val / 60);
         mins = val % 60;
         datetime.hour(hours);
@@ -26127,9 +26208,33 @@ angular.module('BB.Directives')
         datetime.year(date.year());
         return datetime;
       },
+
+      /***
+      * @ngdoc method
+      * @name convertMomentToTime
+      * @methodOf BB.Services:DateTimeUtilities
+      * @description
+      * Converts moment object to time 
+      * @param {Moment} datetime the datetime object to convert
+      *
+      * @returns {integer} Datetime integer converted from moment object
+       */
       convertMomentToTime: function(datetime) {
         return datetime.minutes() + datetime.hours() * 60;
       },
+
+      /***
+      * @ngdoc method
+      * @name checkDefaultTime
+      * @methodOf BB.Services:DateTimeUtilities
+      * @description
+      *  Checks if basket_item default time exists 
+      * @param {Moment} date The date object
+      * @param {Array} time_slots An array of time slots 
+      * @param {Object} basket_item The basket item object
+      * @param {Object} item_defaults The item defaults object
+      * @returns {Object} object describing matching slot
+       */
       checkDefaultTime: function(date, time_slots, basket_item, item_defaults) {
         var found_time_slot, i, len, match, slot, time;
         if (!basket_item.defaults.time) {
@@ -26172,14 +26277,14 @@ angular.module('BB.Directives')
           extra.month = prms.month;
           extra.date = prms.date;
           extra.edate = prms.edate;
-          if (prms.client) {
-            extra.location = prms.client.addressCsvLine();
+          if (prms.people_ids) {
+            extra.people_ids = prms.people_ids;
           }
-          if (prms.cItem.person && !prms.cItem.anyPerson()) {
-            extra.person_id = prms.cItem.person.id;
+          if (prms.resource_ids) {
+            extra.resource_ids = prms.resource_ids;
           }
-          if (prms.cItem.resource && !prms.cItem.anyResource()) {
-            extra.resource_id = prms.cItem.resource.id;
+          if (prms.person_group_id) {
+            extra.person_group_id = prms.person_group_id;
           }
           prms.cItem.days_link.$get('days', extra).then((function(_this) {
             return function(found) {
@@ -26398,8 +26503,8 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('ErrorService', function(GeneralOptions) {
-    var alerts;
+  angular.module('BB.Services').factory('ErrorService', function(GeneralOptions, $translate) {
+    var alerts, createCustomError, getAlert, getError;
     alerts = [
       {
         key: 'GENERIC',
@@ -26655,44 +26760,57 @@ angular.module('BB.Directives')
         msg: 'Sorry, we were unable to remove that deal. Please try again.'
       }
     ];
-    return {
-      getError: function(key) {
-        var error, translate;
-        error = _.findWhere(alerts, {
-          key: key
-        });
-        error.persist = true;
-        translate = GeneralOptions.use_i18n;
-        if (error && translate) {
-          return {
-            msg: "ERROR." + key
-          };
-        } else if (error && !translate) {
-          return error;
-        } else if (translate) {
-          return {
-            msg: 'GENERIC'
-          };
-        } else {
-          return alerts[0];
-        }
-      },
-      getAlert: function(key) {
-        var alert, translate;
-        alert = _.findWhere(alerts, {
-          key: key
-        });
-        translate = GeneralOptions.use_i18n;
-        if (alert && translate) {
-          return {
-            msg: "ALERT." + key
-          };
-        } else if (alert && !translate) {
-          return alert;
-        } else {
-          return null;
-        }
+
+    /**
+     * @param {String} msg
+     * @returns {{msg: String}}
+     */
+    createCustomError = function(msg) {
+      return {
+        msg: msg
+      };
+    };
+    getError = function(key) {
+      var error, translate;
+      error = _.findWhere(alerts, {
+        key: key
+      });
+      error.persist = true;
+      translate = GeneralOptions.use_i18n;
+      if (error && translate) {
+        return {
+          msg: $translate.instant('ERROR.' + key)
+        };
+      } else if (error && !translate) {
+        return error;
+      } else if (translate) {
+        return {
+          msg: 'GENERIC'
+        };
+      } else {
+        return alerts[0];
       }
+    };
+    getAlert = function(key) {
+      var alert, translate;
+      alert = _.findWhere(alerts, {
+        key: key
+      });
+      translate = GeneralOptions.use_i18n;
+      if (alert && translate) {
+        return {
+          msg: $translate.instant('ALERT.' + key)
+        };
+      } else if (alert && !translate) {
+        return alert;
+      } else {
+        return null;
+      }
+    };
+    return {
+      createCustomError: createCustomError,
+      getAlert: getAlert,
+      getError: getError
     };
   });
 
@@ -29131,9 +29249,8 @@ angular.module('BB.Directives')
           item_link = prms.cItem.days_link;
         }
         if (item_link) {
-          extra = {
-            date: start_date.toISODate()
-          };
+          extra = {};
+          extra.date = start_date.toISODate();
           if (prms.location) {
             extra.location = prms.location;
           }
@@ -29150,7 +29267,6 @@ angular.module('BB.Directives')
             extra.end_date = end_date.toISODate();
           }
           extra.duration = prms.duration;
-          extra.resource_ids = prms.resource_ids;
           extra.person_group_id = prms.cItem.person_group_id;
           extra.num_resources = prms.num_resources;
           if (prms.time_zone) {
@@ -29158,6 +29274,12 @@ angular.module('BB.Directives')
           }
           if (prms.cItem.id) {
             extra.ignore_booking = prms.cItem.id;
+          }
+          if (prms.people_ids) {
+            extra.people_ids = prms.people_ids;
+          }
+          if (prms.resource_ids) {
+            extra.resource_ids = prms.resource_ids;
           }
           if (extra.event_id) {
             item_link = prms.company;
@@ -29298,7 +29420,7 @@ angular.module('BB.Directives')
           i = sorted_times[l];
           if (i) {
             if (!i.datetime) {
-              i.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(moment(date), i);
+              i.datetime = DateTimeUtilitiesService.convertTimeToMoment(moment(date), i.time);
             }
             times.push(new BBModel.TimeSlot(i, service));
           }
@@ -29307,7 +29429,7 @@ angular.module('BB.Directives')
       },
       checkCurrentItem: function(item, sorted_times, ev) {
         if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
-          item.time.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(item.date.date, item.time);
+          item.time.datetime = DateTimeUtilitiesService.convertTimeToMoment(item.date.date, item.time.time);
           sorted_times[item.time.time] = item.time;
           return halClient.clearCache(ev.$href("self"));
         } else if (item && item.id && item.event_id === ev.event_id && item.time && sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
