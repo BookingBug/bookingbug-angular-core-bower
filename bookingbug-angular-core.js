@@ -15249,7 +15249,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.106";
+        return "1.4.107.IMPL_1407";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -30776,7 +30776,7 @@ angular.module('BB.Directives')
         } else if (this.event) {
           data.event_id = this.event.id;
         } else {
-          data.event_id = this.slot_id;
+          data.event_id = this.event_id;
         }
         data.full_describe = this.full_describe;
         data.id = this.id;
