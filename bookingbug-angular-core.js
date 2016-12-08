@@ -15249,7 +15249,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.107.IMPL_1407";
+        return "1.4.107-IMPL1407";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
