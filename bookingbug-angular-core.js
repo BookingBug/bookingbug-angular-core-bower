@@ -10829,8 +10829,8 @@ function getURIparam( name ){
             if (items.length === 1 && $scope.bb.company.settings && $scope.bb.company.settings.merge_people) {
               person = items[0];
             }
-            if ($scope.bb.item_defaults.person) {
-              person = $scope.bb.item_defaults.person;
+            if ($scope.bb.current_item.defaults.person) {
+              person = $scope.bb.current_item.defaults.person;
             }
             if (person && !$scope.selectItem(person, $scope.nextRoute, {
               skip_step: true
@@ -15249,7 +15249,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.107-IMPL1407";
+        return "1.4.108";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -30776,7 +30776,7 @@ angular.module('BB.Directives')
         } else if (this.event) {
           data.event_id = this.event.id;
         } else {
-          data.event_id = this.event_id;
+          data.event_id = this.slot_id;
         }
         data.full_describe = this.full_describe;
         data.id = this.id;
