@@ -15249,7 +15249,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.109";
+        return "1.4.110";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -29073,9 +29073,9 @@ angular.module('BB.Directives')
     us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
     uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
     number_only_regex = /^\d+$/;
-    uk_mobile_regex_strict = /^((\+44\s?|0)7([45789]\d{2}|624)\s?\d{3}\s?\d{3})$/;
+    uk_mobile_regex_strict = /^((\+44|0)\s*7\s*([45789]\s*\d\s*\d|6\s*2\s*4)\s*\d\s*\d\s*\d\s*\d\s*\d\s*\d)$/;
     mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
+    uk_landline_regex_strict = /^(\+44|0)\s*[1-9]\s*\d{1,4}\s*\d{3,4}\s*\d{2,4}$/;
     uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
     international_number = /^(\+)([\d \(\)]{9,19})$/;
     email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
