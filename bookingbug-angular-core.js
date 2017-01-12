@@ -1860,6 +1860,22 @@ angular.module('ngLocalData', ['angular-hal']).
 }]);
 
 
+/*
+
+toISODate
+Extended moment with toISODate method to format dates for API date parameter assignment. Locale is enforced as `en` to ensure date is formatted correctly.
+ */
+
+(function() {
+  var base;
+
+  (base = moment.fn).toISODate || (base.toISODate = function() {
+    return this.locale('en').format('YYYY-MM-DD');
+  });
+
+}).call(this);
+
+
 /* Usefull javascript functions usable directly withing html views - often for getting scope related data */
 
 getControllerScope = function(controller, fn){
@@ -1881,6 +1897,29 @@ function getURIparam( name ){
   else
     return results[1];
 }
+(function() {
+  if (!String.prototype.includes) {
+    String.prototype.includes = function(search, start) {
+      if (typeof start !== 'number') {
+        start = 0;
+      }
+      if (start + search.length > this.length) {
+        return false;
+      } else {
+        return this.indexOf(search, start) !== -1;
+      }
+    };
+  }
+
+  String.prototype.parameterise = function(seperator) {
+    if (seperator == null) {
+      seperator = '-';
+    }
+    return this.trim().replace(/\s/g, seperator).toLowerCase();
+  };
+
+}).call(this);
+
 (function() {
   'use strict';
 
@@ -1933,7 +1972,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, DateTimeUtilitiesService, GeneralOptions, CompanyStoreService) {
+  angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, GeneralOptions, DateTimeUtilitiesService, $translate, CompanyStoreService) {
     var hasAvailability, setData, updateAvailability;
     $scope.controller = "public.controllers.AccordionRangeGroup";
     $scope.$watch('slots', function() {
@@ -1972,7 +2011,7 @@ function getURIparam( name ){
       $scope.end_time = $scope.options.range[1];
       $scope.options.collaspe_when_time_selected = _.isBoolean($scope.options.collaspe_when_time_selected) ? $scope.options.collaspe_when_time_selected : true;
       $scope.options.hide_availability_summary = _.isBoolean($scope.options.hide_availability_summary) ? $scope.options.hide_availability_summary : false;
-      $scope.heading = $scope.options.heading;
+      $scope.heading = $translate.instant($scope.options.heading);
       return setData();
     };
 
@@ -2491,10 +2530,10 @@ function getURIparam( name ){
   'use strict';
   var BBCtrl;
 
-  BBCtrl = function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService, viewportSize) {
+  BBCtrl = function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService) {
     'ngInject';
-    var $debounce, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, widgetStarted;
-    this.$scope = $scope;
+    var $debounce, $onInit, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, compileDisplayMode, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, init, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, vm, widgetStarted;
+    vm = this;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
     $scope.qs = QueryStringService;
@@ -2524,7 +2563,7 @@ function getURIparam( name ){
       Questions: 15,
       Confirmation: 16
     };
-    this.$onInit = function() {
+    init = function() {
       $scope.addItemToBasket = addItemToBasket;
       $scope.areScopesLoaded = LoadingService.areScopesLoaded;
       $scope.base64encode = base64encode;
@@ -2583,13 +2622,15 @@ function getURIparam( name ){
       $scope.supportsTouch = supportsTouch;
       $scope.showPage = showPage;
       $scope.updateBasket = updateBasket;
+      vm.$onInit = $onInit;
+    };
+    $onInit = function() {
+      compileDisplayMode();
       initializeBBWidget();
       $rootScope.$on('show:loader', showLoaderHandler);
       $rootScope.$on('hide:loader', hideLoaderHandler);
       $scope.$on('$locationChangeStart', locationChangeStartHandler);
-    };
-    this.$postLink = function() {
-      viewportSize.init();
+      vm.bb = $scope.bb;
     };
     initializeBBWidget = function() {
       $scope.bb = new BBWidget();
@@ -2618,6 +2659,13 @@ function getURIparam( name ){
       } else {
         (base1 = $scope.bb).api_url || (base1.api_url = $location.protocol() + "://" + $location.host());
       }
+    };
+    compileDisplayMode = function() {
+      $compile("<span bb-display-mode></span>")($scope, (function(_this) {
+        return function(cloned, scope) {
+          return $bbug($element).append(cloned);
+        };
+      })(this));
     };
     showLoaderHandler = function() {
       $scope.loading = true;
@@ -3501,7 +3549,8 @@ function getURIparam( name ){
       return def.promise;
     };
     setBasketItem = function(item) {
-      return $scope.bb.current_item = item;
+      $scope.bb.current_item = item;
+      return $scope.current_item = $scope.bb.current_item;
     };
     setReadyToCheckout = function(ready) {
       return $scope.bb.confirmCheckout = ready;
@@ -3935,6 +3984,7 @@ function getURIparam( name ){
     redirectTo = function(url) {
       return $window.location.href = url;
     };
+    init();
   };
 
   angular.module('BB.Controllers').controller('BBCtrl', BBCtrl);
@@ -4680,12 +4730,7 @@ function getURIparam( name ){
   *    <file name="index.html">
   *   <div bb-api-url='https://uk.bookingbug.com'>
   *   <div  bb-widget='{company_id:21}'>
-  *     <div bb-client-details>
-  *        <p>company_id: {{client_details.company_id}}</p>
-  *        <p>offer_login: {{client_details.offer_login}}</p>
-  *        <p>ask_address: {{client_details.ask_address}}</p>
-  *        <p>no_phone: {{client_details.no_phone}}</p>
-  *      </div>
+  *     <div bb-client-details></div>
   *     </div>
   *     </div>
   *   </file>
@@ -4707,7 +4752,7 @@ function getURIparam( name ){
             if (has_content) {
               return element.html(clone).show();
             } else {
-              return $q.when($templateCache.get('client_form.html')).then(function(template) {
+              return $q.when($templateCache.get('_client_details.html')).then(function(template) {
                 element.html(template).show();
                 return $compile(element.contents())(scope);
               });
@@ -5163,42 +5208,34 @@ function getURIparam( name ){
     * @name getNearestCompany
     * @methodOf BB.Directives:bbCompanies
     * @description
-    * Get nearest company in according of center parameter
+    * Get nearest company in according of centre parameter
     *
-    * @param {string} center Geolocation parameter
+    * @param {string} centre Map centre
      */
     return $scope.getNearestCompany = (function(_this) {
       return function(arg) {
-        var R, a, c, center, chLat, chLon, company, d, dLat, dLon, distances, i, lat1, lat2, latlong, len, lon1, lon2, pi, rLat1, rLat2, ref;
-        center = arg.center;
-        pi = Math.PI;
-        R = 6371;
+        var centre, company, company_position, distances, i, len, map_centre, ref;
+        centre = arg.centre;
         distances = [];
-        lat1 = center.lat();
-        lon1 = center.lng();
         ref = $scope.items;
         for (i = 0, len = ref.length; i < len; i++) {
           company = ref[i];
           if (company.address.lat && company.address.long && company.live) {
-            latlong = new google.maps.LatLng(company.address.lat, company.address.long);
-            lat2 = latlong.lat();
-            lon2 = latlong.lng();
-            chLat = lat2 - lat1;
-            chLon = lon2 - lon1;
-            dLat = chLat * (pi / 180);
-            dLon = chLon * (pi / 180);
-            rLat1 = lat1 * (pi / 180);
-            rLat2 = lat2 * (pi / 180);
-            a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
-            c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            d = R * c;
-            company.distance = d;
+            map_centre = {
+              lat: center.lat(),
+              long: centre.lng()
+            };
+            company_position = {
+              lat: company.address.lat,
+              long: company.address.long
+            };
+            company.distance = GeolocationService.haversine(map_centre, company_position);
             distances.push(company);
           }
-          distances.sort(function(a, b) {
-            return a.distance - b.distance;
-          });
         }
+        distances.sort(function(a, b) {
+          return a.distance - b.distance;
+        });
         return distances[0];
       };
     })(this);
@@ -5332,29 +5369,7 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbMonthAvailability
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of month availability for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {string} message The message text
-  * @property {string} setLoaded  Set the day list loaded
-  * @property {object} setLoadedAndShowError Set loaded and show error
-  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
-   */
-  angular.module('BB.Directives').directive('bbMonthAvailability', function() {
+  angular.module('BB.Directives').directive('bbDayList', function() {
     return {
       restrict: 'A',
       replace: true,
@@ -5363,215 +5378,58 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DayList', function($scope, $rootScope, $q, AlertService, LoadingService, BBModel) {
-    var loader;
+  angular.module('BB.Controllers').controller('DayList', function($scope, $rootScope, $q, DayService) {
+    var setCurrentDate;
     $scope.controller = "public.controllers.DayList";
-    loader = LoadingService.$loader($scope).notLoaded();
-    $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    $scope.day_data = {};
-    if (!$scope.type) {
-      $scope.type = "month";
-    }
-    if (!$scope.data_source) {
-      $scope.data_source = $scope.bb.current_item;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if (!$scope.current_date && $scope.last_selected_date) {
-          $scope.current_date = $scope.last_selected_date.startOf($scope.type);
-        } else if (!$scope.current_date) {
-          $scope.current_date = moment().startOf($scope.type);
-        }
-        return $scope.loadData();
-      };
-    })(this), function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    $scope.$on("currentItemUpdate", function(event) {
+    $rootScope.connection_started.then(function() {
+      if (!$scope.current_date && $scope.last_selected_date) {
+        $scope.selected_date = $scope.last_selected_date.clone();
+        setCurrentDate($scope.last_selected_date.clone().startOf('week'));
+      } else if (!$scope.current_date) {
+        setCurrentDate(moment().startOf('week'));
+      }
       return $scope.loadData();
+    }, function(err) {
+      return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
-
-    /***
-    * @ngdoc method
-    * @name setCalType
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set cal type in acording of type
-    *
-    * @param {array} type The type of day list
-     */
-    $scope.setCalType = (function(_this) {
-      return function(type) {
-        return $scope.type = type;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setDataSource
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set data source in according of source
-    *
-    * @param {string} source The source of day list
-     */
-    $scope.setDataSource = (function(_this) {
-      return function(source) {
-        return $scope.data_source = source;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_date
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Format date and get current date
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_date = (function(_this) {
-      return function(fmt) {
-        if ($scope.current_date) {
-          return $scope.current_date.format(fmt);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_start_date
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Format start date in according of fmt parameter
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_start_date = (function(_this) {
-      return function(fmt) {
-        return $scope.format_date(fmt);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_end_date
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Format end date in according of fmt parameter
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_end_date = (function(_this) {
-      return function(fmt) {
-        if ($scope.end_date) {
-          return $scope.end_date.format(fmt);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name selectDay
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Select day
-    *
-    * @param {date} day The day
-    * @param {string=} route A specific route to load
-    * @param {string} force The force
-     */
     $scope.selectDay = (function(_this) {
-      return function(day, route, force) {
-        if (day.spaces === 0 && !force) {
-          return false;
+      return function(day) {
+        if (!day.spaces || (day.spaces && day.spaces === 0)) {
+          return;
         }
         $scope.setLastSelectedDate(day.date);
+        $scope.selected_date = day.date;
         $scope.bb.current_item.setDate(day);
-        if ($scope.$parent.$has_page_control) {
-
-        } else {
-          return $scope.decideNextPage(route);
-        }
+        return $scope.$broadcast('dateChanged', day.date);
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name setMonth
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set month
-    *
-    * @param {date} month The month
-    * @param {date} year The year
-     */
-    $scope.setMonth = (function(_this) {
-      return function(month, year) {
-        $scope.current_date = moment().startOf('month').year(year).month(month - 1);
-        $scope.current_date.year();
-        return $scope.type = "month";
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setWeek
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set month
-    *
-    * @param {date} week The week
-    * @param {date} year The year
-     */
-    $scope.setWeek = (function(_this) {
-      return function(week, year) {
-        $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
-        $scope.current_date.year();
-        return $scope.type = "week";
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name add
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Add the current date in according of type and amount parameters
-    *
-    * @param {string} type The type
-    * @param {string} amount The amount
-     */
+    setCurrentDate = function(date) {
+      $scope.current_date = date;
+      return $scope.current_date_js = $scope.current_date.toDate();
+    };
     $scope.add = (function(_this) {
       return function(type, amount) {
-        $scope.current_date.add(amount, type);
+        setCurrentDate($scope.current_date.add(amount, type));
         return $scope.loadData();
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name subtract
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Substract the current date in according of type and amount
-    *
-    * @param {string} type The type
-    * @param {string} amount The amount
-     */
     $scope.subtract = (function(_this) {
       return function(type, amount) {
         return $scope.add(type, -amount);
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name isPast
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
-     */
+    $scope.currentDateChanged = function() {
+      var date;
+      date = moment($scope.current_date_js).startOf('week');
+      setCurrentDate(date);
+      return $scope.loadData();
+    };
+    $scope.isDateDisabled = function(date, mode) {
+      var result;
+      date = moment(date);
+      result = mode === 'day' && (date.day() !== 1 || date.isBefore(moment(), 'day'));
+      return result;
+    };
     $scope.isPast = (function(_this) {
       return function() {
         if (!$scope.current_date) {
@@ -5580,129 +5438,36 @@ function getURIparam( name ){
         return moment().isAfter($scope.current_date);
       };
     })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadData
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Load week if type is equals with week else load month
-     */
-    $scope.loadData = (function(_this) {
-      return function() {
-        if ($scope.type === "week") {
-          return $scope.loadWeek();
-        } else {
-          return $scope.loadMonth();
+    return $scope.loadData = function() {
+      var promise;
+      $scope.day_data = {};
+      $scope.notLoaded($scope);
+      $scope.end_date = moment($scope.current_date).add(5, 'weeks');
+      promise = DayService.query({
+        company: $scope.bb.company,
+        cItem: $scope.bb.current_item,
+        date: $scope.current_date.toISODate(),
+        edate: $scope.end_date.toISODate(),
+        client: $scope.client
+      });
+      return promise.then(function(days) {
+        var day, i, len;
+        for (i = 0, len = days.length; i < len; i++) {
+          day = days[i];
+          $scope.day_data[day.string_date] = {
+            spaces: day.spaces,
+            date: day.date
+          };
         }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadMonth
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Load month
-     */
-    $scope.loadMonth = (function(_this) {
-      return function() {
-        var date, edate;
-        date = $scope.current_date;
-        $scope.month = date.month();
-        loader.notLoaded();
-        edate = moment(date).add(1, 'months');
-        $scope.end_date = moment(edate).add(-1, 'days');
-        if ($scope.data_source) {
-          return BBModel.Day.$query({
-            company: $scope.bb.company,
-            cItem: $scope.data_source,
-            'month': date.format("MMYY"),
-            client: $scope.client
-          }).then(function(days) {
-            var d, day, i, j, k, len, w, week, weeks;
-            $scope.days = days;
-            for (i = 0, len = days.length; i < len; i++) {
-              day = days[i];
-              $scope.day_data[day.string_date] = day;
-            }
-            weeks = [];
-            for (w = j = 0; j <= 5; w = ++j) {
-              week = [];
-              for (d = k = 0; k <= 6; d = ++k) {
-                week.push(days[w * 7 + d]);
-              }
-              weeks.push(week);
-            }
-            $scope.weeks = weeks;
-            return loader.setLoaded();
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        } else {
-          return loader.setLoaded();
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadWeek
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Load week
-     */
-    $scope.loadWeek = (function(_this) {
-      return function() {
-        var date, edate;
-        date = $scope.current_date;
-        loader.notLoaded();
-        edate = moment(date).add(7, 'days');
-        $scope.end_date = moment(edate).add(-1, 'days');
-        if ($scope.data_source) {
-          return BBModel.Day.$query({
-            company: $scope.bb.company,
-            cItem: $scope.data_source,
-            date: date.toISODate(),
-            edate: edate.toISODate(),
-            client: $scope.client
-          }).then(function(days) {
-            var day, i, len;
-            $scope.days = days;
-            for (i = 0, len = days.length; i < len; i++) {
-              day = days[i];
-              $scope.day_data[day.string_date] = day;
-            }
-            return loader.setLoaded();
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        } else {
-          return loader.setLoaded();
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbMonthAvailability
-    * @description
-    * Set this page section as ready
-     */
-    return $scope.setReady = (function(_this) {
-      return function() {
-        if ($scope.bb.current_item.date) {
-          return true;
-        } else {
-          AlertService.clear();
-          AlertService.add("danger", {
-            msg: "You need to select a date"
-          });
-          return false;
-        }
-      };
-    })(this);
+        $scope.weeks = _.groupBy($scope.day_data, function(day) {
+          return day.date.week();
+        });
+        $scope.weeks = _.toArray($scope.weeks);
+        return $scope.setLoaded($scope);
+      }, function(err) {
+        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+      });
+    };
   });
 
 }).call(this);
@@ -5739,10 +5504,10 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, $uibModal, $document, AlertService, FormDataStoreService, ValidatorService, LoadingService, BBModel) {
+  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, $uibModal, $document, AlertService, FormDataStoreService, ValidatorService, LoadingService, BBModel, $translate) {
     var ModalInstanceCtrl, init, loader;
     $scope.controller = "public.controllers.DealList";
-    FormDataStoreService.init('TimeRangeList', $scope, ['deals']);
+    FormDataStoreService.init('DealList', $scope, ['deals']);
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then(function() {
       return init();
@@ -5842,7 +5607,7 @@ function getURIparam( name ){
         return $scope.decideNextPage();
       } else {
         return AlertService.add('danger', {
-          msg: 'You need to select at least one Gift Certificate to continue'
+          msg: $translate.instant('PUBLIC_BOOKING.DEAL_LIST.CERT_NOT_SELECTED_ALERT')
         });
       }
     };
@@ -5859,7 +5624,7 @@ function getURIparam( name ){
         return true;
       } else {
         return AlertService.add('danger', {
-          msg: 'You need to select at least one Gift Certificate to continue'
+          msg: $translate.instant('PUBLIC_BOOKING.DEAL_LIST.CERT_NOT_SELECTED_ALERT')
         });
       }
     };
@@ -5898,7 +5663,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, $q, $filter, PageControllerService, AlertService, ValidatorService, LoadingService) {
+  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, $q, $filter, PageControllerService, AlertService, ValidatorService, LoadingService, $translate) {
     var loader, options;
     $scope.controller = "public.controllers.DurationList";
     loader = LoadingService.$loader($scope).notLoaded();
@@ -6003,7 +5768,7 @@ function getURIparam( name ){
         } else {
           AlertService.clear();
           AlertService.add("danger", {
-            msg: "You need to select a duration"
+            msg: $translate.instant('PUBLIC_BOOKING.DURATION)LIST.DURATON_NOT_SELECTED_ALERT')
           });
           return false;
         }
@@ -6562,7 +6327,7 @@ function getURIparam( name ){
     FormDataStoreService.init('EventList', $scope, ['selected_date', 'event_group_id', 'event_group_manually_set']);
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
-        if ($scope.bb.current_item.defaults && $scope.bb.current_item.defaults.event) {
+        if (($scope.bb.item_defaults && $scope.bb.item_defaults.event) || ($scope.bb.current_item.defaults && $scope.bb.current_item.defaults.event)) {
           $scope.skipThisStep();
           $scope.decideNextPage();
         } else if ($scope.bb.company.$has('parent') && !$scope.bb.company.$has('company_questions')) {
@@ -6585,15 +6350,15 @@ function getURIparam( name ){
       if ($scope.mode !== 0) {
         delete $scope.selected_date;
       }
-      if (!$scope.event_group_manually_set && ($scope.bb.current_item.event_group == null)) {
-        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.bb.current_item.event_group != null);
+      if (!$scope.event_group_manually_set && ($scope.current_item.event_group == null)) {
+        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null);
       }
       if ($scope.bb.current_item.event) {
-        event_group = $scope.bb.current_item.event_group;
+        event_group = $scope.current_item.event_group;
         $scope.clearBasketItem();
         $scope.emptyBasket();
         if ($scope.event_group_manually_set) {
-          $scope.bb.current_item.setEventGroup(event_group);
+          $scope.current_item.setEventGroup(event_group);
         }
       }
       promises = [];
@@ -6607,7 +6372,7 @@ function getURIparam( name ){
       }
       if ($scope.bb.item_defaults && $scope.bb.item_defaults.event_group) {
         $scope.bb.current_item.setEventGroup($scope.bb.item_defaults.event_group);
-      } else if (!$scope.bb.current_item.event_group && $scope.bb.company.$has('event_groups')) {
+      } else if (!$scope.current_item.event_group && $scope.bb.company.$has('event_groups')) {
         promises.push(EventGroupService.query($scope.bb.company, {
           per_page: 500
         }));
@@ -6659,7 +6424,7 @@ function getURIparam( name ){
     $scope.loadEventSummary = function() {
       var comp, current_event, deferred, params;
       deferred = $q.defer();
-      current_event = $scope.bb.current_item.event;
+      current_event = $scope.current_item.event;
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
         delete $scope.bb.current_item.event_chain_id;
@@ -6757,7 +6522,7 @@ function getURIparam( name ){
         delete $scope.items;
       }
       deferred = $q.defer();
-      current_event = $scope.bb.current_item.event;
+      current_event = $scope.current_item.event;
       comp || (comp = $scope.bb.company);
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
@@ -7284,7 +7049,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, $uibModal, $document, $translate, GeneralOptions, PurchaseService, LoadingService) {
+  angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, $uibModal, $document, $translate, $filter, GeneralOptions, PurchaseService, LoadingService) {
     var confirming, loader, setItemDetails;
     $scope.controller = "public.controllers.ItemDetails";
     loader = LoadingService.$loader($scope);
@@ -7507,7 +7272,7 @@ function getURIparam( name ){
           }, function(err) {
             loader.setLoaded();
             return AlertService.add("danger", {
-              msg: "Failed to move booking. Please try again."
+              msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_FAIL_ALERT')
             });
           });
         } else {
@@ -7536,7 +7301,7 @@ function getURIparam( name ){
             return function(err) {
               loader.setLoaded();
               return AlertService.add("danger", {
-                msg: "Failed to move booking. Please try again."
+                msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_FAIL_ALERT')
               });
             };
           })(this));
@@ -7546,19 +7311,11 @@ function getURIparam( name ){
       }
     };
     $scope.showMoveMessage = function(datetime) {
-      if (GeneralOptions.use_i18n) {
-        return $translate('MOVE_BOOKINGS_MSG', {
-          datetime: datetime.format('LLLL')
-        }).then(function(translated_text) {
-          return AlertService.add("info", {
-            msg: translated_text
-          });
-        });
-      } else {
-        return AlertService.add("info", {
-          msg: "Your booking has been moved to " + (datetime.format('LLLL'))
-        });
-      }
+      return AlertService.add("info", {
+        msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_SUCCESS_ALERT', {
+          datetime: datetime
+        })
+      });
     };
 
     /***
@@ -7839,7 +7596,7 @@ function getURIparam( name ){
   *
   * @description
   *
-  * Loads a list of maps for the currently in scope company
+  * Search and find child companies using address search or geolocation. 
   *
   * <pre>
   * restrict: 'AE'
@@ -7871,8 +7628,8 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, CompanyStoreService, ErrorService, $log) {
-    var cc, checkDataStore, filterByService, geolocateFail, haversine, loader, mapInit, map_ready_def, openDefaultMarker, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
+  angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, ErrorService, $log, GeolocationService) {
+    var checkDataStore, filterByService, geolocateFail, loader, mapInit, map_ready_def, openDefaultMarker, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
     $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
     $scope.options = $scope.$eval($attrs.bbMap) || {};
@@ -7882,8 +7639,6 @@ function getURIparam( name ){
     $scope.can_filter_by_service = $scope.options.filter_by_service || false;
     $scope.filter_by_service = $scope.options.filter_by_service || false;
     $scope.default_zoom = $scope.options.default_zoom || 6;
-    cc = CompanyStoreService.country_code;
-    $scope.distance_unit = _.contains(["gb", "us", "jp"], cc) ? "miles" : "km";
     map_ready_def = $q.defer();
     $scope.mapLoaded = $q.defer();
     $scope.mapReady = map_ready_def.promise;
@@ -8246,24 +8001,6 @@ function getURIparam( name ){
         return true;
       }
     };
-    haversine = function(latlong, marker) {
-      var R, a, c, chLat, chLon, d, dLat, dLon, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
-      pi = Math.PI;
-      R = 6371;
-      lat1 = latlong.lat();
-      lon1 = latlong.lng();
-      lat2 = marker.position.lat();
-      lon2 = marker.position.lng();
-      chLat = lat2 - lat1;
-      chLon = lon2 - lon1;
-      dLat = chLat * (pi / 180);
-      dLon = chLon * (pi / 180);
-      rLat1 = lat1 * (pi / 180);
-      rLat2 = lat2 * (pi / 180);
-      a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
-      c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return d = R * c;
-    };
 
     /***
     * @ngdoc method
@@ -8272,22 +8009,26 @@ function getURIparam( name ){
     * @description
     * Display the closest markers
     *
-    * @param {array} latlong Using for determinate the closest markers
+    * @param {Object} centre The map centre
      */
-    $scope.showClosestMarkers = function(latlong) {
-      var distances, distances_with_services, i, km, len, marker, ref;
+    $scope.showClosestMarkers = function(centre) {
+      var distances, distances_with_services, i, len, map_centre, marker, marker_position, ref;
       distances = [];
       distances_with_services = [];
       ref = $scope.mapMarkers;
       for (i = 0, len = ref.length; i < len; i++) {
         marker = ref[i];
-        km = haversine(latlong, marker);
+        map_centre = {
+          lat: centre.lat(),
+          long: centre.lng()
+        };
+        marker_position = {
+          lat: marker.position.lat(),
+          long: marker.position.lng()
+        };
+        marker.distance = GeolocationService.haversine(map_centre, marker_position);
         if (!$scope.showAllMarkers) {
           marker.setVisible(false);
-        }
-        marker.distance = km;
-        if ($scope.distance_unit === "miles") {
-          marker.distance *= 0.621371192;
         }
         if (marker.distance < $scope.range_limit) {
           distances.push(marker);
@@ -8625,6 +8366,383 @@ function getURIparam( name ){
         };
       }
     };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbMonthCalendar
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of month availability for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} message The message text
+  * @property {string} setLoaded  Set the day list loaded
+  * @property {object} setLoadedAndShowError Set loaded and show error
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
+  angular.module('BB.Directives').directive('bbMonthCalendar', function() {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      controller: 'MonthCalendar'
+    };
+  });
+
+  angular.module('BB.Controllers').controller('MonthCalendar', function($scope, $rootScope, $q, AlertService, LoadingService, BBModel, $translate) {
+    var loader;
+    $scope.controller = "public.controllers.MonthCalendar";
+    loader = LoadingService.$loader($scope).notLoaded();
+    $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    $scope.day_data = {};
+    if (!$scope.type) {
+      $scope.type = "month";
+    }
+    if (!$scope.data_source) {
+      $scope.data_source = $scope.bb.current_item;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if (!$scope.current_date && $scope.last_selected_date) {
+          $scope.current_date = $scope.last_selected_date.startOf($scope.type);
+        } else if (!$scope.current_date) {
+          $scope.current_date = moment().startOf($scope.type);
+        }
+        return $scope.loadData();
+      };
+    })(this), function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    $scope.$on("currentItemUpdate", function(event) {
+      return $scope.loadData();
+    });
+
+    /***
+    * @ngdoc method
+    * @name setCalType
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set cal type in acording of type
+    *
+    * @param {array} type The type of day list
+     */
+    $scope.setCalType = (function(_this) {
+      return function(type) {
+        return $scope.type = type;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setDataSource
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set data source in according of source
+    *
+    * @param {string} source The source of day list
+     */
+    $scope.setDataSource = (function(_this) {
+      return function(source) {
+        return $scope.data_source = source;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_date
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Format date and get current date
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_date = (function(_this) {
+      return function(fmt) {
+        if ($scope.current_date) {
+          return $scope.current_date.format(fmt);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_start_date
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Format start date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_start_date = (function(_this) {
+      return function(fmt) {
+        return $scope.format_date(fmt);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_end_date
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Format end date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_end_date = (function(_this) {
+      return function(fmt) {
+        if ($scope.end_date) {
+          return $scope.end_date.format(fmt);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectDay
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Select day
+    *
+    * @param {date} day The day
+    * @param {string=} route A specific route to load
+    * @param {string} force The force
+     */
+    $scope.selectDay = (function(_this) {
+      return function(day, route, force) {
+        if (day.spaces === 0 && !force) {
+          return false;
+        }
+        $scope.setLastSelectedDate(day.date);
+        $scope.bb.current_item.setDate(day);
+        if ($scope.$parent.$has_page_control) {
+
+        } else {
+          return $scope.decideNextPage(route);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setMonth
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set month
+    *
+    * @param {date} month The month
+    * @param {date} year The year
+     */
+    $scope.setMonth = (function(_this) {
+      return function(month, year) {
+        $scope.current_date = moment().startOf('month').year(year).month(month - 1);
+        $scope.current_date.year();
+        return $scope.type = "month";
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setWeek
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set month
+    *
+    * @param {date} week The week
+    * @param {date} year The year
+     */
+    $scope.setWeek = (function(_this) {
+      return function(week, year) {
+        $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
+        $scope.current_date.year();
+        return $scope.type = "week";
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Add the current date in according of type and amount parameters
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
+    $scope.add = (function(_this) {
+      return function(type, amount) {
+        $scope.current_date.add(amount, type);
+        return $scope.loadData();
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Substract the current date in according of type and amount
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
+    $scope.subtract = (function(_this) {
+      return function(type, amount) {
+        return $scope.add(type, -amount);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
+     */
+    $scope.isPast = (function(_this) {
+      return function() {
+        if (!$scope.current_date) {
+          return true;
+        }
+        return moment().isAfter($scope.current_date);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Load week if type is equals with week else load month
+     */
+    $scope.loadData = (function(_this) {
+      return function() {
+        if ($scope.type === "week") {
+          return $scope.loadWeek();
+        } else {
+          return $scope.loadMonth();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadMonth
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Load month
+     */
+    $scope.loadMonth = (function(_this) {
+      return function() {
+        var date, edate;
+        date = $scope.current_date;
+        $scope.month = date.month();
+        loader.notLoaded();
+        edate = moment(date).add(1, 'months');
+        $scope.end_date = moment(edate).add(-1, 'days');
+        if ($scope.data_source) {
+          return BBModel.Day.$query({
+            company: $scope.bb.company,
+            cItem: $scope.data_source,
+            'month': date.format("MMYY"),
+            client: $scope.client
+          }).then(function(days) {
+            var d, day, i, j, k, len, w, week, weeks;
+            $scope.days = days;
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
+              $scope.day_data[day.string_date] = day;
+            }
+            weeks = [];
+            for (w = j = 0; j <= 5; w = ++j) {
+              week = [];
+              for (d = k = 0; k <= 6; d = ++k) {
+                week.push(days[w * 7 + d]);
+              }
+              weeks.push(week);
+            }
+            $scope.weeks = weeks;
+            return loader.setLoaded();
+          }, function(err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+          });
+        } else {
+          return loader.setLoaded();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadWeek
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Load week
+     */
+    $scope.loadWeek = (function(_this) {
+      return function() {
+        var date, edate;
+        date = $scope.current_date;
+        loader.notLoaded();
+        edate = moment(date).add(7, 'days');
+        $scope.end_date = moment(edate).add(-1, 'days');
+        if ($scope.data_source) {
+          return BBModel.Day.$query({
+            company: $scope.bb.company,
+            cItem: $scope.data_source,
+            date: date.toISODate(),
+            edate: edate.toISODate(),
+            client: $scope.client
+          }).then(function(days) {
+            var day, i, len;
+            $scope.days = days;
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
+              $scope.day_data[day.string_date] = day;
+            }
+            return loader.setLoaded();
+          }, function(err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+          });
+        } else {
+          return loader.setLoaded();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set this page section as ready
+     */
+    return $scope.setReady = (function(_this) {
+      return function() {
+        if ($scope.bb.current_item.date) {
+          return true;
+        } else {
+          AlertService.clear();
+          AlertService.add("danger", {
+            msg: $translate.instant("PUBLIC_BOOKING.DAY.DATE_NOT_SELECTED")
+          });
+          return false;
+        }
+      };
+    })(this);
   });
 
 }).call(this);
@@ -10061,19 +10179,13 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var BBPageCtrl;
+  var BBBasicPageCtrl;
 
-  BBPageCtrl = function($scope, $q, ValidatorService, LoadingService) {
-    'ngInject';
-    var checkReady, init, isScopeReady, routeReady;
-    this.$scope = $scope;
-    $scope.controllerClass = "public.controllers.BBPageCtrl";
+  BBBasicPageCtrl = function($scope, $q, ValidatorService, LoadingService) {
+    var isScopeReady;
+    $scope.controllerClass = "public.controllers.PageController";
     $scope.$has_page_control = true;
     $scope.validator = ValidatorService;
-    init = function() {
-      $scope.checkReady = checkReady;
-      $scope.routeReady = routeReady;
-    };
     isScopeReady = (function(_this) {
       return function(cscope) {
         var child, children, i, len, ready, ready_list;
@@ -10114,7 +10226,7 @@ function getURIparam( name ){
     * @description
     * Check the page ready
      */
-    checkReady = function() {
+    $scope.checkReady = function() {
       var checkread, i, len, loader, ready_list, v;
       ready_list = isScopeReady($scope);
       checkread = $q.defer();
@@ -10152,7 +10264,7 @@ function getURIparam( name ){
     *
     * @param {string=} route A specific route to load
      */
-    routeReady = function(route) {
+    return $scope.routeReady = function(route) {
       if (!$scope.$checkingReady) {
         return $scope.decideNextPage(route);
       } else {
@@ -10163,7 +10275,6 @@ function getURIparam( name ){
         })(this));
       }
     };
-    init();
   };
 
 
@@ -10189,13 +10300,13 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'BBPageCtrl'
+      controller: 'PageController'
     };
   });
 
-  angular.module('BB.Controllers').controller('BBPageCtrl', BBPageCtrl);
+  angular.module('BB.Controllers').controller('PageController', BBBasicPageCtrl);
 
-  angular.module('BB.Services').value("PageControllerService", BBPageCtrl);
+  angular.module('BB.Services').value("PageControllerService", BBBasicPageCtrl);
 
 }).call(this);
 
@@ -10603,7 +10714,7 @@ function getURIparam( name ){
 (function() {
   'use strict';
 
-  /**
+  /***
   * @ngdoc directive
   * @name BB.Directives:bbPeople
   * @restrict AE
@@ -10640,15 +10751,12 @@ function getURIparam( name ){
   *   </file>
   *  </example>
    */
-  var BBPeopleCtrl;
-
   angular.module('BB.Directives').directive('bbPeople', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'BBPeopleCtrl',
-      controllerAs: '$bbPeopleCtrl',
+      controller: 'PersonList',
       link: function(scope, element, attrs) {
         if (attrs.bbItems) {
           scope.booking_items = scope.$eval(attrs.bbItems) || [];
@@ -10661,43 +10769,27 @@ function getURIparam( name ){
     };
   });
 
-  BBPeopleCtrl = function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
-    'ngInject';
-    var chosenService, connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromPerson, init, loadData, loader, personListener, selectAndRoute, selectItem, setPerson, setReady;
-    this.$scope = $scope;
-    $scope.controller = "public.controllers.BBPeopleCtrl";
+  angular.module('BB.Controllers').controller('PersonList', function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
+    var getItemFromPerson, loadData, loader, setPerson;
+    $scope.controller = "public.controllers.PersonList";
+    loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    chosenService = null;
-    loader = null;
-    init = function() {
-      $scope.selectItem = selectItem;
-      $scope.selectAndRoute = selectAndRoute;
-      $scope.setReady = setReady;
-      loader = LoadingService.$loader($scope).notLoaded();
-      $rootScope.connection_started.then(connectionStartedSuccess, connectionStartedFailure);
-      $scope.$watch('person', personListener);
-      $scope.$on("currentItemUpdate", currentItemUpdateHandler);
-    };
-    connectionStartedSuccess = function() {
+    $rootScope.connection_started.then(function() {
       return loadData();
-    };
-    connectionStartedFailure = function(err) {
+    }, function(err) {
       return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    };
-    currentItemUpdateHandler = function(event) {
-      return loadData();
-    };
+    });
     loadData = function() {
       var bi, ppromise;
       bi = $scope.booking_item;
-      if (!bi.service || bi.service === chosenService) {
+      if (!bi.service || bi.service === $scope.change_watch_item) {
         if (!bi.service) {
           loader.setLoaded();
         }
         return;
       }
+      $scope.change_watch_item = bi.service;
       loader.notLoaded();
-      chosenService = bi.service;
       ppromise = BBModel.Person.$query($scope.bb.company);
       ppromise.then(function(people) {
         if (bi.group) {
@@ -10767,6 +10859,16 @@ function getURIparam( name ){
         });
       });
     };
+
+    /***
+    * @ngdoc method
+    * @name setPerson
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Storing the person property in the form store
+    *
+    * @param {array} people The people
+     */
     setPerson = function(people) {
       $scope.bookable_people = people;
       if ($scope.person) {
@@ -10777,6 +10879,16 @@ function getURIparam( name ){
         });
       }
     };
+
+    /***
+    * @ngdoc method
+    * @name getItemFromPerson
+    * @methodOf BB.Directives:bbPeople
+    * @description
+    * Get item from person
+    *
+    * @param {array} person The person
+     */
     getItemFromPerson = (function(_this) {
       return function(person) {
         var item, j, len, ref;
@@ -10795,7 +10907,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /**
+    /***
     * @ngdoc method
     * @name selectItem
     * @methodOf BB.Directives:bbPeople
@@ -10805,7 +10917,7 @@ function getURIparam( name ){
     * @param {array} item Selected item from the list of current people
     * @param {string=} route A specific route to load
      */
-    selectItem = (function(_this) {
+    $scope.selectItem = (function(_this) {
       return function(item, route, options) {
         var new_person;
         if (options == null) {
@@ -10828,7 +10940,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /**
+    /***
     * @ngdoc method
     * @name selectAndRoute
     * @methodOf BB.Directives:bbPeople
@@ -10838,7 +10950,7 @@ function getURIparam( name ){
     * @param {array} item Selected item from the list of current people
     * @param {string} route A specific route to load
      */
-    selectAndRoute = (function(_this) {
+    $scope.selectAndRoute = (function(_this) {
       return function(item, route) {
         var new_person;
         new_person = getItemFromPerson(item);
@@ -10849,7 +10961,7 @@ function getURIparam( name ){
         return true;
       };
     })(this);
-    personListener = (function(_this) {
+    $scope.$watch('person', (function(_this) {
       return function(newval, oldval) {
         var new_person;
         if ($scope.person && $scope.booking_item) {
@@ -10858,26 +10970,28 @@ function getURIparam( name ){
             _.each($scope.booking_items, function(item) {
               return item.setPerson(new_person);
             });
-            $scope.broadcastItemUpdate();
+            return $scope.broadcastItemUpdate();
           }
         } else if (newval !== oldval) {
           _.each($scope.booking_items, function(item) {
             return item.setPerson(null);
           });
-          $scope.broadcastItemUpdate();
+          return $scope.broadcastItemUpdate();
         }
-        $scope.bb.current_item.defaults.person = $scope.person;
       };
-    })(this);
+    })(this));
+    $scope.$on("currentItemUpdate", function(event) {
+      return loadData();
+    });
 
-    /**
+    /***
     * @ngdoc method
     * @name setReady
     * @methodOf BB.Directives:bbPeople
     * @description
     * Called by bbPage to ready directive for transition to the next step
      */
-    setReady = (function(_this) {
+    return $scope.setReady = (function(_this) {
       return function() {
         var new_person;
         if ($scope.person) {
@@ -10894,10 +11008,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-    init();
-  };
-
-  angular.module('BB.Controllers').controller('BBPeopleCtrl', BBPeopleCtrl);
+  });
 
 }).call(this);
 
@@ -11051,7 +11162,7 @@ function getURIparam( name ){
 (function() {
   'use strict';
 
-  /**
+  /***
   * @ngdoc directive
   * @name BB.Directives:bbResources
   * @restrict AE
@@ -11091,15 +11202,12 @@ function getURIparam( name ){
   *  </example>
   *
    */
-  var BBResourcesCtrl;
-
   angular.module('BB.Directives').directive('bbResources', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'BBResourcesCtrl',
-      controllerAs: '$bbResourcesCtrl',
+      controller: 'ResourceList',
       link: function(scope, element, attrs) {
         scope.options = scope.$eval(attrs.bbResources) || {};
         if (attrs.bbItems) {
@@ -11113,29 +11221,15 @@ function getURIparam( name ){
     };
   });
 
-  BBResourcesCtrl = function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
-    'ngInject';
-    var connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromResource, init, loadData, loader, resourceListener, selectItem, setReady;
-    this.$scope = $scope;
+  angular.module('BB.Controllers').controller('ResourceList', function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
+    var getItemFromResource, loadData, loader;
+    loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    loader = null;
-    init = function() {
-      $scope.setReady = setReady.bind(this);
-      $scope.selectItem = selectItem.bind(this);
-      loader = LoadingService.$loader($scope).notLoaded();
-      $rootScope.connection_started.then(connectionStartedSuccess.bind(this), connectionStartedFailure.bind(this));
-      $scope.$watch('resource', resourceListener.bind(this));
-      $scope.$on("currentItemUpdate", currentItemUpdateHandler.bind(this));
-    };
-    connectionStartedSuccess = function() {
-      return loadData();
-    };
-    connectionStartedFailure = function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    };
-    currentItemUpdateHandler = function(event) {
-      return loadData();
-    };
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        return loadData();
+      };
+    })(this));
     loadData = (function(_this) {
       return function() {
         var params, rpromise;
@@ -11218,7 +11312,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /**
+    /***
     * @ngdoc method
     * @name getItemFromResource
     * @methodOf BB.Directives:bbResources
@@ -11245,7 +11339,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /**
+    /***
     * @ngdoc method
     * @name selectItem
     * @methodOf BB.Directives:bbResources
@@ -11256,7 +11350,7 @@ function getURIparam( name ){
     * @param {string=} route A specific route to load
     * @param {string=} skip_step The skip_step has been set to false
      */
-    selectItem = (function(_this) {
+    $scope.selectItem = (function(_this) {
       return function(item, route, options) {
         var new_resource;
         if (options == null) {
@@ -11278,7 +11372,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-    resourceListener = (function(_this) {
+    $scope.$watch('resource', (function(_this) {
       return function(newval, oldval) {
         var new_resource;
         if ($scope.resource && $scope.booking_item) {
@@ -11296,16 +11390,19 @@ function getURIparam( name ){
           return $scope.broadcastItemUpdate();
         }
       };
-    })(this);
+    })(this));
+    $scope.$on("currentItemUpdate", function(event) {
+      return loadData();
 
-    /**
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbResources
-    * @description
-    * Set this page section as ready
-     */
-    setReady = (function(_this) {
+      /***
+      * @ngdoc method
+      * @name setReady
+      * @methodOf BB.Directives:bbResources
+      * @description
+      * Set this page section as ready
+       */
+    });
+    return $scope.setReady = (function(_this) {
       return function() {
         var new_resource;
         if ($scope.resource) {
@@ -11322,10 +11419,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-    init();
-  };
-
-  angular.module('BB.Controllers').controller('BBResourcesCtrl', BBResourcesCtrl);
+  });
 
 }).call(this);
 
@@ -11374,16 +11468,13 @@ function getURIparam( name ){
   *  </example>
   *
    */
-  var BBServicesCtrl;
-
   angular.module('BB.Directives').directive('bbServices', function($q, $compile, $templateCache) {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
       transclude: true,
-      controller: 'BBServicesCtrl',
-      controllerAs: '$bbServicesCtrl',
+      controller: 'ServiceList',
       link: function(scope, element, attrs, ctrls, transclude) {
         scope.directives = "public.ServiceList";
         return transclude(scope, (function(_this) {
@@ -11404,10 +11495,8 @@ function getURIparam( name ){
     };
   });
 
-  BBServicesCtrl = function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
-    'ngInject';
+  angular.module('BB.Controllers').controller('ServiceList', function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
     var loader, setServiceItem, setServicesDisplayName;
-    this.$scope = $scope;
     $scope.controller = "public.controllers.ServiceList";
     FormDataStoreService.init('ServiceList', $scope, ['service']);
     loader = LoadingService.$loader($scope).notLoaded();
@@ -11780,12 +11869,10 @@ function getURIparam( name ){
     * @description
     * Filter changed
      */
-    $scope.filterChanged = function() {
+    return $scope.filterChanged = function() {
       return $scope.filtered_items = $filter('filter')($scope.items, $scope.filterFunction);
     };
-  };
-
-  angular.module('BB.Controllers').controller('BBServicesCtrl', BBServicesCtrl);
+  });
 
 }).call(this);
 
@@ -12524,7 +12611,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, PageControllerService, ValidatorService, LoadingService, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, PageControllerService, ValidatorService, LoadingService, ErrorService, $translate) {
     var checkRequestedSlots, loader;
     $scope.controller = "public.controllers.TimeList";
     loader = LoadingService.$loader($scope).notLoaded();
@@ -12840,7 +12927,7 @@ function getURIparam( name ){
       if (!$scope.data_source.time) {
         AlertService.clear();
         AlertService.add("danger", {
-          msg: "You need to select a time slot"
+          msg: $translate.instant('PUBLIC_BOOKING.TIME.TIME_NOT_SELECTED_ALERT')
         });
         return false;
       } else {
@@ -12882,7 +12969,7 @@ function getURIparam( name ){
   * @property {date} start_at_week_start The start at week start
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  angular.module('BB.Directives').directive('bbTimeRanges', function($q, $templateCache, $compile, $timeout, $bbug) {
+  angular.module('BB.Directives').directive('bbTimeRanges', function($q, $templateCache, $compile) {
     return {
       restrict: 'AE',
       replace: true,
@@ -12895,14 +12982,7 @@ function getURIparam( name ){
           var btn;
           btn = angular.element('#btn-continue');
           btn[0].disabled = false;
-          $timeout(function() {
-            return $bbug("html, body").animate({
-              scrollTop: btn.offset().top
-            }, 500);
-          }, 1000);
-          return $timeout(function() {
-            return btn[0].focus();
-          }, 1500);
+          return btn[0].focus();
         });
         scope.today = moment().toDate();
         scope.tomorrow = moment().add(1, 'days').toDate();
@@ -12925,7 +13005,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, ErrorService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -12969,14 +13049,14 @@ function getURIparam( name ){
           timeRange = 7;
           for (size in cal_days) {
             days = cal_days[size];
-            if (size === viewportSize.getViewportSize()) {
+            if (size === ViewportSize.getViewportSize()) {
               timeRange = days;
             }
           }
           return timeRange;
         };
         $scope.time_range_length = calculateDayNum();
-        $scope.$on('viewportSize:changed', function() {
+        $scope.$on('ViewportSize:changed', function() {
           $scope.time_range_length = null;
           return $scope.initialise();
         });
@@ -13422,7 +13502,7 @@ function getURIparam( name ){
       if (!$scope.bb.current_item.time) {
         AlertService.raise('TIME_SLOT_NOT_SELECTED');
         return false;
-      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime) && ($scope.bb.current_item.person_name === $scope.bb.current_item.person.name)) {
+      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime) && ($scope.current_item.person_name === $scope.current_item.person.name)) {
         AlertService.raise('APPT_AT_SAME_TIME');
         return false;
       } else if ($scope.bb.moving_booking) {
@@ -13664,6 +13744,48 @@ angular.module('BB.Directives')
 
 
 (function() {
+  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
+    return {
+      restrict: 'A',
+      scope: true,
+      replace: true,
+      controller: function($scope, $element, $attrs, uiGmapGoogleMapApi) {
+        $scope.isDraggable = $document.width() > 480;
+        return uiGmapGoogleMapApi.then(function(maps) {
+          maps.visualRefresh = true;
+          return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
+            var map_item;
+            if (!new_val) {
+              return;
+            }
+            map_item = new_val;
+            $scope.map = {
+              center: {
+                latitude: map_item.lat,
+                longitude: map_item.long
+              },
+              zoom: 15
+            };
+            $scope.options = {
+              scrollwheel: false,
+              draggable: $scope.isDraggable
+            };
+            return $scope.marker = {
+              id: 0,
+              coords: {
+                latitude: map_item.lat,
+                longitude: map_item.long
+              }
+            };
+          });
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -13744,15 +13866,9 @@ angular.module('BB.Directives')
         $scope.$watch(function() {
           var len;
           $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
-          if (!len) {
-            $scope.basketStatus = "empty";
-          } else {
-            if (len === 1) {
-              $scope.basketStatus = "1 item in your basket";
-            } else {
-              $scope.basketStatus = len + " items in your basket";
-            }
-          }
+          $scope.basketStatus = $translate.instant("PUBLIC_BOOKING.BASKET_DETAILS.BASKET_STATUS", {
+            N: len
+          }, "messageformat");
         });
       },
       link: function(scope, element, attrs) {
@@ -13767,7 +13883,7 @@ angular.module('BB.Directives')
     return {
       restrict: 'A',
       scope: true,
-      controller: function($scope, $element, $attrs, AlertService, $filter) {
+      controller: function($scope, $element, $attrs, AlertService, $translate) {
         var checkMinSpend, options;
         options = $scope.$eval($attrs.bbMinSpend || {});
         $scope.min_spend = options.min_spend || 0;
@@ -13787,9 +13903,10 @@ angular.module('BB.Directives')
             return true;
           } else {
             AlertService.clear();
-            price = $filter('ipretty_price')($scope.min_spend);
             AlertService.add("warning", {
-              msg: "You need to spend at least " + price + " to make a booking."
+              msg: $translate.instant('SPEND_AT_LEAST', {
+                min_spend: $scope.min_spend
+              })
             });
             return false;
           }
@@ -13928,88 +14045,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-
-  /**
-  * @ngdoc directive
-  * @name BB.Directives:bbForm
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with forms to add enhanced validation.
-  * When using with ng-form, submitForm needs to be called manually as submit event is not raised.
-  *
-  * @example
-  * <div ng-form name="example_form" bb-form></div>
-  * <form name="example_form" bb-form></form>
-   */
-  var bbFormDirective;
-
-  bbFormDirective = function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
-    'ngInject';
-    var link;
-    link = function(scope, elem, attrs, ctrls) {
-      var $bbPageCtrl, init, scrollAndFocusOnInvalid, serveBBPage, submitForm;
-      $bbPageCtrl = null;
-      init = function() {
-        scope.form = ctrls[0];
-        $bbPageCtrl = ctrls[1];
-        scope.submitForm = submitForm;
-        elem.on("submit", submitForm);
-      };
-      submitForm = function() {
-        var isValid;
-        scope.form.$setSubmitted();
-        $timeout(scrollAndFocusOnInvalid, 100);
-        isValid = ValidatorService.validateForm(scope.form);
-        if (isValid) {
-          serveBBPage();
-        }
-        return isValid;
-      };
-      serveBBPage = function() {
-        var route;
-        if (($bbPageCtrl != null) && (attrs.bbFormRoute != null)) {
-          route = attrs.bbFormRoute;
-          $bbPageCtrl.$scope.checkReady();
-          if (route.length > 0) {
-            $bbPageCtrl.$scope.routeReady(route);
-          } else {
-            $bbPageCtrl.$scope.routeReady();
-          }
-        }
-      };
-      scrollAndFocusOnInvalid = function() {
-        var invalidFormGroup, invalidInput;
-        invalidFormGroup = elem.find('.has-error:first');
-        if (invalidFormGroup && invalidFormGroup.length > 0 && !scope.form.raise_alerts) {
-          if ('parentIFrame' in $window) {
-            parentIFrame.scrollToOffset(0, invalidFormGroup.offset().top - GeneralOptions.scroll_offset);
-          } else {
-            $bbug("html, body").animate({
-              scrollTop: invalidFormGroup.offset().top - GeneralOptions.scroll_offset
-            }, 1000);
-          }
-          invalidInput = invalidFormGroup.find('.ng-invalid');
-          invalidInput.focus();
-        }
-      };
-      init();
-    };
-    return {
-      restrict: 'A',
-      require: ['^form', '?^^bbPage'],
-      scope: 'true',
-      link: link
-    };
-  };
-
-  angular.module('BB.Directives').directive('bbForm', bbFormDirective);
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
     return {
       restrict: 'A',
@@ -14084,7 +14119,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService, viewportSize) {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService) {
     var e, ie8orLess;
     ie8orLess = false;
     try {
@@ -14132,7 +14167,7 @@ angular.module('BB.Directives')
             return ev.stopPropagation();
           });
         }
-        if (ie8orLess || viewportSize.isXS()) {
+        if (ie8orLess || scope.display.xs) {
           $bbug(element).attr('readonly', 'true');
         }
         $bbug(element).on('keydown', function(e) {
@@ -15157,7 +15192,7 @@ angular.module('BB.Directives')
                   }
                   html += "</div>";
                 } else if (question.detail_type === "date") {
-                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' uib-datepicker-popup='" + date_format_2 + "' ng-change='recalc()' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1, \"showButtonBar\": false, \"showWeeks\": false}' show-button-bar='false' is-open='opened' ng-focus='opened=true' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
+                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' uib-datepicker-popup='" + date_format_2 + "' ng-change='recalc()' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1, \"showButtonBar\": false, \"showWeeks\": false}' show-button-bar='false' is-open='opened' ng-focus='opened=true' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='fa fa-calendar'></span></button> </span> </div>";
                 } else {
                   html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
                 }
@@ -15325,7 +15360,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.48";
+        return "2.1.0-beta.7";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -15562,11 +15597,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive("bbIntTelNumber", function($parse) {
+  angular.module('BB.Directives').directive("bbIntTelNumber", function($parse) {
     return {
       restrict: "A",
       require: "ngModel",
@@ -15774,7 +15805,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions, viewportSize) {
+  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15799,7 +15830,7 @@ angular.module('BB.Directives')
         };
         return scrollToCallback = function(evnt) {
           var current_step, scroll_to_element;
-          if (evnt === "page:loaded" && viewportSize.isXS() && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
+          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
             scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
           } else {
             scroll_to_element = $bbug(element);
@@ -15843,41 +15874,60 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbForm
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with forms to add enhanced validation. When using with ng-form, submitForm
+  * needs to be called manually as submit event is not raised.
+  
+  *
+  * @example
+  * <div ng-form name="example_form" bb-form></div>
+  * <form name="example_form" bb-form></form>
+  *
+   */
+
+  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
     return {
       restrict: 'A',
+      require: '^form',
       scope: true,
-      replace: true,
-      controller: function($scope, $element, $attrs, uiGmapGoogleMapApi) {
-        $scope.isDraggable = $document.width() > 480;
-        return uiGmapGoogleMapApi.then(function(maps) {
-          maps.visualRefresh = true;
-          return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
-            var map_item;
-            if (!new_val) {
-              return;
-            }
-            map_item = new_val;
-            $scope.map = {
-              center: {
-                latitude: map_item.lat,
-                longitude: map_item.long
-              },
-              zoom: 15
-            };
-            $scope.options = {
-              scrollwheel: false,
-              draggable: $scope.isDraggable
-            };
-            return $scope.marker = {
-              id: 0,
-              coords: {
-                latitude: map_item.lat,
-                longitude: map_item.long
-              }
-            };
-          });
+      link: function(scope, elem, attrs, ctrls) {
+        scope.form = ctrls;
+        elem.on("submit", function() {
+          scope.submitForm();
+          return scope.$apply();
         });
+        return scope.submitForm = function() {
+          var property;
+          scope.form.submitted = true;
+          for (property in scope.form) {
+            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
+              scope.form[property].submitted = true;
+            }
+          }
+          $timeout(function() {
+            var invalid_form_group, invalid_input;
+            invalid_form_group = elem.find('.has-error:first');
+            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
+              if ('parentIFrame' in $window) {
+                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - GeneralOptions.scroll_offset);
+              } else {
+                $bbug("html, body").animate({
+                  scrollTop: invalid_form_group.offset().top - GeneralOptions.scroll_offset
+                }, 1000);
+              }
+              invalid_input = invalid_form_group.find('.ng-invalid');
+              return invalid_input.focus();
+            }
+          }, 100);
+          return ValidatorService.validateForm(scope.form);
+        };
       }
     };
   });
@@ -16038,35 +16088,6 @@ angular.module('BB.Directives')
             }
           }
         });
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbTimeZone
-  * @restrict A
-  * @description
-  * Timezone name helper
-  * @param {String} time_zone_name The name of the time zone
-  * @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
-  * @example
-  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in {{time_zone_name}}.</span>
-  * @example_result
-  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
-   */
-
-  angular.module('BB.Directives').directive('bbTimeZone', function(GeneralOptions, CompanyStoreService) {
-    return {
-      restrict: 'A',
-      link: function(scope, el, attrs) {
-        var company_time_zone;
-        company_time_zone = CompanyStoreService.time_zone;
-        scope.time_zone_name = moment().tz(company_time_zone).format('zz');
-        if (!GeneralOptions.use_local_time_zone && GeneralOptions.display_time_zone !== company_time_zone) {
-          return scope.is_time_zone_diff = true;
-        }
       }
     };
   });
@@ -16427,7 +16448,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
+  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc, $translate) {
     return {
       restrict: 'EA',
       replace: true,
@@ -16476,7 +16497,7 @@ angular.module('BB.Directives')
                 return results;
               })())[0];
               if (attributes.value) {
-                $(main_tag).attr('value', attributes.value);
+                $(main_tag).attr('value', $translate.instant(attributes.value));
               }
               break;
             case 'page':
@@ -16739,6 +16760,118 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
+      link: function(scope, elem, attrs) {
+        var getCurrentSize, isVisible, markers, previous_size, t, update;
+        markers = elem.find('span');
+        $bbug(elem).addClass("bb-display-mode");
+        scope.display = {};
+        previous_size = null;
+        isVisible = function(element) {
+          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
+        };
+        getCurrentSize = function() {
+          var currentSize, element, i, len;
+          currentSize = false;
+          for (i = 0, len = markers.length; i < len; i++) {
+            element = markers[i];
+            if (isVisible(element)) {
+              currentSize = element.className.slice(8, 11);
+              ViewportSize.setViewportSize(element.className.slice(8, 11));
+              break;
+            }
+          }
+          return currentSize;
+        };
+        update = (function(_this) {
+          return function() {
+            var nsize;
+            nsize = getCurrentSize();
+            if (nsize !== previous_size) {
+              previous_size = nsize;
+              scope.display.xs = false;
+              scope.display.sm = false;
+              scope.display.md = false;
+              scope.display.lg = false;
+              scope.display.not_xs = true;
+              scope.display.not_sm = true;
+              scope.display.not_md = true;
+              scope.display.not_lg = true;
+              scope.display[nsize] = true;
+              scope.display["not_" + nsize] = false;
+              return true;
+            }
+            return false;
+          };
+        })(this);
+        t = null;
+        angular.element($window).bind('resize', (function(_this) {
+          return function() {
+            window.clearTimeout(t);
+            return t = setTimeout(function() {
+              if (update()) {
+                return scope.$apply();
+              }
+            }, 50);
+          };
+        })(this));
+        return angular.element($window).bind('load', (function(_this) {
+          return function() {
+            if (update()) {
+              return scope.$apply();
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc directive
+* @name BB.Directives:bbTimeZone
+* @restrict A
+* @description
+* Timezone name helper
+* @param {String} time_zone_name The name of the time zone
+* @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
+* @example
+* <div bb-time-zone></div>
+* @example_result
+* <span bb-time-zone>All times are shown in British Summer Time.</span>
+ */
+
+(function() {
+  angular.module('BB.Directives').directive('bbTimeZone', function(GeneralOptions, CompanyStoreService) {
+    return {
+      restrict: 'A',
+      controllerAs: '$tzCtrl',
+      templateUrl: '_time_zone_info.html',
+      controller: function() {
+        var company_time_zone;
+        company_time_zone = CompanyStoreService.time_zone;
+        this.time_zone_name = moment().tz(company_time_zone).format('zz');
+        if (!GeneralOptions.use_local_time_zone && GeneralOptions.display_time_zone !== company_time_zone) {
+          return this.is_time_zone_diff = true;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Directives').directive('bbToggleEdit', function($compile, $window, $document) {
     return {
       restrict: 'AE',
@@ -16819,6 +16952,39 @@ angular.module('BB.Directives')
     };
   });
 }(window.angular));
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbWalletRemainder
+  * @restrict A
+  * @scope
+  *   basketTotal: '='
+  *   walletAmount: '='
+  * @description
+  *
+  * Calculates wallet remainder
+  *
+   */
+  angular.module('BB.Directives').directive('bbWalletRemainder', function() {
+    return {
+      restrict: 'A',
+      scope: {
+        totalPrice: '=',
+        walletAmount: '='
+      },
+      controllerAs: 'vm',
+      bindToController: true,
+      template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
+      controller: function() {
+        return this.amountRemaining = this.walletAmount - this.totalPrice;
+      }
+    };
+  });
+
+}).call(this);
 
 (function() {
   'use strict';
@@ -17087,10 +17253,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  var app;
-
-  app = angular.module('BB.Filters');
-
   angular.module('BB.Filters').filter('stripPostcode', function() {
     return function(address) {
       var match;
@@ -17245,123 +17407,237 @@ angular.module('BB.Directives')
     })(this);
   });
 
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
+
+  /*
+   * @ngdoc filter
+   * @name distance
+   * @kind function
+   *
+   * @description
+   * Formats distance using current locale.
+   *
+   * @param {number} distance_in_km Distance in kilometres
+   * @param {integer} round_by The number of decimal places to round by
+  
+   * @returns {string} Formatted distance
+   *
+   *
+   * @example
+     <example module="distanceExample">
+       <file name="index.html">
+         <script>
+           angular.module('distanceExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.distance = 10;
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Price: {{distance | distance:1}}</span><br/>
+         </div>
+       </file>
+     </example>
+   */
+
+  angular.module('BB.Filters').filter('distance', function($translate, bbLocale) {
+    return function(distance_in_km, round_by) {
+      var distance, unit, use_miles;
+      if (!distance_in_km) {
+        return '';
+      }
+      distance = distance_in_km;
+      use_miles = bbLocale.getLocale().match(/^(en|en-gb|en-us)$/gi);
+      if (use_miles) {
+        distance *= 0.621371192;
+      }
+      if (round_by) {
+        distance = Math.round(distance * Math.pow(10, round_by)) / Math.pow(10, round_by);
+      }
+      unit = use_miles ? $translate.instant('CORE.FILTERS.DISTANCE.MILES') : $translate.instant('CORE.FILTERS.DISTANCE.KILOMETRES');
+      distance = distance + " " + unit;
+      return distance;
+    };
   });
 
-  angular.module('BB.Filters').filter('icurrency', function($window, CompanyStoreService) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = CompanyStoreService.currency_code);
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+
+  /*
+   * @ngdoc filter
+   * @name currency
+   * @kind function
+   *
+   * @description
+   * Formats price using either the configured Company currency or the provided currency symbol.
+   *
+   * @param {integer} amount Input amount to format
+   * @param {string} currency_code Optional currency symbol
+   * @param {boolean} pretty_price Use to omit decimal places when price is whole. Default is false
+   * @returns {string} Formatted currency.
+   *
+   *
+   * @example
+     <example module="currencyExample">
+       <file name="index.html">
+         <script>
+           angular.module('currencyExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.price = 950;
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Price: {{price | currency}}</span><br/>
+         </div>
+       </file>
+     </example>
+   */
+
+  angular.module('BB.Filters').filter('currency', function($window, $rootScope, CompanyStoreService, $translate) {
+    return function(amount, currency_code, pretty_price) {
+      var currency_codes, decimal_places, format, hide_decimal;
+      if (pretty_price == null) {
+        pretty_price = false;
+      }
+      if (!angular.isNumber(amount)) {
+        return;
+      }
+      currency_codes = {
+        USD: "$",
+        GBP: "£",
+        AUD: "$",
+        EUR: "€",
+        CAD: "$",
+        MIXED: "~",
+        RUB: "₽"
       };
-    })(this);
+      currency_code || (currency_code = CompanyStoreService.currency_code);
+      format = $translate.instant(['CORE.FILTERS.CURRENCY.THOUSANDS_SEPARATOR', 'CORE.FILTERS.CURRENCY.DECIMAL_SEPARATOR', 'CORE.FILTERS.CURRENCY.CURRENCY_FORMAT']);
+      hide_decimal = pretty_price && (amount % 100 === 0);
+      decimal_places = hide_decimal ? 0 : 2;
+      return $window.accounting.formatMoney(amount / 100, currency_codes[currency_code], decimal_places, format.THOUSANDS_SEPARATOR, format.DECIMAL_SEPARATORS, format.CURRENCY_FORMAT);
+    };
+  });
+
+  angular.module('BB.Filters').filter('icurrency', function($filter) {
+    return function(number, currency_code) {
+      return $filter('currency')(number, currency_code);
+    };
   });
 
   angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
+    return function(number) {
+      return number / 100.0;
     };
   });
 
-  angular.module('BB.Filters').filter('ipretty_price', function($window, CompanyStoreService) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[CompanyStoreService.currency_code];
-      }
-      price /= 100.0;
+  angular.module('BB.Filters').filter('pretty_price', function($translate, $filter) {
+    return function(price, currency_code) {
       if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
+        return $translate.instant('CORE.FILTERS.PRETTY_PRICE.FREE');
       } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
+        return $filter('currency')(price, currency_code, true);
       }
     };
   });
 
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
+  angular.module('BB.Filters').filter('ipretty_price', function($filter) {
+    return function(number, currencyCode) {
+      return $filter('pretty_price')(number, currencyCode);
+    };
+  });
+
+
+  /*
+   * @ngdoc filter
+   * @name time_period
+   * @kind function
+   *
+   * @description
+   * Formats a number as a humanized duration, e.g. 1 hour, 2 minutes
+   *
+   * @param {number} minutes Input to format
+   * @returns {string} Humanized duration.
+   *
+   *
+   * @example
+     <example module="timePeriodExample">
+       <file name="index.html">
+         <script>
+           angular.module('timePeriodExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.duration = 90;
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Duration: {{amount | time_period}}</span>
+         </div>
+       </file>
+     </example>
+   */
+
+  angular.module('BB.Filters').filter('time_period', function($translate) {
+    return function(v) {
+      var hours, minutes, show_seperator, time_period;
       if (!angular.isNumber(v)) {
         return;
       }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val !== 1) {
-          str += "s";
-        }
-        return str;
+      minutes = parseInt(v);
+      hours = Math.floor(minutes / 60);
+      minutes %= 60;
+      show_seperator = hours > 0 && minutes > 0;
+      time_period = $translate.instant('CORE.FILTERS.TIME_PERIOD.TIME_PERIOD', {
+        hours: hours,
+        minutes: minutes,
+        show_seperator: +show_seperator
+      }, 'messageformat');
+      return time_period;
+    };
+  });
+
+
+  /*
+   * @ngdoc filter
+   * @name time_period_from_seconds
+   * @kind function
+   *
+   * @description
+   * Formats a number as a humanized duration, e.g. 1 hour, 2 minutes, 5 seconds
+   *
+   * @param {number} seconds Input to format
+   * @returns {string} Humanized duration.
+   *
+   *
+   * @example
+     <example module="timePeriodExample">
+       <file name="index.html">
+         <script>
+           angular.module('timePeriodExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.duration = 90;
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Duration: {{amount | time_period_from_seconds}}</span>
+         </div>
+       </file>
+     </example>
+   */
+
+  angular.module('BB.Filters').filter('time_period_from_seconds', function($translate, $filter) {
+    return function(v) {
+      var seconds, time_period;
+      if (!angular.isNumber(v)) {
+        return;
       }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours !== 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins !== 1) {
-          str += "s";
+      seconds = parseInt(v);
+      time_period = '';
+      if (seconds >= 60) {
+        time_period += $filter('time_period')(seconds / 60);
+        if ((seconds % 60) > 0) {
+          time_period += $translate.instant('CORE.FILTERS.TIME_PERIOD.TIME_SEPARATOR');
         }
       }
-      return str;
+      if ((seconds % 60) > 0) {
+        time_period += moment.duration(seconds % 60, 'seconds').humanize();
+      }
+      return time_period;
     };
   });
 
@@ -17393,45 +17669,6 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
   angular.module('BB.Filters').filter('round_up', function() {
     return function(number, interval) {
       var result;
@@ -17445,6 +17682,21 @@ angular.module('BB.Directives')
     };
   });
 
+
+  /*
+   * @ngdoc filter
+   * @name exclude_days
+   * @kind function
+   *
+   * @description
+   * Formats a phone number using provided country code. If no country code is passed in, the country of the current company is used.
+   *
+   * @param {array} days Array of BBModel.Day objects
+   * @param {array} excluded String array of days to exclude, e.g. ['Saturday','Sunday']
+   * @returns {array} Filtered array excluding specificed days
+   *
+   */
+
   angular.module('BB.Filters').filter('exclude_days', function() {
     return function(days, excluded) {
       return _.filter(days, function(day) {
@@ -17453,14 +17705,43 @@ angular.module('BB.Directives')
     };
   });
 
+
+  /*
+   * @ngdoc filter
+   * @name local_phone_number
+   * @kind function
+   *
+   * @description
+   * Formats a phone number using provided country code. If no country code is passed in, the country of the current company is used.
+   *
+   * @param {string} phone_number The phone number to format
+   * @param {string} country_code (Optional) The country code in Alpha-2 ISO-3166 format
+   * @returns {string} Formatted phone number
+   *
+   *
+   * @example
+     <example module="localPhoneNumberExample">
+       <file name="index.html">
+         <script>
+           angular.module('localPhoneNumberExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.number = "+44 7877 123456";
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Phone Number: {{number | local_phone_number}}</span>
+         </div>
+       </file>
+     </example>
+   */
+
   angular.module('BB.Filters').filter('local_phone_number', function(CompanyStoreService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
+    return function(phone_number, country_code) {
       if (!phone_number) {
         return;
       }
-      cc = CompanyStoreService.country_code;
-      switch (cc) {
+      country_code || (country_code = CompanyStoreService.country_code);
+      switch (country_code) {
         case "gb":
           return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
         case "us":
@@ -17471,42 +17752,54 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Filters').filter('datetime', function(GeneralOptions, CompanyStoreService) {
-    var hardcoded_formats;
-    hardcoded_formats = {
-      datetime: {
-        us: 'MM/DD/YYYY, h:mm a',
-        uk: 'DD/MM/YYYY, HH:mm'
-      },
-      date: {
-        us: 'MM/DD/YYYY',
-        uk: 'DD/MM/YYYY'
-      },
-      time: {
-        us: 'h:mm a',
-        uk: 'HH:mm'
-      }
-    };
+
+  /*
+   * @ngdoc filter
+   * @name datetime
+   * @kind function
+   *
+   * @description
+   * Format given moment object or datelike string using provided format.
+   *
+   * @param {moment|string} date The date to format
+   * @param {string} format The format to apply. Defaults to LLL
+   * @returns {boolean} show_time_zone Show timezone identifer. Defaults to false
+   *
+   *
+   * @example
+     <example module="dateTimeExample">
+       <file name="index.html">
+         <script>
+           angular.module('dateTimeExample', [])
+             .controller('ExampleController', ['$scope', function($scope) {
+               $scope.date = moment();
+             }]);
+         </script>
+         <div ng-controller="ExampleController">
+           <span>Date: {{date | datetime}}</span>
+         </div>
+       </file>
+     </example>
+   */
+
+  angular.module('BB.Filters').filter('datetime', function(GeneralOptions) {
     return function(date, format, show_time_zone) {
-      var cc, new_date;
+      var new_date;
       if (format == null) {
         format = "LLL";
       }
       if (show_time_zone == null) {
         show_time_zone = false;
       }
-      if (hardcoded_formats[format]) {
-        cc = CompanyStoreService.country_code === 'us' ? 'us' : 'uk';
-        format = hardcoded_formats[format][cc];
+      if (!date || (date && !moment(date).isValid())) {
+        return;
       }
-      if (date && moment.isMoment(date)) {
-        new_date = date.clone();
-        new_date.tz(GeneralOptions.display_time_zone);
-        if (show_time_zone) {
-          format += ' zz';
-        }
-        return new_date.format(format);
+      new_date = moment(date);
+      new_date.tz(GeneralOptions.display_time_zone);
+      if (show_time_zone) {
+        format += ' zz';
       }
+      return new_date.format(format);
     };
   });
 
@@ -17583,7 +17876,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.filter('clearTimezone', function() {
+  angular.module('BB.Filters').filter('clearTimezone', function() {
     return function(val, offset) {
       if (val !== null && val.length > 19) {
         return val.substring(0, 19);
@@ -17592,7 +17885,7 @@ angular.module('BB.Directives')
     };
   });
 
-  app.filter("format_answer", function() {
+  angular.module('BB.Filters').filter("format_answer", function() {
     return function(answer) {
       if (typeof answer === "boolean") {
         answer = answer === true ? "Yes" : "No";
@@ -19073,7 +19366,7 @@ angular.module('BB.Directives')
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService) {
+  angular.module('BB.Models').factory("BasketItemModel", function($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, $translate) {
     var BasketItem;
     return BasketItem = (function(superClass) {
       extend(BasketItem, superClass);
@@ -19656,7 +19949,7 @@ angular.module('BB.Directives')
         }
         if (this.event_chain.isSingleBooking()) {
           this.tickets = {
-            name: "Admittance",
+            name: $translate.instant('COMMON.TERMINOLOGY.ADMITTANCE'),
             max: 1,
             type: "normal",
             price: this.base_price
@@ -22461,7 +22754,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUtilitiesService, EventService) {
+  angular.module('BB.Models').factory("EventModel", function($q, BBModel, BaseModel, DateTimeUtilitiesService, EventService, $translate) {
     var Event;
     return Event = (function(superClass) {
       extend(Event, superClass);
@@ -22767,10 +23060,12 @@ angular.module('BB.Directives')
         var left;
         left = this.getSpacesLeft();
         if (left > 0 && left < 3) {
-          return "Only " + left + " " + (left > 1 ? "spaces" : "space") + " left";
+          return $translate.instant("CORE.EVENT.SPACES_LEFT", {
+            N: left
+          }, 'messageformat');
         }
         if (this.hasWaitlistSpace()) {
-          return "Join Waitlist";
+          return $translate.instant("CORE.EVENT.JOIN_WAITLIST");
         }
         return "";
       };
@@ -22942,7 +23237,7 @@ angular.module('BB.Directives')
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel, EventChainService) {
+  angular.module('BB.Models').factory("EventChainModel", function($q, BBModel, BaseModel, EventChainService, $translate) {
     var EventChain;
     return EventChain = (function(superClass) {
       var setCapacityView;
@@ -23028,7 +23323,7 @@ angular.module('BB.Directives')
           } else {
             this.tickets = [
               new BBModel.EventTicket({
-                name: "Admittance",
+                name: $translate.instant('COMMON.TERMINOLOGY.ADMITTANCE'),
                 min_num_bookings: 1,
                 max_num_bookings: this.max_num_bookings,
                 type: "normal",
@@ -23911,7 +24206,11 @@ angular.module('BB.Directives')
         end = this.current_page * this.page_size;
         end = this.num_items < end ? this.num_items : end;
         total = end >= 100 ? "100+" : end;
-        this.summary = start + " - " + end + " of " + total;
+        this.summary = $translate.instant('CORE.PAGINATION.SUMMARY', {
+          start: start,
+          end: end,
+          total: total
+        });
         page_to_load = Math.ceil((this.current_page * this.page_size) / this.request_page_size);
         return [this.items[start - 1] != null, page_to_load];
       };
@@ -24871,23 +25170,18 @@ angular.module('BB.Directives')
   * @description
   * Representation of an TimeSlot Object
   *
-  * @property {string} service The service
-  * @property {date} time_12 The time_12 of time slot
-  * @property {date} time_24 The time_24 of time slot
-  * @property {date} start The start time of the slot
-  * @property {date} end The end time of the slot
-  * @property {string} service The service of time slot
-  * @property {string} get Get the time slot
-  * @property {string} selected The selected
-  * @property {boolean} disabled Verify if time slot are disabled or not
-  * @property {string} disabled_reason The disabled reason
-  * @property {string} availability The availability of time slot
-  * @property {string} avail The avail of time slot
+  * @property {number} avail Indicates if the slot is available
+  * @property {moment} datetime Moment representation of the time slot
+  * @property {number} event_id The event id assoicated to the time slot
+  * @property {number} price The price assoicated to the time slot
+  * @property {object} service The service assoicataed to the time slot
+  
+  * @property {boolean} selected Indicates if the slot is selected
    */
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel, DateTimeUtilitiesService, TimeService) {
+  angular.module('BB.Models').factory("TimeSlotModel", function($q, $window, BBModel, BaseModel, TimeService) {
     var TimeSlot;
     return TimeSlot = (function(superClass) {
       extend(TimeSlot, superClass);
@@ -24895,139 +25189,27 @@ angular.module('BB.Directives')
       function TimeSlot(data, service) {
         TimeSlot.__super__.constructor.call(this, data);
         this.service = service;
-        this.time_12 = this.print_time12();
-        this.time_24 = this.print_time();
         this.datetime = moment.parseZone(this.datetime);
-        this.time_moment = this.datetime;
       }
 
 
       /***
       * @ngdoc method
-      * @name print_time
+      * @name endDateTime
       * @methodOf BB.Models:TimeSlot
       * @description
-      * Print time of the slot
+      * Calculates the end datetime using the provided duration or the duration from the service.
       *
-      * @returns {date} The returning time
+      * @param {number} Optional duration
+      * @returns {moment} End datetime
        */
 
-      TimeSlot.prototype.print_time = function() {
-        var min, t;
-        if (this.start) {
-          return this.start.format("h:mm");
-        } else {
-          t = this.get('time');
-          if (t % 60 < 10) {
-            min = "0" + t % 60;
-          } else {
-            min = t % 60;
-          }
-          return "" + Math.floor(t / 60) + ":" + min;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_end_time
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print end time of the slot
-      *
-      * @returns {date} The returning end time
-       */
-
-      TimeSlot.prototype.print_end_time = function(dur) {
-        var min, t;
-        if (this.end) {
-          return this.end.format("h:mm");
-        } else {
-          if (!dur) {
-            dur = this.service.listed_durations[0];
-          }
-          t = this.get('time') + dur;
-          if (t % 60 < 10) {
-            min = "0" + t % 60;
-          } else {
-            min = t % 60;
-          }
-          return "" + Math.floor(t / 60) + ":" + min;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_time12
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print 12 hour time
-      *
-      * @returns {date} The returning 12 hour time
-       */
-
-      TimeSlot.prototype.print_time12 = function(show_suffix) {
-        var h, m, suffix, t, time;
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        t = this.get('time');
-        h = Math.floor(t / 60);
-        m = t % 60;
-        suffix = 'am';
-        if (h >= 12) {
-          suffix = 'pm';
-        }
-        if (h > 12) {
-          h -= 12;
-        }
-        time = $window.sprintf("%d.%02d", h, m);
-        if (show_suffix) {
-          time += suffix;
-        }
-        return time;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name print_end_time12
-      * @methodOf BB.Models:TimeSlot
-      * @description
-      * Print 12 hour end time
-      *
-      * @returns {date} The returning 12 hour end time
-       */
-
-      TimeSlot.prototype.print_end_time12 = function(show_suffix, dur) {
-        var end_time, h, m, suffix, t;
-        if (show_suffix == null) {
-          show_suffix = true;
-        }
-        dur = null;
+      TimeSlot.prototype.endDateTime = function(dur) {
+        var duration;
         if (!dur) {
-          if (this.service.listed_duration != null) {
-            dur = this.service.listed_duration;
-          } else {
-            dur = this.service.listed_durations[0];
-          }
+          duration = this.service.listed_durations[0];
         }
-        t = this.get('time') + dur;
-        h = Math.floor(t / 60);
-        m = t % 60;
-        suffix = 'am';
-        if (h >= 12) {
-          suffix = 'pm';
-        }
-        if (h > 12) {
-          h -= 12;
-        }
-        end_time = $window.sprintf("%d.%02d", h, m);
-        if (show_suffix) {
-          end_time += suffix;
-        }
-        return end_time;
+        return this.datetime.clone().add(duration, 'minutes');
       };
 
 
@@ -25038,7 +25220,7 @@ angular.module('BB.Directives')
       * @description
       * Get availability
       *
-      * @returns {object} The returning availability
+      * @returns {number} Availability (> 0 means the slot is available)
        */
 
       TimeSlot.prototype.availability = function() {
@@ -25051,9 +25233,9 @@ angular.module('BB.Directives')
       * @name select
       * @methodOf BB.Models:TimeSlot
       * @description
-      * Checks if selected is true
+      * Select the time slot
       *
-      * @returns {boolean} If this is checked
+      * @returns {boolean} Selected status
        */
 
       TimeSlot.prototype.select = function() {
@@ -25066,9 +25248,8 @@ angular.module('BB.Directives')
       * @name unselect
       * @methodOf BB.Models:TimeSlot
       * @description
-      * Unselect if is selected
+      * Unselect time slot
       *
-      * @returns {boolean} If this is unselect
        */
 
       TimeSlot.prototype.unselect = function() {
@@ -25085,7 +25266,6 @@ angular.module('BB.Directives')
       * @description
       * Disable time slot by reason
       *
-      * @returns {boolean} If this is a disabled
        */
 
       TimeSlot.prototype.disable = function(reason) {
@@ -25101,7 +25281,6 @@ angular.module('BB.Directives')
       * @description
       * Enable time slot
       *
-      * @returns {boolean} If this is a enable
        */
 
       TimeSlot.prototype.enable = function() {
@@ -25119,9 +25298,9 @@ angular.module('BB.Directives')
       * @name status
       * @methodOf BB.Models:TimeSlot
       * @description
-      * Get status of the time slot
+      * Get the status of the time slot
       *
-      * @returns {object} The returned status
+      * @returns {string} Status of the time slot
        */
 
       TimeSlot.prototype.status = function() {
@@ -25242,7 +25421,7 @@ angular.module('BB.Directives')
   * @property {array} alerts The array with all types of alerts
   * @property {string} add Add alert message
    */
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
+  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout, $translate) {
     var alertService, titleLookup;
     $rootScope.alerts = [];
 
@@ -25262,7 +25441,7 @@ angular.module('BB.Directives')
       switch (type) {
         case "error":
         case "danger":
-          title = "Error";
+          title = $translate.instant('CORE.ERROR_HEADING');
           break;
         default:
           title = null;
@@ -26509,7 +26688,7 @@ angular.module('BB.Directives')
             return scope;
           };
           $window.bbCurrentItem = function() {
-            return scope.bb.current_item;
+            return scope.current_item;
           };
           return $window.bbShowScopeChain = showScopeChain;
         }, 10);
@@ -26584,261 +26763,189 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory('ErrorService', function(GeneralOptions, $translate) {
+
+  /***
+  * @ngdoc service
+  * @name BB.Services:ErrorService
+  *
+  * @description
+  * Defines different alerts and errors that are raised by the SDK.
+  *
+   */
+  angular.module('BB.Services').factory('ErrorService', function($translate) {
     var alerts, createCustomError, getAlert, getError;
     alerts = [
       {
         key: 'GENERIC',
         type: 'error',
-        title: '',
-        persist: true,
-        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
+        persist: true
       }, {
         key: 'LOCATION_NOT_FOUND',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Sorry, we don't recognise that location"
+        persist: true
       }, {
         key: 'MISSING_LOCATION',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter your location'
+        persist: true
       }, {
         key: 'MISSING_POSTCODE',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a postcode'
+        persist: true
       }, {
-        key: 'INVALID_POSTCODE',
+        key: 'POSTCODE_INVALID',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a valid postcode'
+        persist: true
       }, {
         key: 'ITEM_NO_LONGER_AVAILABLE',
         type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
+        persist: true
       }, {
         key: 'NO_WAITLIST_SPACES_LEFT',
         type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available'
+        persist: true
       }, {
         key: 'FORM_INVALID',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please complete all required fields'
+        persist: true
       }, {
         key: 'GEOLOCATION_ERROR',
         type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we could not determine your location. Please try searching instead.'
+        persist: true
       }, {
         key: 'EMPTY_BASKET_FOR_CHECKOUT',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to add some items to the basket before you can checkout.'
+        persist: true
       }, {
         key: 'MAXIMUM_TICKETS',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the maximum number of tickets per person has been reached.'
+        persist: true
       }, {
         key: 'GIFT_CERTIFICATE_REQUIRED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'A valid Gift Certificate is required to proceed with this booking'
+        persist: true
       }, {
         key: 'TIME_SLOT_NOT_SELECTED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to select a time slot'
+        persist: true
       }, {
         key: 'STORE_NOT_SELECTED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to select a store'
+        persist: true
       }, {
         key: 'APPT_AT_SAME_TIME',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your appointment is already booked for this time'
+        persist: true
       }, {
         key: 'REQ_TIME_NOT_AVAIL',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'The requested time slot is not available. Please choose a different time.'
+        persist: true
       }, {
         key: 'TOPUP_SUCCESS',
         type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Your wallet has been topped up'
+        persist: true
       }, {
         key: 'TOPUP_FAILED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your topup failed. Please try again.'
+        persist: true
       }, {
         key: 'UPDATE_SUCCESS',
         type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Updated'
+        persist: true
       }, {
         key: 'UPDATE_FAILED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Update failed. Please try again'
+        persist: true
       }, {
         key: 'ALREADY_REGISTERED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You have already registered with this email address. Please login or reset your password.'
+        persist: true
       }, {
         key: 'LOGIN_FAILED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your email or password was not recognised. Please try again or reset your password.'
+        persist: true
       }, {
         key: 'SSO_LOGIN_FAILED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the login process failed. Please try again.'
+        persist: true
       }, {
         key: 'PASSWORD_INVALID',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your chosen password is invalid'
+        persist: true
       }, {
         key: 'PASSWORD_RESET_REQ_SUCCESS',
         type: 'success',
-        title: '',
-        persist: true,
-        msg: 'We have sent you an email with instructions on how to reset your password.'
+        persist: true
       }, {
         key: 'PASSWORD_RESET_REQ_FAILED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we didn\'t find an account registered with that email.'
+        persist: true
       }, {
         key: 'PASSWORD_RESET_SUCESS',
         type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Your password has been updated.'
+        persist: true
       }, {
         key: 'PASSWORD_RESET_FAILED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we couldn\'t update your password. Please try again.'
+        persist: true
       }, {
         key: 'PASSWORD_MISMATCH',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your passwords don\'t match'
+        persist: true
       }, {
         key: 'ATTENDEES_CHANGED',
         type: 'info',
-        title: '',
-        persist: true,
-        msg: 'Your booking has been successfully updated'
+        persist: true
       }, {
         key: 'PAYMENT_FAILED',
         type: 'danger',
-        title: '',
-        persist: true,
-        msg: 'We were unable to take payment. Please contact your card issuer or try again using a different card'
+        persist: true
       }, {
         key: 'ACCOUNT_DISABLED',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists."
+        persist: true
       }, {
         key: 'FB_LOGIN_NOT_A_MEMBER',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Sorry, we couldn't find a login linked with your Facebook account. You will need to sign up using Facebook first."
+        persist: true
       }, {
         key: 'PHONE_NUMBER_ALREADY_REGISTERED_ADMIN',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: "There's already an account registered with this phone number. Use the search field to find the customers account."
+        persist: true
       }, {
         key: 'EMAIL_ALREADY_REGISTERED_ADMIN',
         type: 'warning',
-        title: '',
-        persist: true,
-        msg: "There's already an account registered with this email. Use the search field to find the customers account."
+        persist: true
       }, {
         key: 'WAITLIST_ACCEPTED',
         type: 'success',
-        title: '',
-        persist: false,
-        msg: "Your booking is now confirmed!"
+        persist: false
       }, {
         key: 'BOOKING_CANCELLED',
         type: 'success',
-        title: '',
-        persist: false,
-        msg: "Your booking has been cancelled."
+        persist: false
       }, {
         key: 'NOT_BOOKABLE_PERSON',
         type: 'warning',
-        title: '',
-        persist: false,
-        msg: "Sorry, this person does not offer this service, please select another"
+        persist: false
       }, {
         key: 'NOT_BOOKABLE_RESOURCE',
         type: 'warning',
-        title: '',
-        persist: false,
-        msg: "Sorry, resource does not offer this service, pelase select another"
+        persist: false
       }, {
         key: 'COUPON_APPLY_FAILED',
         type: 'warning',
         title: '',
-        persist: true,
-        msg: 'Sorry, your coupon could not be applied. Please try again.'
+        persist: true
       }, {
         key: 'DEAL_APPLY_FAILED',
         type: 'warning',
         title: '',
-        persist: true,
-        msg: 'Sorry, your deal code could not be applied. Please try again.'
+        persist: true
       }, {
         key: 'DEAL_REMOVE_FAILED',
         type: 'warning',
         title: '',
-        persist: true,
-        msg: 'Sorry, we were unable to remove that deal. Please try again.'
+        persist: true
       }
     ];
 
@@ -26851,38 +26958,38 @@ angular.module('BB.Directives')
         msg: msg
       };
     };
+
+    /***
+    * @ngdoc method
+    * @name getError
+    * @methodOf BB.Directives:bbServices
+    * @description
+    * Returns error, always setting persist to true. Returns generic error if error with given key is not found.
+     */
     getError = function(key) {
-      var error, translate;
-      error = _.findWhere(alerts, {
-        key: key
-      });
-      error.persist = true;
-      translate = GeneralOptions.use_i18n;
-      if (error && translate) {
-        return {
-          msg: $translate.instant('ERROR.' + key)
-        };
-      } else if (error && !translate) {
-        return error;
-      } else if (translate) {
-        return {
-          msg: 'GENERIC'
-        };
-      } else {
-        return alerts[0];
+      var error;
+      error = getAlert(key);
+      if (!error) {
+        error = getAlert('GENERIC');
       }
+      error.persist = true;
+      return error;
     };
+
+    /***
+    * @ngdoc method
+    * @name getAlert
+    * @methodOf BB.Directives:bbServices
+    * @description
+    * Returns alert by given key
+     */
     getAlert = function(key) {
-      var alert, translate;
+      var alert;
       alert = _.findWhere(alerts, {
         key: key
       });
-      translate = GeneralOptions.use_i18n;
-      if (alert && translate) {
-        return {
-          msg: $translate.instant('ALERT.' + key)
-        };
-      } else if (alert && !translate) {
+      if (alert) {
+        alert.msg = $translate.instant("CORE.ALERTS." + key);
         return alert;
       } else {
         return null;
@@ -27446,7 +27553,6 @@ angular.module('BB.Directives')
       calendar_slot_duration: 5,
       use_local_time_zone: false,
       display_time_zone: null,
-      use_i18n: false,
       update_document_title: false,
       scroll_offset: 0
     };
@@ -27467,7 +27573,7 @@ angular.module('BB.Directives')
   angular.module('BB.Services').factory('GeolocationService', function($q) {
     return {
       haversine: function(position1, position2) {
-        var R, a, c, chLat, chLon, d, dLat, dLon, distance, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
+        var R, a, c, chLat, chLon, d, dLat, dLon, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
         pi = Math.PI;
         R = 6371;
         distances = [];
@@ -27484,9 +27590,7 @@ angular.module('BB.Directives')
         a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
         c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         d = R * c;
-        d = d * 0.621371192;
-        distance = Math.round(d);
-        return distance;
+        return d;
       },
       geocode: function(address, prms) {
         var deferred, ne, request, sw;
@@ -28457,7 +28561,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("PaginationService", function() {
+  angular.module('BB.Services').factory("PaginationService", function($translate) {
     return {
       initialise: function(options) {
         var paginator;
@@ -28483,8 +28587,11 @@ angular.module('BB.Directives')
         end = paginator.current_page * paginator.page_size;
         total = end < paginator.page_size ? end : length;
         end = end > total ? total : end;
-        total = total >= 100 ? "100+" : total;
-        return paginator.summary = start + " - " + end + " of " + total;
+        return paginator.summary = $translate.instant('CORE.PAGINATION.SUMMARY', {
+          start: start,
+          end: end,
+          total: total
+        });
       },
       checkItems: function(paginator, items_loaded) {
         var items_traversed, remaining_items;
@@ -30030,17 +30137,9 @@ angular.module('BB.Directives')
   * @description
   * Representation of an Validator Object
   *
-  * @property {string} uk_postcode_regex The UK postcode regex
-  * @property {string} uk_postcode_regex_lenient The UK postcode regex (lenient)
-  * @property {string} number_only_regex The number only regex
-  * @property {integer} uk_mobile_regex_strict The UK mobile regex (strict)
-  * @property {integer} mobile_regex_lenient Mobile number regex (lenient)
-  * @property {integer} uk_landline_regex_strict The UK landline regex (strict)
-  * @property {integer} uk_landline_regex_lenient The UK landline regex (lenient)
-  * @property {integer} international_number The international number
-  * @property {string} alphanumeric The alphanumeric
-  * @property {string} alpha The letters and spaces
-  * @property {integer} us_phone_number The Us phone number
+  * @property {string} alpha Alpha pattern that accepts letters, hypens and spaces
+  * @property {string} us_phone_number US phone number regex
+  *
    */
   angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, CompanyStoreService, BBModel, $q, $bbug) {
     var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, standard_password, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient, us_postcode_regex;
@@ -30048,9 +30147,9 @@ angular.module('BB.Directives')
     us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
     uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
     number_only_regex = /^\d+$/;
-    uk_mobile_regex_strict = /^((\+44|0)\s*7\s*([45789](\s*\d){2}|6\s*2\s*4)(\s*\d){6})$/;
+    uk_mobile_regex_strict = /^((\+44\s?|0)7([45789]\d{2}|624)\s?\d{3}\s?\d{3})$/;
     mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    uk_landline_regex_strict = /^(\+44|0)\s*[1-9]\s*\d{1,4}\s*\d{3,4}\s*\d{2,4}$/;
+    uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
     uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
     international_number = /^(\+)([\d \(\)]{9,19})$/;
     email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
@@ -30066,9 +30165,9 @@ angular.module('BB.Directives')
         * @name getEmailPattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the email pattern
+        * Returns a pattern for matching email addresses
         *
-        * @returns {string} The returned the email pattern
+        * @returns {string} Email regex
        */
       getEmailPattern: function() {
         return email_regex;
@@ -30079,9 +30178,9 @@ angular.module('BB.Directives')
         * @name getStandardPassword
         * @methodOf BB.Services:Validator
         * @description
-        * Get the email pattern
+        * Returns a password pattern enforcing at least 7 characters and 1 number
         *
-        * @returns {string} Returns Password must contain at least 7 characters and 1 number password pattern
+        * @returns {string} Password regex
        */
       getStandardPassword: function() {
         return standard_password;
@@ -30092,30 +30191,33 @@ angular.module('BB.Directives')
         * @name getUKPostcodePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK postcode pattern
+        * Returns a pattern for matching UK postcodes
         *
-        * @returns {string} The returned the UK postcode regex lenient
+        * @returns {string} UK Postcode regex
        */
+      getUKPostcodePattern: function() {
+        return uk_postcode_regex_lenient;
+      },
 
       /***
         * @ngdoc method
         * @name getUKPostcodePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK postcode patternt
+        * Returns a pattern for matching local mailing codes based on current companies country
         *
-        * @returns {integer} Return the UK postcode pattern
+        * @returns {string} Mailing code regex
        */
-      getUKPostcodePattern: function() {
-        return uk_postcode_regex_lenient;
-      },
       getMailingPattern: function() {
         var cc;
         cc = CompanyStoreService.country_code;
-        if (cc = "us") {
-          return us_postcode_regex;
-        } else {
-          return uk_postcode_regex_lenient;
+        switch (cc) {
+          case "us":
+            return us_postcode_regex;
+          case "gb":
+            return uk_postcode_regex_lenient;
+          default:
+            return null;
         }
       },
 
@@ -30124,9 +30226,9 @@ angular.module('BB.Directives')
         * @name getNumberOnlyPattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the number only pattern
+        * Returns a pattern for matching numbers only
         *
-        * @returns {integer} Return the number only regex
+        * @returns {string} Number only regex
        */
       getNumberOnlyPattern: function() {
         return number_only_regex;
@@ -30137,7 +30239,7 @@ angular.module('BB.Directives')
         * @name getAlphaNumbericPattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the alphanumeric pattern
+        * Returns a pattern for matching alpha numeric strings
         *
         * @returns {string} The returned the alphanumeric regex
        */
@@ -30150,9 +30252,10 @@ angular.module('BB.Directives')
         * @name getUKMobilePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK mobile pattern if strict is equals with false
+        * Returns a pattern for mathing number like strings between 9 and 19 characters.  If the strict flag is used, the pattern matches UK mobile numbers
         *
-        * @returns {integer} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
+        * @param {boolean} strict Use strict validation. Defaults to false.
+        * @returns {string} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
        */
       getUKMobilePattern: function(strict) {
         if (strict == null) {
@@ -30169,9 +30272,9 @@ angular.module('BB.Directives')
         * @name getMobilePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the mobile pattern
+        * Returns a pattern for matching number like strings between 9 and 19 characters
         *
-        * @returns {integer} The returned the mobile regex lenient
+        * @returns {string} Mobile regex
        */
       getMobilePattern: function() {
         return mobile_regex_lenient;
@@ -30182,9 +30285,10 @@ angular.module('BB.Directives')
         * @name getUKLandlinePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the UK landline patternt if strict is equals with false
+        * Returns a pattern for matching number like strinsg between 9 and 19 characters.  If the strict flag is used, the pattern matches UK landline numbers
         *
-        * @returns {integer} The returned the UK landline regex strict if this is strict else return UK landline regex lenient
+        * @param {boolean} strict Use strict validation. Defaults to false.
+        * @returns {string} UK landline regex
        */
       getUKLandlinePattern: function(strict) {
         if (strict == null) {
@@ -30201,9 +30305,9 @@ angular.module('BB.Directives')
         * @name getIntPhonePattern
         * @methodOf BB.Services:Validator
         * @description
-        * Get the international number
+        * Returns a pattern for matching number like strings between 9 and 19 characters
         *
-        * @returns {integer} The returned the international number
+        * @returns {string} International number regex
        */
       getIntPhonePattern: function() {
         return international_number;
@@ -30216,7 +30320,7 @@ angular.module('BB.Directives')
         * @description
         * Get the geocode result
         *
-        * @returns {string} The returned geocode result
+        * @returns {object} Geocoder result
        */
       getGeocodeResult: function() {
         if (geocode_result) {
@@ -30229,9 +30333,9 @@ angular.module('BB.Directives')
         * @name validatePostcode
         * @methodOf BB.Services:Validator
         * @description
-        * Validate the postcode in according with form and prm parameters
+        * Validates a postcode using the Google Maps API
         *
-        * @returns {promise} A promise for valid postocde
+        * @returns {promise|boolean} A promise that resolves to indicate the postcodes valdiity after it has been verified using the Google Maps API or a boolean indicating if the postcode is missing or invalid
        */
       validatePostcode: function(form, prms) {
         var deferred, geocoder, ne, postcode, req, sw;
@@ -30243,7 +30347,7 @@ angular.module('BB.Directives')
           AlertService.raise('MISSING_POSTCODE');
           return false;
         } else if (form.$error.pattern) {
-          AlertService.raise('INVALID_POSTCODE');
+          AlertService.raise('POSTCODE_INVALID');
           return false;
         } else {
           deferred = $q.defer();
@@ -30268,7 +30372,7 @@ angular.module('BB.Directives')
               geocode_result = results[0];
               return deferred.resolve(true);
             } else {
-              AlertService.raise('INVALID_POSTCODE');
+              AlertService.raise('POSTCODE_INVALID');
               $rootScope.$apply();
               return deferred.reject(false);
             }
@@ -30282,9 +30386,9 @@ angular.module('BB.Directives')
         * @name validateForm
         * @methodOf BB.Services:Validator
         * @description
-        * Validate the form in according with form parameter
+        * Validate a form
         *
-        * @returns {boolean} Checks if this is valid or not
+        * @returns {boolean} Validity of form
        */
       validateForm: function(form) {
         if (!form) {
@@ -30310,9 +30414,9 @@ angular.module('BB.Directives')
        * @name resetForm
        * @methodOf BB.Services:Validator
        * @description
-       * Reset the form in according with form parameter
+       * Set pristine state on a form
        *
-       * @returns {boolean} Checks if this is reset or not
+       * @param {form} A single instance of a form controller
        */
     };
   });
@@ -30330,9 +30434,9 @@ angular.module('BB.Directives')
       * @name resetForms
       * @methodOf BB.Services:Validator
       * @description
-      * Reset the forms in according with forms parameter
+      * Set pristine state on given array of forms
       *
-      * @returns {boolean} Checks if this is reset or not
+      * @param {array} Array of form controllers
      */
     resetForms: function(forms) {
       var form, i, len, results1;
@@ -30353,209 +30457,26 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
 
-  /**
+  /*
   * @ngdoc service
-  * @name BB.Services.service:viewportSize
+  * @name BB.Services.service:ViewportSize
   *
   * @description
   * Stores the current screen size breakpoint.
    */
-  angular.module('BB.Services').service('viewportSize', function($window, $document, $rootScope) {
-
-    /**
-     * @description variable used to store current screen size
-     */
-    var appendViewportElementsToDocumentBody, findVisibleElement, getElementId, getSizeFromElement, getSupportedSizes, getViewportElementsFromDocumentBody, getViewportElementsToAppend, getViewportSize, init, isElementVisible, isInitialised, isLG, isMD, isSM, isXS, listenForResize, state, viewportElementIdPrefix, viewportSize;
-    viewportSize = null;
-
-    /**
-     * @description id prefix for span html elements used to determin screen size via bootstrap classes
-     */
-    viewportElementIdPrefix = 'viewport_size_';
-
-    /**
-     * @description used to prevent multiple viewport elements being appended to dom
-     */
-    isInitialised = false;
-
-    /**
-     * @description boolean check for screen sizes
-     */
-    state = {
-      isXS: false,
-      isSM: false,
-      isMD: false,
-      isLG: false
-    };
-
-    /**
-     * @description returns supported bootstrap screen sizes
-     * @returns {String}
-     */
-    getSupportedSizes = function() {
-      return ['xs', 'sm', 'md', 'lg'];
-    };
-
-    /**
-     * @description logic for getting element ids
-     * @param {String} size
-     * @returns {String}
-     */
-    getElementId = function(size) {
-      return viewportElementIdPrefix + size;
-    };
-
-    /**
-     * @description constructs and returns the elements used to determine screen size
-     * @returns {String}
-     */
-    getViewportElementsToAppend = function() {
-      var elementId, i, len, ref, size, viewportElementStrings;
-      viewportElementStrings = '<div id="viewport_size">';
-      ref = getSupportedSizes();
-      for (i = 0, len = ref.length; i < len; i++) {
-        size = ref[i];
-        elementId = getElementId(size);
-        viewportElementStrings += ' <span id="' + elementId + '"  class="visible-' + size + '">&nbsp;</span>';
-      }
-      viewportElementStrings += '</div>';
-      return viewportElementStrings;
-    };
-
-    /**
-     * @description appends elements to document body for bootstrap to show or hide
-     */
-    appendViewportElementsToDocumentBody = function() {
-      var body, viewportElements;
-      viewportElements = getViewportElementsToAppend();
-      body = $document.find('body');
-      body.append(viewportElements);
-    };
-
-    /**
-     * @description grabs elements from document after being appended to determin which ones are visible
-     * @returns {Array}
-     */
-    getViewportElementsFromDocumentBody = function() {
-      var i, len, ref, size, viewportElement, viewportElementId, viewportElements;
-      viewportElements = [];
-      ref = getSupportedSizes();
-      for (i = 0, len = ref.length; i < len; i++) {
-        size = ref[i];
-        viewportElementId = getElementId(size);
-        viewportElement = $document[0].querySelector('#' + viewportElementId);
-        viewportElements.push(viewportElement);
-      }
-      return viewportElements;
-    };
-
-    /**
-     * @description check if element is visible based on styling
-     * @param {String} element
-     * @returns {boolean}
-     */
-    isElementVisible = function(element) {
-      return angular.element(element).css('display') !== 'none';
-    };
-
-    /**
-     * @description Gets the bootstrap size from the class name 
-     * @param {String} element
-     * @returns {String}
-     */
-    getSizeFromElement = function(element) {
-      var className, size;
-      className = element.className.match('(visible-[a-zA-Z]*)\\b')[0];
-      size = className.replace('visible-', '').trim();
-      return size;
-    };
-
-    /**
-     * @description determins the current size of the screen
-     */
-    findVisibleElement = function() {
-      var elementSize, i, len, viewportElement, viewportElements;
-      viewportElements = getViewportElementsFromDocumentBody();
-      for (i = 0, len = viewportElements.length; i < len; i++) {
-        viewportElement = viewportElements[i];
-        elementSize = getSizeFromElement(viewportElement);
-        if (isElementVisible(viewportElement)) {
-          viewportSize = elementSize;
-          state['is' + elementSize.toUpperCase()] = true;
-        } else {
-          state['is' + elementSize.toUpperCase()] = false;
-        }
-      }
-    };
-
-    /**
-     * @description get screen size when window resize function has been called
-     */
-    listenForResize = function() {
-      angular.element($window).resize(function() {
-        var viewportSizeOld;
-        viewportSizeOld = viewportSize;
-        findVisibleElement();
-        if (viewportSizeOld !== viewportSize) {
-          $rootScope.$broadcast('viewportSize:changed');
-        }
-      });
-    };
-
-    /**
-     * @description initialise before utilising viewport service
-     */
-    init = function() {
-      if (!isInitialised) {
-        appendViewportElementsToDocumentBody();
-        findVisibleElement();
-        listenForResize();
-        isInitialised = true;
-      }
-    };
-
-    /**
-     * @description using function to grab screensize so it cannot be altered outside service
-     * @returns {String}
-     */
-    getViewportSize = function() {
-      return viewportSize;
-    };
-
-    /**
-     * @description boolean check for XS screen size
-     */
-    isXS = function() {
-      return state.isXS;
-    };
-
-    /**
-     * @description boolean check for SM screen size
-     */
-    isSM = function() {
-      return state.isSM;
-    };
-
-    /**
-     * @description boolean check for MD screen size
-     */
-    isMD = function() {
-      return state.isMD;
-    };
-
-    /**
-     * @description boolean check for LG screen size
-     */
-    isLG = function() {
-      return state.isLG;
-    };
+  angular.module('BB.Services').factory('ViewportSize', function($rootScope) {
+    var viewport_size;
+    viewport_size = null;
     return {
-      init: init,
-      getViewportSize: getViewportSize,
-      isXS: isXS,
-      isSM: isSM,
-      isMD: isMD,
-      isLG: isLG
+      setViewportSize: function(size) {
+        if (size !== viewport_size) {
+          viewport_size = size;
+          return $rootScope.$broadcast('ViewportSize:changed');
+        }
+      },
+      getViewportSize: function() {
+        return viewport_size;
+      }
     };
   });
 
@@ -31252,28 +31173,785 @@ angular.module('BB.Directives')
     var translations;
     translations = {
       CORE: {
+        ALERTS: {
+          ERROR_HEADING: "Error",
+          ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+          ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+          APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+          ATTENDEES_CHANGED: "Your booking has been successfully updated",
+          EMAIL_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this email. Use the search field to find the customers account.",
+          EMPTY_BASKET_FOR_CHECKOUT: "Es sind keine Artikel im Warenkorb zur Kasse gehen.",
+          FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+          FORM_INVALID: "Bitte füllen Sie alle Felder aus",
+          GENERIC: "Leider scheint es, dass etwas schief gelaufen ist. Bitte versuchen Sie es erneut oder rufen Sie das Unternehmen sind Sie bei der Buchung mit, wenn das Problem weiterhin besteht.",
+          GEOLOCATION_ERROR: "Leider konnten wir Dein Ort wurde nicht festzustellen. Bitte versuchen Sie statt.",
+          GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+          POSTCODE_INVALID: "@:COMMON.FORM.POSTCODE_INVALID",
+          ITEM_NO_LONGER_AVAILABLE: "Entschuldigung. Das Element, das Sie versuchten, zu buchen ist nicht mehr verfügbar. Bitte versuchen Sie es erneut.",
+          NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+          LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
+          LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+          SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+          MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+          MISSING_LOCATION: "Bitte geben Sie Ihren Standort",
+          MISSING_POSTCODE: "Bitte geben Sie eine Postleitzahl ein",
+          PASSWORD_INVALID: "Sorry, your password is invalid",
+          PASSWORD_MISMATCH: "Your passwords don't match",
+          PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+          PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+          PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+          PASSWORD_RESET_SUCESS: "Your password has been updated.",
+          PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this phone number. Use the search field to find the customers account.",
+          REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+          TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+          STORE_NOT_SELECTED: "You need to select a store",
+          TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+          TOPUP_SUCCESS: "Your wallet has been topped up",
+          UPDATE_FAILED: "Update failed. Please try again",
+          UPDATE_SUCCESS: "Updated",
+          WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+          BOOKING_CANCELLED: "Your booking has been cancelled.",
+          NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+          NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+          SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking."
+        },
+        PAGINATION: {
+          SUMMARY: "{{start}} - {{end}} of {{total}}"
+        },
         MODAL: {
           CANCEL_BOOKING: {
-            HEADER: 'Cancel',
-            QUESTION: 'Are you sure you want to cancel this {{type}}?'
+            HEADER: "Cancel",
+            QUESTION: "Are you sure you want to cancel this {{type}}?"
+          },
+          SCHEMA_FORM: {
+            OK_BTN: "@:COMMON.BTN.OK",
+            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
           }
+        },
+        FILTERS: {
+          DISTANCE: {
+            UNIT: "mi"
+          },
+          CURRENCY: {
+            THOUSANDS_SEPARATOR: ",",
+            DECIMAL_SEPARATOR: ".",
+            CURRENCY_FORMAT: "%s%v"
+          },
+          PRETTY_PRICE: {
+            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+          },
+          TIME_PERIOD: {
+            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+          }
+        },
+        EVENT: {
+          SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+          JOIN_WAITLIST: "Beitreten Warteliste"
         }
       },
       COMMON: {
+        TERMINOLOGY: {
+          CATEGORY: "Kategorie",
+          DURATION: "Duration",
+          RESOURCE: "Ressource",
+          PERSON: "Person",
+          SERVICE: "Service",
+          WALLET: "Brieftasche",
+          SESSION: "Session",
+          EVENT: "Event",
+          EVENTS: 'Geschehen',
+          COURSE: "Course",
+          COURSES: 'Courses',
+          DATE: "Datum",
+          TIME: "Zeit",
+          WHEN: "Wann",
+          GIFT_CERTIFICATE: "Geschenkgutscheine",
+          GIFT_CERTIFICATES: 'Gift Certificates',
+          ITEM_LBL: "Artikel",
+          FILTER: "Filter",
+          ANY: "Jeder",
+          RESET: "Rücksetzen",
+          TOTAL: "Gesamt",
+          TOTAL_DUE_NOW: "Insgesamt Aufgrund Now",
+          BOOKING_FEE: 'Buchungsgebühr',
+          PRICE: "Preis",
+          PRICE_FREE: "Kostenlos",
+          PRINT: " Drucken",
+          AND: "und",
+          APPOINTMENT: "Ernennung",
+          TICKETS: "Tickets",
+          EXPORT: "Export",
+          RECIPIENT: "Empfänger",
+          BOOKING_REF: "Buchungsnummer",
+          MORNING: "Morgens",
+          AFTERNOON: "Nachmittags",
+          EVENING: "Abends",
+          AVAILABLE: "Available",
+          UNAVAILABLE: "Unavailable",
+          CALENDAR: "Calendar",
+          QUESTIONS: "Fragen",
+          BOOKING: "Booking",
+          ADMITTANCE: "Admittance"
+        },
+        FORM: {
+          FIRST_NAME: "First Name",
+          FIRST_NAME_REQUIRED: "Please enter your first name",
+          LAST_NAME: "Last Name",
+          LAST_NAME_REQUIRED: "Please enter your last name",
+          NAME: "Full Name",
+          ADDRESS1: "Address",
+          ADDRESS_REQUIRED: "",
+          ADDRESS3: "Town",
+          ADDRESS4: "County",
+          POSTCODE: "Postcode",
+          POSTCODE_INVALID: "Bitte GEBEN Sie eine Gültige Postleitzahl ein",
+          PHONE: "Phone",
+          MOBILE: "Mobile",
+          MOBILE_REQUIRED: "Please enter a valid mobile number",
+          EMAIL: "Email",
+          EMAIL_REQURIED: "Please enter your email",
+          EMAIL_INVALID: "Bitte geben Sie eine gültige E-Mail-Adresse",
+          FIELD_REQUIRED: "This field is required",
+          PASSWORD: "Password",
+          PASSWORD_REQUIRED: "Please enter your password",
+          REQUIRED_LBL: "*Erforderlich",
+          TERMS_AND_CONDITIONS: "Ich akzeptiere die Geschäftsbedingungen",
+          TERMS_AND_CONDITIONS_REQUIRED: "Bitte stimmen Sie den Geschäftsbedingungen"
+        },
         BTN: {
-          CANCEL: 'Cancel',
-          CLOSE: 'Close',
-          NO: 'No',
-          OK: 'OK',
-          YES: 'Yes'
+          CANCEL: "Cancel",
+          CLOSE: "Close",
+          NO: "No",
+          OK: "Ok",
+          YES: "Yes",
+          BACK: "Zurück",
+          NEXT: "Nächster",
+          LOGIN: "Login",
+          CONFIRM: "Confirm",
+          SAVE: "Save",
+          SELECT: "Wählen",
+          BOOK: "Buchen",
+          BOOK_EVENT: "Book Event",
+          CANCEL_BOOKING: "Reservierung stornieren",
+          DO_NOT_CANCEL_BOOKING: "Stornieren Sie nicht",
+          APPLY: "Anwenden",
+          CLEAR: "Klar",
+          PAY: "Pay",
+          CHECKOUT: "Kasse",
+          TOP_UP: "Top Up",
+          ADD: "Hinzufügen",
+          SUBMIT: "Submit",
+          DETAILS: "Einzelheiten",
+          MORE: "More",
+          LESS: "Less",
+          DELETE: "Delete"
         },
         LANGUAGE: {
-          EN: 'English',
-          FR: 'Français'
+          EN: "English",
+          DE: "Deutsch",
+          ES: "Español",
+          FR: "Français"
+        }
+      }
+    };
+    $translateProvider.translations('de', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        ALERTS: {
+          ERROR_HEADING: "Error",
+          ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+          ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+          APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+          ATTENDEES_CHANGED: "Your booking has been successfully updated",
+          EMAIL_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this email. Use the search field to find the customers account.",
+          EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
+          FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+          FORM_INVALID: "Please complete all required fields",
+          GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+          GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
+          GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+          POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
+          ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
+          NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+          LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
+          LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+          SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+          MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+          MISSING_LOCATION: "Please enter your location",
+          MISSING_POSTCODE: "Please enter a postcode",
+          PASSWORD_INVALID: "Sorry, your password is invalid",
+          PASSWORD_MISMATCH: "Your passwords don't match",
+          PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+          PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+          PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+          PASSWORD_RESET_SUCESS: "Your password has been updated.",
+          PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this phone number. Use the search field to find the customers account.",
+          REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+          TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+          STORE_NOT_SELECTED: "You need to select a store",
+          TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+          TOPUP_SUCCESS: "Your wallet has been topped up",
+          UPDATE_FAILED: "Update failed. Please try again",
+          UPDATE_SUCCESS: "Updated",
+          WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+          BOOKING_CANCELLED: "Your booking has been cancelled.",
+          NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+          NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+          SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+          COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
+          DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
+          DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again."
+        },
+        PAGINATION: {
+          SUMMARY: "{{start}} - {{end}} of {{total}}"
+        },
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: "Cancel",
+            QUESTION: "Are you sure you want to cancel this {{type}}?"
+          },
+          SCHEMA_FORM: {
+            OK_BTN: "@:COMMON.BTN.OK",
+            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+          }
+        },
+        TIMEZONE_INFO: "All times are shown in {{time_zone_name}}.",
+        FILTERS: {
+          DISTANCE: {
+            MILES: "miles",
+            KILOMETRES: "km"
+          },
+          CURRENCY: {
+            THOUSANDS_SEPARATOR: ",",
+            DECIMAL_SEPARATOR: ".",
+            CURRENCY_FORMAT: "%s%v"
+          },
+          PRETTY_PRICE: {
+            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+          },
+          TIME_PERIOD: {
+            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+          }
+        },
+        EVENT: {
+          SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+          JOIN_WAITLIST: "Join waitlist"
+        }
+      },
+      COMMON: {
+        TERMINOLOGY: {
+          CATEGORY: "Category",
+          DURATION: "Duration",
+          RESOURCE: "Resource",
+          PERSON: "Person",
+          SERVICE: "Service",
+          WALLET: "Wallet",
+          SESSION: "Session",
+          EVENT: "Event",
+          EVENTS: "Events",
+          COURSE: "Course",
+          COURSES: "Courses",
+          DATE: "Date",
+          TIME: "Time",
+          WHEN: "When",
+          GIFT_CERTIFICATE: "Gift Certificate",
+          GIFT_CERTIFICATES: "Gift Certificates",
+          ITEML: "Item",
+          FILTER: "Filter",
+          ANY: "Any",
+          RESET: "Reset",
+          TOTAL: "Total",
+          TOTAL_DUE_NOW: "Total Due Now",
+          BOOKING_FEE: "Booking Fee",
+          PRICE: "Price",
+          PRICE_FREE: "Free",
+          PRINT: "Print",
+          AND: "and",
+          APPOINTMENT: "Appointment",
+          TICKETS: "Tickets",
+          EXPORT: "Export",
+          RECIPIENT: "Recipient",
+          BOOKING_REF: "Booking Reference",
+          MORNING: "Morning",
+          AFTERNOON: "Afternoon",
+          EVENING: "Evening",
+          AVAILABLE: "Available",
+          UNAVAILABLE: "Unavailable",
+          CALENDAR: "Calendar",
+          QUESTIONS: "Questions",
+          BOOKING: "Booking",
+          ADMITTANCE: "Admittance",
+          EDIT: "Edit",
+          WHEN: "When",
+          DATE_TIME: "Date/Time",
+          CONFIRMATION: "Confirmation",
+          NAME: "Name",
+          FIRST_NAME: "First Name",
+          LAST_NAME: "Last Name",
+          ADDRESS1: "Address",
+          ADDRESS3: "Town",
+          ADDRESS4: "County",
+          POSTCODE: "Postcode",
+          PHONE: "Phone",
+          MOBILE: "Mobile",
+          EMAIL: "Email",
+          SCHEDULE: "Schedule",
+          SEARCH: "Search"
+        },
+        FORM: {
+          FIRST_NAME_REQUIRED: "Please enter your first name",
+          LAST_NAME_REQUIRED: "Please enter your last name",
+          ADDRESS_REQUIRED: "Please enter your address",
+          POSTCODE_INVALID: "Please enter a valid postcode",
+          PHONE_INVALID: "Please enter a valid phone number",
+          MOBILE_INVALID: "Please enter a valid mobile number",
+          EMAIL_REQUIRED: "Please enter your email",
+          EMAIL_INVALID: "Please enter a valid email address",
+          FIELD_REQUIRED: "This field is required",
+          PASSWORD: "Password",
+          PASSWORD_REQUIRED: "Please enter your password",
+          CONFIRM_PASSWORD: "Confirm password",
+          PASSWORD_MISMATCH: "Please ensure your passwords match",
+          REQUIRED: "*Required",
+          TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
+          TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
+        },
+        BTN: {
+          CANCEL: "Cancel",
+          CLOSE: "Close",
+          NO: "No",
+          OK: "Ok",
+          YES: "Yes",
+          BACK: "Back",
+          NEXT: "Continue",
+          LOGIN: "Login",
+          CONFIRM: "Confirm",
+          SAVE: "Save",
+          SELECT: "Select",
+          BOOK: "Book",
+          BOOK_EVENT: "Book Event",
+          CANCEL_BOOKING: "Cancel Booking",
+          DO_NOT_CANCEL_BOOKING: "Do not cancel",
+          APPLY: "Apply",
+          CLEAR: "Clear",
+          PAY: "Pay",
+          CHECKOUT: "Checkout",
+          TOP_UP: "Top Up",
+          ADD: "Add",
+          SUBMIT: "Submit",
+          DETAILS: "Details",
+          MORE: "More",
+          LESS: "Less",
+          DELETE: "Delete"
+        },
+        LANGUAGE: {
+          EN: "English",
+          DE: "Deutsch",
+          ES: "Español",
+          FR: "Français"
         }
       }
     };
     $translateProvider.translations('en', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        ALERTS: {
+          ERROR_HEADING: "Error",
+          ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+          ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+          APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+          ATTENDEES_CHANGED: "Your booking has been successfully updated",
+          EMAIL_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this email. Use the search field to find the customers account.",
+          EMPTY_BASKET_FOR_CHECKOUT: "No hay ningún producto en la cesta para proceder a la caja.",
+          FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+          FORM_INVALID: "Por favor completa todos los campos requeridos",
+          GENERIC: "Disculpa, algo está incorrecto. Por favor, intentalo de nuevo o llama a la sucursal de interés si el problema persite. ",
+          GEOLOCATION_ERROR: "Disculpa, no podemos determinar esa localidad. Por favor busca una.",
+          GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+          POSTCODE_INVALID: "@:COMMON.FORM.POSTCODE_INVALID",
+          ITEM_NO_LONGER_AVAILABLE: "Disculpa, el horario que seleccionaste no está disponible. Por favor, intentalo de nuevo.",
+          NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+          LOCATION_NOT_FOUND: "Disculpa, no reconocemos esa localización",
+          LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+          SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+          MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+          MISSING_LOCATION: "Por favor entre la localización (dirección)",
+          MISSING_POSTCODE: "Por favor ingrese un código postal",
+          PASSWORD_INVALID: "Sorry, your password is invalid",
+          PASSWORD_MISMATCH: "Your passwords don't match",
+          PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+          PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+          PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+          PASSWORD_RESET_SUCESS: "Your password has been updated.",
+          PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this phone number. Use the search field to find the customers account.",
+          REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+          TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+          STORE_NOT_SELECTED: "You need to select a store",
+          TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+          TOPUP_SUCCESS: "Your wallet has been topped up",
+          UPDATE_FAILED: "Update failed. Please try again",
+          UPDATE_SUCCESS: "Updated",
+          WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+          BOOKING_CANCELLED: "Your booking has been cancelled.",
+          NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+          NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+          SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking."
+        },
+        PAGINATION: {
+          SUMMARY: "{{start}} - {{end}} of {{total}}"
+        },
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: "Cancel",
+            QUESTION: "Are you sure you want to cancel this {{type}}?"
+          },
+          SCHEMA_FORM: {
+            OK_BTN: "@:COMMON.BTN.OK",
+            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+          }
+        },
+        FILTERS: {
+          DISTANCE: {
+            UNIT: "mi"
+          },
+          CURRENCY: {
+            THOUSANDS_SEPARATOR: ",",
+            DECIMAL_SEPARATOR: ".",
+            CURRENCY_FORMAT: "%s%v"
+          },
+          PRETTY_PRICE: {
+            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+          },
+          TIME_PERIOD: {
+            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+          }
+        },
+        EVENT: {
+          SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+          JOIN_WAITLIST: "Join waitlist"
+        }
+      },
+      COMMON: {
+        TERMINOLOGY: {
+          CATEGORY: "Category",
+          DURATION: "Duración",
+          RESOURCE: "Resource",
+          PERSON: "Person",
+          SERVICE: "Servicio",
+          WALLET: "Wallet",
+          SESSION: "Session",
+          EVENT: "Event",
+          EVENTS: "Events",
+          COURSE: "Course",
+          COURSES: "Courses",
+          DATE: "Fecha",
+          TIME: "Horario",
+          WHEN: "Cuándo ",
+          GIFT_CERTIFICATE: "Gift Certificate",
+          GIFT_CERTIFICATES: "Gift Certificates",
+          ITEM_LBL: "Item",
+          FILTER: "Filter",
+          ANY: "Any",
+          RESET: "Reset",
+          TOTAL: "Total",
+          TOTAL_DUE_NOW: "Total Due Now",
+          BOOKING_FEE: "Booking Fee",
+          PRICE: "Precio",
+          PRICE_FREE: "Free",
+          PRINT: " Imprimir",
+          AND: "and",
+          APPOINTMENT: "Appointment",
+          TICKETS: "Tickets",
+          EXPORT: "Exportar",
+          RECIPIENT: "Recipient",
+          BOOKING_REF: "Booking Reference",
+          MORNING: "Mañana",
+          AFTERNOON: "Tarde",
+          EVENING: "Noche",
+          AVAILABLE: "Disponible",
+          UNAVAILABLE: "Unavailable",
+          CALENDAR: "Calendar",
+          QUESTIONS: "Questions",
+          BOOKING: "Booking",
+          ADMITTANCE: "Admittance"
+        },
+        FORM: {
+          FIRST_NAME: "Nombre",
+          FIRST_NAME_REQUIRED: "Por favor ingresa tu nombre",
+          LAST_NAME: "Apellido",
+          LAST_NAME_REQUIRED: "Por favor ingresa tu apellido",
+          NAME: "Full Name",
+          ADDRESS1: "Address",
+          ADDRESS_REQUIRED: "",
+          ADDRESS3: "Town",
+          ADDRESS4: "County",
+          POSTCODE: "Postcode",
+          POSTCODE_INVALID: "Por favor ingrese un código postal válido",
+          PHONE: "Teléfono",
+          MOBILE: "Mobile",
+          MOBILE_REQUIRED: "Please enter a valid mobile number",
+          EMAIL: "Correo electrónico",
+          EMAIL_REQURIED: "Please enter your email",
+          EMAIL_INVALID: "Por favor ingresa una dirección de correo electrónico válida",
+          FIELD_REQUIRED: "Este campo es requerido",
+          PASSWORD: "Password",
+          PASSWORD_REQUIRED: "Please enter your password",
+          REQUIRED_LBL: "*Requeridos",
+          TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
+          TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
+        },
+        BTN: {
+          CANCEL: "Cancel",
+          CLOSE: "Close",
+          NO: "No",
+          OK: "Ok",
+          YES: "Yes",
+          BACK: "Regresar",
+          NEXT: "Siguiente",
+          LOGIN: "Login",
+          CONFIRM: "Confirmar",
+          SAVE: "Save",
+          SELECT: "Seleccionar",
+          BOOK: "Cita",
+          BOOK_EVENT: "Book Event",
+          CANCEL_BOOKING: "Cancelar cita",
+          DO_NOT_CANCEL_BOOKING: "No cancelar",
+          APPLY: "Apply",
+          CLEAR: "Clear",
+          PAY: "Pay",
+          CHECKOUT: "Checkout",
+          TOP_UP: "Top Up",
+          ADD: "Add",
+          SUBMIT: "Submit",
+          DETAILS: "Details",
+          MORE: "More",
+          LESS: "Less",
+          DELETE: "Delete"
+        },
+        LANGUAGE: {
+          EN: "English",
+          DE: "Deutsch",
+          ES: "Español",
+          FR: "Français"
+        }
+      }
+    };
+    $translateProvider.translations('es', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      CORE: {
+        ALERTS: {
+          ERROR_HEADING: "Erreur",
+          ACCOUNT_DISABLED: "Votre compte semble desactivé. Merci de contacter le commerce si le problème persiste",
+          ALREADY_REGISTERED: "Il y a déjà un compte pour cette addresse email. Veuillez vous connecter ou changer votre mot de passe.",
+          APPT_AT_SAME_TIME: "Votre rendez-vous est déja réservé à la même heure",
+          ATTENDEES_CHANGED: "Votre réservation a été mise à jour",
+          EMAIL_ALREADY_REGISTERED_ADMIN: "Il y a déjà un compte associé à cette addresse mail. Utilisez le champ de research.",
+          EMPTY_BASKET_FOR_CHECKOUT: "Il n'y a aucun élément dans le panier.",
+          FB_LOGIN_NOT_A_MEMBER: "Aucun compte associé à ce compte Facebook. Veuillez vous enregistrer avec Facebook d'abord",
+          FORM_INVALID: "Saisissez tous les champs obligatoires",
+          GENERIC: "Désolé, il semble qu'une erreur s'est produite. Essayez de nouveau et contactez le service client si le problème persiste.",
+          GEOLOCATION_ERROR: "Désolé, nous n'avons pas pu déterminer votre location. Veuillez entrer une location.",
+          GIFT_CERTIFICATE_REQUIRED: "Cette réservaction nécessited une carte cadeau",
+          POSTCODE_INVALID: "@:COMMON.FORM.POSTCODE_INVALID",
+          ITEM_NO_LONGER_AVAILABLE: "Désolé. L'article que vous souhaitez réserver n'est plus disponible.",
+          NO_WAITLIST_SPACES_LEFT: "Désolé, la place a été prise, vous êtes sur liste d'attente et nous vous écririons quand plus de places seront disponibles",
+          LOCATION_NOT_FOUND: "Désolé, nous ne reconnaissons pas cet adresse",
+          LOGIN_FAILED: "Désolé, votre email ou mot de passe n'a pas été reconnu. Merci de réessayer ou de changer votre mot de passe",
+          SSO_LOGIN_FAILED: "Il y a eu une erreur de connection. Veuillez réessayer.",
+          MAXIMUM_TICKETS: "Désolé, le nombre maximum de billets par personne a été dépassé.",
+          MISSING_LOCATION: "Saisissez votre adresse",
+          MISSING_POSTCODE: "Saisissez votre code postal",
+          PASSWORD_INVALID: "Désolé, votre mot de passe n'est pas valide",
+          PASSWORD_MISMATCH: "Vos mots de passe sont différents",
+          PASSWORD_RESET_FAILED: "Désolé, nous n'avons pas pu mettre votre mot de passe à jour. Merci de réessayer",
+          PASSWORD_RESET_REQ_FAILED: "Désolé, nous n'avons pas trouvé de compte pour cet email.",
+          PASSWORD_RESET_REQ_SUCCESS: "Nous avons envoyé un email avec un lien pour changer votre mot de passe.",
+          PASSWORD_RESET_SUCESS: "Votre mot de passe a été mis à jour.",
+          PAYMENT_FAILED: "Le paiement a échoué. Veuillez contacter votre banque ou essayer une autre carte",
+          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "Il y a déjà un compte associé à ce numéro de téléphone. Utilisez le champ de research.",
+          REQ_TIME_NOT_AVAIL: "Ce créneau est pris, merci d'en choisir un autre.",
+          TIME_SLOT_NOT_SELECTED: "Veuillez choisir un créneau",
+          STORE_NOT_SELECTED: "Veuillz choisir un magasin.",
+          TOPUP_FAILED: "Désolé, votre porte-feuille n'a pas pu être rechargé, veuillez réessayer.",
+          TOPUP_SUCCESS: "Votre portefeuille a été rechargé",
+          UPDATE_FAILED: "Mise à jour ratée. Merci de réessayer",
+          UPDATE_SUCCESS: "Mis à jour",
+          WAITLIST_ACCEPTED: "Votre réservation est confirmée !",
+          BOOKING_CANCELLED: "Votre réservation a été annulée.",
+          NOT_BOOKABLE_PERSON: "Désolé, cette personne n'offre pas ce service, veuillez choisir quelqu'un d'autre",
+          NOT_BOOKABLE_RESOURCE: "Désolé, cette resource n'offre pas ce service, veuillez en choisir une autre",
+          SPEND_AT_LEAST: "Le montant minimal pour une réservation est de {{min_spend | pretty_price}}."
+        },
+        PAGINATION: {
+          SUMMARY: "{{start}} - {{end}} of {{total}}"
+        },
+        MODAL: {
+          CANCEL_BOOKING: {
+            HEADER: "Annuler",
+            QUESTION: "Êtes-vous sûr de vouloir annuler ce {{type}}?"
+          },
+          SCHEMA_FORM: {
+            OK_BTN: "@:COMMON.BTN.OK",
+            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+          }
+        },
+        FILTERS: {
+          DISTANCE: {
+            UNIT: "km"
+          },
+          CURRENCY: {
+            THOUSANDS_SEPARATOR: " ",
+            DECIMAL_SEPARATOR: ",",
+            CURRENCY_FORMAT: "%v%s"
+          },
+          PRETTY_PRICE: {
+            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+          },
+          TIME_PERIOD: {
+            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+          }
+        },
+        EVENT: {
+          SPACES_LEFT: "Seulement {N, plural, one{une place restante}, other{# places restantes}}",
+          JOIN_WAITLIST: "S'inscrire sur la liste d'attente"
+        }
+      },
+      COMMON: {
+        TERMINOLOGY: {
+          CATEGORY: "Catégorie",
+          DURATION: "Durée",
+          RESOURCE: "Ressource",
+          PERSON: "Personne",
+          SERVICE: "Service",
+          WALLET: "Portefeuille",
+          SESSION: "Session",
+          EVENT: "Event",
+          EVENTS: "Événements",
+          COURSE: "Course",
+          COURSES: "Courses",
+          DATE: "Date",
+          TIME: "Heure",
+          WHEN: "Quand",
+          GIFT_CERTIFICATE: "Chèque-cadeau",
+          GIFT_CERTIFICATES: "Chèques-cadeaux",
+          ITEM_LBL: "Article",
+          FILTER: "Filtre",
+          ANY: "Tout",
+          RESET: "Remettre",
+          TOTAL: "Total",
+          TOTAL_DUE_NOW: "Total à payer",
+          BOOKING_FEE: "Frais de réservation",
+          PRICE: "Prix",
+          PRICE_FREE: "Gratuit",
+          PRINT: " Imprimer",
+          AND: "et",
+          APPOINTMENT: "Rendez-vous",
+          TICKETS: "Billets",
+          EXPORT: "Exporter",
+          RECIPIENT: "Destinataire",
+          BOOKING_REF: "Référence de votre réservation",
+          MORNING: "Matin",
+          AFTERNOON: "Après-midi",
+          EVENING: "Soir",
+          AVAILABLE: "Disponible",
+          UNAVAILABLE: "Non disponible",
+          CALENDAR: "Calendar",
+          QUESTIONS: "Questions",
+          BOOKING: "Réservation",
+          ADMITTANCE: "Admittance"
+        },
+        FORM: {
+          FIRST_NAME: "Prénom",
+          FIRST_NAME_REQUIRED: "Saisissez votre prénom",
+          LAST_NAME: "Nom",
+          LAST_NAME_REQUIRED: "Saisissez votre nom",
+          NAME: "Nom Complet",
+          ADDRESS1: "Adresse",
+          ADDRESS_REQUIRED: "",
+          ADDRESS3: "Ville",
+          ADDRESS4: "Province/Région",
+          POSTCODE: "Code Postal",
+          POSTCODE_INVALID: "Saisissez un code postal valide",
+          PHONE: "Téléphone",
+          MOBILE: "Mobile",
+          MOBILE_REQUIRED: "Saisissez un numéro de téléphone valide",
+          EMAIL: "Email",
+          EMAIL_REQURIED: "Veuillez entrer votre addresse email",
+          EMAIL_INVALID: "Saisissez une adresse email valide",
+          FIELD_REQUIRED: "This field is required",
+          PASSWORD: "Password",
+          PASSWORD_REQUIRED: "Veuillez entrer le mot de passe",
+          REQUIRED_LBL: "*Requis",
+          TERMS_AND_CONDITIONS: "J'accepte les conditions générales de vente",
+          TERMS_AND_CONDITIONS_REQUIRED: "Vous devez accepter les conditions générales de vente"
+        },
+        BTN: {
+          CANCEL: "Annuler",
+          CLOSE: "Fermer",
+          NO: "Non",
+          OK: "Ok",
+          YES: "Oui",
+          BACK: "Retour",
+          NEXT: "Suivant",
+          LOGIN: "Connexion",
+          CONFIRM: "Confirmer",
+          SAVE: "Enregistrer",
+          SELECT: "Choisir",
+          BOOK: "Réserver",
+          BOOK_EVENT: "Book Event",
+          CANCEL_BOOKING: "Annuler Réservation",
+          DO_NOT_CANCEL_BOOKING: "Ne pas annuler",
+          APPLY: "Appliquer",
+          CLEAR: "Vider",
+          PAY: "Payer",
+          CHECKOUT: "Caisse",
+          TOP_UP: "Recharger",
+          ADD: "Ajouter",
+          SUBMIT: "Soumettre",
+          DETAILS: "Détails",
+          MORE: "More",
+          LESS: "Less",
+          DELETE: "Effacer"
+        },
+        LANGUAGE: {
+          EN: "English",
+          DE: "Deutsch",
+          ES: "Español",
+          FR: "Français"
+        }
+      }
+    };
+    $translateProvider.translations('fr', translations);
   });
 
 }).call(this);
@@ -31390,9 +32068,12 @@ angular.module('BB.Directives')
     options = {
       default_language: 'en',
       use_browser_language: true,
-      available_languages: ['en'],
+      available_languages: ['en', 'de', 'es', 'fr'],
       available_language_associations: {
-        'en_*': 'en'
+        'en_*': 'en',
+        'de_*': 'de',
+        'es_*': 'de',
+        'fr_*': 'fr'
       }
     };
     this.setOption = function(option, value) {
@@ -31451,7 +32132,7 @@ angular.module('BB.Directives')
       moment.locale(locale);
       $translate.use(locale);
       if (locale !== moment.locale() || locale !== $translate.use()) {
-        console.error('could not set locale properly, preferredLocale = ' + locale + ', moment.locale() = ', moment.locale(), '$translate.use() = ', $translate.use());
+        console.error('moment locale not available, preferred locale = ' + locale + ', moment.locale() = ', moment.locale(), '$translate.use() = ', $translate.use());
       }
     };
 
@@ -31471,7 +32152,7 @@ angular.module('BB.Directives')
 
     /*
        * It's a hacky way to map country code to specific locale. Reason is moment default is set to en_US
-       * @param {String} countryCode
+       * @param {string} countryCode
      */
     setLocaleUsingCountryCode = function(countryCode) {
       var locale;
@@ -31549,7 +32230,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, GeneralOptions, $translate, ReasonService, $document) {
+  angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, $translate, ReasonService, $document) {
     var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getBookings, getCompanyID, getPurchase, getPurchaseID, getReasons, loader, loginRequired, setCancelReasons, setCancelReasonsToBB, setMoveReasons, setMoveReasonsToBB, setPurchaseCompany;
     $scope.controller = "Purchase";
     $scope.is_waitlist = false;
@@ -31575,15 +32256,9 @@ angular.module('BB.Directives')
           msg: $scope.fail_msg
         });
       } else {
-        if (GeneralOptions.use_i18n) {
-          return $translate('ERROR.GENERIC', {}).then(function(translated_text) {
-            return AlertService.add("danger", {
-              msg: translated_text
-            });
-          });
-        } else {
-          return AlertService.raise('GENERIC');
-        }
+        return AlertService.add("danger", {
+          msg: $translate.instant('GENERIC')
+        });
       }
     };
     $scope.init = function(options) {
