@@ -68,9 +68,5 @@ div.loader {
     appearance: none;
 }
 
-#viewport_size {
-  position: absolute;
-  bottom: -20px;
-  z-index: -1;
-}
+.bb-display-mode {position: fixed}
 
