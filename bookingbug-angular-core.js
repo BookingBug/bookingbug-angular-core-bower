@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  angular.module('BB', ['angular-carousel', 'ngStorage', 'angular-hal', 'ui.bootstrap', 'ngSanitize', 'ui.map', 'ui.router.util', 'ngAnimate', 'angular-data.DSCacheFactory', 'ngFileUpload', 'schemaForm', 'uiGmapgoogle-maps', 'angular.filter', 'ui-rangeSlider', 'ngCookies', 'pascalprecht.translate', 'vcRecaptcha', 'ui.select', 'BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'BB.i18n', 'BB.uib']);
+  angular.module('BB', ['ngStorage', 'ngMessages', 'ngSanitize', 'ngFileUpload', 'ngCookies', 'ngAnimate', 'angular-carousel', 'angular-hal', 'angular-data.DSCacheFactory', 'angular.filter', 'pascalprecht.translate', 'schemaForm', 'ui.bootstrap', 'ui.map', 'ui.router.util', 'ui.select', 'ui-rangeSlider', 'uiGmapgoogle-maps', 'vcRecaptcha', 'BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'BB.i18n', 'BB.uib']);
 
   angular.module('BB.Services', ['ngResource', 'ngSanitize', 'pascalprecht.translate']);
 
@@ -353,7 +353,7 @@ angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackend
 
   angular.module('BB').config(function($locationProvider, $httpProvider, $provide, ie8HttpBackendProvider, uiGmapGoogleMapApiProvider) {
     'ngInject';
-    var base, int, lowercase, msie, regexp, result, webkit;
+    var int, lowercase, msie, regexp, result, webkit;
     uiGmapGoogleMapApiProvider.configure({
       v: '3.20',
       libraries: 'weather,geometry,visualization'
@@ -386,9 +386,6 @@ angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackend
         $httpBackend: ie8HttpBackendProvider
       });
     }
-    (base = moment.fn).toISODate || (base.toISODate = function() {
-      return this.clone().locale('en').format('YYYY-MM-DD');
-    });
   });
 
   window.bookingbug = {
@@ -410,26 +407,6 @@ angular.module('BB.Services').provider("ie8HttpBackend", function ie8HttpBackend
         return window.location.reload();
       }
     }
-  };
-
-  if (!String.prototype.includes) {
-    String.prototype.includes = function(search, start) {
-      if (typeof start !== 'number') {
-        start = 0;
-      }
-      if (start + search.length > this.length) {
-        return false;
-      } else {
-        return this.indexOf(search, start) !== -1;
-      }
-    };
-  }
-
-  String.prototype.parameterise = function(seperator) {
-    if (seperator == null) {
-      seperator = '-';
-    }
-    return this.trim().replace(/\s/g, seperator).toLowerCase();
   };
 
 }).call(this);
@@ -2530,10 +2507,10 @@ function getURIparam( name ){
   'use strict';
   var BBCtrl;
 
-  BBCtrl = function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService) {
+  BBCtrl = function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService, viewportSize) {
     'ngInject';
-    var $debounce, $onInit, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, compileDisplayMode, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, init, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, vm, widgetStarted;
-    vm = this;
+    var $debounce, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, widgetStarted;
+    this.$scope = $scope;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
     $scope.qs = QueryStringService;
@@ -2563,7 +2540,7 @@ function getURIparam( name ){
       Questions: 15,
       Confirmation: 16
     };
-    init = function() {
+    this.$onInit = function() {
       $scope.addItemToBasket = addItemToBasket;
       $scope.areScopesLoaded = LoadingService.areScopesLoaded;
       $scope.base64encode = base64encode;
@@ -2622,15 +2599,13 @@ function getURIparam( name ){
       $scope.supportsTouch = supportsTouch;
       $scope.showPage = showPage;
       $scope.updateBasket = updateBasket;
-      vm.$onInit = $onInit;
-    };
-    $onInit = function() {
-      compileDisplayMode();
       initializeBBWidget();
       $rootScope.$on('show:loader', showLoaderHandler);
       $rootScope.$on('hide:loader', hideLoaderHandler);
       $scope.$on('$locationChangeStart', locationChangeStartHandler);
-      vm.bb = $scope.bb;
+    };
+    this.$postLink = function() {
+      viewportSize.init();
     };
     initializeBBWidget = function() {
       $scope.bb = new BBWidget();
@@ -2659,13 +2634,6 @@ function getURIparam( name ){
       } else {
         (base1 = $scope.bb).api_url || (base1.api_url = $location.protocol() + "://" + $location.host());
       }
-    };
-    compileDisplayMode = function() {
-      $compile("<span bb-display-mode></span>")($scope, (function(_this) {
-        return function(cloned, scope) {
-          return $bbug($element).append(cloned);
-        };
-      })(this));
     };
     showLoaderHandler = function() {
       $scope.loading = true;
@@ -3549,8 +3517,7 @@ function getURIparam( name ){
       return def.promise;
     };
     setBasketItem = function(item) {
-      $scope.bb.current_item = item;
-      return $scope.current_item = $scope.bb.current_item;
+      return $scope.bb.current_item = item;
     };
     setReadyToCheckout = function(ready) {
       return $scope.bb.confirmCheckout = ready;
@@ -3984,7 +3951,6 @@ function getURIparam( name ){
     redirectTo = function(url) {
       return $window.location.href = url;
     };
-    init();
   };
 
   angular.module('BB.Controllers').controller('BBCtrl', BBCtrl);
@@ -5369,6 +5335,24 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbDayList
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Next 5 week calendar with time selection
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *ice}
+   */
   angular.module('BB.Directives').directive('bbDayList', function() {
     return {
       restrict: 'A',
@@ -5768,7 +5752,7 @@ function getURIparam( name ){
         } else {
           AlertService.clear();
           AlertService.add("danger", {
-            msg: $translate.instant('PUBLIC_BOOKING.DURATION)LIST.DURATON_NOT_SELECTED_ALERT')
+            msg: $translate.instant('PUBLIC_BOOKING.DURATION_LIST.DURATON_NOT_SELECTED_ALERT')
           });
           return false;
         }
@@ -6350,15 +6334,15 @@ function getURIparam( name ){
       if ($scope.mode !== 0) {
         delete $scope.selected_date;
       }
-      if (!$scope.event_group_manually_set && ($scope.current_item.event_group == null)) {
-        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null);
+      if (!$scope.event_group_manually_set && ($scope.bb.current_item.event_group == null)) {
+        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.bb.current_item.event_group != null);
       }
       if ($scope.bb.current_item.event) {
-        event_group = $scope.current_item.event_group;
+        event_group = $scope.bb.current_item.event_group;
         $scope.clearBasketItem();
         $scope.emptyBasket();
         if ($scope.event_group_manually_set) {
-          $scope.current_item.setEventGroup(event_group);
+          $scope.bb.current_item.setEventGroup(event_group);
         }
       }
       promises = [];
@@ -6372,7 +6356,7 @@ function getURIparam( name ){
       }
       if ($scope.bb.item_defaults && $scope.bb.item_defaults.event_group) {
         $scope.bb.current_item.setEventGroup($scope.bb.item_defaults.event_group);
-      } else if (!$scope.current_item.event_group && $scope.bb.company.$has('event_groups')) {
+      } else if (!$scope.bb.current_item.event_group && $scope.bb.company.$has('event_groups')) {
         promises.push(EventGroupService.query($scope.bb.company, {
           per_page: 500
         }));
@@ -6424,7 +6408,7 @@ function getURIparam( name ){
     $scope.loadEventSummary = function() {
       var comp, current_event, deferred, params;
       deferred = $q.defer();
-      current_event = $scope.current_item.event;
+      current_event = $scope.bb.current_item.event;
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
         delete $scope.bb.current_item.event_chain_id;
@@ -6522,7 +6506,7 @@ function getURIparam( name ){
         delete $scope.items;
       }
       deferred = $q.defer();
-      current_event = $scope.current_item.event;
+      current_event = $scope.bb.current_item.event;
       comp || (comp = $scope.bb.company);
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
@@ -10179,13 +10163,19 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var BBBasicPageCtrl;
+  var BBPageCtrl;
 
-  BBBasicPageCtrl = function($scope, $q, ValidatorService, LoadingService) {
-    var isScopeReady;
-    $scope.controllerClass = "public.controllers.PageController";
+  BBPageCtrl = function($scope, $q, ValidatorService, LoadingService) {
+    'ngInject';
+    var checkReady, init, isScopeReady, routeReady;
+    this.$scope = $scope;
+    $scope.controllerClass = "public.controllers.BBPageCtrl";
     $scope.$has_page_control = true;
     $scope.validator = ValidatorService;
+    init = function() {
+      $scope.checkReady = checkReady;
+      $scope.routeReady = routeReady;
+    };
     isScopeReady = (function(_this) {
       return function(cscope) {
         var child, children, i, len, ready, ready_list;
@@ -10226,7 +10216,7 @@ function getURIparam( name ){
     * @description
     * Check the page ready
      */
-    $scope.checkReady = function() {
+    checkReady = function() {
       var checkread, i, len, loader, ready_list, v;
       ready_list = isScopeReady($scope);
       checkread = $q.defer();
@@ -10264,7 +10254,7 @@ function getURIparam( name ){
     *
     * @param {string=} route A specific route to load
      */
-    return $scope.routeReady = function(route) {
+    routeReady = function(route) {
       if (!$scope.$checkingReady) {
         return $scope.decideNextPage(route);
       } else {
@@ -10275,6 +10265,7 @@ function getURIparam( name ){
         })(this));
       }
     };
+    init();
   };
 
 
@@ -10300,13 +10291,13 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'PageController'
+      controller: 'BBPageCtrl'
     };
   });
 
-  angular.module('BB.Controllers').controller('PageController', BBBasicPageCtrl);
+  angular.module('BB.Controllers').controller('BBPageCtrl', BBPageCtrl);
 
-  angular.module('BB.Services').value("PageControllerService", BBBasicPageCtrl);
+  angular.module('BB.Services').value("PageControllerService", BBPageCtrl);
 
 }).call(this);
 
@@ -10714,7 +10705,7 @@ function getURIparam( name ){
 (function() {
   'use strict';
 
-  /***
+  /**
   * @ngdoc directive
   * @name BB.Directives:bbPeople
   * @restrict AE
@@ -10751,12 +10742,15 @@ function getURIparam( name ){
   *   </file>
   *  </example>
    */
+  var BBPeopleCtrl;
+
   angular.module('BB.Directives').directive('bbPeople', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'PersonList',
+      controller: 'BBPeopleCtrl',
+      controllerAs: '$bbPeopleCtrl',
       link: function(scope, element, attrs) {
         if (attrs.bbItems) {
           scope.booking_items = scope.$eval(attrs.bbItems) || [];
@@ -10769,27 +10763,43 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PersonList', function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
-    var getItemFromPerson, loadData, loader, setPerson;
-    $scope.controller = "public.controllers.PersonList";
-    loader = LoadingService.$loader($scope).notLoaded();
+  BBPeopleCtrl = function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
+    'ngInject';
+    var chosenService, connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromPerson, init, loadData, loader, personListener, selectAndRoute, selectItem, setPerson, setReady;
+    this.$scope = $scope;
+    $scope.controller = "public.controllers.BBPeopleCtrl";
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    $rootScope.connection_started.then(function() {
+    chosenService = null;
+    loader = null;
+    init = function() {
+      $scope.selectItem = selectItem;
+      $scope.selectAndRoute = selectAndRoute;
+      $scope.setReady = setReady;
+      loader = LoadingService.$loader($scope).notLoaded();
+      $rootScope.connection_started.then(connectionStartedSuccess, connectionStartedFailure);
+      $scope.$watch('person', personListener);
+      $scope.$on("currentItemUpdate", currentItemUpdateHandler);
+    };
+    connectionStartedSuccess = function() {
       return loadData();
-    }, function(err) {
+    };
+    connectionStartedFailure = function(err) {
       return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
+    };
+    currentItemUpdateHandler = function(event) {
+      return loadData();
+    };
     loadData = function() {
       var bi, ppromise;
       bi = $scope.booking_item;
-      if (!bi.service || bi.service === $scope.change_watch_item) {
+      if (!bi.service || bi.service === chosenService) {
         if (!bi.service) {
           loader.setLoaded();
         }
         return;
       }
-      $scope.change_watch_item = bi.service;
       loader.notLoaded();
+      chosenService = bi.service;
       ppromise = BBModel.Person.$query($scope.bb.company);
       ppromise.then(function(people) {
         if (bi.group) {
@@ -10859,16 +10869,6 @@ function getURIparam( name ){
         });
       });
     };
-
-    /***
-    * @ngdoc method
-    * @name setPerson
-    * @methodOf BB.Directives:bbPeople
-    * @description
-    * Storing the person property in the form store
-    *
-    * @param {array} people The people
-     */
     setPerson = function(people) {
       $scope.bookable_people = people;
       if ($scope.person) {
@@ -10879,16 +10879,6 @@ function getURIparam( name ){
         });
       }
     };
-
-    /***
-    * @ngdoc method
-    * @name getItemFromPerson
-    * @methodOf BB.Directives:bbPeople
-    * @description
-    * Get item from person
-    *
-    * @param {array} person The person
-     */
     getItemFromPerson = (function(_this) {
       return function(person) {
         var item, j, len, ref;
@@ -10907,7 +10897,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name selectItem
     * @methodOf BB.Directives:bbPeople
@@ -10917,7 +10907,7 @@ function getURIparam( name ){
     * @param {array} item Selected item from the list of current people
     * @param {string=} route A specific route to load
      */
-    $scope.selectItem = (function(_this) {
+    selectItem = (function(_this) {
       return function(item, route, options) {
         var new_person;
         if (options == null) {
@@ -10940,7 +10930,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name selectAndRoute
     * @methodOf BB.Directives:bbPeople
@@ -10950,7 +10940,7 @@ function getURIparam( name ){
     * @param {array} item Selected item from the list of current people
     * @param {string} route A specific route to load
      */
-    $scope.selectAndRoute = (function(_this) {
+    selectAndRoute = (function(_this) {
       return function(item, route) {
         var new_person;
         new_person = getItemFromPerson(item);
@@ -10961,7 +10951,7 @@ function getURIparam( name ){
         return true;
       };
     })(this);
-    $scope.$watch('person', (function(_this) {
+    personListener = (function(_this) {
       return function(newval, oldval) {
         var new_person;
         if ($scope.person && $scope.booking_item) {
@@ -10970,28 +10960,26 @@ function getURIparam( name ){
             _.each($scope.booking_items, function(item) {
               return item.setPerson(new_person);
             });
-            return $scope.broadcastItemUpdate();
+            $scope.broadcastItemUpdate();
           }
         } else if (newval !== oldval) {
           _.each($scope.booking_items, function(item) {
             return item.setPerson(null);
           });
-          return $scope.broadcastItemUpdate();
+          $scope.broadcastItemUpdate();
         }
+        $scope.bb.current_item.defaults.person = $scope.person;
       };
-    })(this));
-    $scope.$on("currentItemUpdate", function(event) {
-      return loadData();
-    });
+    })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name setReady
     * @methodOf BB.Directives:bbPeople
     * @description
     * Called by bbPage to ready directive for transition to the next step
      */
-    return $scope.setReady = (function(_this) {
+    setReady = (function(_this) {
       return function() {
         var new_person;
         if ($scope.person) {
@@ -11008,7 +10996,10 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+    init();
+  };
+
+  angular.module('BB.Controllers').controller('BBPeopleCtrl', BBPeopleCtrl);
 
 }).call(this);
 
@@ -11162,7 +11153,7 @@ function getURIparam( name ){
 (function() {
   'use strict';
 
-  /***
+  /**
   * @ngdoc directive
   * @name BB.Directives:bbResources
   * @restrict AE
@@ -11202,12 +11193,15 @@ function getURIparam( name ){
   *  </example>
   *
    */
+  var BBResourcesCtrl;
+
   angular.module('BB.Directives').directive('bbResources', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'ResourceList',
+      controller: 'BBResourcesCtrl',
+      controllerAs: '$bbResourcesCtrl',
       link: function(scope, element, attrs) {
         scope.options = scope.$eval(attrs.bbResources) || {};
         if (attrs.bbItems) {
@@ -11221,15 +11215,29 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ResourceList', function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
-    var getItemFromResource, loadData, loader;
-    loader = LoadingService.$loader($scope).notLoaded();
+  BBResourcesCtrl = function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
+    'ngInject';
+    var connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromResource, init, loadData, loader, resourceListener, selectItem, setReady;
+    this.$scope = $scope;
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        return loadData();
-      };
-    })(this));
+    loader = null;
+    init = function() {
+      $scope.setReady = setReady.bind(this);
+      $scope.selectItem = selectItem.bind(this);
+      loader = LoadingService.$loader($scope).notLoaded();
+      $rootScope.connection_started.then(connectionStartedSuccess.bind(this), connectionStartedFailure.bind(this));
+      $scope.$watch('resource', resourceListener.bind(this));
+      $scope.$on("currentItemUpdate", currentItemUpdateHandler.bind(this));
+    };
+    connectionStartedSuccess = function() {
+      return loadData();
+    };
+    connectionStartedFailure = function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    };
+    currentItemUpdateHandler = function(event) {
+      return loadData();
+    };
     loadData = (function(_this) {
       return function() {
         var params, rpromise;
@@ -11312,7 +11320,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name getItemFromResource
     * @methodOf BB.Directives:bbResources
@@ -11339,7 +11347,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name selectItem
     * @methodOf BB.Directives:bbResources
@@ -11350,7 +11358,7 @@ function getURIparam( name ){
     * @param {string=} route A specific route to load
     * @param {string=} skip_step The skip_step has been set to false
      */
-    $scope.selectItem = (function(_this) {
+    selectItem = (function(_this) {
       return function(item, route, options) {
         var new_resource;
         if (options == null) {
@@ -11372,7 +11380,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-    $scope.$watch('resource', (function(_this) {
+    resourceListener = (function(_this) {
       return function(newval, oldval) {
         var new_resource;
         if ($scope.resource && $scope.booking_item) {
@@ -11390,19 +11398,16 @@ function getURIparam( name ){
           return $scope.broadcastItemUpdate();
         }
       };
-    })(this));
-    $scope.$on("currentItemUpdate", function(event) {
-      return loadData();
+    })(this);
 
-      /***
-      * @ngdoc method
-      * @name setReady
-      * @methodOf BB.Directives:bbResources
-      * @description
-      * Set this page section as ready
-       */
-    });
-    return $scope.setReady = (function(_this) {
+    /**
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbResources
+    * @description
+    * Set this page section as ready
+     */
+    setReady = (function(_this) {
       return function() {
         var new_resource;
         if ($scope.resource) {
@@ -11419,7 +11424,10 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+    init();
+  };
+
+  angular.module('BB.Controllers').controller('BBResourcesCtrl', BBResourcesCtrl);
 
 }).call(this);
 
@@ -11468,13 +11476,16 @@ function getURIparam( name ){
   *  </example>
   *
    */
+  var BBServicesCtrl;
+
   angular.module('BB.Directives').directive('bbServices', function($q, $compile, $templateCache) {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
       transclude: true,
-      controller: 'ServiceList',
+      controller: 'BBServicesCtrl',
+      controllerAs: '$bbServicesCtrl',
       link: function(scope, element, attrs, ctrls, transclude) {
         scope.directives = "public.ServiceList";
         return transclude(scope, (function(_this) {
@@ -11495,8 +11506,10 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ServiceList', function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
+  BBServicesCtrl = function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
+    'ngInject';
     var loader, setServiceItem, setServicesDisplayName;
+    this.$scope = $scope;
     $scope.controller = "public.controllers.ServiceList";
     FormDataStoreService.init('ServiceList', $scope, ['service']);
     loader = LoadingService.$loader($scope).notLoaded();
@@ -11869,10 +11882,12 @@ function getURIparam( name ){
     * @description
     * Filter changed
      */
-    return $scope.filterChanged = function() {
+    $scope.filterChanged = function() {
       return $scope.filtered_items = $filter('filter')($scope.items, $scope.filterFunction);
     };
-  });
+  };
+
+  angular.module('BB.Controllers').controller('BBServicesCtrl', BBServicesCtrl);
 
 }).call(this);
 
@@ -12969,7 +12984,7 @@ function getURIparam( name ){
   * @property {date} start_at_week_start The start at week start
   * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
    */
-  angular.module('BB.Directives').directive('bbTimeRanges', function($q, $templateCache, $compile) {
+  angular.module('BB.Directives').directive('bbTimeRanges', function($q, $templateCache, $compile, $timeout, $bbug) {
     return {
       restrict: 'AE',
       replace: true,
@@ -12982,7 +12997,14 @@ function getURIparam( name ){
           var btn;
           btn = angular.element('#btn-continue');
           btn[0].disabled = false;
-          return btn[0].focus();
+          $timeout(function() {
+            return $bbug("html, body").animate({
+              scrollTop: btn.offset().top
+            }, 500);
+          }, 1000);
+          return $timeout(function() {
+            return btn[0].focus();
+          }, 1500);
         });
         scope.today = moment().toDate();
         scope.tomorrow = moment().add(1, 'days').toDate();
@@ -13005,7 +13027,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -13049,14 +13071,14 @@ function getURIparam( name ){
           timeRange = 7;
           for (size in cal_days) {
             days = cal_days[size];
-            if (size === ViewportSize.getViewportSize()) {
+            if (size === viewportSize.getViewportSize()) {
               timeRange = days;
             }
           }
           return timeRange;
         };
         $scope.time_range_length = calculateDayNum();
-        $scope.$on('ViewportSize:changed', function() {
+        $scope.$on('viewportSize:changed', function() {
           $scope.time_range_length = null;
           return $scope.initialise();
         });
@@ -13502,7 +13524,7 @@ function getURIparam( name ){
       if (!$scope.bb.current_item.time) {
         AlertService.raise('TIME_SLOT_NOT_SELECTED');
         return false;
-      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime) && ($scope.current_item.person_name === $scope.current_item.person.name)) {
+      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime) && ($scope.bb.current_item.person_name === $scope.bb.current_item.person.name)) {
         AlertService.raise('APPT_AT_SAME_TIME');
         return false;
       } else if ($scope.bb.moving_booking) {
@@ -13831,7 +13853,7 @@ angular.module('BB.Directives')
         }
       },
       controllerAs: 'BasketCtrl',
-      controller: function($scope, $uibModal, $document, BasketService) {
+      controller: function($scope, $uibModal, $translate, $document, BasketService) {
         var BasketInstanceCtrl;
         $scope.setUsingBasket(true);
         this.empty = function() {
@@ -13904,7 +13926,7 @@ angular.module('BB.Directives')
           } else {
             AlertService.clear();
             AlertService.add("warning", {
-              msg: $translate.instant('SPEND_AT_LEAST', {
+              msg: $translate.instant('CORE.ALERTS.SPEND_AT_LEAST', {
                 min_spend: $scope.min_spend
               })
             });
@@ -14045,6 +14067,89 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+
+  /**
+  * @ngdoc directive
+  * @name BB.Directives:bbForm
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with forms to add enhanced validation.
+  * When using with ng-form, submitForm needs to be called manually as submit event is not raised.
+  *
+  * @example
+  * <div ng-form name="example_form" bb-form></div>
+  * <form name="example_form" bb-form></form>
+   */
+  var bbFormDirective;
+
+  bbFormDirective = function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
+    'ngInject';
+    var link;
+    link = function(scope, elem, attrs, ctrls) {
+      var $bbPageCtrl, $formCtrl, init, scrollAndFocusOnInvalid, serveBBPage, submitForm;
+      $bbPageCtrl = null;
+      $formCtrl = null;
+      init = function() {
+        $formCtrl = ctrls[0];
+        $bbPageCtrl = ctrls[1];
+        scope.submitForm = submitForm;
+        elem.on("submit", submitForm);
+      };
+      submitForm = function() {
+        var isValid;
+        $formCtrl.$setSubmitted();
+        $timeout(scrollAndFocusOnInvalid, 100);
+        isValid = ValidatorService.validateForm($formCtrl);
+        if (isValid) {
+          serveBBPage();
+        }
+        return isValid;
+      };
+      serveBBPage = function() {
+        var route;
+        if (($bbPageCtrl != null) && (attrs.bbFormRoute != null)) {
+          route = attrs.bbFormRoute;
+          $bbPageCtrl.$scope.checkReady();
+          if (route.length > 0) {
+            $bbPageCtrl.$scope.routeReady(route);
+          } else {
+            $bbPageCtrl.$scope.routeReady();
+          }
+        }
+      };
+      scrollAndFocusOnInvalid = function() {
+        var invalidFormGroup, invalidInput;
+        invalidFormGroup = elem.find('.has-error:first');
+        if (invalidFormGroup && invalidFormGroup.length > 0 && !$formCtrl.raise_alerts) {
+          if ('parentIFrame' in $window) {
+            parentIFrame.scrollToOffset(0, invalidFormGroup.offset().top - GeneralOptions.scroll_offset);
+          } else {
+            $bbug("html, body").animate({
+              scrollTop: invalidFormGroup.offset().top - GeneralOptions.scroll_offset
+            }, 1000);
+          }
+          invalidInput = invalidFormGroup.find('.ng-invalid');
+          invalidInput.focus();
+        }
+      };
+      init();
+    };
+    return {
+      restrict: 'A',
+      require: ['^form', '?^^bbPage'],
+      scope: 'true',
+      link: link
+    };
+  };
+
+  angular.module('BB.Directives').directive('bbForm', bbFormDirective);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
     return {
       restrict: 'A',
@@ -14119,7 +14224,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService) {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService, viewportSize) {
     var e, ie8orLess;
     ie8orLess = false;
     try {
@@ -14167,7 +14272,7 @@ angular.module('BB.Directives')
             return ev.stopPropagation();
           });
         }
-        if (ie8orLess || scope.display.xs) {
+        if (ie8orLess || viewportSize.isXS()) {
           $bbug(element).attr('readonly', 'true');
         }
         $bbug(element).on('keydown', function(e) {
@@ -15180,9 +15285,15 @@ angular.module('BB.Directives')
                     name = "";
                   }
                   lastName = question.name;
-                  html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
+                  if (question.answer === "1") {
+                    question.answer = true;
+                  }
+                  html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
                 } else if (question.detail_type === "check-price") {
-                  html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
+                  if (question.answer === "1") {
+                    question.answer = true;
+                  }
+                  html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
                 } else if (question.detail_type === "radio-price") {
                   html = '<div class="radio-group">';
                   ref2 = question.options;
@@ -15360,7 +15471,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.1.0-beta.7";
+        return "2.1.0";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -15805,7 +15916,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions) {
+  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions, viewportSize) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15830,7 +15941,7 @@ angular.module('BB.Directives')
         };
         return scrollToCallback = function(evnt) {
           var current_step, scroll_to_element;
-          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
+          if (evnt === "page:loaded" && viewportSize.isXS() && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
             scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
           } else {
             scroll_to_element = $bbug(element);
@@ -15870,64 +15981,6 @@ angular.module('BB.Directives')
           }
         }
         return scope.has_slots = scope.grouped_slots.length > 0;
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbForm
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with forms to add enhanced validation. When using with ng-form, submitForm
-  * needs to be called manually as submit event is not raised.
-  
-  *
-  * @example
-  * <div ng-form name="example_form" bb-form></div>
-  * <form name="example_form" bb-form></form>
-  *
-   */
-
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
-    return {
-      restrict: 'A',
-      require: '^form',
-      scope: true,
-      link: function(scope, elem, attrs, ctrls) {
-        scope.form = ctrls;
-        elem.on("submit", function() {
-          scope.submitForm();
-          return scope.$apply();
-        });
-        return scope.submitForm = function() {
-          var property;
-          scope.form.submitted = true;
-          for (property in scope.form) {
-            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
-              scope.form[property].submitted = true;
-            }
-          }
-          $timeout(function() {
-            var invalid_form_group, invalid_input;
-            invalid_form_group = elem.find('.has-error:first');
-            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
-              if ('parentIFrame' in $window) {
-                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - GeneralOptions.scroll_offset);
-              } else {
-                $bbug("html, body").animate({
-                  scrollTop: invalid_form_group.offset().top - GeneralOptions.scroll_offset
-                }, 1000);
-              }
-              invalid_input = invalid_form_group.find('.ng-invalid');
-              return invalid_input.focus();
-            }
-          }, 100);
-          return ValidatorService.validateForm(scope.form);
-        };
       }
     };
   });
@@ -16460,7 +16513,7 @@ angular.module('BB.Directives')
         setLoaded: '='
       },
       link: function(scope, element, attributes) {
-        var getButtonFormTemplate, getTemplate, killWatch, setClassAndValue;
+        var getButtonFormTemplate, getTemplate, init, killWatch, setClassAndValue;
         getTemplate = function(type, scope) {
           switch (type) {
             case 'button_form':
@@ -16515,7 +16568,7 @@ angular.module('BB.Directives')
             return results;
           }
         };
-        return killWatch = scope.$watch('total', function(total) {
+        killWatch = scope.$watch('total', function(total) {
           var url;
           if (total && total.$has('new_payment')) {
             killWatch();
@@ -16533,8 +16586,20 @@ angular.module('BB.Directives')
               $log.warn(err.data);
               return element.remove();
             });
+          } else {
+            element.hide();
+            return console.warn("new_payment link missing: payment configuration maybe incorrect");
           }
         });
+        init = function() {
+          if (scope.total) {
+            return loadTotal(scope.total);
+          }
+        };
+        killWatch = scope.$watch('total', function(total) {
+          return loadTotal(total);
+        });
+        init();
       }
     };
   });
@@ -16752,84 +16817,6 @@ angular.module('BB.Directives')
             });
           };
         }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
-      link: function(scope, elem, attrs) {
-        var getCurrentSize, isVisible, markers, previous_size, t, update;
-        markers = elem.find('span');
-        $bbug(elem).addClass("bb-display-mode");
-        scope.display = {};
-        previous_size = null;
-        isVisible = function(element) {
-          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
-        };
-        getCurrentSize = function() {
-          var currentSize, element, i, len;
-          currentSize = false;
-          for (i = 0, len = markers.length; i < len; i++) {
-            element = markers[i];
-            if (isVisible(element)) {
-              currentSize = element.className.slice(8, 11);
-              ViewportSize.setViewportSize(element.className.slice(8, 11));
-              break;
-            }
-          }
-          return currentSize;
-        };
-        update = (function(_this) {
-          return function() {
-            var nsize;
-            nsize = getCurrentSize();
-            if (nsize !== previous_size) {
-              previous_size = nsize;
-              scope.display.xs = false;
-              scope.display.sm = false;
-              scope.display.md = false;
-              scope.display.lg = false;
-              scope.display.not_xs = true;
-              scope.display.not_sm = true;
-              scope.display.not_md = true;
-              scope.display.not_lg = true;
-              scope.display[nsize] = true;
-              scope.display["not_" + nsize] = false;
-              return true;
-            }
-            return false;
-          };
-        })(this);
-        t = null;
-        angular.element($window).bind('resize', (function(_this) {
-          return function() {
-            window.clearTimeout(t);
-            return t = setTimeout(function() {
-              if (update()) {
-                return scope.$apply();
-              }
-            }, 50);
-          };
-        })(this));
-        return angular.element($window).bind('load', (function(_this) {
-          return function() {
-            if (update()) {
-              return scope.$apply();
-            }
-          };
-        })(this));
       }
     };
   });
@@ -26688,7 +26675,7 @@ angular.module('BB.Directives')
             return scope;
           };
           $window.bbCurrentItem = function() {
-            return scope.current_item;
+            return scope.bb.current_item;
           };
           return $window.bbShowScopeChain = showScopeChain;
         }, 10);
@@ -26908,11 +26895,11 @@ angular.module('BB.Directives')
         type: 'warning',
         persist: true
       }, {
-        key: 'PHONE_NUMBER_ALREADY_REGISTERED_ADMIN',
+        key: 'PHONE_NUMBER_IN_USE',
         type: 'warning',
         persist: true
       }, {
-        key: 'EMAIL_ALREADY_REGISTERED_ADMIN',
+        key: 'EMAIL_IN_USE',
         type: 'warning',
         persist: true
       }, {
@@ -30147,9 +30134,9 @@ angular.module('BB.Directives')
     us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
     uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
     number_only_regex = /^\d+$/;
-    uk_mobile_regex_strict = /^((\+44\s?|0)7([45789]\d{2}|624)\s?\d{3}\s?\d{3})$/;
+    uk_mobile_regex_strict = /^((\+44|0)\s*7\s*([45789](\s*\d){2}|6\s*2\s*4)(\s*\d){6})$/;
     mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    uk_landline_regex_strict = /^(\(?(0|\+44)[1-9]{1}\d{1,4}?\)?\s?\d{3,4}\s?\d{3,4})$/;
+    uk_landline_regex_strict = /^(\+44|0)\s*[1-9]\s*\d{1,4}\s*\d{3,4}\s*\d{2,4}$/;
     uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
     international_number = /^(\+)([\d \(\)]{9,19})$/;
     email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
@@ -30457,26 +30444,209 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
 
-  /*
+  /**
   * @ngdoc service
-  * @name BB.Services.service:ViewportSize
+  * @name BB.Services.service:viewportSize
   *
   * @description
   * Stores the current screen size breakpoint.
    */
-  angular.module('BB.Services').factory('ViewportSize', function($rootScope) {
-    var viewport_size;
-    viewport_size = null;
-    return {
-      setViewportSize: function(size) {
-        if (size !== viewport_size) {
-          viewport_size = size;
-          return $rootScope.$broadcast('ViewportSize:changed');
-        }
-      },
-      getViewportSize: function() {
-        return viewport_size;
+  angular.module('BB.Services').service('viewportSize', function($window, $document, $rootScope) {
+
+    /**
+     * @description variable used to store current screen size
+     */
+    var appendViewportElementsToDocumentBody, findVisibleElement, getElementId, getSizeFromElement, getSupportedSizes, getViewportElementsFromDocumentBody, getViewportElementsToAppend, getViewportSize, init, isElementVisible, isInitialised, isLG, isMD, isSM, isXS, listenForResize, state, viewportElementIdPrefix, viewportSize;
+    viewportSize = null;
+
+    /**
+     * @description id prefix for span html elements used to determin screen size via bootstrap classes
+     */
+    viewportElementIdPrefix = 'viewport_size_';
+
+    /**
+     * @description used to prevent multiple viewport elements being appended to dom
+     */
+    isInitialised = false;
+
+    /**
+     * @description boolean check for screen sizes
+     */
+    state = {
+      isXS: false,
+      isSM: false,
+      isMD: false,
+      isLG: false
+    };
+
+    /**
+     * @description returns supported bootstrap screen sizes
+     * @returns {String}
+     */
+    getSupportedSizes = function() {
+      return ['xs', 'sm', 'md', 'lg'];
+    };
+
+    /**
+     * @description logic for getting element ids
+     * @param {String} size
+     * @returns {String}
+     */
+    getElementId = function(size) {
+      return viewportElementIdPrefix + size;
+    };
+
+    /**
+     * @description constructs and returns the elements used to determine screen size
+     * @returns {String}
+     */
+    getViewportElementsToAppend = function() {
+      var elementId, i, len, ref, size, viewportElementStrings;
+      viewportElementStrings = '<div id="viewport_size">';
+      ref = getSupportedSizes();
+      for (i = 0, len = ref.length; i < len; i++) {
+        size = ref[i];
+        elementId = getElementId(size);
+        viewportElementStrings += ' <span id="' + elementId + '"  class="visible-' + size + '">&nbsp;</span>';
       }
+      viewportElementStrings += '</div>';
+      return viewportElementStrings;
+    };
+
+    /**
+     * @description appends elements to document body for bootstrap to show or hide
+     */
+    appendViewportElementsToDocumentBody = function() {
+      var body, viewportElements;
+      viewportElements = getViewportElementsToAppend();
+      body = $document.find('body');
+      body.append(viewportElements);
+    };
+
+    /**
+     * @description grabs elements from document after being appended to determin which ones are visible
+     * @returns {Array}
+     */
+    getViewportElementsFromDocumentBody = function() {
+      var i, len, ref, size, viewportElement, viewportElementId, viewportElements;
+      viewportElements = [];
+      ref = getSupportedSizes();
+      for (i = 0, len = ref.length; i < len; i++) {
+        size = ref[i];
+        viewportElementId = getElementId(size);
+        viewportElement = $document[0].querySelector('#' + viewportElementId);
+        viewportElements.push(viewportElement);
+      }
+      return viewportElements;
+    };
+
+    /**
+     * @description check if element is visible based on styling
+     * @param {String} element
+     * @returns {boolean}
+     */
+    isElementVisible = function(element) {
+      return angular.element(element).css('display') !== 'none';
+    };
+
+    /**
+     * @description Gets the bootstrap size from the class name 
+     * @param {String} element
+     * @returns {String}
+     */
+    getSizeFromElement = function(element) {
+      var className, size;
+      className = element.className.match('(visible-[a-zA-Z]*)\\b')[0];
+      size = className.replace('visible-', '').trim();
+      return size;
+    };
+
+    /**
+     * @description determins the current size of the screen
+     */
+    findVisibleElement = function() {
+      var elementSize, i, len, viewportElement, viewportElements;
+      viewportElements = getViewportElementsFromDocumentBody();
+      for (i = 0, len = viewportElements.length; i < len; i++) {
+        viewportElement = viewportElements[i];
+        elementSize = getSizeFromElement(viewportElement);
+        if (isElementVisible(viewportElement)) {
+          viewportSize = elementSize;
+          state['is' + elementSize.toUpperCase()] = true;
+        } else {
+          state['is' + elementSize.toUpperCase()] = false;
+        }
+      }
+    };
+
+    /**
+     * @description get screen size when window resize function has been called
+     */
+    listenForResize = function() {
+      angular.element($window).resize(function() {
+        var viewportSizeOld;
+        viewportSizeOld = viewportSize;
+        findVisibleElement();
+        if (viewportSizeOld !== viewportSize) {
+          $rootScope.$broadcast('viewportSize:changed');
+        }
+      });
+    };
+
+    /**
+     * @description initialise before utilising viewport service
+     */
+    init = function() {
+      if (!isInitialised) {
+        appendViewportElementsToDocumentBody();
+        findVisibleElement();
+        listenForResize();
+        isInitialised = true;
+      }
+    };
+
+    /**
+     * @description using function to grab screensize so it cannot be altered outside service
+     * @returns {String}
+     */
+    getViewportSize = function() {
+      return viewportSize;
+    };
+
+    /**
+     * @description boolean check for XS screen size
+     */
+    isXS = function() {
+      return state.isXS;
+    };
+
+    /**
+     * @description boolean check for SM screen size
+     */
+    isSM = function() {
+      return state.isSM;
+    };
+
+    /**
+     * @description boolean check for MD screen size
+     */
+    isMD = function() {
+      return state.isMD;
+    };
+
+    /**
+     * @description boolean check for LG screen size
+     */
+    isLG = function() {
+      return state.isLG;
+    };
+    return {
+      init: init,
+      getViewportSize: getViewportSize,
+      isXS: isXS,
+      isSM: isSM,
+      isMD: isMD,
+      isLG: isLG
     };
   });
 
@@ -31179,201 +31349,7 @@ angular.module('BB.Directives')
           ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
           APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
           ATTENDEES_CHANGED: "Your booking has been successfully updated",
-          EMAIL_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this email. Use the search field to find the customers account.",
-          EMPTY_BASKET_FOR_CHECKOUT: "Es sind keine Artikel im Warenkorb zur Kasse gehen.",
-          FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
-          FORM_INVALID: "Bitte füllen Sie alle Felder aus",
-          GENERIC: "Leider scheint es, dass etwas schief gelaufen ist. Bitte versuchen Sie es erneut oder rufen Sie das Unternehmen sind Sie bei der Buchung mit, wenn das Problem weiterhin besteht.",
-          GEOLOCATION_ERROR: "Leider konnten wir Dein Ort wurde nicht festzustellen. Bitte versuchen Sie statt.",
-          GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
-          POSTCODE_INVALID: "@:COMMON.FORM.POSTCODE_INVALID",
-          ITEM_NO_LONGER_AVAILABLE: "Entschuldigung. Das Element, das Sie versuchten, zu buchen ist nicht mehr verfügbar. Bitte versuchen Sie es erneut.",
-          NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
-          LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
-          LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
-          SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
-          MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
-          MISSING_LOCATION: "Bitte geben Sie Ihren Standort",
-          MISSING_POSTCODE: "Bitte geben Sie eine Postleitzahl ein",
-          PASSWORD_INVALID: "Sorry, your password is invalid",
-          PASSWORD_MISMATCH: "Your passwords don't match",
-          PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
-          PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
-          PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
-          PASSWORD_RESET_SUCESS: "Your password has been updated.",
-          PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this phone number. Use the search field to find the customers account.",
-          REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
-          TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
-          STORE_NOT_SELECTED: "You need to select a store",
-          TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
-          TOPUP_SUCCESS: "Your wallet has been topped up",
-          UPDATE_FAILED: "Update failed. Please try again",
-          UPDATE_SUCCESS: "Updated",
-          WAITLIST_ACCEPTED: "Your booking is now confirmed!",
-          BOOKING_CANCELLED: "Your booking has been cancelled.",
-          NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
-          NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
-          SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking."
-        },
-        PAGINATION: {
-          SUMMARY: "{{start}} - {{end}} of {{total}}"
-        },
-        MODAL: {
-          CANCEL_BOOKING: {
-            HEADER: "Cancel",
-            QUESTION: "Are you sure you want to cancel this {{type}}?"
-          },
-          SCHEMA_FORM: {
-            OK_BTN: "@:COMMON.BTN.OK",
-            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-          }
-        },
-        FILTERS: {
-          DISTANCE: {
-            UNIT: "mi"
-          },
-          CURRENCY: {
-            THOUSANDS_SEPARATOR: ",",
-            DECIMAL_SEPARATOR: ".",
-            CURRENCY_FORMAT: "%s%v"
-          },
-          PRETTY_PRICE: {
-            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-          },
-          TIME_PERIOD: {
-            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-          }
-        },
-        EVENT: {
-          SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
-          JOIN_WAITLIST: "Beitreten Warteliste"
-        }
-      },
-      COMMON: {
-        TERMINOLOGY: {
-          CATEGORY: "Kategorie",
-          DURATION: "Duration",
-          RESOURCE: "Ressource",
-          PERSON: "Person",
-          SERVICE: "Service",
-          WALLET: "Brieftasche",
-          SESSION: "Session",
-          EVENT: "Event",
-          EVENTS: 'Geschehen',
-          COURSE: "Course",
-          COURSES: 'Courses',
-          DATE: "Datum",
-          TIME: "Zeit",
-          WHEN: "Wann",
-          GIFT_CERTIFICATE: "Geschenkgutscheine",
-          GIFT_CERTIFICATES: 'Gift Certificates',
-          ITEM_LBL: "Artikel",
-          FILTER: "Filter",
-          ANY: "Jeder",
-          RESET: "Rücksetzen",
-          TOTAL: "Gesamt",
-          TOTAL_DUE_NOW: "Insgesamt Aufgrund Now",
-          BOOKING_FEE: 'Buchungsgebühr',
-          PRICE: "Preis",
-          PRICE_FREE: "Kostenlos",
-          PRINT: " Drucken",
-          AND: "und",
-          APPOINTMENT: "Ernennung",
-          TICKETS: "Tickets",
-          EXPORT: "Export",
-          RECIPIENT: "Empfänger",
-          BOOKING_REF: "Buchungsnummer",
-          MORNING: "Morgens",
-          AFTERNOON: "Nachmittags",
-          EVENING: "Abends",
-          AVAILABLE: "Available",
-          UNAVAILABLE: "Unavailable",
-          CALENDAR: "Calendar",
-          QUESTIONS: "Fragen",
-          BOOKING: "Booking",
-          ADMITTANCE: "Admittance"
-        },
-        FORM: {
-          FIRST_NAME: "First Name",
-          FIRST_NAME_REQUIRED: "Please enter your first name",
-          LAST_NAME: "Last Name",
-          LAST_NAME_REQUIRED: "Please enter your last name",
-          NAME: "Full Name",
-          ADDRESS1: "Address",
-          ADDRESS_REQUIRED: "",
-          ADDRESS3: "Town",
-          ADDRESS4: "County",
-          POSTCODE: "Postcode",
-          POSTCODE_INVALID: "Bitte GEBEN Sie eine Gültige Postleitzahl ein",
-          PHONE: "Phone",
-          MOBILE: "Mobile",
-          MOBILE_REQUIRED: "Please enter a valid mobile number",
-          EMAIL: "Email",
-          EMAIL_REQURIED: "Please enter your email",
-          EMAIL_INVALID: "Bitte geben Sie eine gültige E-Mail-Adresse",
-          FIELD_REQUIRED: "This field is required",
-          PASSWORD: "Password",
-          PASSWORD_REQUIRED: "Please enter your password",
-          REQUIRED_LBL: "*Erforderlich",
-          TERMS_AND_CONDITIONS: "Ich akzeptiere die Geschäftsbedingungen",
-          TERMS_AND_CONDITIONS_REQUIRED: "Bitte stimmen Sie den Geschäftsbedingungen"
-        },
-        BTN: {
-          CANCEL: "Cancel",
-          CLOSE: "Close",
-          NO: "No",
-          OK: "Ok",
-          YES: "Yes",
-          BACK: "Zurück",
-          NEXT: "Nächster",
-          LOGIN: "Login",
-          CONFIRM: "Confirm",
-          SAVE: "Save",
-          SELECT: "Wählen",
-          BOOK: "Buchen",
-          BOOK_EVENT: "Book Event",
-          CANCEL_BOOKING: "Reservierung stornieren",
-          DO_NOT_CANCEL_BOOKING: "Stornieren Sie nicht",
-          APPLY: "Anwenden",
-          CLEAR: "Klar",
-          PAY: "Pay",
-          CHECKOUT: "Kasse",
-          TOP_UP: "Top Up",
-          ADD: "Hinzufügen",
-          SUBMIT: "Submit",
-          DETAILS: "Einzelheiten",
-          MORE: "More",
-          LESS: "Less",
-          DELETE: "Delete"
-        },
-        LANGUAGE: {
-          EN: "English",
-          DE: "Deutsch",
-          ES: "Español",
-          FR: "Français"
-        }
-      }
-    };
-    $translateProvider.translations('de', translations);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').config(function($translateProvider) {
-    'ngInject';
-    var translations;
-    translations = {
-      CORE: {
-        ALERTS: {
-          ERROR_HEADING: "Error",
-          ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
-          ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
-          APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
-          ATTENDEES_CHANGED: "Your booking has been successfully updated",
-          EMAIL_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this email. Use the search field to find the customers account.",
+          EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
           EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
           FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
           FORM_INVALID: "Please complete all required fields",
@@ -31396,7 +31372,7 @@ angular.module('BB.Directives')
           PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
           PASSWORD_RESET_SUCESS: "Your password has been updated.",
           PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this phone number. Use the search field to find the customers account.",
+          PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
           REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
           TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
           STORE_NOT_SELECTED: "You need to select a store",
@@ -31464,10 +31440,11 @@ angular.module('BB.Directives')
           COURSES: "Courses",
           DATE: "Date",
           TIME: "Time",
+          DATE_TIME: "Date/Time",
           WHEN: "When",
           GIFT_CERTIFICATE: "Gift Certificate",
           GIFT_CERTIFICATES: "Gift Certificates",
-          ITEML: "Item",
+          ITEM: "Item",
           FILTER: "Filter",
           ANY: "Any",
           RESET: "Reset",
@@ -31480,6 +31457,7 @@ angular.module('BB.Directives')
           AND: "and",
           APPOINTMENT: "Appointment",
           TICKETS: "Tickets",
+          TYPE: "Type",
           EXPORT: "Export",
           RECIPIENT: "Recipient",
           BOOKING_REF: "Booking Reference",
@@ -31507,7 +31485,9 @@ angular.module('BB.Directives')
           MOBILE: "Mobile",
           EMAIL: "Email",
           SCHEDULE: "Schedule",
-          SEARCH: "Search"
+          SEARCH: "Search",
+          STAFF: "Staff",
+          RESOURCES: "Resources"
         },
         FORM: {
           FIRST_NAME_REQUIRED: "Please enter your first name",
@@ -31523,6 +31503,7 @@ angular.module('BB.Directives')
           PASSWORD_REQUIRED: "Please enter your password",
           CONFIRM_PASSWORD: "Confirm password",
           PASSWORD_MISMATCH: "Please ensure your passwords match",
+          PASSWORD_LENGTH: "Password must be at least 7 characters",
           REQUIRED: "*Required",
           TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
           TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
@@ -31553,7 +31534,8 @@ angular.module('BB.Directives')
           DETAILS: "Details",
           MORE: "More",
           LESS: "Less",
-          DELETE: "Delete"
+          DELETE: "Delete",
+          BUY: "Buy"
         },
         LANGUAGE: {
           EN: "English",
@@ -31564,394 +31546,6 @@ angular.module('BB.Directives')
       }
     };
     $translateProvider.translations('en', translations);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').config(function($translateProvider) {
-    'ngInject';
-    var translations;
-    translations = {
-      CORE: {
-        ALERTS: {
-          ERROR_HEADING: "Error",
-          ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
-          ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
-          APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
-          ATTENDEES_CHANGED: "Your booking has been successfully updated",
-          EMAIL_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this email. Use the search field to find the customers account.",
-          EMPTY_BASKET_FOR_CHECKOUT: "No hay ningún producto en la cesta para proceder a la caja.",
-          FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
-          FORM_INVALID: "Por favor completa todos los campos requeridos",
-          GENERIC: "Disculpa, algo está incorrecto. Por favor, intentalo de nuevo o llama a la sucursal de interés si el problema persite. ",
-          GEOLOCATION_ERROR: "Disculpa, no podemos determinar esa localidad. Por favor busca una.",
-          GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
-          POSTCODE_INVALID: "@:COMMON.FORM.POSTCODE_INVALID",
-          ITEM_NO_LONGER_AVAILABLE: "Disculpa, el horario que seleccionaste no está disponible. Por favor, intentalo de nuevo.",
-          NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
-          LOCATION_NOT_FOUND: "Disculpa, no reconocemos esa localización",
-          LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
-          SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
-          MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
-          MISSING_LOCATION: "Por favor entre la localización (dirección)",
-          MISSING_POSTCODE: "Por favor ingrese un código postal",
-          PASSWORD_INVALID: "Sorry, your password is invalid",
-          PASSWORD_MISMATCH: "Your passwords don't match",
-          PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
-          PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
-          PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
-          PASSWORD_RESET_SUCESS: "Your password has been updated.",
-          PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "There's already an account registered with this phone number. Use the search field to find the customers account.",
-          REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
-          TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
-          STORE_NOT_SELECTED: "You need to select a store",
-          TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
-          TOPUP_SUCCESS: "Your wallet has been topped up",
-          UPDATE_FAILED: "Update failed. Please try again",
-          UPDATE_SUCCESS: "Updated",
-          WAITLIST_ACCEPTED: "Your booking is now confirmed!",
-          BOOKING_CANCELLED: "Your booking has been cancelled.",
-          NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
-          NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
-          SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking."
-        },
-        PAGINATION: {
-          SUMMARY: "{{start}} - {{end}} of {{total}}"
-        },
-        MODAL: {
-          CANCEL_BOOKING: {
-            HEADER: "Cancel",
-            QUESTION: "Are you sure you want to cancel this {{type}}?"
-          },
-          SCHEMA_FORM: {
-            OK_BTN: "@:COMMON.BTN.OK",
-            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-          }
-        },
-        FILTERS: {
-          DISTANCE: {
-            UNIT: "mi"
-          },
-          CURRENCY: {
-            THOUSANDS_SEPARATOR: ",",
-            DECIMAL_SEPARATOR: ".",
-            CURRENCY_FORMAT: "%s%v"
-          },
-          PRETTY_PRICE: {
-            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-          },
-          TIME_PERIOD: {
-            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-          }
-        },
-        EVENT: {
-          SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
-          JOIN_WAITLIST: "Join waitlist"
-        }
-      },
-      COMMON: {
-        TERMINOLOGY: {
-          CATEGORY: "Category",
-          DURATION: "Duración",
-          RESOURCE: "Resource",
-          PERSON: "Person",
-          SERVICE: "Servicio",
-          WALLET: "Wallet",
-          SESSION: "Session",
-          EVENT: "Event",
-          EVENTS: "Events",
-          COURSE: "Course",
-          COURSES: "Courses",
-          DATE: "Fecha",
-          TIME: "Horario",
-          WHEN: "Cuándo ",
-          GIFT_CERTIFICATE: "Gift Certificate",
-          GIFT_CERTIFICATES: "Gift Certificates",
-          ITEM_LBL: "Item",
-          FILTER: "Filter",
-          ANY: "Any",
-          RESET: "Reset",
-          TOTAL: "Total",
-          TOTAL_DUE_NOW: "Total Due Now",
-          BOOKING_FEE: "Booking Fee",
-          PRICE: "Precio",
-          PRICE_FREE: "Free",
-          PRINT: " Imprimir",
-          AND: "and",
-          APPOINTMENT: "Appointment",
-          TICKETS: "Tickets",
-          EXPORT: "Exportar",
-          RECIPIENT: "Recipient",
-          BOOKING_REF: "Booking Reference",
-          MORNING: "Mañana",
-          AFTERNOON: "Tarde",
-          EVENING: "Noche",
-          AVAILABLE: "Disponible",
-          UNAVAILABLE: "Unavailable",
-          CALENDAR: "Calendar",
-          QUESTIONS: "Questions",
-          BOOKING: "Booking",
-          ADMITTANCE: "Admittance"
-        },
-        FORM: {
-          FIRST_NAME: "Nombre",
-          FIRST_NAME_REQUIRED: "Por favor ingresa tu nombre",
-          LAST_NAME: "Apellido",
-          LAST_NAME_REQUIRED: "Por favor ingresa tu apellido",
-          NAME: "Full Name",
-          ADDRESS1: "Address",
-          ADDRESS_REQUIRED: "",
-          ADDRESS3: "Town",
-          ADDRESS4: "County",
-          POSTCODE: "Postcode",
-          POSTCODE_INVALID: "Por favor ingrese un código postal válido",
-          PHONE: "Teléfono",
-          MOBILE: "Mobile",
-          MOBILE_REQUIRED: "Please enter a valid mobile number",
-          EMAIL: "Correo electrónico",
-          EMAIL_REQURIED: "Please enter your email",
-          EMAIL_INVALID: "Por favor ingresa una dirección de correo electrónico válida",
-          FIELD_REQUIRED: "Este campo es requerido",
-          PASSWORD: "Password",
-          PASSWORD_REQUIRED: "Please enter your password",
-          REQUIRED_LBL: "*Requeridos",
-          TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
-          TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
-        },
-        BTN: {
-          CANCEL: "Cancel",
-          CLOSE: "Close",
-          NO: "No",
-          OK: "Ok",
-          YES: "Yes",
-          BACK: "Regresar",
-          NEXT: "Siguiente",
-          LOGIN: "Login",
-          CONFIRM: "Confirmar",
-          SAVE: "Save",
-          SELECT: "Seleccionar",
-          BOOK: "Cita",
-          BOOK_EVENT: "Book Event",
-          CANCEL_BOOKING: "Cancelar cita",
-          DO_NOT_CANCEL_BOOKING: "No cancelar",
-          APPLY: "Apply",
-          CLEAR: "Clear",
-          PAY: "Pay",
-          CHECKOUT: "Checkout",
-          TOP_UP: "Top Up",
-          ADD: "Add",
-          SUBMIT: "Submit",
-          DETAILS: "Details",
-          MORE: "More",
-          LESS: "Less",
-          DELETE: "Delete"
-        },
-        LANGUAGE: {
-          EN: "English",
-          DE: "Deutsch",
-          ES: "Español",
-          FR: "Français"
-        }
-      }
-    };
-    $translateProvider.translations('es', translations);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').config(function($translateProvider) {
-    'ngInject';
-    var translations;
-    translations = {
-      CORE: {
-        ALERTS: {
-          ERROR_HEADING: "Erreur",
-          ACCOUNT_DISABLED: "Votre compte semble desactivé. Merci de contacter le commerce si le problème persiste",
-          ALREADY_REGISTERED: "Il y a déjà un compte pour cette addresse email. Veuillez vous connecter ou changer votre mot de passe.",
-          APPT_AT_SAME_TIME: "Votre rendez-vous est déja réservé à la même heure",
-          ATTENDEES_CHANGED: "Votre réservation a été mise à jour",
-          EMAIL_ALREADY_REGISTERED_ADMIN: "Il y a déjà un compte associé à cette addresse mail. Utilisez le champ de research.",
-          EMPTY_BASKET_FOR_CHECKOUT: "Il n'y a aucun élément dans le panier.",
-          FB_LOGIN_NOT_A_MEMBER: "Aucun compte associé à ce compte Facebook. Veuillez vous enregistrer avec Facebook d'abord",
-          FORM_INVALID: "Saisissez tous les champs obligatoires",
-          GENERIC: "Désolé, il semble qu'une erreur s'est produite. Essayez de nouveau et contactez le service client si le problème persiste.",
-          GEOLOCATION_ERROR: "Désolé, nous n'avons pas pu déterminer votre location. Veuillez entrer une location.",
-          GIFT_CERTIFICATE_REQUIRED: "Cette réservaction nécessited une carte cadeau",
-          POSTCODE_INVALID: "@:COMMON.FORM.POSTCODE_INVALID",
-          ITEM_NO_LONGER_AVAILABLE: "Désolé. L'article que vous souhaitez réserver n'est plus disponible.",
-          NO_WAITLIST_SPACES_LEFT: "Désolé, la place a été prise, vous êtes sur liste d'attente et nous vous écririons quand plus de places seront disponibles",
-          LOCATION_NOT_FOUND: "Désolé, nous ne reconnaissons pas cet adresse",
-          LOGIN_FAILED: "Désolé, votre email ou mot de passe n'a pas été reconnu. Merci de réessayer ou de changer votre mot de passe",
-          SSO_LOGIN_FAILED: "Il y a eu une erreur de connection. Veuillez réessayer.",
-          MAXIMUM_TICKETS: "Désolé, le nombre maximum de billets par personne a été dépassé.",
-          MISSING_LOCATION: "Saisissez votre adresse",
-          MISSING_POSTCODE: "Saisissez votre code postal",
-          PASSWORD_INVALID: "Désolé, votre mot de passe n'est pas valide",
-          PASSWORD_MISMATCH: "Vos mots de passe sont différents",
-          PASSWORD_RESET_FAILED: "Désolé, nous n'avons pas pu mettre votre mot de passe à jour. Merci de réessayer",
-          PASSWORD_RESET_REQ_FAILED: "Désolé, nous n'avons pas trouvé de compte pour cet email.",
-          PASSWORD_RESET_REQ_SUCCESS: "Nous avons envoyé un email avec un lien pour changer votre mot de passe.",
-          PASSWORD_RESET_SUCESS: "Votre mot de passe a été mis à jour.",
-          PAYMENT_FAILED: "Le paiement a échoué. Veuillez contacter votre banque ou essayer une autre carte",
-          PHONE_NUMBER_ALREADY_REGISTERED_ADMIN: "Il y a déjà un compte associé à ce numéro de téléphone. Utilisez le champ de research.",
-          REQ_TIME_NOT_AVAIL: "Ce créneau est pris, merci d'en choisir un autre.",
-          TIME_SLOT_NOT_SELECTED: "Veuillez choisir un créneau",
-          STORE_NOT_SELECTED: "Veuillz choisir un magasin.",
-          TOPUP_FAILED: "Désolé, votre porte-feuille n'a pas pu être rechargé, veuillez réessayer.",
-          TOPUP_SUCCESS: "Votre portefeuille a été rechargé",
-          UPDATE_FAILED: "Mise à jour ratée. Merci de réessayer",
-          UPDATE_SUCCESS: "Mis à jour",
-          WAITLIST_ACCEPTED: "Votre réservation est confirmée !",
-          BOOKING_CANCELLED: "Votre réservation a été annulée.",
-          NOT_BOOKABLE_PERSON: "Désolé, cette personne n'offre pas ce service, veuillez choisir quelqu'un d'autre",
-          NOT_BOOKABLE_RESOURCE: "Désolé, cette resource n'offre pas ce service, veuillez en choisir une autre",
-          SPEND_AT_LEAST: "Le montant minimal pour une réservation est de {{min_spend | pretty_price}}."
-        },
-        PAGINATION: {
-          SUMMARY: "{{start}} - {{end}} of {{total}}"
-        },
-        MODAL: {
-          CANCEL_BOOKING: {
-            HEADER: "Annuler",
-            QUESTION: "Êtes-vous sûr de vouloir annuler ce {{type}}?"
-          },
-          SCHEMA_FORM: {
-            OK_BTN: "@:COMMON.BTN.OK",
-            CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-          }
-        },
-        FILTERS: {
-          DISTANCE: {
-            UNIT: "km"
-          },
-          CURRENCY: {
-            THOUSANDS_SEPARATOR: " ",
-            DECIMAL_SEPARATOR: ",",
-            CURRENCY_FORMAT: "%v%s"
-          },
-          PRETTY_PRICE: {
-            FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-          },
-          TIME_PERIOD: {
-            TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-          }
-        },
-        EVENT: {
-          SPACES_LEFT: "Seulement {N, plural, one{une place restante}, other{# places restantes}}",
-          JOIN_WAITLIST: "S'inscrire sur la liste d'attente"
-        }
-      },
-      COMMON: {
-        TERMINOLOGY: {
-          CATEGORY: "Catégorie",
-          DURATION: "Durée",
-          RESOURCE: "Ressource",
-          PERSON: "Personne",
-          SERVICE: "Service",
-          WALLET: "Portefeuille",
-          SESSION: "Session",
-          EVENT: "Event",
-          EVENTS: "Événements",
-          COURSE: "Course",
-          COURSES: "Courses",
-          DATE: "Date",
-          TIME: "Heure",
-          WHEN: "Quand",
-          GIFT_CERTIFICATE: "Chèque-cadeau",
-          GIFT_CERTIFICATES: "Chèques-cadeaux",
-          ITEM_LBL: "Article",
-          FILTER: "Filtre",
-          ANY: "Tout",
-          RESET: "Remettre",
-          TOTAL: "Total",
-          TOTAL_DUE_NOW: "Total à payer",
-          BOOKING_FEE: "Frais de réservation",
-          PRICE: "Prix",
-          PRICE_FREE: "Gratuit",
-          PRINT: " Imprimer",
-          AND: "et",
-          APPOINTMENT: "Rendez-vous",
-          TICKETS: "Billets",
-          EXPORT: "Exporter",
-          RECIPIENT: "Destinataire",
-          BOOKING_REF: "Référence de votre réservation",
-          MORNING: "Matin",
-          AFTERNOON: "Après-midi",
-          EVENING: "Soir",
-          AVAILABLE: "Disponible",
-          UNAVAILABLE: "Non disponible",
-          CALENDAR: "Calendar",
-          QUESTIONS: "Questions",
-          BOOKING: "Réservation",
-          ADMITTANCE: "Admittance"
-        },
-        FORM: {
-          FIRST_NAME: "Prénom",
-          FIRST_NAME_REQUIRED: "Saisissez votre prénom",
-          LAST_NAME: "Nom",
-          LAST_NAME_REQUIRED: "Saisissez votre nom",
-          NAME: "Nom Complet",
-          ADDRESS1: "Adresse",
-          ADDRESS_REQUIRED: "",
-          ADDRESS3: "Ville",
-          ADDRESS4: "Province/Région",
-          POSTCODE: "Code Postal",
-          POSTCODE_INVALID: "Saisissez un code postal valide",
-          PHONE: "Téléphone",
-          MOBILE: "Mobile",
-          MOBILE_REQUIRED: "Saisissez un numéro de téléphone valide",
-          EMAIL: "Email",
-          EMAIL_REQURIED: "Veuillez entrer votre addresse email",
-          EMAIL_INVALID: "Saisissez une adresse email valide",
-          FIELD_REQUIRED: "This field is required",
-          PASSWORD: "Password",
-          PASSWORD_REQUIRED: "Veuillez entrer le mot de passe",
-          REQUIRED_LBL: "*Requis",
-          TERMS_AND_CONDITIONS: "J'accepte les conditions générales de vente",
-          TERMS_AND_CONDITIONS_REQUIRED: "Vous devez accepter les conditions générales de vente"
-        },
-        BTN: {
-          CANCEL: "Annuler",
-          CLOSE: "Fermer",
-          NO: "Non",
-          OK: "Ok",
-          YES: "Oui",
-          BACK: "Retour",
-          NEXT: "Suivant",
-          LOGIN: "Connexion",
-          CONFIRM: "Confirmer",
-          SAVE: "Enregistrer",
-          SELECT: "Choisir",
-          BOOK: "Réserver",
-          BOOK_EVENT: "Book Event",
-          CANCEL_BOOKING: "Annuler Réservation",
-          DO_NOT_CANCEL_BOOKING: "Ne pas annuler",
-          APPLY: "Appliquer",
-          CLEAR: "Vider",
-          PAY: "Payer",
-          CHECKOUT: "Caisse",
-          TOP_UP: "Recharger",
-          ADD: "Ajouter",
-          SUBMIT: "Soumettre",
-          DETAILS: "Détails",
-          MORE: "More",
-          LESS: "Less",
-          DELETE: "Effacer"
-        },
-        LANGUAGE: {
-          EN: "English",
-          DE: "Deutsch",
-          ES: "Español",
-          FR: "Français"
-        }
-      }
-    };
-    $translateProvider.translations('fr', translations);
   });
 
 }).call(this);
@@ -32216,6 +31810,23 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.i18n').config(function($translateProvider) {
+    'ngInject';
+    var translations;
+    translations = {
+      I18N: {
+        LANGUAGE_PICKER: {
+          SELECT_LANG_PLACEHOLDER: 'Select...'
+        }
+      }
+    };
+    $translateProvider.translations('en', translations);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   var ModalDelete, ModalDeleteAll;
 
   angular.module('BB.Directives').directive('bbPurchase', function() {
@@ -32257,7 +31868,7 @@ angular.module('BB.Directives')
         });
       } else {
         return AlertService.add("danger", {
-          msg: $translate.instant('GENERIC')
+          msg: $translate.instant('CORE.ALERTS.GENERIC')
         });
       }
     };
