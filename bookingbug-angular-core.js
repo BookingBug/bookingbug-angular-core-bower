@@ -2491,10 +2491,10 @@ function getURIparam( name ){
   'use strict';
   var BBCtrl;
 
-  BBCtrl = function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService) {
+  BBCtrl = function($scope, $location, $rootScope, halClient, $window, $http, $q, $timeout, BasketService, LoginService, AlertService, $sce, $element, $compile, $sniffer, $uibModal, $log, BBModel, BBWidget, SSOService, ErrorService, AppConfig, QueryStringService, QuestionService, PurchaseService, $sessionStorage, $bbug, AppService, UriTemplate, LoadingService, $anchorScroll, $localStorage, $document, CompanyStoreService, viewportSize) {
     'ngInject';
-    var $debounce, $onInit, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, compileDisplayMode, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, init, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, vm, widgetStarted;
-    vm = this;
+    var $debounce, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, widgetStarted;
+    this.$scope = $scope;
     $scope.cid = "BBCtrl";
     $scope.controller = "public.controllers.BBCtrl";
     $scope.qs = QueryStringService;
@@ -2524,7 +2524,7 @@ function getURIparam( name ){
       Questions: 15,
       Confirmation: 16
     };
-    init = function() {
+    this.$onInit = function() {
       $scope.addItemToBasket = addItemToBasket;
       $scope.areScopesLoaded = LoadingService.areScopesLoaded;
       $scope.base64encode = base64encode;
@@ -2583,15 +2583,13 @@ function getURIparam( name ){
       $scope.supportsTouch = supportsTouch;
       $scope.showPage = showPage;
       $scope.updateBasket = updateBasket;
-      vm.$onInit = $onInit;
-    };
-    $onInit = function() {
-      compileDisplayMode();
       initializeBBWidget();
       $rootScope.$on('show:loader', showLoaderHandler);
       $rootScope.$on('hide:loader', hideLoaderHandler);
       $scope.$on('$locationChangeStart', locationChangeStartHandler);
-      vm.bb = $scope.bb;
+    };
+    this.$postLink = function() {
+      viewportSize.init();
     };
     initializeBBWidget = function() {
       $scope.bb = new BBWidget();
@@ -2620,13 +2618,6 @@ function getURIparam( name ){
       } else {
         (base1 = $scope.bb).api_url || (base1.api_url = $location.protocol() + "://" + $location.host());
       }
-    };
-    compileDisplayMode = function() {
-      $compile("<span bb-display-mode></span>")($scope, (function(_this) {
-        return function(cloned, scope) {
-          return $bbug($element).append(cloned);
-        };
-      })(this));
     };
     showLoaderHandler = function() {
       $scope.loading = true;
@@ -3510,8 +3501,7 @@ function getURIparam( name ){
       return def.promise;
     };
     setBasketItem = function(item) {
-      $scope.bb.current_item = item;
-      return $scope.current_item = $scope.bb.current_item;
+      return $scope.bb.current_item = item;
     };
     setReadyToCheckout = function(ready) {
       return $scope.bb.confirmCheckout = ready;
@@ -3945,7 +3935,6 @@ function getURIparam( name ){
     redirectTo = function(url) {
       return $window.location.href = url;
     };
-    init();
   };
 
   angular.module('BB.Controllers').controller('BBCtrl', BBCtrl);
@@ -6596,15 +6585,15 @@ function getURIparam( name ){
       if ($scope.mode !== 0) {
         delete $scope.selected_date;
       }
-      if (!$scope.event_group_manually_set && ($scope.current_item.event_group == null)) {
-        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.current_item.event_group != null);
+      if (!$scope.event_group_manually_set && ($scope.bb.current_item.event_group == null)) {
+        $scope.event_group_manually_set = ($scope.event_group_manually_set == null) && ($scope.bb.current_item.event_group != null);
       }
       if ($scope.bb.current_item.event) {
-        event_group = $scope.current_item.event_group;
+        event_group = $scope.bb.current_item.event_group;
         $scope.clearBasketItem();
         $scope.emptyBasket();
         if ($scope.event_group_manually_set) {
-          $scope.current_item.setEventGroup(event_group);
+          $scope.bb.current_item.setEventGroup(event_group);
         }
       }
       promises = [];
@@ -6618,7 +6607,7 @@ function getURIparam( name ){
       }
       if ($scope.bb.item_defaults && $scope.bb.item_defaults.event_group) {
         $scope.bb.current_item.setEventGroup($scope.bb.item_defaults.event_group);
-      } else if (!$scope.current_item.event_group && $scope.bb.company.$has('event_groups')) {
+      } else if (!$scope.bb.current_item.event_group && $scope.bb.company.$has('event_groups')) {
         promises.push(EventGroupService.query($scope.bb.company, {
           per_page: 500
         }));
@@ -6670,7 +6659,7 @@ function getURIparam( name ){
     $scope.loadEventSummary = function() {
       var comp, current_event, deferred, params;
       deferred = $q.defer();
-      current_event = $scope.current_item.event;
+      current_event = $scope.bb.current_item.event;
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
         delete $scope.bb.current_item.event_chain_id;
@@ -6768,7 +6757,7 @@ function getURIparam( name ){
         delete $scope.items;
       }
       deferred = $q.defer();
-      current_event = $scope.current_item.event;
+      current_event = $scope.bb.current_item.event;
       comp || (comp = $scope.bb.company);
       if ($scope.bb.current_item && ($scope.bb.current_item.event_chain_id || $scope.bb.current_item.event_chain)) {
         delete $scope.bb.current_item.event_chain;
@@ -10072,13 +10061,19 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-  var BBBasicPageCtrl;
+  var BBPageCtrl;
 
-  BBBasicPageCtrl = function($scope, $q, ValidatorService, LoadingService) {
-    var isScopeReady;
-    $scope.controllerClass = "public.controllers.PageController";
+  BBPageCtrl = function($scope, $q, ValidatorService, LoadingService) {
+    'ngInject';
+    var checkReady, init, isScopeReady, routeReady;
+    this.$scope = $scope;
+    $scope.controllerClass = "public.controllers.BBPageCtrl";
     $scope.$has_page_control = true;
     $scope.validator = ValidatorService;
+    init = function() {
+      $scope.checkReady = checkReady;
+      $scope.routeReady = routeReady;
+    };
     isScopeReady = (function(_this) {
       return function(cscope) {
         var child, children, i, len, ready, ready_list;
@@ -10119,7 +10114,7 @@ function getURIparam( name ){
     * @description
     * Check the page ready
      */
-    $scope.checkReady = function() {
+    checkReady = function() {
       var checkread, i, len, loader, ready_list, v;
       ready_list = isScopeReady($scope);
       checkread = $q.defer();
@@ -10157,7 +10152,7 @@ function getURIparam( name ){
     *
     * @param {string=} route A specific route to load
      */
-    return $scope.routeReady = function(route) {
+    routeReady = function(route) {
       if (!$scope.$checkingReady) {
         return $scope.decideNextPage(route);
       } else {
@@ -10168,6 +10163,7 @@ function getURIparam( name ){
         })(this));
       }
     };
+    init();
   };
 
 
@@ -10193,13 +10189,13 @@ function getURIparam( name ){
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'PageController'
+      controller: 'BBPageCtrl'
     };
   });
 
-  angular.module('BB.Controllers').controller('PageController', BBBasicPageCtrl);
+  angular.module('BB.Controllers').controller('BBPageCtrl', BBPageCtrl);
 
-  angular.module('BB.Services').value("PageControllerService", BBBasicPageCtrl);
+  angular.module('BB.Services').value("PageControllerService", BBPageCtrl);
 
 }).call(this);
 
@@ -10607,7 +10603,7 @@ function getURIparam( name ){
 (function() {
   'use strict';
 
-  /***
+  /**
   * @ngdoc directive
   * @name BB.Directives:bbPeople
   * @restrict AE
@@ -10644,12 +10640,15 @@ function getURIparam( name ){
   *   </file>
   *  </example>
    */
+  var BBPeopleCtrl;
+
   angular.module('BB.Directives').directive('bbPeople', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'PersonList',
+      controller: 'BBPeopleCtrl',
+      controllerAs: '$bbPeopleCtrl',
       link: function(scope, element, attrs) {
         if (attrs.bbItems) {
           scope.booking_items = scope.$eval(attrs.bbItems) || [];
@@ -10662,27 +10661,43 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('PersonList', function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
-    var getItemFromPerson, loadData, loader, setPerson;
-    $scope.controller = "public.controllers.PersonList";
-    loader = LoadingService.$loader($scope).notLoaded();
+  BBPeopleCtrl = function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
+    'ngInject';
+    var chosenService, connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromPerson, init, loadData, loader, personListener, selectAndRoute, selectItem, setPerson, setReady;
+    this.$scope = $scope;
+    $scope.controller = "public.controllers.BBPeopleCtrl";
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    $rootScope.connection_started.then(function() {
+    chosenService = null;
+    loader = null;
+    init = function() {
+      $scope.selectItem = selectItem;
+      $scope.selectAndRoute = selectAndRoute;
+      $scope.setReady = setReady;
+      loader = LoadingService.$loader($scope).notLoaded();
+      $rootScope.connection_started.then(connectionStartedSuccess, connectionStartedFailure);
+      $scope.$watch('person', personListener);
+      $scope.$on("currentItemUpdate", currentItemUpdateHandler);
+    };
+    connectionStartedSuccess = function() {
       return loadData();
-    }, function(err) {
+    };
+    connectionStartedFailure = function(err) {
       return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
+    };
+    currentItemUpdateHandler = function(event) {
+      return loadData();
+    };
     loadData = function() {
       var bi, ppromise;
       bi = $scope.booking_item;
-      if (!bi.service || bi.service === $scope.change_watch_item) {
+      if (!bi.service || bi.service === chosenService) {
         if (!bi.service) {
           loader.setLoaded();
         }
         return;
       }
-      $scope.change_watch_item = bi.service;
       loader.notLoaded();
+      chosenService = bi.service;
       ppromise = BBModel.Person.$query($scope.bb.company);
       ppromise.then(function(people) {
         if (bi.group) {
@@ -10752,16 +10767,6 @@ function getURIparam( name ){
         });
       });
     };
-
-    /***
-    * @ngdoc method
-    * @name setPerson
-    * @methodOf BB.Directives:bbPeople
-    * @description
-    * Storing the person property in the form store
-    *
-    * @param {array} people The people
-     */
     setPerson = function(people) {
       $scope.bookable_people = people;
       if ($scope.person) {
@@ -10772,16 +10777,6 @@ function getURIparam( name ){
         });
       }
     };
-
-    /***
-    * @ngdoc method
-    * @name getItemFromPerson
-    * @methodOf BB.Directives:bbPeople
-    * @description
-    * Get item from person
-    *
-    * @param {array} person The person
-     */
     getItemFromPerson = (function(_this) {
       return function(person) {
         var item, j, len, ref;
@@ -10800,7 +10795,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name selectItem
     * @methodOf BB.Directives:bbPeople
@@ -10810,7 +10805,7 @@ function getURIparam( name ){
     * @param {array} item Selected item from the list of current people
     * @param {string=} route A specific route to load
      */
-    $scope.selectItem = (function(_this) {
+    selectItem = (function(_this) {
       return function(item, route, options) {
         var new_person;
         if (options == null) {
@@ -10833,7 +10828,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name selectAndRoute
     * @methodOf BB.Directives:bbPeople
@@ -10843,7 +10838,7 @@ function getURIparam( name ){
     * @param {array} item Selected item from the list of current people
     * @param {string} route A specific route to load
      */
-    $scope.selectAndRoute = (function(_this) {
+    selectAndRoute = (function(_this) {
       return function(item, route) {
         var new_person;
         new_person = getItemFromPerson(item);
@@ -10854,7 +10849,7 @@ function getURIparam( name ){
         return true;
       };
     })(this);
-    $scope.$watch('person', (function(_this) {
+    personListener = (function(_this) {
       return function(newval, oldval) {
         var new_person;
         if ($scope.person && $scope.booking_item) {
@@ -10863,28 +10858,26 @@ function getURIparam( name ){
             _.each($scope.booking_items, function(item) {
               return item.setPerson(new_person);
             });
-            return $scope.broadcastItemUpdate();
+            $scope.broadcastItemUpdate();
           }
         } else if (newval !== oldval) {
           _.each($scope.booking_items, function(item) {
             return item.setPerson(null);
           });
-          return $scope.broadcastItemUpdate();
+          $scope.broadcastItemUpdate();
         }
+        $scope.bb.current_item.defaults.person = $scope.person;
       };
-    })(this));
-    $scope.$on("currentItemUpdate", function(event) {
-      return loadData();
-    });
+    })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name setReady
     * @methodOf BB.Directives:bbPeople
     * @description
     * Called by bbPage to ready directive for transition to the next step
      */
-    return $scope.setReady = (function(_this) {
+    setReady = (function(_this) {
       return function() {
         var new_person;
         if ($scope.person) {
@@ -10901,7 +10894,10 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+    init();
+  };
+
+  angular.module('BB.Controllers').controller('BBPeopleCtrl', BBPeopleCtrl);
 
 }).call(this);
 
@@ -11055,7 +11051,7 @@ function getURIparam( name ){
 (function() {
   'use strict';
 
-  /***
+  /**
   * @ngdoc directive
   * @name BB.Directives:bbResources
   * @restrict AE
@@ -11095,12 +11091,15 @@ function getURIparam( name ){
   *  </example>
   *
    */
+  var BBResourcesCtrl;
+
   angular.module('BB.Directives').directive('bbResources', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'ResourceList',
+      controller: 'BBResourcesCtrl',
+      controllerAs: '$bbResourcesCtrl',
       link: function(scope, element, attrs) {
         scope.options = scope.$eval(attrs.bbResources) || {};
         if (attrs.bbItems) {
@@ -11114,15 +11113,29 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ResourceList', function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
-    var getItemFromResource, loadData, loader;
-    loader = LoadingService.$loader($scope).notLoaded();
+  BBResourcesCtrl = function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
+    'ngInject';
+    var connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromResource, init, loadData, loader, resourceListener, selectItem, setReady;
+    this.$scope = $scope;
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        return loadData();
-      };
-    })(this));
+    loader = null;
+    init = function() {
+      $scope.setReady = setReady.bind(this);
+      $scope.selectItem = selectItem.bind(this);
+      loader = LoadingService.$loader($scope).notLoaded();
+      $rootScope.connection_started.then(connectionStartedSuccess.bind(this), connectionStartedFailure.bind(this));
+      $scope.$watch('resource', resourceListener.bind(this));
+      $scope.$on("currentItemUpdate", currentItemUpdateHandler.bind(this));
+    };
+    connectionStartedSuccess = function() {
+      return loadData();
+    };
+    connectionStartedFailure = function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    };
+    currentItemUpdateHandler = function(event) {
+      return loadData();
+    };
     loadData = (function(_this) {
       return function() {
         var params, rpromise;
@@ -11205,7 +11218,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name getItemFromResource
     * @methodOf BB.Directives:bbResources
@@ -11232,7 +11245,7 @@ function getURIparam( name ){
       };
     })(this);
 
-    /***
+    /**
     * @ngdoc method
     * @name selectItem
     * @methodOf BB.Directives:bbResources
@@ -11243,7 +11256,7 @@ function getURIparam( name ){
     * @param {string=} route A specific route to load
     * @param {string=} skip_step The skip_step has been set to false
      */
-    $scope.selectItem = (function(_this) {
+    selectItem = (function(_this) {
       return function(item, route, options) {
         var new_resource;
         if (options == null) {
@@ -11265,7 +11278,7 @@ function getURIparam( name ){
         }
       };
     })(this);
-    $scope.$watch('resource', (function(_this) {
+    resourceListener = (function(_this) {
       return function(newval, oldval) {
         var new_resource;
         if ($scope.resource && $scope.booking_item) {
@@ -11283,19 +11296,16 @@ function getURIparam( name ){
           return $scope.broadcastItemUpdate();
         }
       };
-    })(this));
-    $scope.$on("currentItemUpdate", function(event) {
-      return loadData();
+    })(this);
 
-      /***
-      * @ngdoc method
-      * @name setReady
-      * @methodOf BB.Directives:bbResources
-      * @description
-      * Set this page section as ready
-       */
-    });
-    return $scope.setReady = (function(_this) {
+    /**
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbResources
+    * @description
+    * Set this page section as ready
+     */
+    setReady = (function(_this) {
       return function() {
         var new_resource;
         if ($scope.resource) {
@@ -11312,7 +11322,10 @@ function getURIparam( name ){
         }
       };
     })(this);
-  });
+    init();
+  };
+
+  angular.module('BB.Controllers').controller('BBResourcesCtrl', BBResourcesCtrl);
 
 }).call(this);
 
@@ -11361,13 +11374,16 @@ function getURIparam( name ){
   *  </example>
   *
    */
+  var BBServicesCtrl;
+
   angular.module('BB.Directives').directive('bbServices', function($q, $compile, $templateCache) {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
       transclude: true,
-      controller: 'ServiceList',
+      controller: 'BBServicesCtrl',
+      controllerAs: '$bbServicesCtrl',
       link: function(scope, element, attrs, ctrls, transclude) {
         scope.directives = "public.ServiceList";
         return transclude(scope, (function(_this) {
@@ -11388,8 +11404,10 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('ServiceList', function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
+  BBServicesCtrl = function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
+    'ngInject';
     var loader, setServiceItem, setServicesDisplayName;
+    this.$scope = $scope;
     $scope.controller = "public.controllers.ServiceList";
     FormDataStoreService.init('ServiceList', $scope, ['service']);
     loader = LoadingService.$loader($scope).notLoaded();
@@ -11762,10 +11780,12 @@ function getURIparam( name ){
     * @description
     * Filter changed
      */
-    return $scope.filterChanged = function() {
+    $scope.filterChanged = function() {
       return $scope.filtered_items = $filter('filter')($scope.items, $scope.filterFunction);
     };
-  });
+  };
+
+  angular.module('BB.Controllers').controller('BBServicesCtrl', BBServicesCtrl);
 
 }).call(this);
 
@@ -12905,7 +12925,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, ErrorService) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -12949,14 +12969,14 @@ function getURIparam( name ){
           timeRange = 7;
           for (size in cal_days) {
             days = cal_days[size];
-            if (size === ViewportSize.getViewportSize()) {
+            if (size === viewportSize.getViewportSize()) {
               timeRange = days;
             }
           }
           return timeRange;
         };
         $scope.time_range_length = calculateDayNum();
-        $scope.$on('ViewportSize:changed', function() {
+        $scope.$on('viewportSize:changed', function() {
           $scope.time_range_length = null;
           return $scope.initialise();
         });
@@ -13402,7 +13422,7 @@ function getURIparam( name ){
       if (!$scope.bb.current_item.time) {
         AlertService.raise('TIME_SLOT_NOT_SELECTED');
         return false;
-      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime) && ($scope.current_item.person_name === $scope.current_item.person.name)) {
+      } else if ($scope.bb.moving_booking && $scope.bb.current_item.start_datetime().isSame($scope.bb.current_item.original_datetime) && ($scope.bb.current_item.person_name === $scope.bb.current_item.person.name)) {
         AlertService.raise('APPT_AT_SAME_TIME');
         return false;
       } else if ($scope.bb.moving_booking) {
@@ -13908,6 +13928,88 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+
+  /**
+  * @ngdoc directive
+  * @name BB.Directives:bbForm
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with forms to add enhanced validation.
+  * When using with ng-form, submitForm needs to be called manually as submit event is not raised.
+  *
+  * @example
+  * <div ng-form name="example_form" bb-form></div>
+  * <form name="example_form" bb-form></form>
+   */
+  var bbFormDirective;
+
+  bbFormDirective = function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
+    'ngInject';
+    var link;
+    link = function(scope, elem, attrs, ctrls) {
+      var $bbPageCtrl, init, scrollAndFocusOnInvalid, serveBBPage, submitForm;
+      $bbPageCtrl = null;
+      init = function() {
+        scope.form = ctrls[0];
+        $bbPageCtrl = ctrls[1];
+        scope.submitForm = submitForm;
+        elem.on("submit", submitForm);
+      };
+      submitForm = function() {
+        var isValid;
+        scope.form.$setSubmitted();
+        $timeout(scrollAndFocusOnInvalid, 100);
+        isValid = ValidatorService.validateForm(scope.form);
+        if (isValid) {
+          serveBBPage();
+        }
+        return isValid;
+      };
+      serveBBPage = function() {
+        var route;
+        if (($bbPageCtrl != null) && (attrs.bbFormRoute != null)) {
+          route = attrs.bbFormRoute;
+          $bbPageCtrl.$scope.checkReady();
+          if (route.length > 0) {
+            $bbPageCtrl.$scope.routeReady(route);
+          } else {
+            $bbPageCtrl.$scope.routeReady();
+          }
+        }
+      };
+      scrollAndFocusOnInvalid = function() {
+        var invalidFormGroup, invalidInput;
+        invalidFormGroup = elem.find('.has-error:first');
+        if (invalidFormGroup && invalidFormGroup.length > 0 && !scope.form.raise_alerts) {
+          if ('parentIFrame' in $window) {
+            parentIFrame.scrollToOffset(0, invalidFormGroup.offset().top - GeneralOptions.scroll_offset);
+          } else {
+            $bbug("html, body").animate({
+              scrollTop: invalidFormGroup.offset().top - GeneralOptions.scroll_offset
+            }, 1000);
+          }
+          invalidInput = invalidFormGroup.find('.ng-invalid');
+          invalidInput.focus();
+        }
+      };
+      init();
+    };
+    return {
+      restrict: 'A',
+      require: ['^form', '?^^bbPage'],
+      scope: 'true',
+      link: link
+    };
+  };
+
+  angular.module('BB.Directives').directive('bbForm', bbFormDirective);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
     return {
       restrict: 'A',
@@ -13982,7 +14084,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService) {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug, CompanyStoreService, viewportSize) {
     var e, ie8orLess;
     ie8orLess = false;
     try {
@@ -14030,7 +14132,7 @@ angular.module('BB.Directives')
             return ev.stopPropagation();
           });
         }
-        if (ie8orLess || scope.display.xs) {
+        if (ie8orLess || viewportSize.isXS()) {
           $bbug(element).attr('readonly', 'true');
         }
         $bbug(element).on('keydown', function(e) {
@@ -15223,7 +15325,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.0.45";
+        return "2.0.46";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -15672,7 +15774,7 @@ angular.module('BB.Directives')
     };
   });
 
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions) {
+  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, GeneralOptions, viewportSize) {
     return {
       transclude: false,
       restrict: 'A',
@@ -15697,7 +15799,7 @@ angular.module('BB.Directives')
         };
         return scrollToCallback = function(evnt) {
           var current_step, scroll_to_element;
-          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
+          if (evnt === "page:loaded" && viewportSize.isXS() && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
             scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
           } else {
             scroll_to_element = $bbug(element);
@@ -15737,64 +15839,6 @@ angular.module('BB.Directives')
           }
         }
         return scope.has_slots = scope.grouped_slots.length > 0;
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbForm
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with forms to add enhanced validation. When using with ng-form, submitForm
-  * needs to be called manually as submit event is not raised.
-  
-  *
-  * @example
-  * <div ng-form name="example_form" bb-form></div>
-  * <form name="example_form" bb-form></form>
-  *
-   */
-
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
-    return {
-      restrict: 'A',
-      require: '^form',
-      scope: true,
-      link: function(scope, elem, attrs, ctrls) {
-        scope.form = ctrls;
-        elem.on("submit", function() {
-          scope.submitForm();
-          return scope.$apply();
-        });
-        return scope.submitForm = function() {
-          var property;
-          scope.form.submitted = true;
-          for (property in scope.form) {
-            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
-              scope.form[property].submitted = true;
-            }
-          }
-          $timeout(function() {
-            var invalid_form_group, invalid_input;
-            invalid_form_group = elem.find('.has-error:first');
-            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
-              if ('parentIFrame' in $window) {
-                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - GeneralOptions.scroll_offset);
-              } else {
-                $bbug("html, body").animate({
-                  scrollTop: invalid_form_group.offset().top - GeneralOptions.scroll_offset
-                }, 1000);
-              }
-              invalid_input = invalid_form_group.find('.ng-invalid');
-              return invalid_input.focus();
-            }
-          }, 100);
-          return ValidatorService.validateForm(scope.form);
-        };
       }
     };
   });
@@ -16687,84 +16731,6 @@ angular.module('BB.Directives')
             });
           };
         }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
-      link: function(scope, elem, attrs) {
-        var getCurrentSize, isVisible, markers, previous_size, t, update;
-        markers = elem.find('span');
-        $bbug(elem).addClass("bb-display-mode");
-        scope.display = {};
-        previous_size = null;
-        isVisible = function(element) {
-          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
-        };
-        getCurrentSize = function() {
-          var currentSize, element, i, len;
-          currentSize = false;
-          for (i = 0, len = markers.length; i < len; i++) {
-            element = markers[i];
-            if (isVisible(element)) {
-              currentSize = element.className.slice(8, 11);
-              ViewportSize.setViewportSize(element.className.slice(8, 11));
-              break;
-            }
-          }
-          return currentSize;
-        };
-        update = (function(_this) {
-          return function() {
-            var nsize;
-            nsize = getCurrentSize();
-            if (nsize !== previous_size) {
-              previous_size = nsize;
-              scope.display.xs = false;
-              scope.display.sm = false;
-              scope.display.md = false;
-              scope.display.lg = false;
-              scope.display.not_xs = true;
-              scope.display.not_sm = true;
-              scope.display.not_md = true;
-              scope.display.not_lg = true;
-              scope.display[nsize] = true;
-              scope.display["not_" + nsize] = false;
-              return true;
-            }
-            return false;
-          };
-        })(this);
-        t = null;
-        angular.element($window).bind('resize', (function(_this) {
-          return function() {
-            window.clearTimeout(t);
-            return t = setTimeout(function() {
-              if (update()) {
-                return scope.$apply();
-              }
-            }, 50);
-          };
-        })(this));
-        return angular.element($window).bind('load', (function(_this) {
-          return function() {
-            if (update()) {
-              return scope.$apply();
-            }
-          };
-        })(this));
       }
     };
   });
@@ -26543,7 +26509,7 @@ angular.module('BB.Directives')
             return scope;
           };
           $window.bbCurrentItem = function() {
-            return scope.current_item;
+            return scope.bb.current_item;
           };
           return $window.bbShowScopeChain = showScopeChain;
         }, 10);
@@ -30387,26 +30353,209 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
 
-  /*
+  /**
   * @ngdoc service
-  * @name BB.Services.service:ViewportSize
+  * @name BB.Services.service:viewportSize
   *
   * @description
   * Stores the current screen size breakpoint.
    */
-  angular.module('BB.Services').factory('ViewportSize', function($rootScope) {
-    var viewport_size;
-    viewport_size = null;
-    return {
-      setViewportSize: function(size) {
-        if (size !== viewport_size) {
-          viewport_size = size;
-          return $rootScope.$broadcast('ViewportSize:changed');
-        }
-      },
-      getViewportSize: function() {
-        return viewport_size;
+  angular.module('BB.Services').service('viewportSize', function($window, $document, $rootScope) {
+
+    /**
+     * @description variable used to store current screen size
+     */
+    var appendViewportElementsToDocumentBody, findVisibleElement, getElementId, getSizeFromElement, getSupportedSizes, getViewportElementsFromDocumentBody, getViewportElementsToAppend, getViewportSize, init, isElementVisible, isInitialised, isLG, isMD, isSM, isXS, listenForResize, state, viewportElementIdPrefix, viewportSize;
+    viewportSize = null;
+
+    /**
+     * @description id prefix for span html elements used to determin screen size via bootstrap classes
+     */
+    viewportElementIdPrefix = 'viewport_size_';
+
+    /**
+     * @description used to prevent multiple viewport elements being appended to dom
+     */
+    isInitialised = false;
+
+    /**
+     * @description boolean check for screen sizes
+     */
+    state = {
+      isXS: false,
+      isSM: false,
+      isMD: false,
+      isLG: false
+    };
+
+    /**
+     * @description returns supported bootstrap screen sizes
+     * @returns {String}
+     */
+    getSupportedSizes = function() {
+      return ['xs', 'sm', 'md', 'lg'];
+    };
+
+    /**
+     * @description logic for getting element ids
+     * @param {String} size
+     * @returns {String}
+     */
+    getElementId = function(size) {
+      return viewportElementIdPrefix + size;
+    };
+
+    /**
+     * @description constructs and returns the elements used to determine screen size
+     * @returns {String}
+     */
+    getViewportElementsToAppend = function() {
+      var elementId, i, len, ref, size, viewportElementStrings;
+      viewportElementStrings = '<div id="viewport_size">';
+      ref = getSupportedSizes();
+      for (i = 0, len = ref.length; i < len; i++) {
+        size = ref[i];
+        elementId = getElementId(size);
+        viewportElementStrings += ' <span id="' + elementId + '"  class="visible-' + size + '">&nbsp;</span>';
       }
+      viewportElementStrings += '</div>';
+      return viewportElementStrings;
+    };
+
+    /**
+     * @description appends elements to document body for bootstrap to show or hide
+     */
+    appendViewportElementsToDocumentBody = function() {
+      var body, viewportElements;
+      viewportElements = getViewportElementsToAppend();
+      body = $document.find('body');
+      body.append(viewportElements);
+    };
+
+    /**
+     * @description grabs elements from document after being appended to determin which ones are visible
+     * @returns {Array}
+     */
+    getViewportElementsFromDocumentBody = function() {
+      var i, len, ref, size, viewportElement, viewportElementId, viewportElements;
+      viewportElements = [];
+      ref = getSupportedSizes();
+      for (i = 0, len = ref.length; i < len; i++) {
+        size = ref[i];
+        viewportElementId = getElementId(size);
+        viewportElement = $document[0].querySelector('#' + viewportElementId);
+        viewportElements.push(viewportElement);
+      }
+      return viewportElements;
+    };
+
+    /**
+     * @description check if element is visible based on styling
+     * @param {String} element
+     * @returns {boolean}
+     */
+    isElementVisible = function(element) {
+      return angular.element(element).css('display') !== 'none';
+    };
+
+    /**
+     * @description Gets the bootstrap size from the class name 
+     * @param {String} element
+     * @returns {String}
+     */
+    getSizeFromElement = function(element) {
+      var className, size;
+      className = element.className.match('(visible-[a-zA-Z]*)\\b')[0];
+      size = className.replace('visible-', '').trim();
+      return size;
+    };
+
+    /**
+     * @description determins the current size of the screen
+     */
+    findVisibleElement = function() {
+      var elementSize, i, len, viewportElement, viewportElements;
+      viewportElements = getViewportElementsFromDocumentBody();
+      for (i = 0, len = viewportElements.length; i < len; i++) {
+        viewportElement = viewportElements[i];
+        elementSize = getSizeFromElement(viewportElement);
+        if (isElementVisible(viewportElement)) {
+          viewportSize = elementSize;
+          state['is' + elementSize.toUpperCase()] = true;
+        } else {
+          state['is' + elementSize.toUpperCase()] = false;
+        }
+      }
+    };
+
+    /**
+     * @description get screen size when window resize function has been called
+     */
+    listenForResize = function() {
+      angular.element($window).resize(function() {
+        var viewportSizeOld;
+        viewportSizeOld = viewportSize;
+        findVisibleElement();
+        if (viewportSizeOld !== viewportSize) {
+          $rootScope.$broadcast('viewportSize:changed');
+        }
+      });
+    };
+
+    /**
+     * @description initialise before utilising viewport service
+     */
+    init = function() {
+      if (!isInitialised) {
+        appendViewportElementsToDocumentBody();
+        findVisibleElement();
+        listenForResize();
+        isInitialised = true;
+      }
+    };
+
+    /**
+     * @description using function to grab screensize so it cannot be altered outside service
+     * @returns {String}
+     */
+    getViewportSize = function() {
+      return viewportSize;
+    };
+
+    /**
+     * @description boolean check for XS screen size
+     */
+    isXS = function() {
+      return state.isXS;
+    };
+
+    /**
+     * @description boolean check for SM screen size
+     */
+    isSM = function() {
+      return state.isSM;
+    };
+
+    /**
+     * @description boolean check for MD screen size
+     */
+    isMD = function() {
+      return state.isMD;
+    };
+
+    /**
+     * @description boolean check for LG screen size
+     */
+    isLG = function() {
+      return state.isLG;
+    };
+    return {
+      init: init,
+      getViewportSize: getViewportSize,
+      isXS: isXS,
+      isSM: isSM,
+      isMD: isMD,
+      isLG: isLG
     };
   });
 
