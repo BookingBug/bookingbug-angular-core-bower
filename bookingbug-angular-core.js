@@ -1922,6 +1922,39 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbWalletRemainder
+  * @restrict A
+  * @scope
+  *   basketTotal: '='
+  *   walletAmount: '='
+  * @description
+  *
+  * Calculates wallet remainder
+  *
+   */
+  angular.module('BB.Directives').directive('bbWalletRemainder', function() {
+    return {
+      restrict: 'A',
+      scope: {
+        totalPrice: '=',
+        walletAmount: '='
+      },
+      controllerAs: 'vm',
+      bindToController: true,
+      template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
+      controller: function() {
+        return this.amountRemaining = this.walletAmount - this.totalPrice;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Filters').filter('stripPostcode', function() {
     return function(address) {
       var match;
@@ -2616,198 +2649,6 @@ function getURIparam( name ){
         out = items;
       }
       return out;
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
-    return {
-      restrict: 'A',
-      scope: true,
-      replace: true,
-      controller: function($scope, $element, $attrs, uiGmapGoogleMapApi) {
-        $scope.isDraggable = $document.width() > 480;
-        return uiGmapGoogleMapApi.then(function(maps) {
-          maps.visualRefresh = true;
-          return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
-            var map_item;
-            if (!new_val) {
-              return;
-            }
-            map_item = new_val;
-            $scope.map = {
-              center: {
-                latitude: map_item.lat,
-                longitude: map_item.long
-              },
-              zoom: 15
-            };
-            $scope.options = {
-              scrollwheel: false,
-              draggable: $scope.isDraggable
-            };
-            return $scope.marker = {
-              id: 0,
-              coords: {
-                latitude: map_item.lat,
-                longitude: map_item.long
-              }
-            };
-          });
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /**
-  * @ngdoc directive
-  * @name BB.Directives:bbForm
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with forms to add enhanced validation.
-  * When using with ng-form, submitForm needs to be called manually as submit event is not raised.
-  *
-  * @example
-  * <div ng-form name="example_form" bb-form></div>
-  * <form name="example_form" bb-form></form>
-   */
-  var bbFormDirective;
-
-  bbFormDirective = function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
-    'ngInject';
-    var link;
-    link = function(scope, elem, attrs, ctrls) {
-      var $bbPageCtrl, $formCtrl, init, scrollAndFocusOnInvalid, serveBBPage, submitForm;
-      $bbPageCtrl = null;
-      $formCtrl = null;
-      init = function() {
-        $formCtrl = ctrls[0];
-        $bbPageCtrl = ctrls[1];
-        scope.submitForm = submitForm;
-        elem.on("submit", submitForm);
-      };
-      submitForm = function() {
-        var isValid;
-        $formCtrl.$setSubmitted();
-        $timeout(scrollAndFocusOnInvalid, 100);
-        isValid = ValidatorService.validateForm($formCtrl);
-        if (isValid) {
-          serveBBPage();
-        }
-        return isValid;
-      };
-      serveBBPage = function() {
-        var route;
-        if (($bbPageCtrl != null) && (attrs.bbFormRoute != null)) {
-          route = attrs.bbFormRoute;
-          $bbPageCtrl.$scope.checkReady();
-          if (route.length > 0) {
-            $bbPageCtrl.$scope.routeReady(route);
-          } else {
-            $bbPageCtrl.$scope.routeReady();
-          }
-        }
-      };
-      scrollAndFocusOnInvalid = function() {
-        var invalidFormGroup, invalidInput;
-        invalidFormGroup = elem.find('.has-error:first');
-        if (invalidFormGroup && invalidFormGroup.length > 0 && !$formCtrl.raise_alerts) {
-          if ('parentIFrame' in $window) {
-            parentIFrame.scrollToOffset(0, invalidFormGroup.offset().top - GeneralOptions.scroll_offset);
-          } else {
-            $bbug("html, body").animate({
-              scrollTop: invalidFormGroup.offset().top - GeneralOptions.scroll_offset
-            }, 1000);
-          }
-          invalidInput = invalidFormGroup.find('.ng-invalid');
-          invalidInput.focus();
-        }
-      };
-      init();
-    };
-    return {
-      restrict: 'A',
-      require: ['^form', '?^^bbPage'],
-      scope: 'true',
-      link: link
-    };
-  };
-
-  angular.module('BB.Directives').directive('bbForm', bbFormDirective);
-
-}).call(this);
-
-
-/***
-* @ngdoc directive
-* @name BB.Directives:bbTimeZone
-* @restrict A
-* @description
-* Timezone name helper
-* @param {String} time_zone_name The name of the time zone
-* @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
-* @example
-* <div bb-time-zone></div>
-* @example_result
-* <span bb-time-zone>All times are shown in British Summer Time.</span>
- */
-
-(function() {
-  angular.module('BB.Directives').directive('bbTimeZone', function(GeneralOptions, CompanyStoreService) {
-    return {
-      restrict: 'A',
-      controllerAs: '$tzCtrl',
-      templateUrl: '_time_zone_info.html',
-      controller: function() {
-        var company_time_zone;
-        company_time_zone = CompanyStoreService.time_zone;
-        this.time_zone_name = moment().tz(company_time_zone).format('zz');
-        if (!GeneralOptions.use_local_time_zone && GeneralOptions.display_time_zone !== company_time_zone) {
-          return this.is_time_zone_diff = true;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbWalletRemainder
-  * @restrict A
-  * @scope
-  *   basketTotal: '='
-  *   walletAmount: '='
-  * @description
-  *
-  * Calculates wallet remainder
-  *
-   */
-  angular.module('BB.Directives').directive('bbWalletRemainder', function() {
-    return {
-      restrict: 'A',
-      scope: {
-        totalPrice: '=',
-        walletAmount: '='
-      },
-      controllerAs: 'vm',
-      bindToController: true,
-      template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
-      controller: function() {
-        return this.amountRemaining = this.walletAmount - this.totalPrice;
-      }
     };
   });
 
@@ -17387,15 +17228,44 @@ angular.module('BB.Directives')
     });
   });
 
-  angular.module('BB.Directives').directive('bbCustomConfirmationText', function() {
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCustomBookingText
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of custom booking text for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} messages The messages text
+  * @property {string} setLoaded Loading set of custom text
+  * @property {object} setLoadedAndShowError Set loaded and show error
+   */
+  angular.module('BB.Directives').directive('bbCustomBookingText', function() {
     return {
       restrict: 'AE',
       replace: true,
       scope: true,
-      controller: 'CustomConfirmationText'
+      controller: 'CustomBookingText'
     };
   });
 
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Controllers').controller('CustomConfirmationText', function($scope, $rootScope, CustomTextService, $q, PageControllerService, LoadingService) {
     var loader;
     $scope.controller = "public.controllers.CustomConfirmationText";
@@ -17443,55 +17313,6 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbCustomBookingText
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of custom booking text for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {string} messages The messages text
-  * @property {string} setLoaded Loading set of custom text
-  * @property {object} setLoadedAndShowError Set loaded and show error
-   */
-  angular.module('BB.Directives').directive('bbCustomBookingText', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'CustomBookingText'
-    };
-  });
-
-  angular.module('BB.Controllers').controller('CustomBookingText', function($scope, $rootScope, $q, CustomTextService, LoadingService) {
-    var loader;
-    $scope.controller = "public.controllers.CustomBookingText";
-    loader = LoadingService.$loader($scope).notLoaded();
-    return $rootScope.connection_started.then((function(_this) {
-      return function() {
-        return CustomTextService.BookingText($scope.bb.company, $scope.bb.current_item).then(function(msgs) {
-          $scope.messages = msgs;
-          return loader.setLoaded();
-        }, function(err) {
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this), function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-  });
-
   angular.module('BB.Directives').directive('bbCustomConfirmationText', function() {
     return {
       restrict: 'AE',
@@ -17499,50 +17320,6 @@ angular.module('BB.Directives')
       scope: true,
       controller: 'CustomConfirmationText'
     };
-  });
-
-  angular.module('BB.Controllers').controller('CustomConfirmationText', function($scope, $rootScope, CustomTextService, $q, PageControllerService, LoadingService) {
-    var loader;
-    $scope.controller = "public.controllers.CustomConfirmationText";
-    loader = LoadingService.$loader($scope).notLoaded();
-    $rootScope.connection_started.then(function() {
-      return $scope.loadData();
-    }, function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-
-    /***
-    * @ngdoc method
-    * @name loadData
-    * @methodOf BB.Directives:bbCustomBookingText
-    * @description
-    * Load data and display a text message
-     */
-    return $scope.loadData = (function(_this) {
-      return function() {
-        if ($scope.total) {
-          return CustomTextService.confirmationText($scope.bb.company, $scope.total).then(function(msgs) {
-            $scope.messages = msgs;
-            return loader.setLoaded();
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        } else if ($scope.loadingTotal) {
-          return $scope.loadingTotal.then(function(total) {
-            return CustomTextService.confirmationText($scope.bb.company, total).then(function(msgs) {
-              $scope.messages = msgs;
-              return loader.setLoaded();
-            }, function(err) {
-              return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-            });
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        } else {
-          return loader.setLoaded();
-        }
-      };
-    })(this);
   });
 
 }).call(this);
@@ -17935,84 +17712,6 @@ angular.module('BB.Directives')
       replace: true,
       scope: true,
       controller: 'DealList'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
-      link: function(scope, elem, attrs) {
-        var getCurrentSize, isVisible, markers, previous_size, t, update;
-        markers = elem.find('span');
-        $bbug(elem).addClass("bb-display-mode");
-        scope.display = {};
-        previous_size = null;
-        isVisible = function(element) {
-          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
-        };
-        getCurrentSize = function() {
-          var currentSize, element, i, len;
-          currentSize = false;
-          for (i = 0, len = markers.length; i < len; i++) {
-            element = markers[i];
-            if (isVisible(element)) {
-              currentSize = element.className.slice(8, 11);
-              ViewportSize.setViewportSize(element.className.slice(8, 11));
-              break;
-            }
-          }
-          return currentSize;
-        };
-        update = (function(_this) {
-          return function() {
-            var nsize;
-            nsize = getCurrentSize();
-            if (nsize !== previous_size) {
-              previous_size = nsize;
-              scope.display.xs = false;
-              scope.display.sm = false;
-              scope.display.md = false;
-              scope.display.lg = false;
-              scope.display.not_xs = true;
-              scope.display.not_sm = true;
-              scope.display.not_md = true;
-              scope.display.not_lg = true;
-              scope.display[nsize] = true;
-              scope.display["not_" + nsize] = false;
-              return true;
-            }
-            return false;
-          };
-        })(this);
-        t = null;
-        angular.element($window).bind('resize', (function(_this) {
-          return function() {
-            window.clearTimeout(t);
-            return t = setTimeout(function() {
-              if (update()) {
-                return scope.$apply();
-              }
-            }, 50);
-          };
-        })(this));
-        return angular.element($window).bind('load', (function(_this) {
-          return function() {
-            if (update()) {
-              return scope.$apply();
-            }
-          };
-        })(this));
-      }
     };
   });
 
@@ -24406,61 +24105,83 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
 
-  /***
+  /**
   * @ngdoc directive
   * @name BB.Directives:bbForm
   * @restrict A
   * @scope true
   *
   * @description
-  * Use with forms to add enhanced validation. When using with ng-form, submitForm
-  * needs to be called manually as submit event is not raised.
-  
+  * Use with forms to add enhanced validation.
+  * When using with ng-form, submitForm needs to be called manually as submit event is not raised.
   *
   * @example
   * <div ng-form name="example_form" bb-form></div>
   * <form name="example_form" bb-form></form>
-  *
    */
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
+  var bbFormDirective;
+
+  bbFormDirective = function($bbug, $window, ValidatorService, $timeout, GeneralOptions) {
+    'ngInject';
+    var link;
+    link = function(scope, elem, attrs, ctrls) {
+      var $bbPageCtrl, $formCtrl, init, scrollAndFocusOnInvalid, serveBBPage, submitForm;
+      $bbPageCtrl = null;
+      $formCtrl = null;
+      init = function() {
+        $formCtrl = ctrls[0];
+        $bbPageCtrl = ctrls[1];
+        scope.submitForm = submitForm;
+        elem.on("submit", submitForm);
+      };
+      submitForm = function() {
+        var isValid;
+        $formCtrl.$setSubmitted();
+        $timeout(scrollAndFocusOnInvalid, 100);
+        isValid = ValidatorService.validateForm($formCtrl);
+        if (isValid) {
+          serveBBPage();
+        }
+        return isValid;
+      };
+      serveBBPage = function() {
+        var route;
+        if (($bbPageCtrl != null) && (attrs.bbFormRoute != null)) {
+          route = attrs.bbFormRoute;
+          $bbPageCtrl.$scope.checkReady();
+          if (route.length > 0) {
+            $bbPageCtrl.$scope.routeReady(route);
+          } else {
+            $bbPageCtrl.$scope.routeReady();
+          }
+        }
+      };
+      scrollAndFocusOnInvalid = function() {
+        var invalidFormGroup, invalidInput;
+        invalidFormGroup = elem.find('.has-error:first');
+        if (invalidFormGroup && invalidFormGroup.length > 0 && !$formCtrl.raise_alerts) {
+          if ('parentIFrame' in $window) {
+            parentIFrame.scrollToOffset(0, invalidFormGroup.offset().top - GeneralOptions.scroll_offset);
+          } else {
+            $bbug("html, body").animate({
+              scrollTop: invalidFormGroup.offset().top - GeneralOptions.scroll_offset
+            }, 1000);
+          }
+          invalidInput = invalidFormGroup.find('.ng-invalid');
+          invalidInput.focus();
+        }
+      };
+      init();
+    };
     return {
       restrict: 'A',
-      require: '^form',
-      scope: true,
-      link: function(scope, elem, attrs, ctrls) {
-        scope.form = ctrls;
-        elem.on("submit", function() {
-          scope.submitForm();
-          return scope.$apply();
-        });
-        return scope.submitForm = function() {
-          var property;
-          scope.form.submitted = true;
-          for (property in scope.form) {
-            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
-              scope.form[property].submitted = true;
-            }
-          }
-          $timeout(function() {
-            var invalid_form_group, invalid_input;
-            invalid_form_group = elem.find('.has-error:first');
-            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
-              if ('parentIFrame' in $window) {
-                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - GeneralOptions.scroll_offset);
-              } else {
-                $bbug("html, body").animate({
-                  scrollTop: invalid_form_group.offset().top - GeneralOptions.scroll_offset
-                }, 1000);
-              }
-              invalid_input = invalid_form_group.find('.ng-invalid');
-              return invalid_input.focus();
-            }
-          }, 100);
-          return ValidatorService.validateForm(scope.form);
-        };
-      }
+      require: ['^form', '?^^bbPage'],
+      scope: 'true',
+      link: link
     };
-  });
+  };
+
+  angular.module('BB.Directives').directive('bbForm', bbFormDirective);
 
 }).call(this);
 
@@ -24883,7 +24604,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.1.2";
+        return "2.1.3";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -25340,31 +25061,33 @@ angular.module('BB.Directives')
 
 }).call(this);
 
-(function() {
-  'use strict';
 
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbTimeZone
-  * @restrict A
-  * @description
-  * Timezone name helper
-  * @param {String} time_zone_name The name of the time zone
-  * @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
-  * @example
-  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in {{time_zone_name}}.</span>
-  * @example_result
-  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
-   */
+/***
+* @ngdoc directive
+* @name BB.Directives:bbTimeZone
+* @restrict A
+* @description
+* Timezone name helper
+* @param {String} time_zone_name The name of the time zone
+* @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
+* @example
+* <div bb-time-zone></div>
+* @example_result
+* <span bb-time-zone>All times are shown in British Summer Time.</span>
+ */
+
+(function() {
   angular.module('BB.Directives').directive('bbTimeZone', function(GeneralOptions, CompanyStoreService) {
     return {
       restrict: 'A',
-      link: function(scope, el, attrs) {
+      controllerAs: '$tzCtrl',
+      templateUrl: '_time_zone_info.html',
+      controller: function() {
         var company_time_zone;
         company_time_zone = CompanyStoreService.time_zone;
-        scope.time_zone_name = moment().tz(company_time_zone).format('zz');
+        this.time_zone_name = moment().tz(company_time_zone).format('zz');
         if (!GeneralOptions.use_local_time_zone && GeneralOptions.display_time_zone !== company_time_zone) {
-          return scope.is_time_zone_diff = true;
+          return this.is_time_zone_diff = true;
         }
       }
     };
