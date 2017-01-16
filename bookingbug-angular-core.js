@@ -16447,7 +16447,7 @@ angular.module('BB.Directives')
     $scope.init = function() {
       $scope.start_time = $scope.options.range[0];
       $scope.end_time = $scope.options.range[1];
-      $scope.options.collaspe_when_time_selected = _.isBoolean($scope.options.collaspe_when_time_selected) ? $scope.options.collaspe_when_time_selected : true;
+      $scope.options.collapse_when_time_selected = _.isBoolean($scope.options.collapse_when_time_selected) ? $scope.options.collapse_when_time_selected : true;
       $scope.options.hide_availability_summary = _.isBoolean($scope.options.hide_availability_summary) ? $scope.options.hide_availability_summary : false;
       $scope.heading = $translate.instant($scope.options.heading);
       return setData();
@@ -16545,12 +16545,12 @@ angular.module('BB.Directives')
       if ($scope.selected_slot) {
         $scope.hideHeading = true;
         $scope.is_selected = true;
-        if ($scope.options.collaspe_when_time_selected) {
+        if ($scope.options.collapse_when_time_selected) {
           return $scope.is_open = false;
         }
       } else {
         $scope.is_selected = false;
-        if ($scope.options.collaspe_when_time_selected) {
+        if ($scope.options.collapse_when_time_selected) {
           return $scope.is_open = false;
         }
       }
@@ -16608,7 +16608,7 @@ angular.module('BB.Directives')
   * </pre>
   *
   * @param {hash} bbAccordionRangeGroup  A hash of options
-  * @property {boolean} collaspe_when_time_selected Collapse when time is selected
+  * @property {boolean} collapse_when_time_selected Collapse when time is selected
   * @property {string} setRange Set time range for start and end
   * @property {string} start_time The start time
   * @property {string} end_time The end time
@@ -24604,7 +24604,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "2.1.3";
+        return "2.1.4";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -28138,7 +28138,7 @@ angular.module('BB.Directives')
             if (has_content) {
               return element.html(clone).show();
             } else {
-              return $q.when($templateCache.get('client_form.html')).then(function(template) {
+              return $q.when($templateCache.get('_client_details.html')).then(function(template) {
                 element.html(template).show();
                 return $compile(element.contents())(scope);
               });
