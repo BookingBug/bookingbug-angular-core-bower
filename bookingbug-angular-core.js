@@ -23276,7 +23276,7 @@ angular.module('BB.Directives')
                 renderTemplate(scope, element, prms.design_mode);
               }
               return scope.$on('refreshPage', function() {
-                return renderTemplate(scope, element, prms.design_mode);
+                return renderTemplate(scope, element, prms.design_mode, prms.template);
               });
             } else if (prms.custom_partial_url) {
               appendCustomPartials(scope, element, prms);
@@ -33895,7 +33895,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('Total', function($scope, $rootScope, $q, $location, $window, QueryStringService, LoadingService) {
+  angular.module('BB.Controllers').controller('Total', function($scope, $rootScope, $q, $location, $window, QueryStringService, LoadingService, PurchaseService) {
     var loader;
     $scope.controller = "public.controllers.Total";
     loader = LoadingService.$loader($scope).notLoaded();
@@ -33905,7 +33905,7 @@ angular.module('BB.Directives')
         $scope.bb.payment_status = null;
         id = QueryStringService('purchase_id');
         if (id && !$scope.bb.total) {
-          BBModel.Purchase.Total.$query({
+          PurchaseService.query({
             url_root: $scope.bb.api_url,
             purchase_id: id
           }).then(function(total) {
