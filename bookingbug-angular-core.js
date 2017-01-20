@@ -1922,39 +1922,6 @@ function getURIparam( name ){
 
 (function() {
   'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbWalletRemainder
-  * @restrict A
-  * @scope
-  *   basketTotal: '='
-  *   walletAmount: '='
-  * @description
-  *
-  * Calculates wallet remainder
-  *
-   */
-  angular.module('BB.Directives').directive('bbWalletRemainder', function() {
-    return {
-      restrict: 'A',
-      scope: {
-        totalPrice: '=',
-        walletAmount: '='
-      },
-      controllerAs: 'vm',
-      bindToController: true,
-      template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
-      controller: function() {
-        return this.amountRemaining = this.walletAmount - this.totalPrice;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Filters').filter('stripPostcode', function() {
     return function(address) {
       var match;
@@ -2649,6 +2616,39 @@ function getURIparam( name ){
         out = items;
       }
       return out;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbWalletRemainder
+  * @restrict A
+  * @scope
+  *   basketTotal: '='
+  *   walletAmount: '='
+  * @description
+  *
+  * Calculates wallet remainder
+  *
+   */
+  angular.module('BB.Directives').directive('bbWalletRemainder', function() {
+    return {
+      restrict: 'A',
+      scope: {
+        totalPrice: '=',
+        walletAmount: '='
+      },
+      controllerAs: 'vm',
+      bindToController: true,
+      template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
+      controller: function() {
+        return this.amountRemaining = this.walletAmount - this.totalPrice;
+      }
     };
   });
 
@@ -6279,6 +6279,22 @@ function getURIparam( name ){
       Client.prototype.setClientDetails = function(details) {
         this.client_details = details;
         return this.questions = this.client_details.questions;
+      };
+
+
+      /**
+      * @ngdoc method
+      * @name setTimeZone
+      * @methodOf BB.Models:Client
+      * @description
+      * Set client time zone in according to time_zone parameter
+      * @param {string} time_zone
+       */
+
+      Client.prototype.setTimeZone = function(time_zone) {
+        if (time_zone != null) {
+          this.time_zone = time_zone;
+        }
       };
 
 
@@ -11360,7 +11376,7 @@ function getURIparam( name ){
           var scope;
           scope = $rootScope;
           while (scope) {
-            if (scope.controller === 'public.controllers.BBCtrl') {
+            if (scope.cid === 'BBCtrl') {
               break;
             }
             scope = scope.$$childHead;
@@ -15171,7 +15187,7 @@ function getURIparam( name ){
     /**
      * @description variable used to store current screen size
      */
-    var appendViewportElementsToDocumentBody, findVisibleElement, getElementId, getSizeFromElement, getSupportedSizes, getViewportElementsFromDocumentBody, getViewportElementsToAppend, getViewportSize, init, isElementVisible, isInitialised, isLG, isMD, isSM, isXS, listenForResize, state, viewportElementIdPrefix, viewportSize;
+    var appendViewportElementsToBBElement, findVisibleElement, getElementId, getSizeFromElement, getSupportedSizes, getViewportElementsFromDocument, getViewportElementsToAppend, getViewportSize, init, isElementVisible, isInitialised, isLG, isMD, isSM, isXS, listenForResize, state, viewportElementIdPrefix, viewportSize;
     viewportSize = null;
 
     /**
@@ -15229,20 +15245,20 @@ function getURIparam( name ){
     };
 
     /**
-     * @description appends elements to document body for bootstrap to show or hide
+     * @description appends elements to bb element for bootstrap to show or hide
      */
-    appendViewportElementsToDocumentBody = function() {
-      var body, viewportElements;
+    appendViewportElementsToBBElement = function() {
+      var bb, viewportElements;
       viewportElements = getViewportElementsToAppend();
-      body = $document.find('body');
-      body.append(viewportElements);
+      bb = $document.find('#bb');
+      bb.append(viewportElements);
     };
 
     /**
      * @description grabs elements from document after being appended to determin which ones are visible
      * @returns {Array}
      */
-    getViewportElementsFromDocumentBody = function() {
+    getViewportElementsFromDocument = function() {
       var i, len, ref, size, viewportElement, viewportElementId, viewportElements;
       viewportElements = [];
       ref = getSupportedSizes();
@@ -15281,7 +15297,7 @@ function getURIparam( name ){
      */
     findVisibleElement = function() {
       var elementSize, i, len, viewportElement, viewportElements;
-      viewportElements = getViewportElementsFromDocumentBody();
+      viewportElements = getViewportElementsFromDocument();
       for (i = 0, len = viewportElements.length; i < len; i++) {
         viewportElement = viewportElements[i];
         elementSize = getSizeFromElement(viewportElement);
@@ -15313,7 +15329,7 @@ function getURIparam( name ){
      */
     init = function() {
       if (!isInitialised) {
-        appendViewportElementsToDocumentBody();
+        appendViewportElementsToBBElement();
         findVisibleElement();
         listenForResize();
         isInitialised = true;
@@ -15389,7 +15405,7 @@ function getURIparam( name ){
    */
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper, GeneralOptions) {
+  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper, GeneralOptions, $translate) {
     var Widget;
     return Widget = (function() {
       function Widget() {
@@ -15609,7 +15625,7 @@ function getURIparam( name ){
         var j, k, l, len, len1, len2, match, ref, ref1, ref2, setDocumentTitle, step, title;
         setDocumentTitle = function(title) {
           if (GeneralOptions.update_document_title && title) {
-            return document.title = title;
+            return document.title = $translate.instant(title);
           }
         };
         if (!this.current_step) {
@@ -16186,8 +16202,6 @@ function getURIparam( name ){
           BOOKING: "Booking",
           ADMITTANCE: "Admittance",
           EDIT: "Edit",
-          WHEN: "When",
-          DATE_TIME: "Date/Time",
           CONFIRMATION: "Confirmation",
           NAME: "Name",
           FIRST_NAME: "First Name",
@@ -16412,7 +16426,6 @@ angular.module('BB.Directives')
 (function() {
   angular.module('BB.Controllers').controller('AccordionRangeGroup', function($scope, $attrs, $rootScope, $q, FormDataStoreService, GeneralOptions, DateTimeUtilitiesService, $translate, CompanyStoreService) {
     var hasAvailability, setData, updateAvailability;
-    $scope.controller = "public.controllers.AccordionRangeGroup";
     $scope.$watch('slots', function() {
       return setData();
     });
@@ -16646,7 +16659,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('AddressList', function($scope, $rootScope, $filter, $sniffer, FormDataStoreService, LoadingService, BBModel) {
     var loader;
-    $scope.controller = "public.controllers.AddressList";
     $scope.manual_postcode_entry = false;
     loader = LoadingService.$loader($scope);
     FormDataStoreService.init('AddressList', $scope, ['show_complete_address']);
@@ -17081,7 +17093,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('BulkPurchase', function($scope, $rootScope, BBModel) {
-    $scope.controller = "public.controllers.BulkPurchase";
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
         return $scope.init($scope.bb.company);
@@ -17212,7 +17223,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('CustomBookingText', function($scope, $rootScope, $q, CustomTextService, LoadingService) {
     var loader;
-    $scope.controller = "public.controllers.CustomBookingText";
     loader = LoadingService.$loader($scope).notLoaded();
     return $rootScope.connection_started.then((function(_this) {
       return function() {
@@ -17268,7 +17278,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('CustomConfirmationText', function($scope, $rootScope, CustomTextService, $q, PageControllerService, LoadingService) {
     var loader;
-    $scope.controller = "public.controllers.CustomConfirmationText";
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then(function() {
       return $scope.loadData();
@@ -17557,7 +17566,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, $uibModal, $document, AlertService, FormDataStoreService, ValidatorService, LoadingService, BBModel, $translate) {
     var ModalInstanceCtrl, init, loader;
-    $scope.controller = "public.controllers.DealList";
     FormDataStoreService.init('DealList', $scope, ['deals']);
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then(function() {
@@ -17622,7 +17630,6 @@ angular.module('BB.Directives')
       }
     };
     ModalInstanceCtrl = function($scope, $uibModalInstance, item, ValidatorService) {
-      $scope.controller = 'ModalInstanceCtrl';
       $scope.item = item;
       $scope.recipient = false;
 
@@ -17795,7 +17802,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('FileUpload', function($scope, Upload) {
-    $scope.controller = "public.controllers.FileUpload";
 
     /***
     * @ngdoc method
@@ -18137,7 +18143,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, $q, $location, LoginService, ValidatorService, AlertService, LoadingService, BBModel) {
     var loader;
-    $scope.controller = "public.controllers.Login";
     $scope.validator = ValidatorService;
     $scope.login_form = {};
     loader = LoadingService.$loader($scope);
@@ -18397,7 +18402,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('MonthCalendar', function($scope, $rootScope, $q, AlertService, LoadingService, BBModel, $translate) {
     var loader;
-    $scope.controller = "public.controllers.MonthCalendar";
     loader = LoadingService.$loader($scope).notLoaded();
     $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     $scope.day_data = {};
@@ -19030,7 +19034,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('PackageItem', function($scope, $rootScope, BBModel) {
-    $scope.controller = "public.controllers.PackageItem";
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
         return $scope.init($scope.bb.company);
@@ -19161,7 +19164,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('PackagePicker', function($scope, $rootScope, $q, TimeService, LoadingService, BBModel) {
     var loader;
-    $scope.controller = "public.controllers.PackagePicker";
     $scope.sel_date = moment().add(1, 'days');
     $scope.selected_date = $scope.sel_date.toDate();
     $scope.picked_time = false;
@@ -19422,7 +19424,6 @@ angular.module('BB.Directives')
     'ngInject';
     var checkReady, init, isScopeReady, routeReady;
     this.$scope = $scope;
-    $scope.controllerClass = "public.controllers.BBPageCtrl";
     $scope.$has_page_control = true;
     $scope.validator = ValidatorService;
     init = function() {
@@ -19557,8 +19558,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('PayForm', function($scope, $location) {
-    var sendSubmittingEvent, submitPaymentForm;
-    $scope.controller = "public.controllers.PayForm";
 
     /***
     * @ngdoc method
@@ -19569,6 +19568,7 @@ angular.module('BB.Directives')
     *
     * @param {array} total The total price
      */
+    var sendSubmittingEvent, submitPaymentForm;
     $scope.setTotal = function(total) {
       return $scope.total = total;
     };
@@ -19794,7 +19794,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout, LoadingService) {
     var loader;
-    $scope.controller = "public.controllers.Payment";
     loader = LoadingService.$loader($scope).notLoaded();
     if ($scope.purchase) {
       $scope.bb.total = $scope.purchase;
@@ -20098,7 +20097,6 @@ angular.module('BB.Directives')
 (function() {
   angular.module('BB.Controllers').controller('PostcodeLookup', function($scope, $rootScope, $q, ValidatorService, AlertService, LoadingService, $attrs) {
     var loader;
-    $scope.controller = "PostcodeLookup";
     angular.extend(this, new CompanyListBase($scope, $rootScope, $q, $attrs));
     $scope.validator = ValidatorService;
     loader = LoadingService.$loader($scope);
@@ -20193,7 +20191,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('ProductList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, LoadingService, halClient) {
     var loader;
-    $scope.controller = "public.controllers.ProductList";
     loader = LoadingService.$loader($scope).notLoaded();
     $scope.validator = ValidatorService;
     $rootScope.connection_started.then(function() {
@@ -20283,7 +20280,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('PurchaseTotal', function($scope, $rootScope, $window, BBModel, $q) {
-    $scope.controller = "public.controllers.PurchaseTotal";
     angular.extend(this, new $window.PageController($scope, $q));
 
     /***
@@ -20348,7 +20344,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('SpaceList', function($scope, $rootScope, $q, ServiceService, LoadingService, BBModel) {
     var loader;
-    $scope.controller = "public.controllers.SpaceList";
     loader = LoadingService.$loader($scope);
     $rootScope.connection_started.then((function(_this) {
       return function() {
@@ -20438,7 +20433,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('SurveyQuestions', function($scope, $rootScope, $location, BBModel, ValidatorService, $sessionStorage) {
     var getBookingAndSurvey, getBookingRef, getMember, getPurchaseID, init, loader, setPurchaseCompany, showLoginError;
-    $scope.controller = "SurveyQuestions";
     $scope.completed = false;
     $scope.login = {
       email: "",
@@ -20891,7 +20885,6 @@ angular.module('BB.Directives')
 
   angular.module('BB.Controllers').controller('TimeRangeListStackedController', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, PersonService, PurchaseService, DateTimeUtilitiesService, LoadingService) {
     var isSubtractValid, loader, setEnabledSlots, setTimeRange, spliceExistingDateTimes, updateHideStatus;
-    $scope.controller = "public.controllers.TimeRangeListStacked";
     FormDataStoreService.init('TimeRangeListStacked', $scope, ['selected_slot', 'original_start_date', 'start_at_week_start']);
     loader = LoadingService.$loader($scope).notLoaded();
     $scope.available_times = 0;
@@ -21500,7 +21493,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('TimeSlots', function($scope, $rootScope, $q, $attrs, FormDataStoreService, ValidatorService, PageControllerService, LoadingService, halClient, BBModel) {
     var loader, setItem;
-    $scope.controller = "public.controllers.SlotList";
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then(function() {
       if ($scope.bb.company) {
@@ -21638,7 +21630,6 @@ angular.module('BB.Directives')
     var $debounce, addItemToBasket, base64encode, broadcastItemUpdate, checkStepTitle, clearBasketItem, clearClient, clearPage, companySet, connectionStarted, decideNextPage, deleteBasketItem, deleteBasketItems, determineBBApiUrl, emptyBasket, getCurrentStepTitle, getPartial, getUrlParam, hideLoaderHandler, hidePage, initWidget, initWidget2, initializeBBWidget, isAdmin, isAdminIFrame, isFirstCall, isLoadingPage, isMemberLoggedIn, jumpToPage, loadPreviousStep, loadStep, loadStepByPageName, locationChangeStartHandler, logout, moveToBasket, quickEmptybasket, redirectTo, reloadDashboard, reset, restart, restoreBasket, scrollTo, setActiveCompany, setAffiliate, setBasicRoute, setBasket, setBasketItem, setClient, setCompany, setLastSelectedDate, setLoadingPage, setPageLoaded, setPageRoute, setReadyToCheckout, setRoute, setStepTitle, setUsingBasket, setupDefaults, showCheckout, showLoaderHandler, showPage, skipThisStep, supportsTouch, updateBasket, widgetStarted;
     this.$scope = $scope;
     $scope.cid = "BBCtrl";
-    $scope.controller = "public.controllers.BBCtrl";
     $scope.qs = QueryStringService;
     $scope.company_api_path = '/api/v1/company/{company_id}{?embed,category_id}';
     $scope.company_admin_api_path = '/api/v1/admin/{company_id}/company{?embed,category_id}';
@@ -25702,7 +25693,6 @@ angular.module('BB.Directives')
 
   angular.module('BB.Controllers').controller('Purchase', function($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, $translate, ReasonService, $document) {
     var checkIfMoveBooking, checkIfWaitlistBookings, failMsg, getBookings, getCompanyID, getPurchase, getPurchaseID, getReasons, loader, loginRequired, setCancelReasons, setCancelReasonsToBB, setMoveReasons, setMoveReasonsToBB, setPurchaseCompany;
-    $scope.controller = "Purchase";
     $scope.is_waitlist = false;
     $scope.make_payment = false;
     loader = LoadingService.$loader($scope);
@@ -26193,7 +26183,6 @@ angular.module('BB.Directives')
   });
 
   ModalDelete = function($scope, $rootScope, $uibModalInstance, booking, AlertService, cancel_reasons) {
-    $scope.controller = "ModalDelete";
     $scope.booking = booking;
     $scope.cancel_reasons = cancel_reasons;
     $scope.confirmDelete = function() {
@@ -26206,7 +26195,6 @@ angular.module('BB.Directives')
   };
 
   ModalDeleteAll = function($scope, $rootScope, $uibModalInstance, purchase) {
-    $scope.controller = "ModalDeleteAll";
     $scope.purchase = purchase;
     $scope.confirmDelete = function() {
       return $uibModalInstance.close(purchase);
@@ -27175,7 +27163,6 @@ angular.module('BB.Directives')
       replace: true,
       scope: true,
       controller: function($scope, $rootScope, BasketService, $q) {
-        $scope.controller = "public.controllers.MiniBasket";
         $scope.setUsingBasket(true);
         $rootScope.connection_started.then((function(_this) {
           return function() {};
@@ -27253,7 +27240,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('BasketList', function($scope, $rootScope, $element, $attrs, $q, AlertService, FormDataStoreService, LoginService, LoadingService, BBModel) {
     var groupBasketItems, loader, updateLocalBasket;
-    $scope.controller = "public.controllers.BasketList";
     $scope.setUsingBasket(true);
     loader = LoadingService.$loader($scope);
     $scope.show_wallet = $scope.bb.company_settings.hasOwnProperty('has_wallets') && $scope.bb.company_settings.has_wallets && $scope.client.valid() && LoginService.isLoggedIn() && LoginService.member().id === $scope.client.id && $scope.client.has_active_wallet;
@@ -27542,7 +27528,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('BasketSummary', function($scope) {
-    $scope.controller = "public.controllers.BasketSummary";
     $scope.basket_items = $scope.bb.basket.items;
 
     /***
@@ -27590,7 +27575,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('CategoryList', function($scope, $rootScope, $q, PageControllerService, LoadingService, BBModel, ValidatorService) {
     var loader;
-    $scope.controller = "public.controllers.CategoryList";
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     $rootScope.connection_started.then((function(_this) {
@@ -27689,7 +27673,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('Checkout', function($scope, $rootScope, $attrs, $q, $location, $window, $timeout, $bbug, FormDataStoreService, LoadingService, BBModel) {
     var loader;
-    $scope.controller = "public.controllers.Checkout";
     loader = LoadingService.$loader($scope).notLoaded();
     $scope.options = $scope.$eval($attrs.bbCheckout) || {};
     FormDataStoreService.destroy($scope);
@@ -27821,7 +27804,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('ClientDetails', function($scope, $attrs, $rootScope, LoginService, ValidatorService, AlertService, LoadingService, BBModel) {
     var handleError, loader, options;
-    $scope.controller = "public.controllers.ClientDetails";
     loader = LoadingService.$loader($scope).notLoaded();
     $scope.validator = ValidatorService;
     $scope.existing_member = false;
@@ -28157,7 +28139,6 @@ angular.module('BB.Directives')
 
   CompanyListBase = function($scope, $rootScope, $q, $attrs, LoadingService) {
     var loader, options;
-    $scope.controller = "public.controllers.CompanyList";
     loader = LoadingService.$loader($scope).notLoaded();
     options = $scope.$eval($attrs.bbCompanies);
     $rootScope.connection_started.then((function(_this) {
@@ -28286,7 +28267,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('DayList', function($scope, $rootScope, $q, DayService) {
     var setCurrentDate;
-    $scope.controller = "public.controllers.DayList";
     $rootScope.connection_started.then(function() {
       if (!$scope.current_date && $scope.last_selected_date) {
         $scope.selected_date = $scope.last_selected_date.clone();
@@ -28413,7 +28393,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, $q, $filter, PageControllerService, AlertService, ValidatorService, LoadingService, $translate) {
     var loader, options;
-    $scope.controller = "public.controllers.DurationList";
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     options = $scope.$eval($attrs.bbDurations) || {};
@@ -28566,7 +28545,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService, LoadingService) {
     var init, initImage, initTickets, loader, ticket_refs;
-    $scope.controller = "public.controllers.Event";
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     $scope.validator = ValidatorService;
@@ -28864,7 +28842,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('EventGroupList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, LoadingService, halClient) {
     var loader, setEventGroupItem;
-    $scope.controller = "public.controllers.EventGroupList";
     FormDataStoreService.init('EventGroupList', $scope, ['event_group']);
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
@@ -29055,7 +29032,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, EventGroupService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout, ValidatorService, LoadingService, BBModel) {
     var buildDynamicFilters, loader, sort;
-    $scope.controller = "public.controllers.EventList";
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     $scope.pick = {};
@@ -29704,7 +29680,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('ItemDetails', function($scope, $attrs, $rootScope, PurchaseBookingService, AlertService, BBModel, FormDataStoreService, ValidatorService, $uibModal, $document, $translate, $filter, GeneralOptions, PurchaseService, LoadingService) {
     var confirming, loader, setItemDetails;
-    $scope.controller = "public.controllers.ItemDetails";
     loader = LoadingService.$loader($scope);
     $scope.suppress_basket_update = $attrs.bbSuppressBasketUpdate != null;
     $scope.item_details_id = $scope.$eval($attrs.bbSuppressBasketUpdate);
@@ -29966,7 +29941,7 @@ angular.module('BB.Directives')
     $scope.showMoveMessage = function(datetime) {
       return AlertService.add("info", {
         msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_SUCCESS_ALERT', {
-          datetime: datetime
+          datetime: $filter('datetime')(datetime, 'LLLL')
         })
       });
     };
@@ -30124,7 +30099,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('MapCtrl', function($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, ErrorService, $log, GeolocationService) {
     var checkDataStore, filterByService, geolocateFail, loader, mapInit, map_ready_def, openDefaultMarker, reverseGeocode, searchFailed, searchPlaces, searchSuccess, setAnswers, setMarkers;
-    $scope.controller = "public.controllers.MapCtrl";
     FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
     $scope.options = $scope.$eval($attrs.bbMap) || {};
     $scope.num_search_results = $scope.options.num_search_results || 6;
@@ -30928,7 +30902,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('DayListMa', function($scope, $rootScope, $q, AlertService, LoadingService, BBModel) {
     var loader;
-    $scope.controller = "public.controllers.DayList";
     loader = LoadingService.$loader($scope).notLoaded();
     $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     $scope.day_data = {};
@@ -31761,7 +31734,6 @@ angular.module('BB.Directives')
     'ngInject';
     var chosenService, connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromPerson, init, loadData, loader, personListener, selectAndRoute, selectItem, setPerson, setReady;
     this.$scope = $scope;
-    $scope.controller = "public.controllers.BBPeopleCtrl";
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     chosenService = null;
     loader = null;
@@ -32349,7 +32321,6 @@ angular.module('BB.Directives')
     'ngInject';
     var loader, setServiceItem, setServicesDisplayName;
     this.$scope = $scope;
-    $scope.controller = "public.controllers.ServiceList";
     FormDataStoreService.init('ServiceList', $scope, ['service']);
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
@@ -32808,7 +32779,6 @@ angular.module('BB.Directives')
 (function() {
   'use strict';
   angular.module('BB.Controllers').controller('Summary', function($scope, $rootScope, LoadingService, BBModel, $q) {
-    $scope.controller = "public.controllers.Summary";
     $rootScope.connection_started.then((function(_this) {
       return function() {
         $scope.item = $scope.bb.current_item;
@@ -32880,7 +32850,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService) {
     var currentPostcode, isSubtractValid, loader, setTimeRange;
-    $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
     FormDataStoreService.init('TimeRangeList', $scope, ['selected_slot', 'postcode', 'original_start_date', 'start_at_week_start']);
     if (currentPostcode !== $scope.postcode) {
@@ -33526,7 +33495,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, PageControllerService, ValidatorService, LoadingService, ErrorService, $translate) {
     var checkRequestedSlots, loader;
-    $scope.controller = "public.controllers.TimeList";
     loader = LoadingService.$loader($scope).notLoaded();
     angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     if (!$scope.data_source) {
@@ -33897,7 +33865,6 @@ angular.module('BB.Directives')
   'use strict';
   angular.module('BB.Controllers').controller('Total', function($scope, $rootScope, $q, $location, $window, QueryStringService, LoadingService, PurchaseService) {
     var loader;
-    $scope.controller = "public.controllers.Total";
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then((function(_this) {
       return function() {
