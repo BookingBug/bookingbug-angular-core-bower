@@ -8209,7 +8209,9 @@ function getURIparam( name ){
       }
       $timeout(function() {
         $scope.myMap.fitBounds($scope.mapBounds);
-        $scope.myMap.setZoom(15);
+        if ($scope.options.default_zoom) {
+          $scope.myMap.setZoom($scope.default_zoom);
+        }
         if ($scope.bb.current_item.service && $scope.options && $scope.filter_by_service) {
           return $scope.setLoaded($scope);
         }
@@ -8353,7 +8355,7 @@ function getURIparam( name ){
     * @name searchSuccess
     * @methodOf BB.Directives:bbMap
     * @description
-    * Search has been succeeded, and return 
+    * Search has been succeeded, and return
     *
     * @param {object} result The result of the search
      */
@@ -8362,7 +8364,9 @@ function getURIparam( name ){
       $scope.search_failed = false;
       $scope.loc = result.geometry.location;
       $scope.myMap.setCenter($scope.loc);
-      $scope.myMap.setZoom(15);
+      if ($scope.options.default_zoom) {
+        $scope.myMap.setZoom($scope.default_zoom);
+      }
       $scope.showClosestMarkers($scope.loc);
       return $rootScope.$broadcast("map:search_success");
     };
@@ -8515,6 +8519,7 @@ function getURIparam( name ){
     $scope.openMarkerInfo = function(marker) {
       return $timeout(function() {
         $scope.currentMarker = marker;
+        $scope.myMap.setCenter(marker.position);
         return $scope.myInfoWindow.open($scope.myMap, marker);
       }, 250);
     };
@@ -8576,7 +8581,7 @@ function getURIparam( name ){
     * @name roundNumberUp
     * @methodOf BB.Directives:bbMap
     * @description
-    * Calculate the round number up 
+    * Calculate the round number up
     *
     * @param {integer} num The number of places
     * @param {object} places The places
@@ -8682,7 +8687,9 @@ function getURIparam( name ){
         if (new_value !== old_value && $scope.loc) {
           $scope.myInfoWindow.close();
           $scope.myMap.setCenter($scope.loc);
-          $scope.myMap.setZoom(15);
+          if ($scope.options.default_zoom) {
+            $scope.myMap.setZoom($scope.default_zoom);
+          }
           return $scope.showClosestMarkers($scope.loc);
         }
       };
@@ -15249,7 +15256,7 @@ angular.module('BB.Directives')
         return "maestro";
       }
       if (/^5[1-5]/.test(ccnumber)) {
-        return "1.4.111";
+        return "master";
       }
       if (/^4/.test(ccnumber)) {
         return "visa";
@@ -17669,7 +17676,7 @@ angular.module('BB.Directives')
 (function() {
   angular.module('BB.Models').service("BBModel", function($q, $injector) {
     var admin_models, afuncs, fn, fn1, fn2, fn3, funcs, i, j, k, l, len, len1, len2, len3, member_models, mfuncs, model, models, pfuncs, purchase_models;
-    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase', 'Pagination', 'Reason'];
+    models = ['Address', 'Answer', 'Affiliate', 'Basket', 'BasketItem', 'BookingText', 'BookableItem', 'Category', 'Client', 'ClientDetails', 'Company', 'CompanySettings', 'Day', 'Event', 'EventChain', 'EventGroup', 'EventTicket', 'EventSequence', 'ItemDetails', 'Person', 'PurchaseItem', 'PurchaseTotal', 'Question', 'Resource', 'Service', 'Slot', 'Space', 'Clinic', 'SurveyQuestion', 'TimeSlot', 'BusinessQuestion', 'Image', 'Deal', 'PrePaidBooking', 'MembershipLevel', 'Product', 'BBCollection', 'ExternalPurchase', 'PackageItem', 'BulkPurchase', 'Pagination', 'Reason'];
     funcs = {};
     fn = (function(_this) {
       return function(model) {
@@ -17805,8 +17812,8 @@ angular.module('BB.Directives')
         this.$get(link).then((function(_this) {
           return function(res) {
             var inj;
-            inj = $injector.get('BB.Service.' + link);
-            if (inj) {
+            try {
+              inj = $injector.get('BB.Service.' + link);
               if (inj.promise) {
                 return inj.unwrap(res).then(function(ans) {
                   return prom.resolve(ans);
@@ -17816,7 +17823,7 @@ angular.module('BB.Directives')
               } else {
                 return prom.resolve(inj.unwrap(res));
               }
-            } else {
+            } catch (error) {
               return prom.resolve(res);
             }
           };
@@ -20698,6 +20705,28 @@ angular.module('BB.Directives')
       }
 
       return BookableItem;
+
+    })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Models').factory("BookingTextModel", function($q, BBModel, BaseModel) {
+    var BookingText;
+    console.log('BookingText model loaded');
+    return BookingText = (function(superClass) {
+      extend(BookingText, superClass);
+
+      function BookingText() {
+        return BookingText.__super__.constructor.apply(this, arguments);
+      }
+
+      return BookingText;
 
     })(BaseModel);
   });
@@ -29039,6 +29068,15 @@ angular.module('BB.Directives')
       promise: true,
       unwrap: function(resource) {
         return UnwrapService.unwrapCollection(BBModel.Service, 'child_services', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.booking_text", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.BookingText, 'booking_text', resource);
       }
     };
   });
