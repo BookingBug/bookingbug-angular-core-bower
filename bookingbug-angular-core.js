@@ -25205,6 +25205,10 @@ angular.module('BB.Directives')
 
 (function() {
   angular.module('BB.Services').factory("ClientService", function($q, BBModel, MutexService) {
+    var setDefaultCompanyId;
+    setDefaultCompanyId = function(company, client) {
+      client.default_company_id = company.id;
+    };
     return {
       create: function(company, client) {
         var deferred;
@@ -25213,6 +25217,7 @@ angular.module('BB.Directives')
           deferred.reject("Cannot create new people for this company");
         } else {
           MutexService.getLock().then(function(mutex) {
+            setDefaultCompanyId(company, client);
             return company.$post('client', {}, client.getPostData()).then((function(_this) {
               return function(cl) {
                 deferred.resolve(new BBModel.Client(cl));
@@ -25232,6 +25237,7 @@ angular.module('BB.Directives')
         var deferred;
         deferred = $q.defer();
         MutexService.getLock().then(function(mutex) {
+          setDefaultCompanyId(company, client);
           return client.$put('self', {}, client.getPostData()).then((function(_this) {
             return function(cl) {
               deferred.resolve(new BBModel.Client(cl));
