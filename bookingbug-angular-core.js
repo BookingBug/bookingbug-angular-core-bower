@@ -16250,7 +16250,6 @@ angular.module('BB.Directives')
       scope: true,
       controller: function($scope, $rootScope, $q, PurchaseService, AlertService, ValidatorService, LoadingService, BBModel) {
         var initialise, loader, updateBooking;
-        $scope.validator = ValidatorService;
         loader = LoadingService.$loader($scope);
         $rootScope.connection_started.then(function() {
           return initialise();
@@ -16414,113 +16413,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('BulkPurchase', function($scope, $rootScope, BBModel) {
-    $rootScope.connection_started.then(function() {
-      if ($scope.bb.company) {
-        return $scope.init($scope.bb.company);
-      }
-    });
-    $scope.init = function(company) {
-      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
-      return BBModel.BulkPurchase.$query(company).then(function(bulk_purchases) {
-        return $scope.bulk_purchases = bulk_purchases;
-      });
-    };
-
-    /***
-    * @ngdoc method
-    * @name selectItem
-    * @methodOf BB.Directives:bbBulkPurchases
-    * @description
-    * Select a bulk purchase into the current booking journey and route on to the next page dpending on the current page control
-    *
-    * @param {object} package Bulk_purchase or BookableItem to select
-    * @param {string=} route A specific route to load
-     */
-    $scope.selectItem = function(item, route) {
-      if ($scope.$parent.$has_page_control) {
-        $scope.bulk_purchase = item;
-        return false;
-      } else {
-        $scope.booking_item.setBulkPurchase(item);
-        $scope.decideNextPage(route);
-        return true;
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbBulkPurchases
-    * @description
-    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
-     */
-    return $scope.setReady = (function(_this) {
-      return function() {
-        if ($scope.bulk_purchase) {
-          $scope.booking_item.setBulkPurchase($scope.bulk_purchase);
-          return true;
-        } else {
-          return false;
-        }
-      };
-    })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbBulkPurchases
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of bulk purchases for the currently in scroe company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @param {hash}  bbBulkPurchases   A hash of options
-  * @property {array} bulk_purchases An array of all services
-  * @property {array} bookable_items An array of all BookableItems - used if the current_item has already selected a resource or person
-  * @property {bulk_purchase} bulk_purchase The currectly selected bulk_purchase
-  * @example
-  *  <example module="BB">
-  *    <file name="index.html">
-  *   <div bb-api-url='https://uk.bookingbug.com'>
-  *   <div  bb-widget='{company_id:21}'>
-  *     <div bb-bulk-purchases>
-  *        <ul>
-  *          <li ng-repeat='bulk in bulk_purchases'> {{bulk.name}}</li>
-  *        </ul>
-  *     </div>
-  *     </div>
-  *     </div>
-  *   </file>
-  *  </example>
-  *
-   */
-  angular.module('BB.Directives').directive('bbBulkPurchases', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'BulkPurchase'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   var app;
 
   app = angular.module('BB.Directives');
@@ -16598,7 +16490,7 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('CustomConfirmationText', function($scope, $rootScope, CustomTextService, $q, PageControllerService, LoadingService) {
+  angular.module('BB.Controllers').controller('CustomConfirmationText', function($scope, $rootScope, CustomTextService, $q, LoadingService) {
     var loader;
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then(function() {
@@ -16879,168 +16771,6 @@ angular.module('BB.Directives')
           }
         };
       }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, $uibModal, $document, AlertService, FormDataStoreService, ValidatorService, LoadingService, BBModel, $translate) {
-    var ModalInstanceCtrl, init, loader;
-    FormDataStoreService.init('DealList', $scope, ['deals']);
-    loader = LoadingService.$loader($scope).notLoaded();
-    $rootScope.connection_started.then(function() {
-      return init();
-    }, function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    init = function() {
-      var deal_promise;
-      loader.notLoaded();
-      if (!$scope.deals) {
-        deal_promise = BBModel.Deal.$query($scope.bb.company);
-        return deal_promise.then(function(deals) {
-          $scope.deals = deals;
-          return loader.setLoaded();
-        });
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name selectDeal
-    * @methodOf BB.Directives:bbDeals
-    * @description
-    * Select the deal and open modal
-    *
-    * @param {array} deal The deals array
-     */
-    $scope.selectDeal = function(deal) {
-      var iitem, modalInstance;
-      iitem = new BBModel.BasketItem(null, $scope.bb);
-      iitem.setDefaults($scope.bb.item_defaults);
-      iitem.setDeal(deal);
-      if (!$scope.bb.company_settings.no_recipient) {
-        modalInstance = $uibModal.open({
-          templateUrl: $scope.getPartial('_add_recipient'),
-          scope: $scope,
-          controller: ModalInstanceCtrl,
-          resolve: {
-            item: function() {
-              return iitem;
-            }
-          }
-        });
-        return modalInstance.result.then(function(item) {
-          loader.notLoaded();
-          $scope.setBasketItem(item);
-          return $scope.addItemToBasket().then(function() {
-            return loader.setLoaded();
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        });
-      } else {
-        loader.notLoaded();
-        $scope.setBasketItem(iitem);
-        return $scope.addItemToBasket().then(function() {
-          return loader.setLoaded();
-        }, function(err) {
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      }
-    };
-    ModalInstanceCtrl = function($scope, $uibModalInstance, item, ValidatorService) {
-      $scope.item = item;
-      $scope.recipient = false;
-
-      /***
-      * @ngdoc method
-      * @name addToBasket
-      * @methodOf BB.Directives:bbDeals
-      * @description
-      * Add to basket in according of form parameter
-      *
-      * @param {object} form The form where is added deal list to basket
-       */
-      $scope.addToBasket = function(form) {
-        if (!ValidatorService.validateForm(form)) {
-          return;
-        }
-        return $uibModalInstance.close($scope.item);
-      };
-      return $scope.cancel = function() {
-        return $uibModalInstance.dismiss('cancel');
-      };
-    };
-
-    /***
-    * @ngdoc method
-    * @name purchaseDeals
-    * @methodOf BB.Directives:bbDeals
-    * @description
-    * Purchase deals if basket items and basket items length is bigger than 0 else display a alert message
-     */
-    $scope.purchaseDeals = function() {
-      if ($scope.bb.basket.items && $scope.bb.basket.items.length > 0) {
-        return $scope.decideNextPage();
-      } else {
-        return AlertService.add('danger', {
-          msg: $translate.instant('PUBLIC_BOOKING.DEAL_LIST.CERT_NOT_SELECTED_ALERT')
-        });
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbDeals
-    * @description
-    * Set this page section as ready
-     */
-    return $scope.setReady = function() {
-      if ($scope.bb.basket.items && $scope.bb.basket.items.length > 0) {
-        return true;
-      } else {
-        return AlertService.add('danger', {
-          msg: $translate.instant('PUBLIC_BOOKING.DEAL_LIST.CERT_NOT_SELECTED_ALERT')
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbDeals
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of deals for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} deals The deals list
-  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
-  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
-   */
-  angular.module('BB.Directives').directive('bbDeals', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'DealList'
     };
   });
 
@@ -17463,645 +17193,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, $q, $location, LoginService, ValidatorService, AlertService, LoadingService, BBModel) {
-    var loader;
-    $scope.validator = ValidatorService;
-    $scope.login_form = {};
-    loader = LoadingService.$loader($scope);
-
-    /***
-    * @ngdoc method
-    * @name login_sso
-    * @methodOf BB.Directives:bbLogin
-    * @description
-    * Login to application
-    *
-    * @param {object} token The token to use for login
-    * @param {string=} route A specific route to load
-     */
-    $scope.login_sso = function(token, route) {
-      return $rootScope.connection_started.then((function(_this) {
-        return function() {
-          return LoginService.ssoLogin({
-            company_id: $scope.bb.company.id,
-            root: $scope.bb.api_url
-          }, {
-            token: token
-          }).then(function(member) {
-            if (route) {
-              return $scope.showPage(route);
-            }
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        };
-      })(this), function(err) {
-        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-      });
-    };
-
-    /***
-    * @ngdoc method
-    * @name login_with_password
-    * @methodOf BB.Directives:bbLogin
-    * @description
-    * Login with password
-    *
-    * @param {string} email The email address that use for the login
-    * @param {string} password The password use for the login
-     */
-    $scope.login_with_password = function(email, password) {
-      return LoginService.companyLogin($scope.bb.company, {}, {
-        email: email,
-        password: password
-      }).then((function(_this) {
-        return function(member) {
-          return $scope.member = new BBModel.Member.Member(member);
-        };
-      })(this), (function(_this) {
-        return function(err) {
-          return AlertService.raise('LOGIN_FAILED');
-        };
-      })(this));
-    };
-
-    /***
-    * @ngdoc method
-    * @name showEmailPasswordReset
-    * @methodOf BB.Directives:bbLogin
-    * @description
-    * Display email reset password page
-     */
-    $scope.showEmailPasswordReset = (function(_this) {
-      return function() {
-        return $scope.showPage('email_reset_password');
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name isLoggedIn
-    * @methodOf BB.Directives:bbLogin
-    * @description
-    * Verify if user are logged in
-     */
-    $scope.isLoggedIn = function() {
-      return LoginService.isLoggedIn();
-    };
-
-    /***
-    * @ngdoc method
-    * @name sendPasswordReset
-    * @methodOf BB.Directives:bbLogin
-    * @description
-    * Send password reset via email
-    *
-    * @param {string} email The email address use for the send new password
-     */
-    $scope.sendPasswordReset = function(email) {
-      return LoginService.sendPasswordReset($scope.bb.company, {
-        email: email,
-        custom: true
-      }).then(function() {
-        return AlertService.raise('PASSWORD_RESET_REQ_SUCCESS');
-      }, (function(_this) {
-        return function(err) {
-          return AlertService.raise('PASSWORD_RESET_REQ_FAILED');
-        };
-      })(this));
-    };
-
-    /***
-    * @ngdoc method
-    * @name updatePassword
-    * @methodOf BB.Directives:bbLogin
-    * @description
-    * Update password
-    *
-    * @param {string} new_password The new password has been set
-    * @param {string} confirm_new_password The new password has been confirmed
-     */
-    return $scope.updatePassword = function(new_password, confirm_new_password) {
-      AlertService.clear();
-      if ($rootScope.member && new_password && confirm_new_password && (new_password === confirm_new_password)) {
-        return LoginService.updatePassword($rootScope.member, {
-          new_password: new_password,
-          confirm_new_password: confirm_new_password,
-          persist_login: $scope.login_form.persist_login
-        }).then((function(_this) {
-          return function(member) {
-            if (member) {
-              $scope.setClient(member);
-              $scope.password_updated = true;
-              return AlertService.raise('PASSWORD_RESET_SUCESS');
-            }
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            $scope.error = err;
-            return AlertService.raise('PASSWORD_RESET_FAILED');
-          };
-        })(this));
-      } else {
-        return AlertService.raise('PASSWORD_MISMATCH');
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbLogin
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of logins for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {boolean} password_updated The user password updated
-  * @property {boolean} password_error The user password error
-  * @property {boolean} email_sent The email sent
-  * @property {boolean} success If user are log in with success
-  * @property {boolean} login_error If user have some errors when try to log in
-  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
-   */
-  angular.module('BB.Directives').directive('bbLogin', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Login'
-    };
-  });
-
-}).call(this);
-
-(function() {
-
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbMembershipLevels', function($rootScope, BBModel) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: function($scope, $element, $attrs, LoadingService) {
-        var checkClientDefaults, loader;
-        loader = LoadingService.$loader($scope);
-        $rootScope.connection_started.then(function() {
-          return $scope.initialise();
-        });
-        $scope.initialise = function() {
-          if ($scope.bb.company && $scope.bb.company.$has('member_levels')) {
-            loader.notLoaded();
-            return BBModel.MembershipLevels.$getMembershipLevels($scope.bb.company).then(function(member_levels) {
-              loader.setLoaded();
-              return $scope.membership_levels = member_levels;
-            }, function(err) {
-              return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-            });
-          }
-        };
-        $scope.selectMemberLevel = function(level) {
-          if (level && $scope.client) {
-            $scope.client.member_level_id = level.id;
-            if ($scope.$parent.$has_page_control) {
-
-            } else {
-              return $scope.decideNextPage();
-            }
-          }
-        };
-        checkClientDefaults = function() {
-          var i, len, membership_level, ref, results;
-          if (!$scope.bb.client_defaults.membership_ref) {
-            return;
-          }
-          ref = $scope.membership_levels;
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            membership_level = ref[i];
-            if (membership_level.name === $scope.bb.client_defaults.membership_ref) {
-              results.push($scope.selectMemberLevel(membership_level));
-            } else {
-              results.push(void 0);
-            }
-          }
-          return results;
-        };
-        $scope.setReady = function() {
-          if (!$scope.client.member_level_id) {
-            return false;
-          }
-          return true;
-        };
-        return $scope.getMembershipLevel = function(member_level_id) {
-          return _.find($scope.membership_levels, function(level) {
-            return level.id === member_level_id;
-          });
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('MonthCalendar', function($scope, $rootScope, $q, AlertService, LoadingService, BBModel, $translate) {
-    var loader;
-    loader = LoadingService.$loader($scope).notLoaded();
-    $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    $scope.day_data = {};
-    if (!$scope.type) {
-      $scope.type = "month";
-    }
-    if (!$scope.data_source) {
-      $scope.data_source = $scope.bb.current_item;
-    }
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if (!$scope.current_date && $scope.last_selected_date) {
-          $scope.current_date = $scope.last_selected_date.startOf($scope.type);
-        } else if (!$scope.current_date) {
-          $scope.current_date = moment().startOf($scope.type);
-        }
-        return $scope.loadData();
-      };
-    })(this), function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    $scope.$on("currentItemUpdate", function(event) {
-      return $scope.loadData();
-    });
-
-    /***
-    * @ngdoc method
-    * @name setCalType
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Set cal type in acording of type
-    *
-    * @param {array} type The type of day list
-     */
-    $scope.setCalType = (function(_this) {
-      return function(type) {
-        return $scope.type = type;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setDataSource
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Set data source in according of source
-    *
-    * @param {string} source The source of day list
-     */
-    $scope.setDataSource = (function(_this) {
-      return function(source) {
-        return $scope.data_source = source;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_date
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Format date and get current date
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_date = (function(_this) {
-      return function(fmt) {
-        if ($scope.current_date) {
-          return $scope.current_date.format(fmt);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_start_date
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Format start date in according of fmt parameter
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_start_date = (function(_this) {
-      return function(fmt) {
-        return $scope.format_date(fmt);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name format_end_date
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Format end date in according of fmt parameter
-    *
-    * @param {date} fmt The format date
-     */
-    $scope.format_end_date = (function(_this) {
-      return function(fmt) {
-        if ($scope.end_date) {
-          return $scope.end_date.format(fmt);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name selectDay
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Select day
-    *
-    * @param {date} day The day
-    * @param {string=} route A specific route to load
-    * @param {string} force The force
-     */
-    $scope.selectDay = (function(_this) {
-      return function(day, route, force) {
-        if (day.spaces === 0 && !force) {
-          return false;
-        }
-        $scope.setLastSelectedDate(day.date);
-        $scope.bb.current_item.setDate(day);
-        if ($scope.$parent.$has_page_control) {
-
-        } else {
-          return $scope.decideNextPage(route);
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setMonth
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Set month
-    *
-    * @param {date} month The month
-    * @param {date} year The year
-     */
-    $scope.setMonth = (function(_this) {
-      return function(month, year) {
-        $scope.current_date = moment().startOf('month').year(year).month(month - 1);
-        $scope.current_date.year();
-        return $scope.type = "month";
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setWeek
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Set month
-    *
-    * @param {date} week The week
-    * @param {date} year The year
-     */
-    $scope.setWeek = (function(_this) {
-      return function(week, year) {
-        $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
-        $scope.current_date.year();
-        return $scope.type = "week";
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name add
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Add the current date in according of type and amount parameters
-    *
-    * @param {string} type The type
-    * @param {string} amount The amount
-     */
-    $scope.add = (function(_this) {
-      return function(type, amount) {
-        $scope.current_date.add(amount, type);
-        return $scope.loadData();
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name subtract
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Substract the current date in according of type and amount
-    *
-    * @param {string} type The type
-    * @param {string} amount The amount
-     */
-    $scope.subtract = (function(_this) {
-      return function(type, amount) {
-        return $scope.add(type, -amount);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name isPast
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
-     */
-    $scope.isPast = (function(_this) {
-      return function() {
-        if (!$scope.current_date) {
-          return true;
-        }
-        return moment().isAfter($scope.current_date);
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadData
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Load week if type is equals with week else load month
-     */
-    $scope.loadData = (function(_this) {
-      return function() {
-        if ($scope.type === "week") {
-          return $scope.loadWeek();
-        } else {
-          return $scope.loadMonth();
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadMonth
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Load month
-     */
-    $scope.loadMonth = (function(_this) {
-      return function() {
-        var date, edate;
-        date = $scope.current_date;
-        $scope.month = date.month();
-        loader.notLoaded();
-        edate = moment(date).add(1, 'months');
-        $scope.end_date = moment(edate).add(-1, 'days');
-        if ($scope.data_source) {
-          return BBModel.Day.$query({
-            company: $scope.bb.company,
-            cItem: $scope.data_source,
-            'month': date.format("MMYY"),
-            client: $scope.client
-          }).then(function(days) {
-            var d, day, i, j, k, len, w, week, weeks;
-            $scope.days = days;
-            for (i = 0, len = days.length; i < len; i++) {
-              day = days[i];
-              $scope.day_data[day.string_date] = day;
-            }
-            weeks = [];
-            for (w = j = 0; j <= 5; w = ++j) {
-              week = [];
-              for (d = k = 0; k <= 6; d = ++k) {
-                week.push(days[w * 7 + d]);
-              }
-              weeks.push(week);
-            }
-            $scope.weeks = weeks;
-            return loader.setLoaded();
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        } else {
-          return loader.setLoaded();
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadWeek
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Load week
-     */
-    $scope.loadWeek = (function(_this) {
-      return function() {
-        var date, edate;
-        date = $scope.current_date;
-        loader.notLoaded();
-        edate = moment(date).add(7, 'days');
-        $scope.end_date = moment(edate).add(-1, 'days');
-        if ($scope.data_source) {
-          return BBModel.Day.$query({
-            company: $scope.bb.company,
-            cItem: $scope.data_source,
-            date: date.toISODate(),
-            edate: edate.toISODate(),
-            client: $scope.client
-          }).then(function(days) {
-            var day, i, len;
-            $scope.days = days;
-            for (i = 0, len = days.length; i < len; i++) {
-              day = days[i];
-              $scope.day_data[day.string_date] = day;
-            }
-            return loader.setLoaded();
-          }, function(err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-          });
-        } else {
-          return loader.setLoaded();
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbMonthCalendar
-    * @description
-    * Set this page section as ready
-     */
-    return $scope.setReady = (function(_this) {
-      return function() {
-        if ($scope.bb.current_item.date) {
-          return true;
-        } else {
-          AlertService.clear();
-          AlertService.add("danger", {
-            msg: $translate.instant("PUBLIC_BOOKING.DAY.DATE_NOT_SELECTED")
-          });
-          return false;
-        }
-      };
-    })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbMonthCalendar
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of month availability for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {string} message The message text
-  * @property {string} setLoaded  Set the day list loaded
-  * @property {object} setLoadedAndShowError Set loaded and show error
-  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
-   */
-  angular.module('BB.Directives').directive('bbMonthCalendar', function() {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      controller: 'MonthCalendar'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc, $timeout) {
     return {
       restrict: 'AE',
@@ -18353,397 +17444,10 @@ angular.module('BB.Directives')
 
 }).call(this);
 
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('PackageItem', function($scope, $rootScope, BBModel) {
-    $rootScope.connection_started.then(function() {
-      if ($scope.bb.company) {
-        return $scope.init($scope.bb.company);
-      }
-    });
-    $scope.init = function(company) {
-      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
-      return BBModel.PackageItem.$query(company).then(function(package_items) {
-        return $scope.packages = package_items;
-      });
-    };
-
-    /***
-    * @ngdoc method
-    * @name selectItem
-    * @methodOf BB.Directives:bbPackageItems
-    * @description
-    * Select a package into the current booking journey and route on to the next page dpending on the current page control
-    *
-    * @param {object} package The Service or BookableItem to select
-    * @param {string=} route A specific route to load
-     */
-    $scope.selectItem = function(item, route) {
-      if ($scope.$parent.$has_page_control) {
-        $scope["package"] = item;
-        return false;
-      } else {
-        $scope.booking_item.setPackageItem(item);
-        $scope.decideNextPage(route);
-        return true;
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbPackageItems
-    * @description
-    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
-     */
-    $scope.setReady = function() {
-      if ($scope["package"]) {
-        $scope.booking_item.setPackageItem($scope["package"]);
-        return true;
-      } else {
-        return false;
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name getPackageServices
-    * @methodOf BB.Directives:bbPackageItems
-    * @description
-    * Query all of the services included in the package
-    * @params {array} item.service_list an array of services within the item
-     */
-    return $scope.getPackageServices = function(item) {
-      var promise;
-      if (item && !item.service_list) {
-        item.service_list = [];
-        promise = BBModel.PackageItem.$getPackageServices(item);
-        promise.then(function(services) {
-          return item.service_list = services;
-        });
-        return true;
-      } else {
-        return false;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPackageItems
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of packages for the currently in scroe company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @param {hash}  bbPackgeItems   A hash of options
-  * @property {array} packages An array of all services
-  * @property {array} bookable_items An array of all BookableItems - used if the current_item has already selected a resource or person
-  * @property {array} bookable_services An array of Services - used if the current_item has already selected a resource or person
-  * @property {package} package The currectly selected package
-  * @property {hash} filters A hash of filters
-  * @example
-  *  <example module="BB">
-  *    <file name="index.html">
-  *   <div bb-api-url='https://uk.bookingbug.com'>
-  *   <div  bb-widget='{company_id:21}'>
-  *     <div bb-package-items>
-  *        <ul>
-  *          <li ng-repeat='package in packages'> {{package.name}}</li>
-  *        </ul>
-  *     </div>
-  *     </div>
-  *     </div>
-  *   </file>
-  *  </example>
-  *
-   */
-  angular.module('BB.Directives').directive('bbPackageItems', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'PackageItem'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('PackagePicker', function($scope, $rootScope, $q, TimeService, LoadingService, BBModel) {
-    var loader;
-    $scope.sel_date = moment().add(1, 'days');
-    $scope.selected_date = $scope.sel_date.toDate();
-    $scope.picked_time = false;
-    loader = LoadingService.$loader($scope);
-    $scope.$watch('selected_date', (function(_this) {
-      return function(newv, oldv) {
-        $scope.sel_date = moment(newv);
-        return $scope.loadDay();
-      };
-    })(this));
-
-    /***
-    * @ngdoc method
-    * @name loadDay
-    * @methodOf BB.Directives:bbPackagePicker
-    * @description
-    * Load day
-     */
-    $scope.loadDay = (function(_this) {
-      return function() {
-        var i, item, len, pslots, ref;
-        $scope.timeSlots = [];
-        loader.notLoaded();
-        pslots = [];
-        ref = $scope.stackedItems;
-        for (i = 0, len = ref.length; i < len; i++) {
-          item = ref[i];
-          pslots.push(TimeService.query({
-            company: $scope.bb.company,
-            cItem: item,
-            date: $scope.sel_date,
-            client: $scope.client
-          }));
-        }
-        return $q.all(pslots).then(function(res) {
-          var _i, earliest, j, k, l, latest, len1, len2, len3, len4, len5, m, n, next_earliest, next_latest, ref1, ref2, ref3, ref4, ref5, results, slot;
-          loader.setLoaded();
-          $scope.data_valid = true;
-          $scope.timeSlots = [];
-          ref1 = $scope.stackedItems;
-          for (_i = j = 0, len1 = ref1.length; j < len1; _i = ++j) {
-            item = ref1[_i];
-            item.slots = res[_i];
-            if (!item.slots || item.slots.length === 0) {
-              $scope.data_valid = false;
-            }
-            item.order = _i;
-          }
-          if ($scope.data_valid) {
-            $scope.timeSlots = res;
-            earliest = null;
-            ref2 = $scope.stackedItems;
-            for (k = 0, len2 = ref2.length; k < len2; k++) {
-              item = ref2[k];
-              next_earliest = null;
-              ref3 = item.slots;
-              for (l = 0, len3 = ref3.length; l < len3; l++) {
-                slot = ref3[l];
-                if (earliest && slot.time < earliest) {
-                  slot.disable();
-                } else if (!next_earliest) {
-                  next_earliest = slot.time + item.service.duration;
-                }
-              }
-              earliest = next_earliest;
-            }
-            latest = null;
-            ref4 = $scope.bb.stacked_items.slice(0).reverse();
-            results = [];
-            for (m = 0, len4 = ref4.length; m < len4; m++) {
-              item = ref4[m];
-              next_latest = null;
-              ref5 = item.slots;
-              for (n = 0, len5 = ref5.length; n < len5; n++) {
-                slot = ref5[n];
-                if (latest && slot.time > latest) {
-                  slot.disable();
-                } else {
-                  next_latest = slot.time - item.service.duration;
-                }
-              }
-              results.push(latest = next_latest);
-            }
-            return results;
-          }
-        }, function(err) {
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name selectSlot
-    * @methodOf BB.Directives:bbPackagePicker
-    * @description
-    * Select slot in according of sel_item and slot parameters
-    *
-    * @param {array} sel_item The sel item
-    * @param {object} slot The slot
-     */
-    $scope.selectSlot = (function(_this) {
-      return function(sel_item, slot) {
-        var count, current, i, item, j, k, latest, len, len1, len2, next, ref, ref1, slots, time;
-        ref = $scope.stackedItems;
-        for (count = i = 0, len = ref.length; i < len; count = ++i) {
-          item = ref[count];
-          if (count === sel_item.order) {
-            item.setDate(new BBModel.Day({
-              date: $scope.sel_date.format(),
-              spaces: 1
-            }));
-            item.setTime(slot);
-            next = slot.time + item.service.duration;
-            time = slot.time;
-            slot = null;
-            if (count > 0) {
-              current = count - 1;
-              while (current >= 0) {
-                item = $scope.bb.stacked_items[current];
-                latest = time - item.service.duration;
-                if (!item.time || item.time.time > latest) {
-                  item.setDate(new BBModel.Day({
-                    date: $scope.sel_date.format(),
-                    spaces: 1
-                  }));
-                  item.setTime(null);
-                  ref1 = item.slots;
-                  for (j = 0, len1 = ref1.length; j < len1; j++) {
-                    slot = ref1[j];
-                    if (slot.time < latest) {
-                      item.setTime(slot);
-                    }
-                  }
-                }
-                time = item.time.time;
-                current -= 1;
-              }
-            }
-          } else if (count > sel_item.order) {
-            slots = item.slots;
-            item.setDate(new BBModel.Day({
-              date: $scope.sel_date.format(),
-              spaces: 1
-            }));
-            if (slots) {
-              item.setTime(null);
-              for (k = 0, len2 = slots.length; k < len2; k++) {
-                slot = slots[k];
-                if (slot.time >= next && !item.time) {
-                  item.setTime(slot);
-                  next = slot.time + item.service.duration;
-                }
-              }
-            }
-          }
-        }
-        return $scope.picked_time = true;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name hasAvailability
-    * @methodOf BB.Directives:bbPackagePicker
-    * @description
-    * Checks if picker have the start time and the end time available
-    *
-    * @param {object} slots The slots of the package picker
-    * @param {date} start_time The start time of the picker
-    * @param {date} end_time The end time of the picker
-     */
-    $scope.hasAvailability = (function(_this) {
-      return function(slots, start_time, end_time) {
-        var i, j, k, l, len, len1, len2, len3, slot;
-        if (!slots) {
-          return false;
-        }
-        if (start_time && end_time) {
-          for (i = 0, len = slots.length; i < len; i++) {
-            slot = slots[i];
-            if (slot.time >= start_time && slot.time < end_time && slot.availability() > 0) {
-              return true;
-            }
-          }
-        } else if (end_time) {
-          for (j = 0, len1 = slots.length; j < len1; j++) {
-            slot = slots[j];
-            if (slot.time < end_time && slot.availability() > 0) {
-              return true;
-            }
-          }
-        } else if (start_time) {
-          for (k = 0, len2 = slots.length; k < len2; k++) {
-            slot = slots[k];
-            if (slot.time >= start_time && slot.availability() > 0) {
-              return true;
-            }
-          }
-        } else {
-          for (l = 0, len3 = slots.length; l < len3; l++) {
-            slot = slots[l];
-            if (slot.availability() > 0) {
-              return true;
-            }
-          }
-        }
-      };
-    })(this);
-    return $scope.confirm = (function(_this) {
-      return function() {};
-    })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPackagePicker
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of package pickers for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {date} sel_date The sel date
-  * @property {date} selected_date The selected date
-  * @property {boolean} picked_time The picked time
-  * @property {array} timeSlots The time slots
-  * @property {boolean} data_valid The valid data
-   */
-  angular.module('BB.Directives').directive('bbPackagePicker', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'PackagePicker'
-    };
-  });
-
-}).call(this);
-
 (function () {
     'use strict';
 
     angular.module('BB').controller('BBPageCtrl', BBPageCtrl);
-
-    angular.module('BB').value("PageControllerService", BBPageCtrl);
 
     function BBPageCtrl($scope, $q, ValidatorService, LoadingService) {
         'ngInject';
@@ -18752,6 +17456,8 @@ angular.module('BB.Directives')
 
         function init() {
             $scope.$has_page_control = true;
+
+            console.warn('Deprecation warning: validator.validateForm() will be removed from bbPage in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
             $scope.validator = ValidatorService;
 
             $scope.checkReady = checkReady;
@@ -19133,177 +17839,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout, LoadingService) {
-    var loader;
-    loader = LoadingService.$loader($scope).notLoaded();
-    if ($scope.purchase) {
-      $scope.bb.total = $scope.purchase;
-    }
-    $rootScope.connection_started.then(function() {
-      if ($scope.total) {
-        $scope.bb.total = $scope.total;
-      }
-      if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
-        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
-      }
-    });
-
-    /***
-    * @ngdoc method
-    * @name callNotLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Set not loaded state
-     */
-    $scope.callNotLoaded = (function(_this) {
-      return function() {
-        return loader.notLoaded();
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name callSetLoaded
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Set loaded state
-     */
-    $scope.callSetLoaded = (function(_this) {
-      return function() {
-        return loader.setLoaded();
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name paymentDone
-    * @methodOf BB.Directives:bbPayment
-    * @description
-    * Handles payment success
-     */
-    $scope.paymentDone = function() {
-      $scope.bb.payment_status = "complete";
-      $scope.$emit('payment:complete');
-      if ($scope.route_to_next_page) {
-        return $scope.decideNextPage();
-      }
-    };
-    return $scope.error = function(message) {
-      return $log.warn("Payment Failure: " + message);
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbPayment
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Renders payment iframe (where integrated payment has been configured) and handles payment success/failure.
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} total The total of payment
-   */
-  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, GeneralOptions, AlertService) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'Payment',
-      link: function(scope, element, attributes) {
-        var error, getHost, sendLoadEvent;
-        error = function(scope, message) {
-          return scope.error(message);
-        };
-        getHost = function(url) {
-          var a;
-          a = document.createElement('a');
-          a.href = url;
-          return a['protocol'] + '//' + a['host'];
-        };
-        sendLoadEvent = function(element, origin, scope) {
-          var custom_stylesheet, payload, referrer;
-          referrer = $location.protocol() + "://" + $location.host();
-          if ($location.port()) {
-            referrer += ":" + $location.port();
-          }
-          if (scope.payment_options.custom_stylesheet) {
-            if (scope.payment_options.custom_stylesheet.match(/http/)) {
-              custom_stylesheet = scope.payment_options.custom_stylesheet;
-            } else {
-              custom_stylesheet = $location.absUrl().match(/.+(?=#)/) + scope.payment_options.custom_stylesheet;
-            }
-          }
-          payload = JSON.stringify({
-            'type': 'load',
-            'message': referrer,
-            'custom_partial_url': scope.bb.custom_partial_url,
-            'custom_stylesheet': custom_stylesheet,
-            'scroll_offset': GeneralOptions.scroll_offset
-          });
-          return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
-        };
-        scope.payment_options = scope.$eval(attributes.bbPayment) || {};
-        scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
-        element.find('iframe').bind('load', (function(_this) {
-          return function(event) {
-            var origin, url;
-            if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
-              url = scope.bb.total.$href('new_payment');
-            }
-            origin = getHost(url);
-            sendLoadEvent(element, origin, scope);
-            return scope.$apply(function() {
-              return scope.callSetLoaded();
-            });
-          };
-        })(this));
-        return $window.addEventListener('message', (function(_this) {
-          return function(event) {
-            var data;
-            if (angular.isObject(event.data)) {
-              data = event.data;
-            } else if (!event.data.match(/iFrameSizer/)) {
-              data = JSON.parse(event.data);
-            }
-            return scope.$apply(function() {
-              if (data) {
-                switch (data.type) {
-                  case "submitting":
-                    return scope.callNotLoaded();
-                  case "error":
-                    scope.$emit("payment:failed");
-                    scope.callNotLoaded();
-                    AlertService.raise('PAYMENT_FAILED');
-                    return document.getElementsByTagName("iframe")[0].src += '';
-                  case "payment_complete":
-                    scope.callSetLoaded();
-                    return scope.paymentDone();
-                }
-              }
-            });
-          };
-        })(this), false);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc, $translate) {
     return {
       restrict: 'EA',
@@ -19430,7 +17965,6 @@ angular.module('BB.Directives')
   angular.module('BB.Controllers').controller('PostcodeLookup', function($scope, $rootScope, $q, ValidatorService, AlertService, LoadingService, $attrs) {
     var loader;
     angular.extend(this, new CompanyListBase($scope, $rootScope, $q, $attrs));
-    $scope.validator = ValidatorService;
     loader = LoadingService.$loader($scope);
 
     /***
@@ -19521,96 +18055,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('ProductList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, LoadingService, halClient) {
-    var loader;
-    loader = LoadingService.$loader($scope).notLoaded();
-    $scope.validator = ValidatorService;
-    $rootScope.connection_started.then(function() {
-      if ($scope.bb.company) {
-        return $scope.init($scope.bb.company);
-      }
-    }, function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    $scope.init = function(company) {
-      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
-      return company.$get('products').then(function(products) {
-        return products.$get('products').then(function(products) {
-          $scope.products = products;
-          return loader.setLoaded();
-        });
-      });
-    };
-
-    /***
-    * @ngdoc method
-    * @name selectItem
-    * @methodOf BB.Directives:bbProductList
-    * @description
-    * Select an item from the product list in according of item and route parameter
-    *
-    * @param {array} item The array items
-    * @param {string=} route A specific route to load
-     */
-    return $scope.selectItem = function(item, route) {
-      if ($scope.$parent.$has_page_control) {
-        $scope.product = item;
-        return false;
-      } else {
-        $scope.booking_item.setProduct(item);
-        $scope.decideNextPage(route);
-        return true;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbProductList
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of product for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} products The products from the list
-  * @property {array} item The item of the product list
-  * @property {array} booking_item The booking item
-  * @property {product} product The currectly selected product
-   */
-  angular.module('BB.Directives').directive('bbProductList', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'ProductList',
-      link: function(scope, element, attrs) {
-        if (attrs.bbItem) {
-          scope.booking_item = scope.$eval(attrs.bbItem);
-        }
-        if (attrs.bbShowAll) {
-          scope.show_all = true;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BB.Controllers').controller('PurchaseTotal', function($scope, $rootScope, $window, BBModel, $q) {
     angular.extend(this, new $window.PageController($scope, $q));
 
@@ -19667,1257 +18111,6 @@ angular.module('BB.Directives')
       replace: true,
       scope: true,
       controller: 'PurchaseTotal'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('SpaceList', function($scope, $rootScope, $q, ServiceService, LoadingService, BBModel) {
-    var loader;
-    loader = LoadingService.$loader($scope);
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        if ($scope.bb.company) {
-          return $scope.init($scope.bb.company);
-        }
-      };
-    })(this), function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    $scope.init = (function(_this) {
-      return function(comp) {
-        return BBModel.Space.$query(comp).then(function(items) {
-          if ($scope.currentItem.category) {
-            items = items.filter(function(x) {
-              return x.$has('category') && x.$href('category') === $scope.currentItem.category.self;
-            });
-          }
-          $scope.items = items;
-          if (items.length === 1 && !$scope.allowSinglePick) {
-            $scope.skipThisStep();
-            $rootScope.services = items;
-            return $scope.selectItem(items[0], $scope.nextRoute);
-          } else {
-            return $scope.listLoaded = true;
-          }
-        }, function(err) {
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name selectItem
-    * @methodOf BB.Directives:bbSpaces
-    * @description
-    * Select the current item in according of item and route parameters
-    *
-    * @param {array} item The Space or BookableItem to select
-    * @param {string=} route A specific route to load
-     */
-    return $scope.selectItem = (function(_this) {
-      return function(item, route) {
-        $scope.currentItem.setService(item);
-        return $scope.decide_next_page(route);
-      };
-    })(this);
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbSpaces
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of spaces for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} items An array of all services
-  * @property {space} space The currectly selected space
-   */
-  angular.module('BB.Directives').directive('bbSpaces', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'SpaceList'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('SurveyQuestions', function($scope, $rootScope, $location, BBModel, ValidatorService, $sessionStorage) {
-    var getBookingAndSurvey, getBookingRef, getMember, getPurchaseID, init, loader, setPurchaseCompany, showLoginError;
-    $scope.completed = false;
-    $scope.login = {
-      email: "",
-      password: ""
-    };
-    $scope.login_error = false;
-    $scope.booking_ref = "";
-    loader = LoadingService.$loader($scope).notLoaded();
-    $rootScope.connection_started.then(function() {
-      return init();
-    }, function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    init = (function(_this) {
-      return function() {
-        if ($scope.company) {
-          if ($scope.company.settings.requires_login) {
-            $scope.checkIfLoggedIn();
-            if ($rootScope.member) {
-              return getBookingAndSurvey();
-            } else {
-
-            }
-          } else {
-            return getBookingAndSurvey();
-          }
-        }
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name checkIfLoggedIn
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Check if logged in
-     */
-    $scope.checkIfLoggedIn = (function(_this) {
-      return function() {
-        return BBModel.Login.$checkLogin();
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadSurvey
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Load Survey in according of purchase parameter
-    *
-    * @param {array} purchase The purchase
-     */
-    $scope.loadSurvey = (function(_this) {
-      return function(purchase) {
-        if (!$scope.company) {
-          $scope.purchase.$get('company').then(function(company) {
-            return setPurchaseCompany(company);
-          });
-        }
-        if ($scope.purchase.$has('client')) {
-          $scope.purchase.$get('client').then(function(client) {
-            return $scope.setClient(new BBModel.Client(client));
-          });
-        }
-        return $scope.purchase.$getBookings().then(function(bookings) {
-          var address, booking, i, len, params, pretty_address, ref, results;
-          params = {};
-          $scope.bookings = bookings;
-          ref = $scope.bookings;
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            if (booking.datetime) {
-              booking.pretty_date = moment(booking.datetime).format("dddd, MMMM Do YYYY");
-            }
-            if (booking.address) {
-              address = new BBModel.Address(booking.address);
-              pretty_address = address.addressSingleLine();
-              booking.pretty_address = pretty_address;
-            }
-            if ($rootScope.user) {
-              params.admin_only = true;
-            }
-            results.push(booking.$get("survey_questions", params).then(function(details) {
-              var item_details;
-              item_details = new BBModel.ItemDetails(details);
-              booking.survey_questions = item_details.survey_questions;
-              return booking.$getSurveyAnswers().then(function(answers) {
-                var answer, j, k, len1, len2, question, ref1, ref2;
-                booking.survey_answers = answers;
-                ref1 = booking.survey_questions;
-                for (j = 0, len1 = ref1.length; j < len1; j++) {
-                  question = ref1[j];
-                  if (booking.survey_answers) {
-                    ref2 = booking.survey_answers;
-                    for (k = 0, len2 = ref2.length; k < len2; k++) {
-                      answer = ref2[k];
-                      if (answer.question_text === question.name && answer.value) {
-                        question.answer = answer.value;
-                      }
-                    }
-                  }
-                }
-                return loader.setLoaded();
-              });
-            }));
-          }
-          return results;
-        }, function(err) {
-          loader.setLoaded();
-          return failMsg();
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name submitSurveyLogin
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Submit survey login in according of form parameter else display an error message
-    *
-    * @param {object} form The survey login form
-     */
-    $scope.submitSurveyLogin = (function(_this) {
-      return function(form) {
-        var params;
-        if (!ValidatorService.validateForm(form)) {
-          return;
-        }
-        params = {
-          email: $scope.login.email,
-          password: $scope.login.password,
-          id: $scope.company_id
-        };
-        return BBModel.Login.$companyLogin($scope.company, {}, params).then(function(member) {
-          BBModel.Login.$setLogin(member);
-          return getBookingAndSurvey();
-        }, function(err) {
-          showLoginError();
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadSurveyFromPurchaseID
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Load survey from purchase id in according of id parameter else display an error message
-    *
-    * @param {object} id The id of purchase
-     */
-    $scope.loadSurveyFromPurchaseID = (function(_this) {
-      return function(id) {
-        var auth_token, params;
-        params = {
-          purchase_id: id,
-          url_root: $scope.bb.api_url
-        };
-        auth_token = $sessionStorage.getItem('auth_token');
-        if (auth_token) {
-          params.auth_token = auth_token;
-        }
-        return BBModel.Purchase.Total.$query(params).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.total = $scope.purchase;
-          return $scope.loadSurvey($scope.purchase);
-        }, function(err) {
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name loadSurveyFromBookingRef
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Load survey from booking ref in according of id else display an error message
-    *
-    * @param {object} id The id of booking
-     */
-    $scope.loadSurveyFromBookingRef = (function(_this) {
-      return function(id) {
-        var auth_token, params;
-        params = {
-          booking_ref: id,
-          url_root: $scope.bb.api_url,
-          raw: true
-        };
-        auth_token = $sessionStorage.getItem('auth_token');
-        if (auth_token) {
-          params.auth_token = auth_token;
-        }
-        return BBModel.Purchase.Total.$bookingRefQuery(params).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.total = $scope.purchase;
-          return $scope.loadSurvey($scope.purchase);
-        }, function(err) {
-          showLoginError();
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name submitSurvey
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Submit survey in according of form parameter
-    *
-    * @param {object} form The survey form
-     */
-    $scope.submitSurvey = (function(_this) {
-      return function(form) {
-        var booking, i, len, params, ref, results;
-        if (!ValidatorService.validateForm(form)) {
-          return;
-        }
-        ref = $scope.bookings;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          booking = ref[i];
-          booking.checkReady();
-          if (booking.ready) {
-            loader.notLoaded();
-            booking.client_id = $scope.client.id;
-            params = booking;
-            results.push(BBModel.Purchase.Booking.$addSurveyAnswersToBooking(params).then(function(booking) {
-              loader.setLoaded();
-              return $scope.completed = true;
-            }, function(err) {
-              return loader.setLoaded();
-            }));
-          } else {
-            results.push($scope.decideNextPage(route));
-          }
-        }
-        return results;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name submitBookingRef
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Submit booking in according of form parameter
-    *
-    * @param {object} form The submit booking form
-     */
-    $scope.submitBookingRef = (function(_this) {
-      return function(form) {
-        var auth_token, params;
-        if (!ValidatorService.validateForm(form)) {
-          return;
-        }
-        loader.notLoaded();
-        params = {
-          booking_ref: $scope.booking_ref,
-          url_root: $scope.bb.api_url,
-          raw: true
-        };
-        auth_token = $sessionStorage.getItem('auth_token');
-        if (auth_token) {
-          params.auth_token = auth_token;
-        }
-        return BBModel.Purchase.Total.$bookingRefQuery(params).then(function(purchase) {
-          $scope.purchase = purchase;
-          $scope.total = $scope.purchase;
-          return $scope.loadSurvey($scope.purchase);
-        }, function(err) {
-          showLoginError();
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name storeBookingCookie
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Store booking cookie
-     */
-    $scope.storeBookingCookie = function() {
-      return document.cookie = "bookingrefsc=" + $scope.booking_ref;
-    };
-
-    /***
-    * @ngdoc method
-    * @name showLoginError
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Show login error
-     */
-    showLoginError = (function(_this) {
-      return function() {
-        return $scope.login_error = true;
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name getMember
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Get member
-     */
-    getMember = (function(_this) {
-      return function() {
-        var params;
-        params = {
-          member_id: $scope.member_id,
-          company_id: $scope.company_id
-        };
-        return BBModel.Login.$memberQuery(params).then(function(member) {
-          return $scope.member = member;
-        });
-      };
-    })(this);
-
-    /***
-    * @ngdoc method
-    * @name setPurchaseCompany
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Set purchase company in according of company parameter
-    *
-    * @param {object} company The company
-     */
-    setPurchaseCompany = function(company) {
-      $scope.bb.company_id = company.id;
-      $scope.bb.company = new BBModel.Company(company);
-      $scope.company = $scope.bb.company;
-      $scope.bb.item_defaults.company = $scope.bb.company;
-      if (company.settings) {
-        if (company.settings.merge_resources) {
-          $scope.bb.item_defaults.merge_resources = true;
-        }
-        if (company.settings.merge_people) {
-          return $scope.bb.item_defaults.merge_people = true;
-        }
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name getBookingRef
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Get booking references
-     */
-    getBookingRef = function() {
-      var booking_ref, matches;
-      matches = /^.*(?:\?|&)booking_ref=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        booking_ref = matches[1];
-      }
-      return booking_ref;
-    };
-
-    /***
-    * @ngdoc method
-    * @name getPurchaseID
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Get purchase Id
-     */
-    getPurchaseID = function() {
-      var matches, purchase_id;
-      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-      if (matches) {
-        purchase_id = matches[1];
-      }
-      return purchase_id;
-    };
-
-    /***
-    * @ngdoc method
-    * @name getBookingAndSurvey
-    * @methodOf BB.Directives:bbSurveyQuestions
-    * @description
-    * Get booking and survey
-     */
-    return getBookingAndSurvey = function() {
-      var id;
-      id = getBookingRef();
-      if (id) {
-        return $scope.loadSurveyFromBookingRef(id);
-      } else {
-        id = getPurchaseID();
-        if (id) {
-          return $scope.loadSurveyFromPurchaseID(id);
-        } else {
-          if ($scope.bb.total) {
-            return $scope.loadSurveyFromPurchaseID($scope.bb.total.long_id);
-          } else {
-
-          }
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbSurveyQuestions
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of survey questions for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {integer} company_id The company id
-  * @property {array} questions An array with questions
-  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
-  * @property {object} widget The widget service - see {@link BB.Models:BBWidget Widget Service}
-  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
-   */
-  angular.module('BB.Directives').directive('bbSurveyQuestions', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'SurveyQuestions'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var hasProp = {}.hasOwnProperty;
-
-  angular.module('BB.Controllers').controller('TimeRangeListStackedController', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, PersonService, PurchaseService, DateTimeUtilitiesService, LoadingService) {
-    var isSubtractValid, loader, setEnabledSlots, setTimeRange, spliceExistingDateTimes, updateHideStatus;
-    FormDataStoreService.init('TimeRangeListStacked', $scope, ['selected_slot', 'original_start_date', 'start_at_week_start']);
-    loader = LoadingService.$loader($scope).notLoaded();
-    $scope.available_times = 0;
-    $rootScope.connection_started.then(function() {
-      var diff, selected_day, start_date;
-      $scope.options = $scope.$eval($attrs.bbTimeRangeStacked) || {};
-      if (!$scope.time_range_length) {
-        if ($attrs.bbTimeRangeLength != null) {
-          $scope.time_range_length = $scope.$eval($attrs.bbTimeRangeLength);
-        } else if ($scope.options && $scope.options.time_range_length) {
-          $scope.time_range_length = $scope.options.time_range_length;
-        } else {
-          $scope.time_range_length = 7;
-        }
-      }
-      if (($attrs.bbDayOfWeek != null) || ($scope.options && $scope.options.day_of_week)) {
-        $scope.day_of_week = $attrs.bbDayOfWeek != null ? $scope.$eval($attrs.bbDayOfWeek) : $scope.options.day_of_week;
-      }
-      if (($attrs.bbSelectedDay != null) || ($scope.options && $scope.options.selected_day)) {
-        selected_day = $attrs.bbSelectedDay != null ? moment($scope.$eval($attrs.bbSelectedDay)) : moment($scope.options.selected_day);
-        if (moment.isMoment(selected_day)) {
-          $scope.selected_day = selected_day;
-        }
-      }
-      if (!$scope.start_date && $scope.last_selected_date) {
-        if ($scope.original_start_date) {
-          diff = $scope.last_selected_date.diff($scope.original_start_date, 'days');
-          diff = diff % $scope.time_range_length;
-          diff = diff === 0 ? diff : diff + 1;
-          start_date = $scope.last_selected_date.clone().subtract(diff, 'days');
-          setTimeRange($scope.last_selected_date, start_date);
-        } else {
-          setTimeRange($scope.last_selected_date);
-        }
-      } else if ($scope.bb.stacked_items[0].date) {
-        setTimeRange($scope.bb.stacked_items[0].date.date);
-      } else if ($scope.selected_day) {
-        $scope.original_start_date = $scope.original_start_date || moment($scope.selected_day);
-        setTimeRange($scope.selected_day);
-      } else {
-        $scope.start_at_week_start = true;
-        setTimeRange(moment());
-      }
-      return $scope.loadData();
-    });
-
-    /***
-    * @ngdoc method
-    * @name setTimeRange
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Set time range in according of selected_date
-    *
-    * @param {date} selected_date The selected date from multi time range list
-    * @param {date} start_date The start date of range list
-     */
-    setTimeRange = function(selected_date, start_date) {
-      if (start_date) {
-        $scope.start_date = start_date;
-      } else if ($scope.day_of_week) {
-        $scope.start_date = selected_date.clone().day($scope.day_of_week);
-      } else if ($scope.start_at_week_start) {
-        $scope.start_date = selected_date.clone().startOf('week');
-      } else {
-        $scope.start_date = selected_date.clone();
-      }
-      $scope.selected_day = selected_date;
-      $scope.selected_date = $scope.selected_day.toDate();
-      return isSubtractValid();
-    };
-
-    /***
-    * @ngdoc method
-    * @name add
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Add date
-    *
-    * @param {object} amount The selected amount
-    * @param {array} type The start type
-     */
-    $scope.add = function(amount, type) {
-      $scope.selected_day = moment($scope.selected_date);
-      switch (type) {
-        case 'days':
-          setTimeRange($scope.selected_day.add(amount, 'days'));
-          break;
-        case 'weeks':
-          $scope.start_date.add(amount, 'weeks');
-          setTimeRange($scope.start_date);
-      }
-      return $scope.loadData();
-    };
-
-    /***
-    * @ngdoc method
-    * @name subtract
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Subtract in according of amount and type parameters
-    *
-    * @param {object} amount The selected amount
-    * @param {object} type The start type
-     */
-    $scope.subtract = function(amount, type) {
-      return $scope.add(-amount, type);
-    };
-
-    /***
-    * @ngdoc method
-    * @name isSubtractValid
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Verify if the subtract is valid or not
-     */
-    isSubtractValid = function() {
-      var diff;
-      $scope.is_subtract_valid = true;
-      diff = Math.ceil($scope.selected_day.diff(moment(), 'day', true));
-      $scope.subtract_length = diff < $scope.time_range_length ? diff : $scope.time_range_length;
-      if (diff <= 0) {
-        $scope.is_subtract_valid = false;
-      }
-      if ($scope.subtract_length > 1) {
-        return $scope.subtract_string = "Prev " + $scope.subtract_length + " days";
-      } else if ($scope.subtract_length === 1) {
-        return $scope.subtract_string = "Prev day";
-      } else {
-        return $scope.subtract_string = "Prev";
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name selectedDateChanged
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Called on datepicker date change
-     */
-    $scope.selectedDateChanged = function() {
-      setTimeRange(moment($scope.selected_date));
-      $scope.selected_slot = null;
-      return $scope.loadData();
-    };
-
-    /***
-    * @ngdoc method
-    * @name updateHideStatus
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Update the hidden status
-     */
-    updateHideStatus = function() {
-      var day, key, ref, results;
-      ref = $scope.days;
-      results = [];
-      for (key in ref) {
-        day = ref[key];
-        results.push($scope.days[key].hide = !day.date.isSame($scope.selected_day, 'day'));
-      }
-      return results;
-    };
-
-    /***
-    * @ngdoc method
-    * @name isPast
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Calculate if the current earliest date is in the past - in which case we. Might want to disable going backwards
-     */
-    $scope.isPast = function() {
-      if (!$scope.start_date) {
-        return true;
-      }
-      return moment().isAfter($scope.start_date);
-    };
-
-    /***
-    * @ngdoc method
-    * @name status
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Check the status of the slot to see if it has been selected
-    *
-    * @param {date} day The day
-    * @param {object} slot The slot of day in multi time range list
-     */
-    $scope.status = function(day, slot) {
-      var status;
-      if (!slot) {
-        return;
-      }
-      status = slot.status();
-      return status;
-    };
-
-    /***
-    * @ngdoc method
-    * @name highlightSlot
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Check the highlight slot
-    *
-    * @param {date} day The day
-    * @param {object} slot The slot of day in multi time range list
-     */
-    $scope.highlightSlot = function(slot, day) {
-      var i, item, len, ref;
-      if (day && slot && slot.availability() > 0) {
-        $scope.bb.clearStackedItemsDateTime();
-        if ($scope.selected_slot) {
-          $scope.selected_slot.selected = false;
-        }
-        $scope.setLastSelectedDate(day.date);
-        $scope.selected_slot = angular.copy(slot);
-        $scope.selected_day = day.date;
-        $scope.selected_date = day.date.toDate();
-        $scope.$broadcast('slotChanged', day, slot);
-        while (slot) {
-          ref = $scope.bb.stacked_items;
-          for (i = 0, len = ref.length; i < len; i++) {
-            item = ref[i];
-            if (item.service.self === slot.service.self && !item.date && !item.time) {
-              item.setDate(day);
-              item.setTime(slot);
-              slot = slot.next;
-              break;
-            }
-          }
-        }
-        updateHideStatus();
-        return $rootScope.$broadcast("time:selected");
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name loadData
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Load the time data
-     */
-    $scope.loadData = function() {
-      var edate, grouped_items, i, items, len, pslots;
-      loader.notLoaded();
-      if ($scope.request && $scope.request.start.twix($scope.request.end).contains($scope.selected_day)) {
-        updateHideStatus();
-        loader.setLoaded();
-        return;
-      }
-      $scope.start_date = moment($scope.start_date);
-      edate = moment($scope.start_date).add($scope.time_range_length, 'days');
-      $scope.end_date = moment(edate).add(-1, 'days');
-      $scope.request = {
-        start: moment($scope.start_date),
-        end: moment($scope.end_date)
-      };
-      pslots = [];
-      grouped_items = _.groupBy($scope.bb.stacked_items, function(item) {
-        return item.service.id;
-      });
-      grouped_items = _.toArray(grouped_items);
-      for (i = 0, len = grouped_items.length; i < len; i++) {
-        items = grouped_items[i];
-        pslots.push(TimeService.query({
-          company: $scope.bb.company,
-          cItem: items[0],
-          date: $scope.start_date,
-          end_date: $scope.end_date,
-          client: $scope.client,
-          available: 1
-        }));
-      }
-      return $q.all(pslots).then(function(res) {
-        var _i, day, item, j, k, l, len1, len2, ref, slots, times, v;
-        $scope.data_valid = true;
-        $scope.days = {};
-        for (_i = j = 0, len1 = grouped_items.length; j < len1; _i = ++j) {
-          items = grouped_items[_i];
-          slots = res[_i];
-          if (!slots || slots.length === 0) {
-            $scope.data_valid = false;
-          }
-          for (l = 0, len2 = items.length; l < len2; l++) {
-            item = items[l];
-            spliceExistingDateTimes(item, slots);
-            item.slots = {};
-            for (day in slots) {
-              if (!hasProp.call(slots, day)) continue;
-              times = slots[day];
-              item.slots[day] = _.indexBy(times, 'time');
-            }
-          }
-        }
-        if ($scope.data_valid) {
-          ref = res[0];
-          for (k in ref) {
-            v = ref[k];
-            $scope.days[k] = {
-              date: moment(k)
-            };
-          }
-          setEnabledSlots();
-          updateHideStatus();
-          $rootScope.$broadcast("TimeRangeListStacked:loadFinished");
-        } else {
-
-        }
-        return loader.setLoaded();
-      }, function(err) {
-        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-      });
-    };
-
-    /***
-    * @ngdoc method
-    * @name spliceExistingDateTimes
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Splice existing date and times
-    *
-    * @param {array} stacked_item The stacked item
-    * @param {object} slots The slots of stacked_item from the multi_time_range_list
-     */
-    spliceExistingDateTimes = function(stacked_item, slots) {
-      var datetime, time, time_slot;
-      if (!stacked_item.datetime && !stacked_item.date) {
-        return;
-      }
-      datetime = stacked_item.datetime || DateTimeUtilitiesService.convertTimeToMoment(stacked_item.date.date, stacked_item.time.time);
-      if ($scope.start_date <= datetime && $scope.end_date >= datetime) {
-        time = DateTimeUtilitiesService.convertMomentToTime(datetime);
-        time_slot = _.findWhere(slots[datetime.toISODate()], {
-          time: time
-        });
-        if (!time_slot) {
-          time_slot = stacked_item.time;
-          slots[datetime.toISODate()].splice(0, 0, time_slot);
-        }
-        return time_slot.selected = stacked_item.self === $scope.bb.stacked_items[0].self;
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name setEnabledSlots
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Set the enabled slots
-     */
-    setEnabledSlots = function() {
-      var day, day_data, isSlotValid, ref, results, slot, time;
-      ref = $scope.days;
-      results = [];
-      for (day in ref) {
-        day_data = ref[day];
-        day_data.slots = {};
-        if ($scope.bb.stacked_items.length > 1) {
-          results.push((function() {
-            var ref1, results1;
-            ref1 = $scope.bb.stacked_items[0].slots[day];
-            results1 = [];
-            for (time in ref1) {
-              slot = ref1[time];
-              slot = angular.copy(slot);
-              isSlotValid = function(slot) {
-                var duration, i, index, next, ref2, valid;
-                valid = false;
-                time = slot.time;
-                duration = $scope.bb.stacked_items[0].service.duration;
-                next = time + duration;
-                for (index = i = 1, ref2 = $scope.bb.stacked_items.length - 1; 1 <= ref2 ? i <= ref2 : i >= ref2; index = 1 <= ref2 ? ++i : --i) {
-                  if (!_.isEmpty($scope.bb.stacked_items[index].slots[day]) && $scope.bb.stacked_items[index].slots[day][next]) {
-                    slot.next = angular.copy($scope.bb.stacked_items[index].slots[day][next]);
-                    slot = slot.next;
-                    next = next + $scope.bb.stacked_items[index].service.duration;
-                  } else {
-                    return false;
-                  }
-                }
-                return true;
-              };
-              if (isSlotValid(slot)) {
-                results1.push(day_data.slots[slot.time] = slot);
-              } else {
-                results1.push(void 0);
-              }
-            }
-            return results1;
-          })());
-        } else {
-          results.push((function() {
-            var ref1, results1;
-            ref1 = $scope.bb.stacked_items[0].slots[day];
-            results1 = [];
-            for (time in ref1) {
-              slot = ref1[time];
-              results1.push(day_data.slots[slot.time] = slot);
-            }
-            return results1;
-          })());
-        }
-      }
-      return results;
-    };
-
-    /***
-    * @ngdoc method
-    * @name pretty_month_title
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Display pretty month title in according of month format and year format parameters
-    *
-    * @param {date} month_format The month format
-    * @param {date} year_format The year format
-    * @param {string} separator The separator is '-'
-     */
-    $scope.pretty_month_title = function(month_format, year_format, seperator) {
-      var month_year_format, start_date;
-      if (seperator == null) {
-        seperator = '-';
-      }
-      if (!$scope.start_date) {
-        return;
-      }
-      month_year_format = month_format + ' ' + year_format;
-      if ($scope.start_date && $scope.end_date && $scope.end_date.isAfter($scope.start_date, 'month')) {
-        start_date = $scope.start_date.format(month_format);
-        if ($scope.start_date.month() === 11) {
-          start_date = $scope.start_date.format(month_year_format);
-        }
-        return start_date + ' ' + seperator + ' ' + $scope.end_date.format(month_year_format);
-      } else {
-        return $scope.start_date.format(month_year_format);
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name confirm
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Confirm the time range stacked
-    *
-    * @param {string =} route A specific route to load
-    * @param {object} options The options
-     */
-    $scope.confirm = function(route, options) {
-      var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
-      if (options == null) {
-        options = {};
-      }
-      ref = $scope.bb.stacked_items;
-      for (i = 0, len = ref.length; i < len; i++) {
-        item = ref[i];
-        if (!item.time) {
-          AlertService.add("danger", {
-            msg: "Select a time to continue your booking"
-          });
-          return false;
-        }
-      }
-      if (($scope.bb.moving_booking != null) && ($scope.bb.moving_booking.bookings != null)) {
-        different = false;
-        ref1 = $scope.bb.moving_booking.bookings;
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          booking = ref1[j];
-          found = false;
-          ref2 = $scope.bb.stacked_items;
-          for (l = 0, len2 = ref2.length; l < len2; l++) {
-            item = ref2[l];
-            if (booking.getDateString() === item.date.string_date && booking.getTimeInMins() === item.time.time && booking.category_name === item.category_name) {
-              found = true;
-            }
-          }
-          if (!found) {
-            different = true;
-            break;
-          }
-        }
-        if (!different) {
-          AlertService.add("danger", {
-            msg: "Your treatments are already booked for this time."
-          });
-          return false;
-        }
-      }
-      $scope.bb.basket.clear();
-      $scope.bb.pushStackToBasket();
-      if ($scope.bb.moving_booking) {
-        loader.notLoaded();
-        prom = PurchaseService.update({
-          purchase: $scope.bb.moving_booking,
-          bookings: $scope.bb.basket.items
-        });
-        prom.then(function(purchase) {
-          purchase.$getBookings().then(function(bookings) {
-            var _i, len3, m, oldb, results;
-            results = [];
-            for (m = 0, len3 = bookings.length; m < len3; m++) {
-              booking = bookings[m];
-              if ($scope.bookings) {
-                results.push((function() {
-                  var len4, n, ref3, results1;
-                  ref3 = $scope.bookings;
-                  results1 = [];
-                  for (_i = n = 0, len4 = ref3.length; n < len4; _i = ++n) {
-                    oldb = ref3[_i];
-                    if (oldb.id === booking.id) {
-                      results1.push($scope.bookings[_i] = booking);
-                    } else {
-                      results1.push(void 0);
-                    }
-                  }
-                  return results1;
-                })());
-              } else {
-                results.push(void 0);
-              }
-            }
-            return results;
-          });
-          loader.setLoaded();
-          $scope.bb.current_item.move_done = true;
-          return $scope.decideNextPage();
-        }, function(err) {
-          loader.setLoaded();
-          return AlertService.add("danger", {
-            msg: "Failed to move booking"
-          });
-        });
-        return;
-      }
-      loader.notLoaded();
-      if (options.do_not_route) {
-        return $scope.updateBasket();
-      } else {
-        return $scope.updateBasket().then(function() {
-          loader.setLoaded();
-          return $scope.decideNextPage(route);
-        }, function(err) {
-          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
-      }
-    };
-
-    /***
-    * @ngdoc method
-    * @name setReady
-    * @methodOf BB.Directives:bbTimeRangeStacked
-    * @description
-    * Set this page section as ready
-     */
-    return $scope.setReady = function() {
-      return $scope.confirm('', {
-        do_not_route: true
-      });
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbTimeRangeStacked
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of time range stacked for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @param {hash}  bbTimeRangeStacked A hash of options
-  * @property {date} start_date The start date of time range list
-  * @property {date} end_date The end date of time range list
-  * @property {integer} available_times The available times of range list
-  * @property {object} day_of_week The day of week
-  * @property {object} selected_day The selected day from the multi time range list
-  * @property {object} original_start_date The original start date of range list
-  * @property {object} start_at_week_start The start at week start of range list
-  * @property {object} selected_slot The selected slot from multi time range list
-  * @property {object} selected_date The selected date from multi time range list
-  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
-   */
-  angular.module('BB.Directives').directive('bbTimeRangeStacked', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'TimeRangeListStackedController'
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Controllers').controller('TimeSlots', function($scope, $rootScope, $q, $attrs, FormDataStoreService, ValidatorService, PageControllerService, LoadingService, halClient, BBModel) {
-    var loader, setItem;
-    loader = LoadingService.$loader($scope).notLoaded();
-    $rootScope.connection_started.then(function() {
-      if ($scope.bb.company) {
-        return $scope.init($scope.bb.company);
-      }
-    }, function(err) {
-      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-    $scope.init = function(company) {
-      var params;
-      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
-      $scope.start_date = moment();
-      $scope.end_date = moment().add(1, 'month');
-      params = {
-        item: $scope.booking_item,
-        start_date: $scope.start_date.toISODate(),
-        end_date: $scope.end_date.toISODate()
-      };
-      return BBModel.Slot.$query($scope.bb.company, params).then(function(slots) {
-        $scope.slots = slots;
-        return loader.setLoaded();
-      }, function(err) {
-        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-      });
-    };
-    setItem = function(slot) {
-      return $scope.booking_item.setSlot(slot);
-    };
-
-    /***
-    * @ngdoc method
-    * @name selectItem
-    * @methodOf BB.Directives:bbTimeSlots
-    * @description
-    * Select an item into the current booking journey and route on to the next page dpending on the current page control
-    *
-    * @param {object} slot The slot from list
-    * @param {string=} route A specific route to load
-     */
-    return $scope.selectItem = function(slot, route) {
-      if ($scope.$parent.$has_page_control) {
-        setItem(slot);
-        return false;
-      } else {
-        setItem(slot);
-        $scope.decideNextPage(route);
-        return true;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbTimeSlots
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  *
-  * Loads a list of time slots for the currently in scope company
-  *
-  * <pre>
-  * restrict: 'AE'
-  * replace: true
-  * scope: true
-  * </pre>
-  *
-  * @property {array} booking_item The booking item
-  * @property {date} start_date The start date
-  * @property {date} end_date The end date
-  * @property {array} slots The slots
-  * @property {object} validator The validator service - see {@link BB.Services:Validator validator Service}
-  *
-   */
-  angular.module('BB.Directives').directive('bbTimeSlots', function() {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      controller: 'TimeSlots',
-      link: function(scope, element, attrs) {
-        if (attrs.bbItem) {
-          scope.booking_item = scope.$eval(attrs.bbItem);
-        }
-        if (attrs.bbShowAll) {
-          scope.show_all = true;
-        }
-      }
     };
   });
 
@@ -21018,7 +18211,6 @@ angular.module('BB.Directives')
             $scope.clearClient = bbWidgetInit.clearClient;
             $scope.setCompany = bbWidgetInit.setCompany;
             $scope.setAffiliate = bbWidgetInit.setAffiliate;
-            $scope.setBasicRoute = $scope.bb.setBasicRoute;
 
             $scope.isAdmin = bbWidgetUtilities.isAdmin;
             $scope.isAdminIFrame = bbWidgetUtilities.isAdminIFrame;
@@ -21580,18 +18772,6 @@ angular.module('BB.Directives')
                 return this.$wait_for_routing.resolve();
             }
         };
-        Widget.prototype.setBasicRoute = function (routes) {
-            var i, j, len, step;
-            this.nextSteps = {};
-            this.firstStep = routes[0];
-            for (i = j = 0, len = routes.length; j < len; i = ++j) {
-                step = routes[i];
-                this.nextSteps[step] = routes[i + 1];
-            }
-            if (this.$wait_for_routing) {
-                return this.$wait_for_routing.resolve();
-            }
-        };
         Widget.prototype.waitForRoutes = function () {
             if (!this.$wait_for_routing) {
                 return this.$wait_for_routing = $q.defer();
@@ -21725,7 +18905,7 @@ angular.module('BB.Directives')
     angular.module('BB.Services').service('bbWidgetBasket', BBWidgetBasket);
 
     function BBWidgetBasket($q, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal,
-                            bbWidgetUtilities, ErrorService) {
+                            bbWidgetUtilities, ErrorService, LoginService) {
 
         var $scope = null;
         var setScope = function ($s) {
@@ -21962,7 +19142,7 @@ angular.module('BB.Directives')
                             res.$get('member').then(function (member) {
                                 if (member.client_type !== 'Contact') {
                                     member = LoginService.setLogin(member);
-                                    return setClient(member);
+                                    return $scope.setClient(member);
                                 }
                             });
                         }
@@ -23125,7 +20305,7 @@ angular.module('BB.Directives')
 
     angular.module('BB.Services').service('bbWidgetUtilities', BBWidgetUtilities);
 
-    function BBWidgetUtilities($window, BBModel, bbWidgetPage, bbWidgetStep, AppService, $timeout) {
+    function BBWidgetUtilities($window, BBModel, bbWidgetPage, bbWidgetStep, AppService, $timeout, LoginService) {
 
         var $scope = null;
         var setScope = function ($s) {
@@ -24055,7 +21235,7 @@ angular.module('BB.Directives')
     'ngInject';
     var link;
     link = function(scope, elem, attrs, ctrls) {
-      var $bbPageCtrl, $formCtrl, init, scrollAndFocusOnInvalid, serveBBPage, submitForm;
+      var $bbPageCtrl, $formCtrl, init, scrollAndFocusOnInvalid, serveBBPage, setSubmitted, submitForm;
       $bbPageCtrl = null;
       $formCtrl = null;
       init = function() {
@@ -24064,9 +21244,18 @@ angular.module('BB.Directives')
         scope.submitForm = submitForm;
         elem.on("submit", submitForm);
       };
+      setSubmitted = function(form) {
+        form.$setSubmitted();
+        form.submitted = true;
+        return angular.forEach(form, function(item) {
+          if (item && item.$$parentForm === form && item.$setSubmitted) {
+            return setSubmitted(item);
+          }
+        });
+      };
       submitForm = function() {
         var isValid;
-        $formCtrl.$setSubmitted();
+        setSubmitted($formCtrl);
         $timeout(scrollAndFocusOnInvalid, 100);
         isValid = ValidatorService.validateForm($formCtrl);
         if (isValid) {
@@ -24076,10 +21265,10 @@ angular.module('BB.Directives')
       };
       serveBBPage = function() {
         var route;
-        if (($bbPageCtrl != null) && (attrs.bbFormRoute != null)) {
+        if ($bbPageCtrl != null) {
           route = attrs.bbFormRoute;
           $bbPageCtrl.$scope.checkReady();
-          if (route.length > 0) {
+          if ((route != null) && route.length > 0) {
             $bbPageCtrl.$scope.routeReady(route);
           } else {
             $bbPageCtrl.$scope.routeReady();
@@ -24303,7 +21492,7 @@ angular.module('BB.Directives')
                   }
                   html += "</div>";
                 } else if (question.detail_type === "date") {
-                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' uib-datepicker-popup='" + date_format_2 + "' ng-change='recalc()' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1, \"showButtonBar\": false, \"showWeeks\": false}' show-button-bar='false' is-open='opened' ng-focus='opened=true' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
+                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' uib-datepicker-popup='" + date_format_2 + "' ng-change='recalc()' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' datepicker-options='{\"starting-day\": 1, \"showButtonBar\": false, \"showWeeks\": false}' show-button-bar='false' is-open='opened' ng-focus='opened=true' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='fa fa-calendar'></span></button> </span> </div>";
                 } else {
                   html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
                 }
@@ -27512,10 +24701,116 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('CategoryList', function($scope, $rootScope, $q, PageControllerService, LoadingService, BBModel, ValidatorService) {
+  angular.module('BB.Controllers').controller('BulkPurchase', function($scope, $rootScope, BBModel) {
+    $rootScope.connection_started.then(function() {
+      if ($scope.bb.company) {
+        return $scope.init($scope.bb.company);
+      }
+    });
+    $scope.init = function(company) {
+      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
+      return BBModel.BulkPurchase.$query(company).then(function(bulk_purchases) {
+        return $scope.bulk_purchases = bulk_purchases;
+      });
+    };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbBulkPurchases
+    * @description
+    * Select a bulk purchase into the current booking journey and route on to the next page dpending on the current page control
+    *
+    * @param {object} package Bulk_purchase or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
+    $scope.selectItem = function(item, route) {
+      if ($scope.$parent.$has_page_control) {
+        $scope.bulk_purchase = item;
+        return false;
+      } else {
+        $scope.booking_item.setBulkPurchase(item);
+        $scope.decideNextPage(route);
+        return true;
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbBulkPurchases
+    * @description
+    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+     */
+    return $scope.setReady = (function(_this) {
+      return function() {
+        if ($scope.bulk_purchase) {
+          $scope.booking_item.setBulkPurchase($scope.bulk_purchase);
+          return true;
+        } else {
+          return false;
+        }
+      };
+    })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbBulkPurchases
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of bulk purchases for the currently in scroe company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbBulkPurchases   A hash of options
+  * @property {array} bulk_purchases An array of all services
+  * @property {array} bookable_items An array of all BookableItems - used if the current_item has already selected a resource or person
+  * @property {bulk_purchase} bulk_purchase The currectly selected bulk_purchase
+  * @example
+  *  <example module="BB">
+  *    <file name="index.html">
+  *   <div bb-api-url='https://uk.bookingbug.com'>
+  *   <div  bb-widget='{company_id:21}'>
+  *     <div bb-bulk-purchases>
+  *        <ul>
+  *          <li ng-repeat='bulk in bulk_purchases'> {{bulk.name}}</li>
+  *        </ul>
+  *     </div>
+  *     </div>
+  *     </div>
+  *   </file>
+  *  </example>
+  *
+   */
+  angular.module('BB.Directives').directive('bbBulkPurchases', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'BulkPurchase'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('CategoryList', function($scope, $rootScope, $q, LoadingService, BBModel) {
     var loader;
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     $rootScope.connection_started.then((function(_this) {
       return function() {
         if ($scope.bb.company) {
@@ -27744,25 +25039,22 @@ angular.module('BB.Directives')
   angular.module('BB.Controllers').controller('ClientDetails', function($scope, $attrs, $rootScope, LoginService, ValidatorService, AlertService, LoadingService, BBModel) {
     var handleError, loader, options;
     loader = LoadingService.$loader($scope).notLoaded();
+    console.warn('Deprecation warning: validator.validateForm() will be removed from bbClientDetails in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
     $scope.validator = ValidatorService;
     $scope.existing_member = false;
     $scope.login_error = false;
     options = $scope.$eval($attrs.bbClientDetails) || {};
     $scope.suppress_client_create = ($attrs.bbSuppressCreate != null) || options.suppress_client_create;
-    $rootScope.connection_started.then((function(_this) {
-      return function() {
-        return $scope.initClientDetails();
-      };
-    })(this), function(err) {
+    $rootScope.connection_started.then(function() {
+      return $scope.initClientDetails();
+    }, function(err) {
       return loader.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
     });
-    $rootScope.$watch('member', (function(_this) {
-      return function(oldmem, newmem) {
-        if (!$scope.client.valid() && LoginService.isLoggedIn()) {
-          return $scope.setClient(new BBModel.Client(LoginService.member()._data));
-        }
-      };
-    })(this));
+    $rootScope.$watch('member', function(oldmem, newmem) {
+      if (!$scope.client.valid() && LoginService.isLoggedIn()) {
+        return $scope.setClient(new BBModel.Client(LoginService.member()._data));
+      }
+    });
 
     /***
     * @ngdoc method
@@ -28330,10 +25622,173 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, $q, $filter, PageControllerService, AlertService, ValidatorService, LoadingService, $translate) {
+  angular.module('BB.Controllers').controller('DealList', function($scope, $rootScope, $uibModal, $document, AlertService, FormDataStoreService, ValidatorService, LoadingService, BBModel, $translate) {
+    var ModalInstanceCtrl, init, loader;
+    FormDataStoreService.init('DealList', $scope, ['deals']);
+    loader = LoadingService.$loader($scope).notLoaded();
+    console.warn('Deprecation warning: validator.validateForm() will be removed from bbDealList in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
+    $scope.validator = ValidatorService;
+    $rootScope.connection_started.then(function() {
+      return init();
+    }, function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    init = function() {
+      var deal_promise;
+      loader.notLoaded();
+      if (!$scope.deals) {
+        deal_promise = BBModel.Deal.$query($scope.bb.company);
+        return deal_promise.then(function(deals) {
+          $scope.deals = deals;
+          return loader.setLoaded();
+        });
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name selectDeal
+    * @methodOf BB.Directives:bbDeals
+    * @description
+    * Select the deal and open modal
+    *
+    * @param {array} deal The deals array
+     */
+    $scope.selectDeal = function(deal) {
+      var iitem, modalInstance;
+      iitem = new BBModel.BasketItem(null, $scope.bb);
+      iitem.setDefaults($scope.bb.item_defaults);
+      iitem.setDeal(deal);
+      if (!$scope.bb.company_settings.no_recipient) {
+        modalInstance = $uibModal.open({
+          templateUrl: $scope.getPartial('_add_recipient'),
+          scope: $scope,
+          controller: ModalInstanceCtrl,
+          resolve: {
+            item: function() {
+              return iitem;
+            }
+          }
+        });
+        return modalInstance.result.then(function(item) {
+          loader.notLoaded();
+          $scope.setBasketItem(item);
+          return $scope.addItemToBasket().then(function() {
+            return loader.setLoaded();
+          }, function(err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+          });
+        });
+      } else {
+        loader.notLoaded();
+        $scope.setBasketItem(iitem);
+        return $scope.addItemToBasket().then(function() {
+          return loader.setLoaded();
+        }, function(err) {
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      }
+    };
+    ModalInstanceCtrl = function($scope, $uibModalInstance, item, ValidatorService) {
+      $scope.item = item;
+      $scope.recipient = false;
+
+      /***
+      * @ngdoc method
+      * @name addToBasket
+      * @methodOf BB.Directives:bbDeals
+      * @description
+      * Add to basket in according of form parameter
+      *
+      * @param {object} form The form where is added deal list to basket
+       */
+      $scope.addToBasket = function(form) {
+        if (!ValidatorService.validateForm(form)) {
+          return;
+        }
+        return $uibModalInstance.close($scope.item);
+      };
+      return $scope.cancel = function() {
+        return $uibModalInstance.dismiss('cancel');
+      };
+    };
+
+    /***
+    * @ngdoc method
+    * @name purchaseDeals
+    * @methodOf BB.Directives:bbDeals
+    * @description
+    * Purchase deals if basket items and basket items length is bigger than 0 else display a alert message
+     */
+    $scope.purchaseDeals = function() {
+      if ($scope.bb.basket.items && $scope.bb.basket.items.length > 0) {
+        return $scope.decideNextPage();
+      } else {
+        return AlertService.add('danger', {
+          msg: $translate.instant('PUBLIC_BOOKING.DEAL_LIST.CERT_NOT_SELECTED_ALERT')
+        });
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbDeals
+    * @description
+    * Set this page section as ready
+     */
+    return $scope.setReady = function() {
+      if ($scope.bb.basket.items && $scope.bb.basket.items.length > 0) {
+        return true;
+      } else {
+        return AlertService.add('danger', {
+          msg: $translate.instant('PUBLIC_BOOKING.DEAL_LIST.CERT_NOT_SELECTED_ALERT')
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbDeals
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of deals for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} deals The deals list
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
+  angular.module('BB.Directives').directive('bbDeals', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'DealList'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('DurationList', function($scope, $attrs, $rootScope, $q, $filter, AlertService, ValidatorService, LoadingService, $translate) {
     var loader, options;
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     options = $scope.$eval($attrs.bbDurations) || {};
     $rootScope.connection_started.then(function() {
       return $scope.loadData();
@@ -28482,10 +25937,10 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, PageControllerService, BBModel, ValidatorService, FormDataStoreService, LoadingService) {
+  angular.module('BB.Controllers').controller('Event', function($scope, $attrs, $rootScope, EventService, $q, BBModel, ValidatorService, FormDataStoreService, LoadingService) {
     var init, initImage, initTickets, loader, ticket_refs;
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
+    console.warn('Deprecation warning: validator.validateForm() will be removed from bbEvent in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
     $scope.validator = ValidatorService;
     $scope.event_options = $scope.$eval($attrs.bbEvent) || {};
     ticket_refs = [];
@@ -28779,12 +26234,10 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('EventGroupList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, PageControllerService, LoadingService, halClient) {
+  angular.module('BB.Controllers').controller('EventGroupList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, LoadingService) {
     var loader, setEventGroupItem;
     FormDataStoreService.init('EventGroupList', $scope, ['event_group']);
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    $scope.validator = ValidatorService;
     $rootScope.connection_started.then((function(_this) {
       return function() {
         if ($scope.bb.company) {
@@ -28969,10 +26422,9 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, EventGroupService, $q, PageControllerService, FormDataStoreService, $filter, PaginationService, $timeout, ValidatorService, LoadingService, BBModel) {
+  angular.module('BB.Controllers').controller('EventList', function($scope, $rootScope, EventService, EventChainService, EventGroupService, $q, FormDataStoreService, $filter, PaginationService, $timeout, ValidatorService, LoadingService, BBModel) {
     var buildDynamicFilters, loader, sort;
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     $scope.pick = {};
     $scope.start_date = moment();
     $scope.end_date = moment().add(1, 'year');
@@ -29628,6 +27080,7 @@ angular.module('BB.Directives')
       FormDataStoreService.init('ItemDetails', $scope, ['item_details']);
     }
     BBModel.Question.$addAnswersByName($scope.client, ['first_name', 'last_name', 'email', 'mobile']);
+    console.warn('Deprecation warning: validator.validateForm() will be removed from bbItemDetails in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
     $scope.validator = ValidatorService;
     confirming = false;
     $rootScope.connection_started.then(function() {
@@ -30029,6 +27482,193 @@ angular.module('BB.Directives')
           };
         })(this));
       }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('Login', function($scope, $rootScope, $q, $location, LoginService, ValidatorService, AlertService, LoadingService, BBModel) {
+    var loader;
+    console.warn('Deprecation warning: validator.validateForm() will be removed from bbLogin in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
+    $scope.validator = ValidatorService;
+    $scope.login_form = {};
+    loader = LoadingService.$loader($scope);
+
+    /***
+    * @ngdoc method
+    * @name login_sso
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Login to application
+    *
+    * @param {object} token The token to use for login
+    * @param {string=} route A specific route to load
+     */
+    $scope.login_sso = function(token, route) {
+      return $rootScope.connection_started.then((function(_this) {
+        return function() {
+          return LoginService.ssoLogin({
+            company_id: $scope.bb.company.id,
+            root: $scope.bb.api_url
+          }, {
+            token: token
+          }).then(function(member) {
+            if (route) {
+              return $scope.showPage(route);
+            }
+          }, function(err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+          });
+        };
+      })(this), function(err) {
+        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+      });
+    };
+
+    /***
+    * @ngdoc method
+    * @name login_with_password
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Login with password
+    *
+    * @param {string} email The email address that use for the login
+    * @param {string} password The password use for the login
+     */
+    $scope.login_with_password = function(email, password) {
+      return LoginService.companyLogin($scope.bb.company, {}, {
+        email: email,
+        password: password
+      }).then((function(_this) {
+        return function(member) {
+          return $scope.member = new BBModel.Member.Member(member);
+        };
+      })(this), (function(_this) {
+        return function(err) {
+          return AlertService.raise('LOGIN_FAILED');
+        };
+      })(this));
+    };
+
+    /***
+    * @ngdoc method
+    * @name showEmailPasswordReset
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Display email reset password page
+     */
+    $scope.showEmailPasswordReset = (function(_this) {
+      return function() {
+        return $scope.showPage('email_reset_password');
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name isLoggedIn
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Verify if user are logged in
+     */
+    $scope.isLoggedIn = function() {
+      return LoginService.isLoggedIn();
+    };
+
+    /***
+    * @ngdoc method
+    * @name sendPasswordReset
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Send password reset via email
+    *
+    * @param {string} email The email address use for the send new password
+     */
+    $scope.sendPasswordReset = function(email) {
+      return LoginService.sendPasswordReset($scope.bb.company, {
+        email: email,
+        custom: true
+      }).then(function() {
+        return AlertService.raise('PASSWORD_RESET_REQ_SUCCESS');
+      }, (function(_this) {
+        return function(err) {
+          return AlertService.raise('PASSWORD_RESET_REQ_FAILED');
+        };
+      })(this));
+    };
+
+    /***
+    * @ngdoc method
+    * @name updatePassword
+    * @methodOf BB.Directives:bbLogin
+    * @description
+    * Update password
+    *
+    * @param {string} new_password The new password has been set
+    * @param {string} confirm_new_password The new password has been confirmed
+     */
+    return $scope.updatePassword = function(new_password, confirm_new_password) {
+      AlertService.clear();
+      if ($rootScope.member && new_password && confirm_new_password && (new_password === confirm_new_password)) {
+        return LoginService.updatePassword($rootScope.member, {
+          new_password: new_password,
+          confirm_new_password: confirm_new_password,
+          persist_login: $scope.login_form.persist_login
+        }).then((function(_this) {
+          return function(member) {
+            if (member) {
+              $scope.setClient(member);
+              $scope.password_updated = true;
+              return AlertService.raise('PASSWORD_RESET_SUCESS');
+            }
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            $scope.error = err;
+            return AlertService.raise('PASSWORD_RESET_FAILED');
+          };
+        })(this));
+      } else {
+        return AlertService.raise('PASSWORD_MISMATCH');
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbLogin
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of logins for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {boolean} password_updated The user password updated
+  * @property {boolean} password_error The user password error
+  * @property {boolean} email_sent The email sent
+  * @property {boolean} success If user are log in with success
+  * @property {boolean} login_error If user have some errors when try to log in
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+   */
+  angular.module('BB.Directives').directive('bbLogin', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Login'
     };
   });
 
@@ -30766,6 +28406,7 @@ angular.module('BB.Directives')
   angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, ValidatorService, LoadingService) {
     var loader;
     $scope.login = {};
+    console.warn('Deprecation warning: validator.validateForm() will be removed from bbMemberLogin in an upcoming major release, please update your template to use bbForm and submitForm() instead. See https://github.com/bookingbug/bookingbug-angular/issues/638');
     $scope.validator = ValidatorService;
     loader = LoadingService.$loader($scope).notLoaded();
     $rootScope.connection_started.then(function() {
@@ -30838,6 +28479,79 @@ angular.module('BB.Directives')
         } else {
           return PathSvc.directivePartial("_member_login_schema_form");
         }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbMembershipLevels', function($rootScope, BBModel) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: function($scope, $element, $attrs, LoadingService) {
+        var checkClientDefaults, loader;
+        loader = LoadingService.$loader($scope);
+        $rootScope.connection_started.then(function() {
+          return $scope.initialise();
+        });
+        $scope.initialise = function() {
+          if ($scope.bb.company && $scope.bb.company.$has('member_levels')) {
+            loader.notLoaded();
+            return BBModel.MembershipLevels.$getMembershipLevels($scope.bb.company).then(function(member_levels) {
+              loader.setLoaded();
+              return $scope.membership_levels = member_levels;
+            }, function(err) {
+              return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+            });
+          }
+        };
+        $scope.selectMemberLevel = function(level) {
+          if (level && $scope.client) {
+            $scope.client.member_level_id = level.id;
+            if ($scope.$parent.$has_page_control) {
+
+            } else {
+              return $scope.decideNextPage();
+            }
+          }
+        };
+        checkClientDefaults = function() {
+          var i, len, membership_level, ref, results;
+          if (!$scope.bb.client_defaults.membership_ref) {
+            return;
+          }
+          ref = $scope.membership_levels;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            membership_level = ref[i];
+            if (membership_level.name === $scope.bb.client_defaults.membership_ref) {
+              results.push($scope.selectMemberLevel(membership_level));
+            } else {
+              results.push(void 0);
+            }
+          }
+          return results;
+        };
+        $scope.setReady = function() {
+          if (!$scope.client.member_level_id) {
+            return false;
+          }
+          return true;
+        };
+        return $scope.getMembershipLevel = function(member_level_id) {
+          return _.find($scope.membership_levels, function(level) {
+            return level.id === member_level_id;
+          });
+        };
       }
     };
   });
@@ -31219,6 +28933,386 @@ angular.module('BB.Directives')
       replace: true,
       scope: true,
       controller: 'DayListMa'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('MonthCalendar', function($scope, $rootScope, $q, AlertService, LoadingService, BBModel, $translate) {
+    var loader;
+    loader = LoadingService.$loader($scope).notLoaded();
+    $scope.WeekHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    $scope.day_data = {};
+    if (!$scope.type) {
+      $scope.type = "month";
+    }
+    if (!$scope.data_source) {
+      $scope.data_source = $scope.bb.current_item;
+    }
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if (!$scope.current_date && $scope.last_selected_date) {
+          $scope.current_date = $scope.last_selected_date.startOf($scope.type);
+        } else if (!$scope.current_date) {
+          $scope.current_date = moment().startOf($scope.type);
+        }
+        return $scope.loadData();
+      };
+    })(this), function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    $scope.$on("currentItemUpdate", function(event) {
+      return $scope.loadData();
+    });
+
+    /***
+    * @ngdoc method
+    * @name setCalType
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set cal type in acording of type
+    *
+    * @param {array} type The type of day list
+     */
+    $scope.setCalType = (function(_this) {
+      return function(type) {
+        return $scope.type = type;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setDataSource
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set data source in according of source
+    *
+    * @param {string} source The source of day list
+     */
+    $scope.setDataSource = (function(_this) {
+      return function(source) {
+        return $scope.data_source = source;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_date
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Format date and get current date
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_date = (function(_this) {
+      return function(fmt) {
+        if ($scope.current_date) {
+          return $scope.current_date.format(fmt);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_start_date
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Format start date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_start_date = (function(_this) {
+      return function(fmt) {
+        return $scope.format_date(fmt);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name format_end_date
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Format end date in according of fmt parameter
+    *
+    * @param {date} fmt The format date
+     */
+    $scope.format_end_date = (function(_this) {
+      return function(fmt) {
+        if ($scope.end_date) {
+          return $scope.end_date.format(fmt);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectDay
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Select day
+    *
+    * @param {date} day The day
+    * @param {string=} route A specific route to load
+    * @param {string} force The force
+     */
+    $scope.selectDay = (function(_this) {
+      return function(day, route, force) {
+        if (day.spaces === 0 && !force) {
+          return false;
+        }
+        $scope.setLastSelectedDate(day.date);
+        $scope.bb.current_item.setDate(day);
+        if ($scope.$parent.$has_page_control) {
+
+        } else {
+          return $scope.decideNextPage(route);
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setMonth
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set month
+    *
+    * @param {date} month The month
+    * @param {date} year The year
+     */
+    $scope.setMonth = (function(_this) {
+      return function(month, year) {
+        $scope.current_date = moment().startOf('month').year(year).month(month - 1);
+        $scope.current_date.year();
+        return $scope.type = "month";
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setWeek
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set month
+    *
+    * @param {date} week The week
+    * @param {date} year The year
+     */
+    $scope.setWeek = (function(_this) {
+      return function(week, year) {
+        $scope.current_date = moment().year(year).isoWeek(week).startOf('week');
+        $scope.current_date.year();
+        return $scope.type = "week";
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Add the current date in according of type and amount parameters
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
+    $scope.add = (function(_this) {
+      return function(type, amount) {
+        $scope.current_date.add(amount, type);
+        return $scope.loadData();
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Substract the current date in according of type and amount
+    *
+    * @param {string} type The type
+    * @param {string} amount The amount
+     */
+    $scope.subtract = (function(_this) {
+      return function(type, amount) {
+        return $scope.add(type, -amount);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Calculate if the current earlist date is in the past - in which case we might want to disable going backwards
+     */
+    $scope.isPast = (function(_this) {
+      return function() {
+        if (!$scope.current_date) {
+          return true;
+        }
+        return moment().isAfter($scope.current_date);
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Load week if type is equals with week else load month
+     */
+    $scope.loadData = (function(_this) {
+      return function() {
+        if ($scope.type === "week") {
+          return $scope.loadWeek();
+        } else {
+          return $scope.loadMonth();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadMonth
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Load month
+     */
+    $scope.loadMonth = (function(_this) {
+      return function() {
+        var date, edate;
+        date = $scope.current_date;
+        $scope.month = date.month();
+        loader.notLoaded();
+        edate = moment(date).add(1, 'months');
+        $scope.end_date = moment(edate).add(-1, 'days');
+        if ($scope.data_source) {
+          return BBModel.Day.$query({
+            company: $scope.bb.company,
+            cItem: $scope.data_source,
+            'month': date.format("MMYY"),
+            client: $scope.client
+          }).then(function(days) {
+            var d, day, i, j, k, len, w, week, weeks;
+            $scope.days = days;
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
+              $scope.day_data[day.string_date] = day;
+            }
+            weeks = [];
+            for (w = j = 0; j <= 5; w = ++j) {
+              week = [];
+              for (d = k = 0; k <= 6; d = ++k) {
+                week.push(days[w * 7 + d]);
+              }
+              weeks.push(week);
+            }
+            $scope.weeks = weeks;
+            return loader.setLoaded();
+          }, function(err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+          });
+        } else {
+          return loader.setLoaded();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadWeek
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Load week
+     */
+    $scope.loadWeek = (function(_this) {
+      return function() {
+        var date, edate;
+        date = $scope.current_date;
+        loader.notLoaded();
+        edate = moment(date).add(7, 'days');
+        $scope.end_date = moment(edate).add(-1, 'days');
+        if ($scope.data_source) {
+          return BBModel.Day.$query({
+            company: $scope.bb.company,
+            cItem: $scope.data_source,
+            date: date.toISODate(),
+            edate: edate.toISODate(),
+            client: $scope.client
+          }).then(function(days) {
+            var day, i, len;
+            $scope.days = days;
+            for (i = 0, len = days.length; i < len; i++) {
+              day = days[i];
+              $scope.day_data[day.string_date] = day;
+            }
+            return loader.setLoaded();
+          }, function(err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+          });
+        } else {
+          return loader.setLoaded();
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbMonthCalendar
+    * @description
+    * Set this page section as ready
+     */
+    return $scope.setReady = (function(_this) {
+      return function() {
+        if ($scope.bb.current_item.date) {
+          return true;
+        } else {
+          AlertService.clear();
+          AlertService.add("danger", {
+            msg: $translate.instant("PUBLIC_BOOKING.DAY.DATE_NOT_SELECTED")
+          });
+          return false;
+        }
+      };
+    })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbMonthCalendar
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of month availability for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {string} message The message text
+  * @property {string} setLoaded  Set the day list loaded
+  * @property {object} setLoadedAndShowError Set loaded and show error
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
+  angular.module('BB.Directives').directive('bbMonthCalendar', function() {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      controller: 'MonthCalendar'
     };
   });
 
@@ -31674,13 +29768,568 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Controllers').controller('PackageItem', function($scope, $rootScope, BBModel) {
+    $rootScope.connection_started.then(function() {
+      if ($scope.bb.company) {
+        return $scope.init($scope.bb.company);
+      }
+    });
+    $scope.init = function(company) {
+      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
+      return BBModel.PackageItem.$query(company).then(function(package_items) {
+        return $scope.packages = package_items;
+      });
+    };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbPackageItems
+    * @description
+    * Select a package into the current booking journey and route on to the next page dpending on the current page control
+    *
+    * @param {object} package The Service or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
+    $scope.selectItem = function(item, route) {
+      if ($scope.$parent.$has_page_control) {
+        $scope["package"] = item;
+        return false;
+      } else {
+        $scope.booking_item.setPackageItem(item);
+        $scope.decideNextPage(route);
+        return true;
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbPackageItems
+    * @description
+    * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
+     */
+    $scope.setReady = function() {
+      if ($scope["package"]) {
+        $scope.booking_item.setPackageItem($scope["package"]);
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name getPackageServices
+    * @methodOf BB.Directives:bbPackageItems
+    * @description
+    * Query all of the services included in the package
+    * @params {array} item.service_list an array of services within the item
+     */
+    return $scope.getPackageServices = function(item) {
+      var promise;
+      if (item && !item.service_list) {
+        item.service_list = [];
+        promise = BBModel.PackageItem.$getPackageServices(item);
+        promise.then(function(services) {
+          return item.service_list = services;
+        });
+        return true;
+      } else {
+        return false;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPackageItems
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of packages for the currently in scroe company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbPackgeItems   A hash of options
+  * @property {array} packages An array of all services
+  * @property {array} bookable_items An array of all BookableItems - used if the current_item has already selected a resource or person
+  * @property {array} bookable_services An array of Services - used if the current_item has already selected a resource or person
+  * @property {package} package The currectly selected package
+  * @property {hash} filters A hash of filters
+  * @example
+  *  <example module="BB">
+  *    <file name="index.html">
+  *   <div bb-api-url='https://uk.bookingbug.com'>
+  *   <div  bb-widget='{company_id:21}'>
+  *     <div bb-package-items>
+  *        <ul>
+  *          <li ng-repeat='package in packages'> {{package.name}}</li>
+  *        </ul>
+  *     </div>
+  *     </div>
+  *     </div>
+  *   </file>
+  *  </example>
+  *
+   */
+  angular.module('BB.Directives').directive('bbPackageItems', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'PackageItem'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('PackagePicker', function($scope, $rootScope, $q, TimeService, LoadingService, BBModel) {
+    var loader;
+    $scope.sel_date = moment().add(1, 'days');
+    $scope.selected_date = $scope.sel_date.toDate();
+    $scope.picked_time = false;
+    loader = LoadingService.$loader($scope);
+    $scope.$watch('selected_date', (function(_this) {
+      return function(newv, oldv) {
+        $scope.sel_date = moment(newv);
+        return $scope.loadDay();
+      };
+    })(this));
+
+    /***
+    * @ngdoc method
+    * @name loadDay
+    * @methodOf BB.Directives:bbPackagePicker
+    * @description
+    * Load day
+     */
+    $scope.loadDay = (function(_this) {
+      return function() {
+        var i, item, len, pslots, ref;
+        $scope.timeSlots = [];
+        loader.notLoaded();
+        pslots = [];
+        ref = $scope.stackedItems;
+        for (i = 0, len = ref.length; i < len; i++) {
+          item = ref[i];
+          pslots.push(TimeService.query({
+            company: $scope.bb.company,
+            cItem: item,
+            date: $scope.sel_date,
+            client: $scope.client
+          }));
+        }
+        return $q.all(pslots).then(function(res) {
+          var _i, earliest, j, k, l, latest, len1, len2, len3, len4, len5, m, n, next_earliest, next_latest, ref1, ref2, ref3, ref4, ref5, results, slot;
+          loader.setLoaded();
+          $scope.data_valid = true;
+          $scope.timeSlots = [];
+          ref1 = $scope.stackedItems;
+          for (_i = j = 0, len1 = ref1.length; j < len1; _i = ++j) {
+            item = ref1[_i];
+            item.slots = res[_i];
+            if (!item.slots || item.slots.length === 0) {
+              $scope.data_valid = false;
+            }
+            item.order = _i;
+          }
+          if ($scope.data_valid) {
+            $scope.timeSlots = res;
+            earliest = null;
+            ref2 = $scope.stackedItems;
+            for (k = 0, len2 = ref2.length; k < len2; k++) {
+              item = ref2[k];
+              next_earliest = null;
+              ref3 = item.slots;
+              for (l = 0, len3 = ref3.length; l < len3; l++) {
+                slot = ref3[l];
+                if (earliest && slot.time < earliest) {
+                  slot.disable();
+                } else if (!next_earliest) {
+                  next_earliest = slot.time + item.service.duration;
+                }
+              }
+              earliest = next_earliest;
+            }
+            latest = null;
+            ref4 = $scope.bb.stacked_items.slice(0).reverse();
+            results = [];
+            for (m = 0, len4 = ref4.length; m < len4; m++) {
+              item = ref4[m];
+              next_latest = null;
+              ref5 = item.slots;
+              for (n = 0, len5 = ref5.length; n < len5; n++) {
+                slot = ref5[n];
+                if (latest && slot.time > latest) {
+                  slot.disable();
+                } else {
+                  next_latest = slot.time - item.service.duration;
+                }
+              }
+              results.push(latest = next_latest);
+            }
+            return results;
+          }
+        }, function(err) {
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectSlot
+    * @methodOf BB.Directives:bbPackagePicker
+    * @description
+    * Select slot in according of sel_item and slot parameters
+    *
+    * @param {array} sel_item The sel item
+    * @param {object} slot The slot
+     */
+    $scope.selectSlot = (function(_this) {
+      return function(sel_item, slot) {
+        var count, current, i, item, j, k, latest, len, len1, len2, next, ref, ref1, slots, time;
+        ref = $scope.stackedItems;
+        for (count = i = 0, len = ref.length; i < len; count = ++i) {
+          item = ref[count];
+          if (count === sel_item.order) {
+            item.setDate(new BBModel.Day({
+              date: $scope.sel_date.format(),
+              spaces: 1
+            }));
+            item.setTime(slot);
+            next = slot.time + item.service.duration;
+            time = slot.time;
+            slot = null;
+            if (count > 0) {
+              current = count - 1;
+              while (current >= 0) {
+                item = $scope.bb.stacked_items[current];
+                latest = time - item.service.duration;
+                if (!item.time || item.time.time > latest) {
+                  item.setDate(new BBModel.Day({
+                    date: $scope.sel_date.format(),
+                    spaces: 1
+                  }));
+                  item.setTime(null);
+                  ref1 = item.slots;
+                  for (j = 0, len1 = ref1.length; j < len1; j++) {
+                    slot = ref1[j];
+                    if (slot.time < latest) {
+                      item.setTime(slot);
+                    }
+                  }
+                }
+                time = item.time.time;
+                current -= 1;
+              }
+            }
+          } else if (count > sel_item.order) {
+            slots = item.slots;
+            item.setDate(new BBModel.Day({
+              date: $scope.sel_date.format(),
+              spaces: 1
+            }));
+            if (slots) {
+              item.setTime(null);
+              for (k = 0, len2 = slots.length; k < len2; k++) {
+                slot = slots[k];
+                if (slot.time >= next && !item.time) {
+                  item.setTime(slot);
+                  next = slot.time + item.service.duration;
+                }
+              }
+            }
+          }
+        }
+        return $scope.picked_time = true;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name hasAvailability
+    * @methodOf BB.Directives:bbPackagePicker
+    * @description
+    * Checks if picker have the start time and the end time available
+    *
+    * @param {object} slots The slots of the package picker
+    * @param {date} start_time The start time of the picker
+    * @param {date} end_time The end time of the picker
+     */
+    $scope.hasAvailability = (function(_this) {
+      return function(slots, start_time, end_time) {
+        var i, j, k, l, len, len1, len2, len3, slot;
+        if (!slots) {
+          return false;
+        }
+        if (start_time && end_time) {
+          for (i = 0, len = slots.length; i < len; i++) {
+            slot = slots[i];
+            if (slot.time >= start_time && slot.time < end_time && slot.availability() > 0) {
+              return true;
+            }
+          }
+        } else if (end_time) {
+          for (j = 0, len1 = slots.length; j < len1; j++) {
+            slot = slots[j];
+            if (slot.time < end_time && slot.availability() > 0) {
+              return true;
+            }
+          }
+        } else if (start_time) {
+          for (k = 0, len2 = slots.length; k < len2; k++) {
+            slot = slots[k];
+            if (slot.time >= start_time && slot.availability() > 0) {
+              return true;
+            }
+          }
+        } else {
+          for (l = 0, len3 = slots.length; l < len3; l++) {
+            slot = slots[l];
+            if (slot.availability() > 0) {
+              return true;
+            }
+          }
+        }
+      };
+    })(this);
+    return $scope.confirm = (function(_this) {
+      return function() {};
+    })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPackagePicker
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of package pickers for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {date} sel_date The sel date
+  * @property {date} selected_date The selected date
+  * @property {boolean} picked_time The picked time
+  * @property {array} timeSlots The time slots
+  * @property {boolean} data_valid The valid data
+   */
+  angular.module('BB.Directives').directive('bbPackagePicker', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'PackagePicker'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('Payment', function($scope, $rootScope, $q, $location, $window, $sce, $log, $timeout, LoadingService) {
+    var loader;
+    loader = LoadingService.$loader($scope).notLoaded();
+    if ($scope.purchase) {
+      $scope.bb.total = $scope.purchase;
+    }
+    $rootScope.connection_started.then(function() {
+      if ($scope.total) {
+        $scope.bb.total = $scope.total;
+      }
+      if ($scope.bb && $scope.bb.total && $scope.bb.total.$href('new_payment')) {
+        return $scope.url = $sce.trustAsResourceUrl($scope.bb.total.$href('new_payment'));
+      }
+    });
+
+    /***
+    * @ngdoc method
+    * @name callNotLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Set not loaded state
+     */
+    $scope.callNotLoaded = (function(_this) {
+      return function() {
+        return loader.notLoaded();
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name callSetLoaded
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Set loaded state
+     */
+    $scope.callSetLoaded = (function(_this) {
+      return function() {
+        return loader.setLoaded();
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name paymentDone
+    * @methodOf BB.Directives:bbPayment
+    * @description
+    * Handles payment success
+     */
+    $scope.paymentDone = function() {
+      $scope.bb.payment_status = "complete";
+      $scope.$emit('payment:complete');
+      if ($scope.route_to_next_page) {
+        return $scope.decideNextPage();
+      }
+    };
+    return $scope.error = function(message) {
+      return $log.warn("Payment Failure: " + message);
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbPayment
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Renders payment iframe (where integrated payment has been configured) and handles payment success/failure.
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} total The total of payment
+   */
+  angular.module('BB.Directives').directive('bbPayment', function($window, $location, $sce, GeneralOptions, AlertService) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'Payment',
+      link: function(scope, element, attributes) {
+        var error, getHost, sendLoadEvent;
+        error = function(scope, message) {
+          return scope.error(message);
+        };
+        getHost = function(url) {
+          var a;
+          a = document.createElement('a');
+          a.href = url;
+          return a['protocol'] + '//' + a['host'];
+        };
+        sendLoadEvent = function(element, origin, scope) {
+          var custom_stylesheet, payload, referrer;
+          referrer = $location.protocol() + "://" + $location.host();
+          if ($location.port()) {
+            referrer += ":" + $location.port();
+          }
+          if (scope.payment_options.custom_stylesheet) {
+            if (scope.payment_options.custom_stylesheet.match(/http/)) {
+              custom_stylesheet = scope.payment_options.custom_stylesheet;
+            } else {
+              custom_stylesheet = $location.absUrl().match(/.+(?=#)/) + scope.payment_options.custom_stylesheet;
+            }
+          }
+          payload = JSON.stringify({
+            'type': 'load',
+            'message': referrer,
+            'custom_partial_url': scope.bb.custom_partial_url,
+            'custom_stylesheet': custom_stylesheet,
+            'scroll_offset': GeneralOptions.scroll_offset
+          });
+          return element.find('iframe')[0].contentWindow.postMessage(payload, origin);
+        };
+        scope.payment_options = scope.$eval(attributes.bbPayment) || {};
+        scope.route_to_next_page = scope.payment_options.route_to_next_page != null ? scope.payment_options.route_to_next_page : true;
+        element.find('iframe').bind('load', (function(_this) {
+          return function(event) {
+            var origin, url;
+            if (scope.bb && scope.bb.total && scope.bb.total.$href('new_payment')) {
+              url = scope.bb.total.$href('new_payment');
+            }
+            origin = getHost(url);
+            sendLoadEvent(element, origin, scope);
+            return scope.$apply(function() {
+              return scope.callSetLoaded();
+            });
+          };
+        })(this));
+        return $window.addEventListener('message', (function(_this) {
+          return function(event) {
+            var data;
+            if (angular.isObject(event.data)) {
+              data = event.data;
+            } else if (!event.data.match(/iFrameSizer/)) {
+              data = JSON.parse(event.data);
+            }
+            return scope.$apply(function() {
+              if (data) {
+                switch (data.type) {
+                  case "submitting":
+                    return scope.callNotLoaded();
+                  case "error":
+                    scope.$emit("payment:failed");
+                    scope.callNotLoaded();
+                    AlertService.raise('PAYMENT_FAILED');
+                    return document.getElementsByTagName("iframe")[0].src += '';
+                  case "payment_complete":
+                    scope.callSetLoaded();
+                    return scope.paymentDone();
+                }
+              }
+            });
+          };
+        })(this), false);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   var BBPeopleCtrl;
 
-  BBPeopleCtrl = function($scope, $rootScope, PageControllerService, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
+  BBPeopleCtrl = function($scope, $rootScope, $q, BBModel, PersonModel, FormDataStoreService, ValidatorService, LoadingService) {
     'ngInject';
     var chosenService, connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromPerson, init, loadData, loader, personListener, selectAndRoute, selectItem, setPerson, setReady;
     this.$scope = $scope;
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     chosenService = null;
     loader = null;
     init = function() {
@@ -31977,13 +30626,101 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('ProductList', function($scope, $rootScope, $q, $attrs, ItemService, FormDataStoreService, ValidatorService, LoadingService) {
+    var loader;
+    loader = LoadingService.$loader($scope).notLoaded();
+    $rootScope.connection_started.then(function() {
+      if ($scope.bb.company) {
+        return $scope.init($scope.bb.company);
+      }
+    }, function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    $scope.init = function(company) {
+      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
+      return company.$get('products').then(function(products) {
+        return products.$get('products').then(function(products) {
+          $scope.products = products;
+          return loader.setLoaded();
+        });
+      });
+    };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbProductList
+    * @description
+    * Select an item from the product list in according of item and route parameter
+    *
+    * @param {array} item The array items
+    * @param {string=} route A specific route to load
+     */
+    return $scope.selectItem = function(item, route) {
+      if ($scope.$parent.$has_page_control) {
+        $scope.product = item;
+        return false;
+      } else {
+        $scope.booking_item.setProduct(item);
+        $scope.decideNextPage(route);
+        return true;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbProductList
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of product for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} products The products from the list
+  * @property {array} item The item of the product list
+  * @property {array} booking_item The booking item
+  * @property {product} product The currectly selected product
+   */
+  angular.module('BB.Directives').directive('bbProductList', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'ProductList',
+      link: function(scope, element, attrs) {
+        if (attrs.bbItem) {
+          scope.booking_item = scope.$eval(attrs.bbItem);
+        }
+        if (attrs.bbShowAll) {
+          scope.show_all = true;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   var BBResourcesCtrl;
 
-  BBResourcesCtrl = function($scope, $rootScope, $attrs, PageControllerService, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
+  BBResourcesCtrl = function($scope, $rootScope, $attrs, $q, BBModel, ResourceModel, ValidatorService, LoadingService) {
     'ngInject';
     var connectionStartedFailure, connectionStartedSuccess, currentItemUpdateHandler, getItemFromResource, init, loadData, loader, resourceListener, selectItem, setReady;
     this.$scope = $scope;
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     loader = null;
     init = function() {
       $scope.setReady = setReady.bind(this);
@@ -32263,14 +31000,12 @@ angular.module('BB.Directives')
 (function() {
   var BBServicesCtrl;
 
-  BBServicesCtrl = function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, PageControllerService, ErrorService, $filter, LoadingService) {
+  BBServicesCtrl = function($scope, $rootScope, $q, $attrs, $uibModal, $document, BBModel, FormDataStoreService, ValidatorService, ErrorService, $filter, LoadingService) {
     'ngInject';
     var loader, setServiceItem, setServicesDisplayName;
     this.$scope = $scope;
     FormDataStoreService.init('ServiceList', $scope, ['service']);
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
-    $scope.validator = ValidatorService;
     $scope.filters = {
       category_name: null,
       service_name: null,
@@ -32724,6 +31459,95 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
+  angular.module('BB.Controllers').controller('SpaceList', function($scope, $rootScope, $q, ServiceService, LoadingService, BBModel) {
+    var loader;
+    loader = LoadingService.$loader($scope);
+    $rootScope.connection_started.then((function(_this) {
+      return function() {
+        if ($scope.bb.company) {
+          return $scope.init($scope.bb.company);
+        }
+      };
+    })(this), function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    $scope.init = (function(_this) {
+      return function(comp) {
+        return BBModel.Space.$query(comp).then(function(items) {
+          if ($scope.currentItem.category) {
+            items = items.filter(function(x) {
+              return x.$has('category') && x.$href('category') === $scope.currentItem.category.self;
+            });
+          }
+          $scope.items = items;
+          if (items.length === 1 && !$scope.allowSinglePick) {
+            $scope.skipThisStep();
+            $rootScope.services = items;
+            return $scope.selectItem(items[0], $scope.nextRoute);
+          } else {
+            return $scope.listLoaded = true;
+          }
+        }, function(err) {
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbSpaces
+    * @description
+    * Select the current item in according of item and route parameters
+    *
+    * @param {array} item The Space or BookableItem to select
+    * @param {string=} route A specific route to load
+     */
+    return $scope.selectItem = (function(_this) {
+      return function(item, route) {
+        $scope.currentItem.setService(item);
+        return $scope.decide_next_page(route);
+      };
+    })(this);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbSpaces
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of spaces for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} items An array of all services
+  * @property {space} space The currectly selected space
+   */
+  angular.module('BB.Directives').directive('bbSpaces', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'SpaceList'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BB.Controllers').controller('Summary', function($scope, $rootScope, LoadingService, BBModel, $q) {
     $rootScope.connection_started.then((function(_this) {
       return function() {
@@ -32787,6 +31611,1066 @@ angular.module('BB.Directives')
       replace: true,
       scope: true,
       controller: 'Summary'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('SurveyQuestions', function($scope, $rootScope, $location, BBModel, ValidatorService, $sessionStorage) {
+    var getBookingAndSurvey, getBookingRef, getMember, getPurchaseID, init, loader, setPurchaseCompany, showLoginError;
+    $scope.completed = false;
+    $scope.login = {
+      email: "",
+      password: ""
+    };
+    $scope.login_error = false;
+    $scope.booking_ref = "";
+    loader = LoadingService.$loader($scope).notLoaded();
+    $rootScope.connection_started.then(function() {
+      return init();
+    }, function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    init = (function(_this) {
+      return function() {
+        if ($scope.company) {
+          if ($scope.company.settings.requires_login) {
+            $scope.checkIfLoggedIn();
+            if ($rootScope.member) {
+              return getBookingAndSurvey();
+            } else {
+
+            }
+          } else {
+            return getBookingAndSurvey();
+          }
+        }
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name checkIfLoggedIn
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Check if logged in
+     */
+    $scope.checkIfLoggedIn = (function(_this) {
+      return function() {
+        return BBModel.Login.$checkLogin();
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadSurvey
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Load Survey in according of purchase parameter
+    *
+    * @param {array} purchase The purchase
+     */
+    $scope.loadSurvey = (function(_this) {
+      return function(purchase) {
+        if (!$scope.company) {
+          $scope.purchase.$get('company').then(function(company) {
+            return setPurchaseCompany(company);
+          });
+        }
+        if ($scope.purchase.$has('client')) {
+          $scope.purchase.$get('client').then(function(client) {
+            return $scope.setClient(new BBModel.Client(client));
+          });
+        }
+        return $scope.purchase.$getBookings().then(function(bookings) {
+          var address, booking, i, len, params, pretty_address, ref, results;
+          params = {};
+          $scope.bookings = bookings;
+          ref = $scope.bookings;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            if (booking.datetime) {
+              booking.pretty_date = moment(booking.datetime).format("dddd, MMMM Do YYYY");
+            }
+            if (booking.address) {
+              address = new BBModel.Address(booking.address);
+              pretty_address = address.addressSingleLine();
+              booking.pretty_address = pretty_address;
+            }
+            if ($rootScope.user) {
+              params.admin_only = true;
+            }
+            results.push(booking.$get("survey_questions", params).then(function(details) {
+              var item_details;
+              item_details = new BBModel.ItemDetails(details);
+              booking.survey_questions = item_details.survey_questions;
+              return booking.$getSurveyAnswers().then(function(answers) {
+                var answer, j, k, len1, len2, question, ref1, ref2;
+                booking.survey_answers = answers;
+                ref1 = booking.survey_questions;
+                for (j = 0, len1 = ref1.length; j < len1; j++) {
+                  question = ref1[j];
+                  if (booking.survey_answers) {
+                    ref2 = booking.survey_answers;
+                    for (k = 0, len2 = ref2.length; k < len2; k++) {
+                      answer = ref2[k];
+                      if (answer.question_text === question.name && answer.value) {
+                        question.answer = answer.value;
+                      }
+                    }
+                  }
+                }
+                return loader.setLoaded();
+              });
+            }));
+          }
+          return results;
+        }, function(err) {
+          loader.setLoaded();
+          return failMsg();
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitSurveyLogin
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Submit survey login in according of form parameter else display an error message
+    *
+    * @param {object} form The survey login form
+     */
+    $scope.submitSurveyLogin = (function(_this) {
+      return function(form) {
+        var params;
+        if (!ValidatorService.validateForm(form)) {
+          return;
+        }
+        params = {
+          email: $scope.login.email,
+          password: $scope.login.password,
+          id: $scope.company_id
+        };
+        return BBModel.Login.$companyLogin($scope.company, {}, params).then(function(member) {
+          BBModel.Login.$setLogin(member);
+          return getBookingAndSurvey();
+        }, function(err) {
+          showLoginError();
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadSurveyFromPurchaseID
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Load survey from purchase id in according of id parameter else display an error message
+    *
+    * @param {object} id The id of purchase
+     */
+    $scope.loadSurveyFromPurchaseID = (function(_this) {
+      return function(id) {
+        var auth_token, params;
+        params = {
+          purchase_id: id,
+          url_root: $scope.bb.api_url
+        };
+        auth_token = $sessionStorage.getItem('auth_token');
+        if (auth_token) {
+          params.auth_token = auth_token;
+        }
+        return BBModel.Purchase.Total.$query(params).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.total = $scope.purchase;
+          return $scope.loadSurvey($scope.purchase);
+        }, function(err) {
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name loadSurveyFromBookingRef
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Load survey from booking ref in according of id else display an error message
+    *
+    * @param {object} id The id of booking
+     */
+    $scope.loadSurveyFromBookingRef = (function(_this) {
+      return function(id) {
+        var auth_token, params;
+        params = {
+          booking_ref: id,
+          url_root: $scope.bb.api_url,
+          raw: true
+        };
+        auth_token = $sessionStorage.getItem('auth_token');
+        if (auth_token) {
+          params.auth_token = auth_token;
+        }
+        return BBModel.Purchase.Total.$bookingRefQuery(params).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.total = $scope.purchase;
+          return $scope.loadSurvey($scope.purchase);
+        }, function(err) {
+          showLoginError();
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitSurvey
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Submit survey in according of form parameter
+    *
+    * @param {object} form The survey form
+     */
+    $scope.submitSurvey = (function(_this) {
+      return function(form) {
+        var booking, i, len, params, ref, results;
+        if (!ValidatorService.validateForm(form)) {
+          return;
+        }
+        ref = $scope.bookings;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          booking = ref[i];
+          booking.checkReady();
+          if (booking.ready) {
+            loader.notLoaded();
+            booking.client_id = $scope.client.id;
+            params = booking;
+            results.push(BBModel.Purchase.Booking.$addSurveyAnswersToBooking(params).then(function(booking) {
+              loader.setLoaded();
+              return $scope.completed = true;
+            }, function(err) {
+              return loader.setLoaded();
+            }));
+          } else {
+            results.push($scope.decideNextPage(route));
+          }
+        }
+        return results;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name submitBookingRef
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Submit booking in according of form parameter
+    *
+    * @param {object} form The submit booking form
+     */
+    $scope.submitBookingRef = (function(_this) {
+      return function(form) {
+        var auth_token, params;
+        if (!ValidatorService.validateForm(form)) {
+          return;
+        }
+        loader.notLoaded();
+        params = {
+          booking_ref: $scope.booking_ref,
+          url_root: $scope.bb.api_url,
+          raw: true
+        };
+        auth_token = $sessionStorage.getItem('auth_token');
+        if (auth_token) {
+          params.auth_token = auth_token;
+        }
+        return BBModel.Purchase.Total.$bookingRefQuery(params).then(function(purchase) {
+          $scope.purchase = purchase;
+          $scope.total = $scope.purchase;
+          return $scope.loadSurvey($scope.purchase);
+        }, function(err) {
+          showLoginError();
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name storeBookingCookie
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Store booking cookie
+     */
+    $scope.storeBookingCookie = function() {
+      return document.cookie = "bookingrefsc=" + $scope.booking_ref;
+    };
+
+    /***
+    * @ngdoc method
+    * @name showLoginError
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Show login error
+     */
+    showLoginError = (function(_this) {
+      return function() {
+        return $scope.login_error = true;
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name getMember
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get member
+     */
+    getMember = (function(_this) {
+      return function() {
+        var params;
+        params = {
+          member_id: $scope.member_id,
+          company_id: $scope.company_id
+        };
+        return BBModel.Login.$memberQuery(params).then(function(member) {
+          return $scope.member = member;
+        });
+      };
+    })(this);
+
+    /***
+    * @ngdoc method
+    * @name setPurchaseCompany
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Set purchase company in according of company parameter
+    *
+    * @param {object} company The company
+     */
+    setPurchaseCompany = function(company) {
+      $scope.bb.company_id = company.id;
+      $scope.bb.company = new BBModel.Company(company);
+      $scope.company = $scope.bb.company;
+      $scope.bb.item_defaults.company = $scope.bb.company;
+      if (company.settings) {
+        if (company.settings.merge_resources) {
+          $scope.bb.item_defaults.merge_resources = true;
+        }
+        if (company.settings.merge_people) {
+          return $scope.bb.item_defaults.merge_people = true;
+        }
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name getBookingRef
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get booking references
+     */
+    getBookingRef = function() {
+      var booking_ref, matches;
+      matches = /^.*(?:\?|&)booking_ref=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        booking_ref = matches[1];
+      }
+      return booking_ref;
+    };
+
+    /***
+    * @ngdoc method
+    * @name getPurchaseID
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get purchase Id
+     */
+    getPurchaseID = function() {
+      var matches, purchase_id;
+      matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+      if (matches) {
+        purchase_id = matches[1];
+      }
+      return purchase_id;
+    };
+
+    /***
+    * @ngdoc method
+    * @name getBookingAndSurvey
+    * @methodOf BB.Directives:bbSurveyQuestions
+    * @description
+    * Get booking and survey
+     */
+    return getBookingAndSurvey = function() {
+      var id;
+      id = getBookingRef();
+      if (id) {
+        return $scope.loadSurveyFromBookingRef(id);
+      } else {
+        id = getPurchaseID();
+        if (id) {
+          return $scope.loadSurveyFromPurchaseID(id);
+        } else {
+          if ($scope.bb.total) {
+            return $scope.loadSurveyFromPurchaseID($scope.bb.total.long_id);
+          } else {
+
+          }
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbSurveyQuestions
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of survey questions for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {integer} company_id The company id
+  * @property {array} questions An array with questions
+  * @property {object} validator The validator service - see {@link BB.Services:Validator Validator Service}
+  * @property {object} widget The widget service - see {@link BB.Models:BBWidget Widget Service}
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
+  angular.module('BB.Directives').directive('bbSurveyQuestions', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'SurveyQuestions'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var hasProp = {}.hasOwnProperty;
+
+  angular.module('BB.Controllers').controller('TimeRangeListStackedController', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, PersonService, PurchaseService, DateTimeUtilitiesService, LoadingService) {
+    var isSubtractValid, loader, setEnabledSlots, setTimeRange, spliceExistingDateTimes, updateHideStatus;
+    FormDataStoreService.init('TimeRangeListStacked', $scope, ['selected_slot', 'original_start_date', 'start_at_week_start']);
+    loader = LoadingService.$loader($scope).notLoaded();
+    $scope.available_times = 0;
+    $rootScope.connection_started.then(function() {
+      var diff, selected_day, start_date;
+      $scope.options = $scope.$eval($attrs.bbTimeRangeStacked) || {};
+      if (!$scope.time_range_length) {
+        if ($attrs.bbTimeRangeLength != null) {
+          $scope.time_range_length = $scope.$eval($attrs.bbTimeRangeLength);
+        } else if ($scope.options && $scope.options.time_range_length) {
+          $scope.time_range_length = $scope.options.time_range_length;
+        } else {
+          $scope.time_range_length = 7;
+        }
+      }
+      if (($attrs.bbDayOfWeek != null) || ($scope.options && $scope.options.day_of_week)) {
+        $scope.day_of_week = $attrs.bbDayOfWeek != null ? $scope.$eval($attrs.bbDayOfWeek) : $scope.options.day_of_week;
+      }
+      if (($attrs.bbSelectedDay != null) || ($scope.options && $scope.options.selected_day)) {
+        selected_day = $attrs.bbSelectedDay != null ? moment($scope.$eval($attrs.bbSelectedDay)) : moment($scope.options.selected_day);
+        if (moment.isMoment(selected_day)) {
+          $scope.selected_day = selected_day;
+        }
+      }
+      if (!$scope.start_date && $scope.last_selected_date) {
+        if ($scope.original_start_date) {
+          diff = $scope.last_selected_date.diff($scope.original_start_date, 'days');
+          diff = diff % $scope.time_range_length;
+          diff = diff === 0 ? diff : diff + 1;
+          start_date = $scope.last_selected_date.clone().subtract(diff, 'days');
+          setTimeRange($scope.last_selected_date, start_date);
+        } else {
+          setTimeRange($scope.last_selected_date);
+        }
+      } else if ($scope.bb.stacked_items[0].date) {
+        setTimeRange($scope.bb.stacked_items[0].date.date);
+      } else if ($scope.selected_day) {
+        $scope.original_start_date = $scope.original_start_date || moment($scope.selected_day);
+        setTimeRange($scope.selected_day);
+      } else {
+        $scope.start_at_week_start = true;
+        setTimeRange(moment());
+      }
+      return $scope.loadData();
+    });
+
+    /***
+    * @ngdoc method
+    * @name setTimeRange
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set time range in according of selected_date
+    *
+    * @param {date} selected_date The selected date from multi time range list
+    * @param {date} start_date The start date of range list
+     */
+    setTimeRange = function(selected_date, start_date) {
+      if (start_date) {
+        $scope.start_date = start_date;
+      } else if ($scope.day_of_week) {
+        $scope.start_date = selected_date.clone().day($scope.day_of_week);
+      } else if ($scope.start_at_week_start) {
+        $scope.start_date = selected_date.clone().startOf('week');
+      } else {
+        $scope.start_date = selected_date.clone();
+      }
+      $scope.selected_day = selected_date;
+      $scope.selected_date = $scope.selected_day.toDate();
+      return isSubtractValid();
+    };
+
+    /***
+    * @ngdoc method
+    * @name add
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Add date
+    *
+    * @param {object} amount The selected amount
+    * @param {array} type The start type
+     */
+    $scope.add = function(amount, type) {
+      $scope.selected_day = moment($scope.selected_date);
+      switch (type) {
+        case 'days':
+          setTimeRange($scope.selected_day.add(amount, 'days'));
+          break;
+        case 'weeks':
+          $scope.start_date.add(amount, 'weeks');
+          setTimeRange($scope.start_date);
+      }
+      return $scope.loadData();
+    };
+
+    /***
+    * @ngdoc method
+    * @name subtract
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Subtract in according of amount and type parameters
+    *
+    * @param {object} amount The selected amount
+    * @param {object} type The start type
+     */
+    $scope.subtract = function(amount, type) {
+      return $scope.add(-amount, type);
+    };
+
+    /***
+    * @ngdoc method
+    * @name isSubtractValid
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Verify if the subtract is valid or not
+     */
+    isSubtractValid = function() {
+      var diff;
+      $scope.is_subtract_valid = true;
+      diff = Math.ceil($scope.selected_day.diff(moment(), 'day', true));
+      $scope.subtract_length = diff < $scope.time_range_length ? diff : $scope.time_range_length;
+      if (diff <= 0) {
+        $scope.is_subtract_valid = false;
+      }
+      if ($scope.subtract_length > 1) {
+        return $scope.subtract_string = "Prev " + $scope.subtract_length + " days";
+      } else if ($scope.subtract_length === 1) {
+        return $scope.subtract_string = "Prev day";
+      } else {
+        return $scope.subtract_string = "Prev";
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name selectedDateChanged
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Called on datepicker date change
+     */
+    $scope.selectedDateChanged = function() {
+      setTimeRange(moment($scope.selected_date));
+      $scope.selected_slot = null;
+      return $scope.loadData();
+    };
+
+    /***
+    * @ngdoc method
+    * @name updateHideStatus
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Update the hidden status
+     */
+    updateHideStatus = function() {
+      var day, key, ref, results;
+      ref = $scope.days;
+      results = [];
+      for (key in ref) {
+        day = ref[key];
+        results.push($scope.days[key].hide = !day.date.isSame($scope.selected_day, 'day'));
+      }
+      return results;
+    };
+
+    /***
+    * @ngdoc method
+    * @name isPast
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Calculate if the current earliest date is in the past - in which case we. Might want to disable going backwards
+     */
+    $scope.isPast = function() {
+      if (!$scope.start_date) {
+        return true;
+      }
+      return moment().isAfter($scope.start_date);
+    };
+
+    /***
+    * @ngdoc method
+    * @name status
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Check the status of the slot to see if it has been selected
+    *
+    * @param {date} day The day
+    * @param {object} slot The slot of day in multi time range list
+     */
+    $scope.status = function(day, slot) {
+      var status;
+      if (!slot) {
+        return;
+      }
+      status = slot.status();
+      return status;
+    };
+
+    /***
+    * @ngdoc method
+    * @name highlightSlot
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Check the highlight slot
+    *
+    * @param {date} day The day
+    * @param {object} slot The slot of day in multi time range list
+     */
+    $scope.highlightSlot = function(slot, day) {
+      var i, item, len, ref;
+      if (day && slot && slot.availability() > 0) {
+        $scope.bb.clearStackedItemsDateTime();
+        if ($scope.selected_slot) {
+          $scope.selected_slot.selected = false;
+        }
+        $scope.setLastSelectedDate(day.date);
+        $scope.selected_slot = angular.copy(slot);
+        $scope.selected_day = day.date;
+        $scope.selected_date = day.date.toDate();
+        $scope.$broadcast('slotChanged', day, slot);
+        while (slot) {
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
+            if (item.service.self === slot.service.self && !item.date && !item.time) {
+              item.setDate(day);
+              item.setTime(slot);
+              slot = slot.next;
+              break;
+            }
+          }
+        }
+        updateHideStatus();
+        return $rootScope.$broadcast("time:selected");
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name loadData
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Load the time data
+     */
+    $scope.loadData = function() {
+      var edate, grouped_items, i, items, len, pslots;
+      loader.notLoaded();
+      if ($scope.request && $scope.request.start.twix($scope.request.end).contains($scope.selected_day)) {
+        updateHideStatus();
+        loader.setLoaded();
+        return;
+      }
+      $scope.start_date = moment($scope.start_date);
+      edate = moment($scope.start_date).add($scope.time_range_length, 'days');
+      $scope.end_date = moment(edate).add(-1, 'days');
+      $scope.request = {
+        start: moment($scope.start_date),
+        end: moment($scope.end_date)
+      };
+      pslots = [];
+      grouped_items = _.groupBy($scope.bb.stacked_items, function(item) {
+        return item.service.id;
+      });
+      grouped_items = _.toArray(grouped_items);
+      for (i = 0, len = grouped_items.length; i < len; i++) {
+        items = grouped_items[i];
+        pslots.push(TimeService.query({
+          company: $scope.bb.company,
+          cItem: items[0],
+          date: $scope.start_date,
+          end_date: $scope.end_date,
+          client: $scope.client,
+          available: 1
+        }));
+      }
+      return $q.all(pslots).then(function(res) {
+        var _i, day, item, j, k, l, len1, len2, ref, slots, times, v;
+        $scope.data_valid = true;
+        $scope.days = {};
+        for (_i = j = 0, len1 = grouped_items.length; j < len1; _i = ++j) {
+          items = grouped_items[_i];
+          slots = res[_i];
+          if (!slots || slots.length === 0) {
+            $scope.data_valid = false;
+          }
+          for (l = 0, len2 = items.length; l < len2; l++) {
+            item = items[l];
+            spliceExistingDateTimes(item, slots);
+            item.slots = {};
+            for (day in slots) {
+              if (!hasProp.call(slots, day)) continue;
+              times = slots[day];
+              item.slots[day] = _.indexBy(times, 'time');
+            }
+          }
+        }
+        if ($scope.data_valid) {
+          ref = res[0];
+          for (k in ref) {
+            v = ref[k];
+            $scope.days[k] = {
+              date: moment(k)
+            };
+          }
+          setEnabledSlots();
+          updateHideStatus();
+          $rootScope.$broadcast("TimeRangeListStacked:loadFinished");
+        } else {
+
+        }
+        return loader.setLoaded();
+      }, function(err) {
+        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+      });
+    };
+
+    /***
+    * @ngdoc method
+    * @name spliceExistingDateTimes
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Splice existing date and times
+    *
+    * @param {array} stacked_item The stacked item
+    * @param {object} slots The slots of stacked_item from the multi_time_range_list
+     */
+    spliceExistingDateTimes = function(stacked_item, slots) {
+      var datetime, time, time_slot;
+      if (!stacked_item.datetime && !stacked_item.date) {
+        return;
+      }
+      datetime = stacked_item.datetime || DateTimeUtilitiesService.convertTimeToMoment(stacked_item.date.date, stacked_item.time.time);
+      if ($scope.start_date <= datetime && $scope.end_date >= datetime) {
+        time = DateTimeUtilitiesService.convertMomentToTime(datetime);
+        time_slot = _.findWhere(slots[datetime.toISODate()], {
+          time: time
+        });
+        if (!time_slot) {
+          time_slot = stacked_item.time;
+          slots[datetime.toISODate()].splice(0, 0, time_slot);
+        }
+        return time_slot.selected = stacked_item.self === $scope.bb.stacked_items[0].self;
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name setEnabledSlots
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set the enabled slots
+     */
+    setEnabledSlots = function() {
+      var day, day_data, isSlotValid, ref, results, slot, time;
+      ref = $scope.days;
+      results = [];
+      for (day in ref) {
+        day_data = ref[day];
+        day_data.slots = {};
+        if ($scope.bb.stacked_items.length > 1) {
+          results.push((function() {
+            var ref1, results1;
+            ref1 = $scope.bb.stacked_items[0].slots[day];
+            results1 = [];
+            for (time in ref1) {
+              slot = ref1[time];
+              slot = angular.copy(slot);
+              isSlotValid = function(slot) {
+                var duration, i, index, next, ref2, valid;
+                valid = false;
+                time = slot.time;
+                duration = $scope.bb.stacked_items[0].service.duration;
+                next = time + duration;
+                for (index = i = 1, ref2 = $scope.bb.stacked_items.length - 1; 1 <= ref2 ? i <= ref2 : i >= ref2; index = 1 <= ref2 ? ++i : --i) {
+                  if (!_.isEmpty($scope.bb.stacked_items[index].slots[day]) && $scope.bb.stacked_items[index].slots[day][next]) {
+                    slot.next = angular.copy($scope.bb.stacked_items[index].slots[day][next]);
+                    slot = slot.next;
+                    next = next + $scope.bb.stacked_items[index].service.duration;
+                  } else {
+                    return false;
+                  }
+                }
+                return true;
+              };
+              if (isSlotValid(slot)) {
+                results1.push(day_data.slots[slot.time] = slot);
+              } else {
+                results1.push(void 0);
+              }
+            }
+            return results1;
+          })());
+        } else {
+          results.push((function() {
+            var ref1, results1;
+            ref1 = $scope.bb.stacked_items[0].slots[day];
+            results1 = [];
+            for (time in ref1) {
+              slot = ref1[time];
+              results1.push(day_data.slots[slot.time] = slot);
+            }
+            return results1;
+          })());
+        }
+      }
+      return results;
+    };
+
+    /***
+    * @ngdoc method
+    * @name pretty_month_title
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Display pretty month title in according of month format and year format parameters
+    *
+    * @param {date} month_format The month format
+    * @param {date} year_format The year format
+    * @param {string} separator The separator is '-'
+     */
+    $scope.pretty_month_title = function(month_format, year_format, seperator) {
+      var month_year_format, start_date;
+      if (seperator == null) {
+        seperator = '-';
+      }
+      if (!$scope.start_date) {
+        return;
+      }
+      month_year_format = month_format + ' ' + year_format;
+      if ($scope.start_date && $scope.end_date && $scope.end_date.isAfter($scope.start_date, 'month')) {
+        start_date = $scope.start_date.format(month_format);
+        if ($scope.start_date.month() === 11) {
+          start_date = $scope.start_date.format(month_year_format);
+        }
+        return start_date + ' ' + seperator + ' ' + $scope.end_date.format(month_year_format);
+      } else {
+        return $scope.start_date.format(month_year_format);
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name confirm
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Confirm the time range stacked
+    *
+    * @param {string =} route A specific route to load
+    * @param {object} options The options
+     */
+    $scope.confirm = function(route, options) {
+      var booking, different, found, i, item, j, l, len, len1, len2, prom, ref, ref1, ref2;
+      if (options == null) {
+        options = {};
+      }
+      ref = $scope.bb.stacked_items;
+      for (i = 0, len = ref.length; i < len; i++) {
+        item = ref[i];
+        if (!item.time) {
+          AlertService.add("danger", {
+            msg: "Select a time to continue your booking"
+          });
+          return false;
+        }
+      }
+      if (($scope.bb.moving_booking != null) && ($scope.bb.moving_booking.bookings != null)) {
+        different = false;
+        ref1 = $scope.bb.moving_booking.bookings;
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          booking = ref1[j];
+          found = false;
+          ref2 = $scope.bb.stacked_items;
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            item = ref2[l];
+            if (booking.getDateString() === item.date.string_date && booking.getTimeInMins() === item.time.time && booking.category_name === item.category_name) {
+              found = true;
+            }
+          }
+          if (!found) {
+            different = true;
+            break;
+          }
+        }
+        if (!different) {
+          AlertService.add("danger", {
+            msg: "Your treatments are already booked for this time."
+          });
+          return false;
+        }
+      }
+      $scope.bb.basket.clear();
+      $scope.bb.pushStackToBasket();
+      if ($scope.bb.moving_booking) {
+        loader.notLoaded();
+        prom = PurchaseService.update({
+          purchase: $scope.bb.moving_booking,
+          bookings: $scope.bb.basket.items
+        });
+        prom.then(function(purchase) {
+          purchase.$getBookings().then(function(bookings) {
+            var _i, len3, m, oldb, results;
+            results = [];
+            for (m = 0, len3 = bookings.length; m < len3; m++) {
+              booking = bookings[m];
+              if ($scope.bookings) {
+                results.push((function() {
+                  var len4, n, ref3, results1;
+                  ref3 = $scope.bookings;
+                  results1 = [];
+                  for (_i = n = 0, len4 = ref3.length; n < len4; _i = ++n) {
+                    oldb = ref3[_i];
+                    if (oldb.id === booking.id) {
+                      results1.push($scope.bookings[_i] = booking);
+                    } else {
+                      results1.push(void 0);
+                    }
+                  }
+                  return results1;
+                })());
+              } else {
+                results.push(void 0);
+              }
+            }
+            return results;
+          });
+          loader.setLoaded();
+          $scope.bb.current_item.move_done = true;
+          return $scope.decideNextPage();
+        }, function(err) {
+          loader.setLoaded();
+          return AlertService.add("danger", {
+            msg: "Failed to move booking"
+          });
+        });
+        return;
+      }
+      loader.notLoaded();
+      if (options.do_not_route) {
+        return $scope.updateBasket();
+      } else {
+        return $scope.updateBasket().then(function() {
+          loader.setLoaded();
+          return $scope.decideNextPage(route);
+        }, function(err) {
+          return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name setReady
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set this page section as ready
+     */
+    return $scope.setReady = function() {
+      return $scope.confirm('', {
+        do_not_route: true
+      });
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeRangeStacked
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of time range stacked for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @param {hash}  bbTimeRangeStacked A hash of options
+  * @property {date} start_date The start date of time range list
+  * @property {date} end_date The end date of time range list
+  * @property {integer} available_times The available times of range list
+  * @property {object} day_of_week The day of week
+  * @property {object} selected_day The selected day from the multi time range list
+  * @property {object} original_start_date The original start date of range list
+  * @property {object} start_at_week_start The start at week start of range list
+  * @property {object} selected_slot The selected slot from multi time range list
+  * @property {object} selected_date The selected date from multi time range list
+  * @property {object} alert The alert service - see {@link BB.Services:Alert Alert Service}
+   */
+  angular.module('BB.Directives').directive('bbTimeRangeStacked', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'TimeRangeListStackedController'
     };
   });
 
@@ -33439,10 +33323,111 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, PageControllerService, ValidatorService, LoadingService, ErrorService, $translate) {
+  angular.module('BB.Controllers').controller('TimeSlots', function($scope, $rootScope, $q, $attrs, FormDataStoreService, ValidatorService, LoadingService, halClient, BBModel) {
+    var loader, setItem;
+    loader = LoadingService.$loader($scope).notLoaded();
+    $rootScope.connection_started.then(function() {
+      if ($scope.bb.company) {
+        return $scope.init($scope.bb.company);
+      }
+    }, function(err) {
+      return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+    $scope.init = function(company) {
+      var params;
+      $scope.booking_item || ($scope.booking_item = $scope.bb.current_item);
+      $scope.start_date = moment();
+      $scope.end_date = moment().add(1, 'month');
+      params = {
+        item: $scope.booking_item,
+        start_date: $scope.start_date.toISODate(),
+        end_date: $scope.end_date.toISODate()
+      };
+      return BBModel.Slot.$query($scope.bb.company, params).then(function(slots) {
+        $scope.slots = slots;
+        return loader.setLoaded();
+      }, function(err) {
+        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+      });
+    };
+    setItem = function(slot) {
+      return $scope.booking_item.setSlot(slot);
+    };
+
+    /***
+    * @ngdoc method
+    * @name selectItem
+    * @methodOf BB.Directives:bbTimeSlots
+    * @description
+    * Select an item into the current booking journey and route on to the next page dpending on the current page control
+    *
+    * @param {object} slot The slot from list
+    * @param {string=} route A specific route to load
+     */
+    return $scope.selectItem = function(slot, route) {
+      if ($scope.$parent.$has_page_control) {
+        setItem(slot);
+        return false;
+      } else {
+        setItem(slot);
+        $scope.decideNextPage(route);
+        return true;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeSlots
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  *
+  * Loads a list of time slots for the currently in scope company
+  *
+  * <pre>
+  * restrict: 'AE'
+  * replace: true
+  * scope: true
+  * </pre>
+  *
+  * @property {array} booking_item The booking item
+  * @property {date} start_date The start date
+  * @property {date} end_date The end date
+  * @property {array} slots The slots
+  * @property {object} validator The validator service - see {@link BB.Services:Validator validator Service}
+  *
+   */
+  angular.module('BB.Directives').directive('bbTimeSlots', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: 'TimeSlots',
+      link: function(scope, element, attrs) {
+        if (attrs.bbItem) {
+          scope.booking_item = scope.$eval(attrs.bbItem);
+        }
+        if (attrs.bbShowAll) {
+          scope.show_all = true;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Controllers').controller('TimeList', function($attrs, $element, $scope, $rootScope, $q, TimeService, AlertService, BBModel, DateTimeUtilitiesService, ValidatorService, LoadingService, ErrorService, $translate) {
     var checkRequestedSlots, loader;
     loader = LoadingService.$loader($scope).notLoaded();
-    angular.extend(this, new PageControllerService($scope, $q, ValidatorService, LoadingService));
     if (!$scope.data_source) {
       $scope.data_source = $scope.bb.current_item;
     }
