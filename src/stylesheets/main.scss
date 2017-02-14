@@ -53,7 +53,7 @@ div.loader {
 .form-group.has-success .form-control[readonly],
 .has-success .form-control[disabled],
 .has-success .form-control[readonly]  {
-  border-color: #EEE !important;
+  border-color: #EEE;
 
 
 }
@@ -72,4 +72,11 @@ select.form-control[disabled],
   position: absolute;
   bottom: 0px;
   z-index: -1;
+}
+
+// hide the language picker on quick_pick modal when on admin interface
+[bb-admin-booking] {
+  [bb-language-picker] {
+    display : none;
+  }
 }
