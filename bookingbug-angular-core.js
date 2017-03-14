@@ -162,8 +162,6 @@ angular.module('schemaForm').config(function (schemaFormProvider, schemaFormDeco
 });
 "use strict";
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 window.Collection = function Collection() {
@@ -199,137 +197,130 @@ window.Collection.Base = function () {
         }
     }
 
-    _createClass(Base, [{
-        key: "checkItem",
-        value: function checkItem(item) {
-            var _this = this;
+    Base.prototype.checkItem = function checkItem(item) {
+        var _this = this;
 
-            var call = void 0;
-            if (!this.matchesParams(item)) {
-                this.deleteItem(item); //delete if it is in the collection at the moment
-                return true;
-            } else {
-                for (var index = 0; index < this.items.length; index++) {
-                    var existingItem = this.items[index];
-                    if (item.self === existingItem.self) {
-                        this.items[index] = item;
-                        var _iteratorNormalCompletion = true;
-                        var _didIteratorError = false;
-                        var _iteratorError = undefined;
+        var call = void 0;
+        if (!this.matchesParams(item)) {
+            this.deleteItem(item); //delete if it is in the collection at the moment
+            return true;
+        } else {
+            for (var index = 0; index < this.items.length; index++) {
+                var existingItem = this.items[index];
+                if (item.self === existingItem.self) {
+                    this.items[index] = item;
+                    var _iteratorNormalCompletion = true;
+                    var _didIteratorError = false;
+                    var _iteratorError = undefined;
 
-                        try {
-                            for (var _iterator = Array.from(this.callbacks)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                call = _step.value;
-
-                                call[1](item, "update");
-                            }
-                        } catch (err) {
-                            _didIteratorError = true;
-                            _iteratorError = err;
-                        } finally {
-                            try {
-                                if (!_iteratorNormalCompletion && _iterator.return) {
-                                    _iterator.return();
-                                }
-                            } finally {
-                                if (_didIteratorError) {
-                                    throw _iteratorError;
-                                }
-                            }
-                        }
-
-                        return true;
-                    }
-                }
-            }
-
-            this.items.push(item);
-            return function () {
-                var result = [];
-                var _iteratorNormalCompletion2 = true;
-                var _didIteratorError2 = false;
-                var _iteratorError2 = undefined;
-
-                try {
-                    for (var _iterator2 = Array.from(_this.callbacks)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                        call = _step2.value;
-
-                        result.push(call[1](item, "add"));
-                    }
-                } catch (err) {
-                    _didIteratorError2 = true;
-                    _iteratorError2 = err;
-                } finally {
                     try {
-                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                            _iterator2.return();
+                        for (var _iterator = Array.from(this.callbacks)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                            call = _step.value;
+
+                            call[1](item, "update");
                         }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
                     } finally {
-                        if (_didIteratorError2) {
-                            throw _iteratorError2;
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return) {
+                                _iterator.return();
+                            }
+                        } finally {
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
                         }
                     }
-                }
 
-                return result;
-            }();
-        }
-    }, {
-        key: "deleteItem",
-        value: function deleteItem(item) {
-            var len = this.items.length;
-            this.items = this.items.filter(function (x) {
-                return x.self !== item.self;
-            });
-            if (this.items.length !== len) {
-                return Array.from(this.callbacks).map(function (call) {
-                    return call[1](item, "delete");
-                });
+                    return true;
+                }
             }
         }
-    }, {
-        key: "getItems",
-        value: function getItems() {
-            return this.items;
-        }
-    }, {
-        key: "addCallback",
-        value: function addCallback(obj, fn) {
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
+
+        this.items.push(item);
+        return function () {
+            var result = [];
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
 
             try {
-                for (var _iterator3 = Array.from(this.callbacks)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var call = _step3.value;
+                for (var _iterator2 = Array.from(_this.callbacks)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    call = _step2.value;
 
-                    if (call[0] === obj) {
-                        return;
-                    }
+                    result.push(call[1](item, "add"));
                 }
             } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                        _iterator3.return();
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
                     }
                 } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
                     }
                 }
             }
 
-            return this.callbacks.push([obj, fn]);
+            return result;
+        }();
+    };
+
+    Base.prototype.deleteItem = function deleteItem(item) {
+        var len = this.items.length;
+        this.items = this.items.filter(function (x) {
+            return x.self !== item.self;
+        });
+        if (this.items.length !== len) {
+            return Array.from(this.callbacks).map(function (call) {
+                return call[1](item, "delete");
+            });
         }
-    }, {
-        key: "matchesParams",
-        value: function matchesParams(item) {
-            return true;
+    };
+
+    Base.prototype.getItems = function getItems() {
+        return this.items;
+    };
+
+    Base.prototype.addCallback = function addCallback(obj, fn) {
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+            for (var _iterator3 = Array.from(this.callbacks)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                var call = _step3.value;
+
+                if (call[0] === obj) {
+                    return;
+                }
+            }
+        } catch (err) {
+            _didIteratorError3 = true;
+            _iteratorError3 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                    _iterator3.return();
+                }
+            } finally {
+                if (_didIteratorError3) {
+                    throw _iteratorError3;
+                }
+            }
         }
-    }]);
+
+        return this.callbacks.push([obj, fn]);
+    };
+
+    Base.prototype.matchesParams = function matchesParams(item) {
+        return true;
+    };
 
     return Base;
 }();
@@ -341,86 +332,74 @@ window.BaseCollections = function () {
         this.collections = [];
     }
 
-    _createClass(BaseCollections, [{
-        key: "count",
-        value: function count() {
-            return this.collections.length;
-        }
-    }, {
-        key: "add",
-        value: function add(col) {
-            return this.collections.push(col);
-        }
-    }, {
-        key: "checkItems",
-        value: function checkItems(item) {
-            return Array.from(this.collections).map(function (col) {
-                return col.checkItem(item);
-            });
-        }
-    }, {
-        key: "deleteItems",
-        value: function deleteItems(item) {
-            return Array.from(this.collections).map(function (col) {
-                return col.deleteItem(item);
-            });
-        }
-    }, {
-        key: "find",
-        value: function find(prms) {
-            var clean_params = {};
-            for (var key in prms) {
-                var val = prms[key];
-                if (val != null) {
-                    if (val.id != null) {
-                        clean_params[key + "_id"] = val.id;
-                    } else {
-                        clean_params[key] = val;
-                    }
+    BaseCollections.prototype.count = function count() {
+        return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function add(col) {
+        return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function checkItems(item) {
+        return Array.from(this.collections).map(function (col) {
+            return col.checkItem(item);
+        });
+    };
+
+    BaseCollections.prototype.deleteItems = function deleteItems(item) {
+        return Array.from(this.collections).map(function (col) {
+            return col.deleteItem(item);
+        });
+    };
+
+    BaseCollections.prototype.find = function find(prms) {
+        var clean_params = {};
+        for (var key in prms) {
+            var val = prms[key];
+            if (val != null) {
+                if (val.id != null) {
+                    clean_params[key + "_id"] = val.id;
+                } else {
+                    clean_params[key] = val;
                 }
             }
-            var jprms = JSON.stringify(clean_params);
-            var _iteratorNormalCompletion4 = true;
-            var _didIteratorError4 = false;
-            var _iteratorError4 = undefined;
+        }
+        var jprms = JSON.stringify(clean_params);
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
 
+        try {
+            for (var _iterator4 = Array.from(this.collections)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                var col = _step4.value;
+
+                if (jprms === col.jparams) {
+                    return col;
+                }
+            }
+        } catch (err) {
+            _didIteratorError4 = true;
+            _iteratorError4 = err;
+        } finally {
             try {
-                for (var _iterator4 = Array.from(this.collections)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                    var col = _step4.value;
-
-                    if (jprms === col.jparams) {
-                        return col;
-                    }
+                if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                    _iterator4.return();
                 }
-            } catch (err) {
-                _didIteratorError4 = true;
-                _iteratorError4 = err;
             } finally {
-                try {
-                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                        _iterator4.return();
-                    }
-                } finally {
-                    if (_didIteratorError4) {
-                        throw _iteratorError4;
-                    }
+                if (_didIteratorError4) {
+                    throw _iteratorError4;
                 }
             }
         }
-    }, {
-        key: "delete",
-        value: function _delete(col) {
-            return this.collections = _.without(this.collections, col);
-        }
-    }]);
+    };
+
+    BaseCollections.prototype.delete = function _delete(col) {
+        return this.collections = _.without(this.collections, col);
+    };
 
     return BaseCollections;
 }();
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -434,15 +413,14 @@ window.Collection.Day = function (_window$Collection$Ba) {
     function Day() {
         _classCallCheck(this, Day);
 
-        return _possibleConstructorReturn(this, (Day.__proto__ || Object.getPrototypeOf(Day)).apply(this, arguments));
+        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
     }
 
-    _createClass(Day, [{
-        key: "checkItem",
-        value: function checkItem(item) {
-            return _get(Day.prototype.__proto__ || Object.getPrototypeOf(Day.prototype), "checkItem", this).apply(this, arguments);
-        }
-    }]);
+    Day.prototype.checkItem = function checkItem(item) {
+        var _window$Collection$Ba2;
+
+        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
+    };
 
     return Day;
 }(window.Collection.Base);
@@ -456,10 +434,6 @@ angular.module('BB.Services').provider("DayCollections", function () {
 });
 "use strict";
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -472,15 +446,14 @@ window.Collection.Space = function (_window$Collection$Ba) {
     function Space() {
         _classCallCheck(this, Space);
 
-        return _possibleConstructorReturn(this, (Space.__proto__ || Object.getPrototypeOf(Space)).apply(this, arguments));
+        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
     }
 
-    _createClass(Space, [{
-        key: "checkItem",
-        value: function checkItem(item) {
-            return _get(Space.prototype.__proto__ || Object.getPrototypeOf(Space.prototype), "checkItem", this).apply(this, arguments);
-        }
-    }]);
+    Space.prototype.checkItem = function checkItem(item) {
+        var _window$Collection$Ba2;
+
+        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
+    };
 
     return Space;
 }(window.Collection.Base);
@@ -1120,27 +1093,6 @@ String.prototype.parameterise = function (seperator) {
     }
     return this.trim().replace(/\s/g, seperator).toLowerCase();
 };
-'use strict';
-
-angular.module('BB').constant('routeStates', {
-        Company: 0,
-        Category: 1,
-        Service: 2,
-        Person: 3,
-        Resource: 4,
-        Duration: 5,
-        Date: 6,
-        Time: 7,
-        Client: 8,
-        Summary: 9,
-        Basket: 10,
-        Checkout: 11,
-        Slot: 12,
-        Event: 13,
-        Login: 14,
-        Questions: 15,
-        Confirmation: 16
-});
 'use strict';
 
 /***
@@ -1879,6 +1831,27 @@ angular.module('BB.Filters').filter('props', function ($translate) {
 });
 'use strict';
 
+angular.module('BB').constant('routeStates', {
+        Company: 0,
+        Category: 1,
+        Service: 2,
+        Person: 3,
+        Resource: 4,
+        Duration: 5,
+        Date: 6,
+        Time: 7,
+        Client: 8,
+        Summary: 9,
+        Basket: 10,
+        Checkout: 11,
+        Slot: 12,
+        Event: 13,
+        Login: 14,
+        Questions: 15,
+        Confirmation: 16
+});
+'use strict';
+
 angular.module('BB.i18n').config(function (bbi18nOptionsProvider, tmhDynamicLocaleProvider, $translateProvider) {
     'ngInject';
 
@@ -1907,8 +1880,6 @@ angular.module('BB.i18n').run(function (bbi18nOptions, bbLocale, RuntimeTranslat
     bbLocale.determineLocale();
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1942,7 +1913,7 @@ angular.module('BB.Models').factory("AddressModel", function ($q, BBModel, BaseM
 
             // Assign value to map_url if the value is an empty String
             // Note: This is not ideal as it will not show a map marker. But the map_url prop should already be set, so this is just a fallback
-            var _this = _possibleConstructorReturn(this, (Address.__proto__ || Object.getPrototypeOf(Address)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             if (!_this.map_url || _this.map_url === "") {
                 if (_this.lat && _this.long) {
@@ -1963,173 +1934,163 @@ angular.module('BB.Models').factory("AddressModel", function ($q, BBModel, BaseM
          */
 
 
-        _createClass(Address, [{
-            key: "addressSingleLine",
-            value: function addressSingleLine() {
-                var str = "";
-                if (this.address1) {
-                    str += this.address1;
-                }
-                if (this.address2 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address2) {
-                    str += this.address2;
-                }
-                if (this.address3 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address3) {
-                    str += this.address3;
-                }
-                if (this.address4 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address4) {
-                    str += this.address4;
-                }
-                if (this.address5 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address5) {
-                    str += this.address5;
-                }
-                if (this.postcode && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.postcode) {
-                    str += this.postcode;
-                }
-                return str;
+        Address.prototype.addressSingleLine = function addressSingleLine() {
+            var str = "";
+            if (this.address1) {
+                str += this.address1;
             }
-
-            /***
-             * @ngdoc method
-             * @name hasAddress
-             * @methodOf BB.Models:Address
-             * @description
-             * Checks if this is considered a valid address
-             *
-             * @returns {boolean} If this is a valid address
-             */
-
-        }, {
-            key: "hasAddress",
-            value: function hasAddress() {
-                return this.address1 || this.address2 || this.postcode;
+            if (this.address2 && str.length > 0) {
+                str += ", ";
             }
-
-            /***
-             * @ngdoc method
-             * @name addressCsvLine
-             * @methodOf BB.Models:Address
-             * @description
-             * Get all address fields as a single comma sepeated line - suitable for csv export
-             *
-             * @returns {string} The returned address
-             */
-
-        }, {
-            key: "addressCsvLine",
-            value: function addressCsvLine() {
-                var str = "";
-                if (this.address1) {
-                    str += this.address1;
-                }
-                str += ", ";
-                if (this.address2) {
-                    str += this.address2;
-                }
-                str += ", ";
-                if (this.address3) {
-                    str += this.address3;
-                }
-                str += ", ";
-                if (this.address4) {
-                    str += this.address4;
-                }
-                str += ", ";
-                if (this.address5) {
-                    str += this.address5;
-                }
-                str += ", ";
-                if (this.postcode) {
-                    str += this.postcode;
-                }
-                str += ", ";
-                if (this.country) {
-                    str += this.country;
-                }
-                return str;
+            if (this.address2) {
+                str += this.address2;
             }
+            if (this.address3 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address3) {
+                str += this.address3;
+            }
+            if (this.address4 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address4) {
+                str += this.address4;
+            }
+            if (this.address5 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address5) {
+                str += this.address5;
+            }
+            if (this.postcode && str.length > 0) {
+                str += ", ";
+            }
+            if (this.postcode) {
+                str += this.postcode;
+            }
+            return str;
+        };
 
-            /***
-             * @ngdoc method
-             * @name addressMultiLine
-             * @methodOf BB.Models:Address
-             * @description
-             * Get a the address as multiple lines with line feeds
-             *
-             * @returns {string} The returned address
-             */
+        /***
+         * @ngdoc method
+         * @name hasAddress
+         * @methodOf BB.Models:Address
+         * @description
+         * Checks if this is considered a valid address
+         *
+         * @returns {boolean} If this is a valid address
+         */
 
-        }, {
-            key: "addressMultiLine",
-            value: function addressMultiLine() {
-                var str = "";
-                if (this.address1) {
-                    str += this.address1;
-                }
-                if (this.address2 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address2) {
-                    str += this.address2;
-                }
-                if (this.address3 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address3) {
-                    str += this.address3;
-                }
-                if (this.address4 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address4) {
-                    str += this.address4;
-                }
-                if (this.address5 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address5) {
-                    str += this.address5;
-                }
-                if (this.postcode && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.postcode) {
-                    str += this.postcode;
-                }
-                return str;
+
+        Address.prototype.hasAddress = function hasAddress() {
+            return this.address1 || this.address2 || this.postcode;
+        };
+
+        /***
+         * @ngdoc method
+         * @name addressCsvLine
+         * @methodOf BB.Models:Address
+         * @description
+         * Get all address fields as a single comma sepeated line - suitable for csv export
+         *
+         * @returns {string} The returned address
+         */
+
+
+        Address.prototype.addressCsvLine = function addressCsvLine() {
+            var str = "";
+            if (this.address1) {
+                str += this.address1;
             }
-        }], [{
-            key: "$query",
-            value: function $query(prms) {
-                return AddressListService.query(prms);
+            str += ", ";
+            if (this.address2) {
+                str += this.address2;
             }
-        }, {
-            key: "$getAddress",
-            value: function $getAddress(prms) {
-                return AddressListService.getAddress(prms);
+            str += ", ";
+            if (this.address3) {
+                str += this.address3;
             }
-        }]);
+            str += ", ";
+            if (this.address4) {
+                str += this.address4;
+            }
+            str += ", ";
+            if (this.address5) {
+                str += this.address5;
+            }
+            str += ", ";
+            if (this.postcode) {
+                str += this.postcode;
+            }
+            str += ", ";
+            if (this.country) {
+                str += this.country;
+            }
+            return str;
+        };
+
+        /***
+         * @ngdoc method
+         * @name addressMultiLine
+         * @methodOf BB.Models:Address
+         * @description
+         * Get a the address as multiple lines with line feeds
+         *
+         * @returns {string} The returned address
+         */
+
+
+        Address.prototype.addressMultiLine = function addressMultiLine() {
+            var str = "";
+            if (this.address1) {
+                str += this.address1;
+            }
+            if (this.address2 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address2) {
+                str += this.address2;
+            }
+            if (this.address3 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address3) {
+                str += this.address3;
+            }
+            if (this.address4 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address4) {
+                str += this.address4;
+            }
+            if (this.address5 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address5) {
+                str += this.address5;
+            }
+            if (this.postcode && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.postcode) {
+                str += this.postcode;
+            }
+            return str;
+        };
+
+        Address.$query = function $query(prms) {
+            return AddressListService.query(prms);
+        };
+
+        Address.$getAddress = function $getAddress(prms) {
+            return AddressListService.getAddress(prms);
+        };
 
         return Address;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2158,7 +2119,7 @@ angular.module('BB.Models').factory("AffiliateModel", function ($q, BBModel, Bas
         function Affiliate(data) {
             _classCallCheck(this, Affiliate);
 
-            var _this = _possibleConstructorReturn(this, (Affiliate.__proto__ || Object.getPrototypeOf(Affiliate)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.test = 1;
             return _this;
@@ -2177,40 +2138,35 @@ angular.module('BB.Models').factory("AffiliateModel", function ($q, BBModel, Bas
          */
 
 
-        _createClass(Affiliate, [{
-            key: 'getCompanyByRef',
-            value: function getCompanyByRef(ref) {
+        Affiliate.prototype.getCompanyByRef = function getCompanyByRef(ref) {
 
-                var prms = {
-                    id: this.cookie,
-                    reference: ref
-                };
+            var prms = {
+                id: this.cookie,
+                reference: ref
+            };
 
-                var href = $rootScope.bb.api_url + '/api/v1/affiliates/{id}/companies/{reference}';
-                var uri = new UriTemplate(href).fillFromObject(prms || {});
+            var href = $rootScope.bb.api_url + '/api/v1/affiliates/{id}/companies/{reference}';
+            var uri = new UriTemplate(href).fillFromObject(prms || {});
 
-                var defer = $q.defer();
+            var defer = $q.defer();
 
-                halClient.$get(uri, {}).then(function (company) {
-                    if (company) {
-                        return defer.resolve(new BBModel.Company(company));
-                    } else {
-                        return defer.reject('No company for ref ' + ref);
-                    }
-                }, function (err) {
-                    console.log('err ', err);
-                    return defer.reject(err);
-                });
-                return defer.promise;
-            }
-        }]);
+            halClient.$get(uri, {}).then(function (company) {
+                if (company) {
+                    return defer.resolve(new BBModel.Company(company));
+                } else {
+                    return defer.reject('No company for ref ' + ref);
+                }
+            }, function (err) {
+                console.log('err ', err);
+                return defer.reject(err);
+            });
+            return defer.promise;
+        };
 
         return Affiliate;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2236,7 +2192,7 @@ angular.module('BB.Models').factory("AnswerModel", function ($q, BBModel, BaseMo
         function Answer(data) {
             _classCallCheck(this, Answer);
 
-            return _possibleConstructorReturn(this, (Answer.__proto__ || Object.getPrototypeOf(Answer)).call(this, data));
+            return _possibleConstructorReturn(this, _BaseModel.call(this, data));
         }
 
         /***
@@ -2250,33 +2206,28 @@ angular.module('BB.Models').factory("AnswerModel", function ($q, BBModel, BaseMo
          */
 
 
-        _createClass(Answer, [{
-            key: 'getQuestion',
-            value: function getQuestion() {
-                var _this2 = this;
+        Answer.prototype.getQuestion = function getQuestion() {
+            var _this2 = this;
 
-                var defer = $q.defer();
-                if (this.question) {
-                    defer.resolve(this.question);
-                }
-                if (this._data.$has('question')) {
-                    this._data.$get('question').then(function (question) {
-                        _this2.question = question;
-                        return defer.resolve(_this2.question);
-                    });
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
+            var defer = $q.defer();
+            if (this.question) {
+                defer.resolve(this.question);
             }
-        }]);
+            if (this._data.$has('question')) {
+                this._data.$get('question').then(function (question) {
+                    _this2.question = question;
+                    return defer.resolve(_this2.question);
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
 
         return Answer;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2363,237 +2314,214 @@ angular.module('BB.Models').service("BaseModel", function ($q, $injector, $rootS
             this.updateModel(data);
         }
 
-        _createClass(Base, [{
-            key: 'updateModel',
-            value: function updateModel(data) {
-                var _this = this;
+        Base.prototype.updateModel = function updateModel(data) {
+            var _this = this;
 
-                if (data) {
-                    this._data = data;
-                }
-                if (data) {
-                    for (var n in data) {
-                        var m = data[n];
-                        if (typeof m !== 'function') {
-                            this[n] = m;
-                        }
+            if (data) {
+                this._data = data;
+            }
+            if (data) {
+                for (var n in data) {
+                    var m = data[n];
+                    if (typeof m !== 'function') {
+                        this[n] = m;
                     }
                 }
-                if (this._data && this._data.$href) {
-                    this.self = this._data.$href("self");
-                    // append get functions for all links...
-                    // for exmaple if the embedded object contains a link to 'people' we create two functions:
-                    // getPeople()  - which resolves eventaully to an array of People (this may take a few digest loops). This is good for use in views
-                    // getPeoplePromise()  -  which always returns a promise of the object - which is useful in controllers
-                    var links = this.$links();
-                    this.__linkedData = {};
-                    this.__linkedPromises = {};
-                    return function () {
-                        var result = [];
-                        for (var link in links) {
-                            var obj = links[link];
-                            var name = _this._snakeToCamel('get_' + link);
-                            result.push(function (link, obj, name) {
-                                if (!_this[name]) {
-                                    _this[name] = function (options) {
-                                        return this.$buildOject(link, options);
-                                    };
-                                }
-                                if (!_this['$' + name]) {
-                                    return _this['$' + name] = function (options) {
-                                        return this.$buildOjectPromise(link, options);
-                                    };
-                                }
-                            }(link, obj, name));
-                        }
-                        return result;
-                    }();
-                }
             }
-        }, {
-            key: '_snakeToCamel',
-            value: function _snakeToCamel(s) {
-                return s.replace(/(\_\w)/g, function (m) {
-                    return m[1].toUpperCase();
-                });
-            }
-
-            // build out a linked object
-
-        }, {
-            key: '$buildOject',
-            value: function $buildOject(link, options) {
-                var _this2 = this;
-
-                var linkId = link + (JSON.stringify(options) || '');
-
-                if (this.__linkedData[linkId]) {
-                    return this.__linkedData[linkId];
-                }
-                this.$buildOjectPromise(link, options).then(function (ans) {
-                    _this2.__linkedData[linkId] = ans;
-                    // re-set it again with a digest loop - jsut to be sure!
-                    return $timeout(function () {
-                        return _this2.__linkedData[linkId] = ans;
-                    });
-                });
-                return null;
-            }
-
-            // build a promise for a linked object
-
-        }, {
-            key: '$buildOjectPromise',
-            value: function $buildOjectPromise(link, options) {
-                var linkId = link + (JSON.stringify(options) || '');
-
-                if (this.__linkedPromises[linkId]) {
-                    return this.__linkedPromises[linkId];
-                }
-                var prom = $q.defer();
-                this.__linkedPromises[linkId] = prom.promise;
-
-                this.$get(link, options).then(function (res) {
-                    var inj = $injector.get('BB.Service.' + link);
-                    if (inj) {
-                        if (inj.promise) {
-                            // unwrap involving another promise
-                            return inj.unwrap(res).then(function (ans) {
-                                return prom.resolve(ans);
-                            }, function (err) {
-                                return prom.reject(err);
-                            });
-                        } else {
-                            // unwrap without a promise
-                            return prom.resolve(inj.unwrap(res));
-                        }
-                    } else {
-                        // no service found - just return the resources as I found it
-                        return prom.resolve(res);
+            if (this._data && this._data.$href) {
+                this.self = this._data.$href("self");
+                // append get functions for all links...
+                // for exmaple if the embedded object contains a link to 'people' we create two functions:
+                // getPeople()  - which resolves eventaully to an array of People (this may take a few digest loops). This is good for use in views
+                // getPeoplePromise()  -  which always returns a promise of the object - which is useful in controllers
+                var links = this.$links();
+                this.__linkedData = {};
+                this.__linkedPromises = {};
+                return function () {
+                    var result = [];
+                    for (var link in links) {
+                        var obj = links[link];
+                        var name = _this._snakeToCamel('get_' + link);
+                        result.push(function (link, obj, name) {
+                            if (!_this[name]) {
+                                _this[name] = function (options) {
+                                    return this.$buildOject(link, options);
+                                };
+                            }
+                            if (!_this['$' + name]) {
+                                return _this['$' + name] = function (options) {
+                                    return this.$buildOjectPromise(link, options);
+                                };
+                            }
+                        }(link, obj, name));
                     }
-                }, function (err) {
-                    return prom.reject(err);
-                });
+                    return result;
+                }();
+            }
+        };
 
+        Base.prototype._snakeToCamel = function _snakeToCamel(s) {
+            return s.replace(/(\_\w)/g, function (m) {
+                return m[1].toUpperCase();
+            });
+        };
+
+        // build out a linked object
+
+
+        Base.prototype.$buildOject = function $buildOject(link, options) {
+            var _this2 = this;
+
+            var linkId = link + (JSON.stringify(options) || '');
+
+            if (this.__linkedData[linkId]) {
+                return this.__linkedData[linkId];
+            }
+            this.$buildOjectPromise(link, options).then(function (ans) {
+                _this2.__linkedData[linkId] = ans;
+                // re-set it again with a digest loop - jsut to be sure!
+                return $timeout(function () {
+                    return _this2.__linkedData[linkId] = ans;
+                });
+            });
+            return null;
+        };
+
+        // build a promise for a linked object
+
+
+        Base.prototype.$buildOjectPromise = function $buildOjectPromise(link, options) {
+            var linkId = link + (JSON.stringify(options) || '');
+
+            if (this.__linkedPromises[linkId]) {
                 return this.__linkedPromises[linkId];
             }
-        }, {
-            key: 'get',
-            value: function get(ikey) {
-                if (!this._data) {
-                    return null;
+            var prom = $q.defer();
+            this.__linkedPromises[linkId] = prom.promise;
+
+            this.$get(link, options).then(function (res) {
+                var inj = $injector.get('BB.Service.' + link);
+                if (inj) {
+                    if (inj.promise) {
+                        // unwrap involving another promise
+                        return inj.unwrap(res).then(function (ans) {
+                            return prom.resolve(ans);
+                        }, function (err) {
+                            return prom.reject(err);
+                        });
+                    } else {
+                        // unwrap without a promise
+                        return prom.resolve(inj.unwrap(res));
+                    }
+                } else {
+                    // no service found - just return the resources as I found it
+                    return prom.resolve(res);
                 }
-                return this._data[ikey];
+            }, function (err) {
+                return prom.reject(err);
+            });
+
+            return this.__linkedPromises[linkId];
+        };
+
+        Base.prototype.get = function get(ikey) {
+            if (!this._data) {
+                return null;
             }
-        }, {
-            key: 'set',
-            value: function set(ikey, value) {
-                if (!this._data) {
-                    return null;
-                }
-                return this._data[ikey] = value;
+            return this._data[ikey];
+        };
+
+        Base.prototype.set = function set(ikey, value) {
+            if (!this._data) {
+                return null;
             }
-        }, {
-            key: 'getOption',
-            value: function getOption(ikey) {
-                if (!this._data) {
-                    return null;
-                }
-                return this._data.getOption(ikey);
+            return this._data[ikey] = value;
+        };
+
+        Base.prototype.getOption = function getOption(ikey) {
+            if (!this._data) {
+                return null;
             }
-        }, {
-            key: 'setOption',
-            value: function setOption(ikey, value) {
-                if (!this._data) {
-                    return null;
-                }
-                return this._data.setOption(ikey, value);
+            return this._data.getOption(ikey);
+        };
+
+        Base.prototype.setOption = function setOption(ikey, value) {
+            if (!this._data) {
+                return null;
             }
-        }, {
-            key: '$href',
-            value: function $href(rel, params) {
-                if (this._data) {
-                    return this._data.$href(rel, params);
-                }
+            return this._data.setOption(ikey, value);
+        };
+
+        Base.prototype.$href = function $href(rel, params) {
+            if (this._data) {
+                return this._data.$href(rel, params);
             }
-        }, {
-            key: '$has',
-            value: function $has(rel) {
-                if (this._data) {
-                    return this._data.$has(rel);
-                }
+        };
+
+        Base.prototype.$has = function $has(rel) {
+            if (this._data) {
+                return this._data.$has(rel);
             }
-        }, {
-            key: '$flush',
-            value: function $flush(rel, params) {
-                if (this._data) {
-                    return this._data.$flush(rel, params);
-                }
+        };
+
+        Base.prototype.$flush = function $flush(rel, params) {
+            if (this._data) {
+                return this._data.$flush(rel, params);
             }
-        }, {
-            key: '$get',
-            value: function $get(rel, params) {
-                if (this._data) {
-                    return this._data.$get(rel, params);
-                }
+        };
+
+        Base.prototype.$get = function $get(rel, params) {
+            if (this._data) {
+                return this._data.$get(rel, params);
             }
-        }, {
-            key: '$post',
-            value: function $post(rel, params, dat) {
-                if (this._data) {
-                    return this._data.$post(rel, params, dat);
-                }
+        };
+
+        Base.prototype.$post = function $post(rel, params, dat) {
+            if (this._data) {
+                return this._data.$post(rel, params, dat);
             }
-        }, {
-            key: '$put',
-            value: function $put(rel, params, dat) {
-                if (this._data) {
-                    return this._data.$put(rel, params, dat);
-                }
+        };
+
+        Base.prototype.$put = function $put(rel, params, dat) {
+            if (this._data) {
+                return this._data.$put(rel, params, dat);
             }
-        }, {
-            key: '$patch',
-            value: function $patch(rel, params, dat) {
-                if (this._data) {
-                    return this._data.$patch(rel, params, dat);
-                }
+        };
+
+        Base.prototype.$patch = function $patch(rel, params, dat) {
+            if (this._data) {
+                return this._data.$patch(rel, params, dat);
             }
-        }, {
-            key: '$del',
-            value: function $del(rel, params, dat) {
-                if (this._data) {
-                    return this._data.$del(rel, params, dat);
-                }
+        };
+
+        Base.prototype.$del = function $del(rel, params, dat) {
+            if (this._data) {
+                return this._data.$del(rel, params, dat);
             }
-        }, {
-            key: '$links',
-            value: function $links() {
-                if (this._data) {
-                    return this._data.$links();
-                }
+        };
+
+        Base.prototype.$links = function $links() {
+            if (this._data) {
+                return this._data.$links();
             }
-        }, {
-            key: '$link',
-            value: function $link(rel) {
-                if (this._data) {
-                    return this._data.$link(rel);
-                }
+        };
+
+        Base.prototype.$link = function $link(rel) {
+            if (this._data) {
+                return this._data.$link(rel);
             }
-        }, {
-            key: '$toStore',
-            value: function $toStore() {
-                if (this._data) {
-                    return this._data.$toStore();
-                }
+        };
+
+        Base.prototype.$toStore = function $toStore() {
+            if (this._data) {
+                return this._data.$toStore();
             }
-        }]);
+        };
 
         return Base;
     }();
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2622,7 +2550,7 @@ angular.module('BB.Models').factory("BasketModel", function ($q, BBModel, BaseMo
         function Basket(data, scope) {
             _classCallCheck(this, Basket);
 
-            var _this = _possibleConstructorReturn(this, (Basket.__proto__ || Object.getPrototypeOf(Basket)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             if (scope && scope.isAdmin) {
                 _this.is_admin = scope.isAdmin;
@@ -2647,1232 +2575,1187 @@ angular.module('BB.Models').factory("BasketModel", function ($q, BBModel, BaseMo
          */
 
 
-        _createClass(Basket, [{
-            key: 'addItem',
-            value: function addItem(item) {
-                // check if the item is already in the basket
-                var _iteratorNormalCompletion = true;
-                var _didIteratorError = false;
-                var _iteratorError = undefined;
+        Basket.prototype.addItem = function addItem(item) {
+            // check if the item is already in the basket
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = Array.from(this.items)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var i = _step.value;
+
+                    if (i === item) {
+                        return;
+                    }
+                    if (i.id && item.id && i.id === item.id) {
+                        return;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            return this.items.push(item);
+        };
+
+        /***
+         * @ngdoc method
+         * @name clear
+         * @methodOf BB.Models:Basket
+         * @description
+         * Empty items array
+         *
+         */
+
+
+        Basket.prototype.clear = function clear() {
+            return this.items = [];
+        };
+
+        /***
+         * @ngdoc method
+         * @name clearItem
+         * @methodOf BB.Models:Basket
+         * @description
+         * Remove a given item from the items array
+         *
+         */
+
+
+        Basket.prototype.clearItem = function clearItem(item) {
+            return this.items = this.items.filter(function (i) {
+                return i !== item;
+            });
+        };
+
+        /***
+         * @ngdoc method
+         * @name itemsReady
+         * @methodOf BB.Models:Basket
+         * @description
+         * Use to check if the basket is ready to checkout
+         *
+         * @returns {boolean} Flag to indicate if basket is ready checkout
+         */
+
+
+        Basket.prototype.itemsReady = function itemsReady() {
+            if (this.items.length > 0) {
+                var ready = true;
+                var _iteratorNormalCompletion2 = true;
+                var _didIteratorError2 = false;
+                var _iteratorError2 = undefined;
 
                 try {
-                    for (var _iterator = Array.from(this.items)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                        var i = _step.value;
+                    for (var _iterator2 = Array.from(this.items)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                        var i = _step2.value;
 
-                        if (i === item) {
-                            return;
-                        }
-                        if (i.id && item.id && i.id === item.id) {
-                            return;
+                        if (!i.checkReady()) {
+                            ready = false;
                         }
                     }
                 } catch (err) {
-                    _didIteratorError = true;
-                    _iteratorError = err;
+                    _didIteratorError2 = true;
+                    _iteratorError2 = err;
                 } finally {
                     try {
-                        if (!_iteratorNormalCompletion && _iterator.return) {
-                            _iterator.return();
+                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                            _iterator2.return();
                         }
                     } finally {
-                        if (_didIteratorError) {
-                            throw _iteratorError;
+                        if (_didIteratorError2) {
+                            throw _iteratorError2;
                         }
                     }
                 }
 
-                return this.items.push(item);
-            }
-
-            /***
-             * @ngdoc method
-             * @name clear
-             * @methodOf BB.Models:Basket
-             * @description
-             * Empty items array
-             *
-             */
-
-        }, {
-            key: 'clear',
-            value: function clear() {
-                return this.items = [];
-            }
-
-            /***
-             * @ngdoc method
-             * @name clearItem
-             * @methodOf BB.Models:Basket
-             * @description
-             * Remove a given item from the items array
-             *
-             */
-
-        }, {
-            key: 'clearItem',
-            value: function clearItem(item) {
-                return this.items = this.items.filter(function (i) {
-                    return i !== item;
-                });
-            }
-
-            /***
-             * @ngdoc method
-             * @name itemsReady
-             * @methodOf BB.Models:Basket
-             * @description
-             * Use to check if the basket is ready to checkout
-             *
-             * @returns {boolean} Flag to indicate if basket is ready checkout
-             */
-
-        }, {
-            key: 'itemsReady',
-            value: function itemsReady() {
-                if (this.items.length > 0) {
-                    var ready = true;
-                    var _iteratorNormalCompletion2 = true;
-                    var _didIteratorError2 = false;
-                    var _iteratorError2 = undefined;
-
-                    try {
-                        for (var _iterator2 = Array.from(this.items)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            var i = _step2.value;
-
-                            if (!i.checkReady()) {
-                                ready = false;
-                            }
-                        }
-                    } catch (err) {
-                        _didIteratorError2 = true;
-                        _iteratorError2 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                _iterator2.return();
-                            }
-                        } finally {
-                            if (_didIteratorError2) {
-                                throw _iteratorError2;
-                            }
-                        }
-                    }
-
-                    return ready;
-                } else {
-                    return false;
-                }
-            }
-
-            /***
-             * @ngdoc method
-             * @name readyToCheckout
-             * @methodOf BB.Models:Basket
-             * @description
-             * Use to check if the basket is ready to checkout - and has been reviews
-             *
-             * @returns {boolean} Flag to indicate if basket is ready checkout
-             */
-
-        }, {
-            key: 'readyToCheckout',
-            value: function readyToCheckout() {
-                if (this.items.length > 0 && this.reviewed) {
-                    var ready = true;
-                    var _iteratorNormalCompletion3 = true;
-                    var _didIteratorError3 = false;
-                    var _iteratorError3 = undefined;
-
-                    try {
-                        for (var _iterator3 = Array.from(this.items)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                            var i = _step3.value;
-
-                            if (!i.checkReady()) {
-                                ready = false;
-                            }
-                        }
-                    } catch (err) {
-                        _didIteratorError3 = true;
-                        _iteratorError3 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                                _iterator3.return();
-                            }
-                        } finally {
-                            if (_didIteratorError3) {
-                                throw _iteratorError3;
-                            }
-                        }
-                    }
-
-                    return ready;
-                } else {
-                    return false;
-                }
-            }
-
-            /***
-             * @ngdoc method
-             * @name timeItems
-             * @methodOf BB.Models:Basket
-             * @description
-             * Returns an array of time items (i.e. event and appointment bookings)
-             *
-             * @returns {array}
-             */
-
-        }, {
-            key: 'timeItems',
-            value: function timeItems() {
-                var titems = [];
-                var _iteratorNormalCompletion4 = true;
-                var _didIteratorError4 = false;
-                var _iteratorError4 = undefined;
-
-                try {
-                    for (var _iterator4 = Array.from(this.items)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                        var i = _step4.value;
-
-                        if (i.isTimeItem()) {
-                            titems.push(i);
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError4 = true;
-                    _iteratorError4 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                            _iterator4.return();
-                        }
-                    } finally {
-                        if (_didIteratorError4) {
-                            throw _iteratorError4;
-                        }
-                    }
-                }
-
-                return titems;
-            }
-
-            /***
-             * @ngdoc method
-             * @name hasTimeItems
-             * @methodOf BB.Models:Basket
-             * @description
-             * Indicates if the basket contains time items (i.e. event and appointment bookings)
-             *
-             * @returns {boolean}
-             */
-
-        }, {
-            key: 'hasTimeItems',
-            value: function hasTimeItems() {
-                var _iteratorNormalCompletion5 = true;
-                var _didIteratorError5 = false;
-                var _iteratorError5 = undefined;
-
-                try {
-                    for (var _iterator5 = Array.from(this.items)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                        var i = _step5.value;
-
-                        if (i.isTimeItem()) {
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError5 = true;
-                    _iteratorError5 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                            _iterator5.return();
-                        }
-                    } finally {
-                        if (_didIteratorError5) {
-                            throw _iteratorError5;
-                        }
-                    }
-                }
-
+                return ready;
+            } else {
                 return false;
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name basketItems
-             * @methodOf BB.Models:Basket
-             * @description
-             * Gets all BasketItem's that are not coupons
-             *
-             * @returns {array} array of basket items
-             */
+        /***
+         * @ngdoc method
+         * @name readyToCheckout
+         * @methodOf BB.Models:Basket
+         * @description
+         * Use to check if the basket is ready to checkout - and has been reviews
+         *
+         * @returns {boolean} Flag to indicate if basket is ready checkout
+         */
 
-        }, {
-            key: 'basketItems',
-            value: function basketItems() {
-                var bitems = [];
-                var _iteratorNormalCompletion6 = true;
-                var _didIteratorError6 = false;
-                var _iteratorError6 = undefined;
+
+        Basket.prototype.readyToCheckout = function readyToCheckout() {
+            if (this.items.length > 0 && this.reviewed) {
+                var ready = true;
+                var _iteratorNormalCompletion3 = true;
+                var _didIteratorError3 = false;
+                var _iteratorError3 = undefined;
 
                 try {
-                    for (var _iterator6 = Array.from(this.items)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                        var i = _step6.value;
+                    for (var _iterator3 = Array.from(this.items)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                        var i = _step3.value;
 
-                        if (!i.is_coupon) {
-                            bitems.push(i);
+                        if (!i.checkReady()) {
+                            ready = false;
                         }
                     }
                 } catch (err) {
-                    _didIteratorError6 = true;
-                    _iteratorError6 = err;
+                    _didIteratorError3 = true;
+                    _iteratorError3 = err;
                 } finally {
                     try {
-                        if (!_iteratorNormalCompletion6 && _iterator6.return) {
-                            _iterator6.return();
+                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                            _iterator3.return();
                         }
                     } finally {
-                        if (_didIteratorError6) {
-                            throw _iteratorError6;
+                        if (_didIteratorError3) {
+                            throw _iteratorError3;
                         }
                     }
                 }
 
-                return bitems;
-            }
-
-            /***
-             * @ngdoc method
-             * @name externalPurchaseItems
-             * @methodOf BB.Models:Basket
-             * @description
-             * Gets all external purchases in the basket
-             *
-             * @returns {array} array of external purchases
-             */
-
-        }, {
-            key: 'externalPurchaseItems',
-            value: function externalPurchaseItems() {
-                var eitems = [];
-                var _iteratorNormalCompletion7 = true;
-                var _didIteratorError7 = false;
-                var _iteratorError7 = undefined;
-
-                try {
-                    for (var _iterator7 = Array.from(this.items)[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-                        var i = _step7.value;
-
-                        if (i.isExternalPurchase()) {
-                            eitems.push(i);
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError7 = true;
-                    _iteratorError7 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion7 && _iterator7.return) {
-                            _iterator7.return();
-                        }
-                    } finally {
-                        if (_didIteratorError7) {
-                            throw _iteratorError7;
-                        }
-                    }
-                }
-
-                return eitems;
-            }
-
-            /***
-             * @ngdoc method
-             * @name couponItems
-             * @methodOf BB.Models:Basket
-             * @description
-             * Build an array of items that are coupons
-             *
-             * @returns {array} the newly build array of coupon items
-             */
-
-        }, {
-            key: 'couponItems',
-            value: function couponItems() {
-                var citems = [];
-                var _iteratorNormalCompletion8 = true;
-                var _didIteratorError8 = false;
-                var _iteratorError8 = undefined;
-
-                try {
-                    for (var _iterator8 = Array.from(this.items)[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-                        var i = _step8.value;
-
-                        if (i.is_coupon) {
-                            citems.push(i);
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError8 = true;
-                    _iteratorError8 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion8 && _iterator8.return) {
-                            _iterator8.return();
-                        }
-                    } finally {
-                        if (_didIteratorError8) {
-                            throw _iteratorError8;
-                        }
-                    }
-                }
-
-                return citems;
-            }
-
-            /***
-             * @ngdoc method
-             * @name removeCoupons
-             * @methodOf BB.Models:Basket
-             * @description
-             * Remove coupon items from the items array
-             *
-             * @returns {array} the items array after removing items that are coupons
-             */
-
-        }, {
-            key: 'removeCoupons',
-            value: function removeCoupons() {
-                return this.items = _.reject(this.items, function (x) {
-                    return x.is_coupon;
-                });
-            }
-
-            /***
-             * @ngdoc method
-             * @name setSettings
-             * @methodOf BB.Models:Basket
-             * @description
-             * Extend the settings with the set param passed to the function
-             *
-             * @returns {object} settings object
-             */
-
-        }, {
-            key: 'setSettings',
-            value: function setSettings(set) {
-                if (!set) {
-                    return;
-                }
-                if (!this.settings) {
-                    this.settings = {};
-                }
-                return $.extend(this.settings, set);
-            }
-
-            /***
-             * @ngdoc method
-             * @name setClient
-             * @methodOf BB.Models:Basket
-             * @description
-             * Set the client
-             *
-             * @returns {object} client object
-             */
-
-        }, {
-            key: 'setClient',
-            value: function setClient(client) {
-                return this.client = client;
-            }
-
-            /***
-             * @ngdoc method
-             * @name setClientDetails
-             * @methodOf BB.Models:Basket
-             * @description
-             * Set client details
-             *
-             * @returns {object} client details
-             */
-
-        }, {
-            key: 'setClientDetails',
-            value: function setClientDetails(client_details) {
-                return this.client_details = new BBModel.PurchaseItem(client_details);
-            }
-
-            /***
-             * @ngdoc method
-             * @name getPostData
-             * @methodOf BB.Models:Basket
-             * @description
-             * Build an array with details for every item in items array
-             *
-             * @returns {array} newly created details array
-             */
-
-        }, {
-            key: 'getPostData',
-            value: function getPostData() {
-                var post = {
-                    client: this.client.getPostData(),
-                    settings: this.settings,
-                    reference: this.reference
-                };
-                post.is_admin = this.is_admin;
-                post.parent_client_id = this.parent_client_id;
-                post.take_from_wallet = this.take_from_wallet;
-                post.items = [];
-                var _iteratorNormalCompletion9 = true;
-                var _didIteratorError9 = false;
-                var _iteratorError9 = undefined;
-
-                try {
-                    for (var _iterator9 = Array.from(this.items)[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-                        var item = _step9.value;
-
-                        post.items.push(item.getPostData());
-                    }
-                } catch (err) {
-                    _didIteratorError9 = true;
-                    _iteratorError9 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion9 && _iterator9.return) {
-                            _iterator9.return();
-                        }
-                    } finally {
-                        if (_didIteratorError9) {
-                            throw _iteratorError9;
-                        }
-                    }
-                }
-
-                return post;
-            }
-
-            /***
-             * @ngdoc method
-             * @name dueTotal
-             * @methodOf BB.Models:Basket
-             * @description
-             * Total price after checking every item if it is on the wait list
-             *
-             * @returns {integer} total
-             */
-            // the amount due now - taking account of any wait list items
-
-        }, {
-            key: 'dueTotal',
-            value: function dueTotal() {
-                var total = this.totalPrice();
-                var _iteratorNormalCompletion10 = true;
-                var _didIteratorError10 = false;
-                var _iteratorError10 = undefined;
-
-                try {
-                    for (var _iterator10 = Array.from(this.items)[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-                        var item = _step10.value;
-
-                        if (item.isWaitlist()) {
-                            total -= item.price;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError10 = true;
-                    _iteratorError10 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion10 && _iterator10.return) {
-                            _iterator10.return();
-                        }
-                    } finally {
-                        if (_didIteratorError10) {
-                            throw _iteratorError10;
-                        }
-                    }
-                }
-
-                if (total < 0) {
-                    total = 0;
-                }
-                return total;
-            }
-
-            /***
-             * @ngdoc method
-             * @name length
-             * @methodOf BB.Models:Basket
-             * @description
-             * Length of the items array
-             *
-             * @returns {integer} length
-             */
-
-        }, {
-            key: 'length',
-            value: function length() {
-                return this.items.length;
-            }
-
-            /***
-             * @ngdoc method
-             * @name questionPrice
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates total question's price
-             *
-             * @returns {integer} question's price
-             */
-
-        }, {
-            key: 'questionPrice',
-            value: function questionPrice(options) {
-                var unready = options && options.unready;
-                var price = 0;
-                var _iteratorNormalCompletion11 = true;
-                var _didIteratorError11 = false;
-                var _iteratorError11 = undefined;
-
-                try {
-                    for (var _iterator11 = Array.from(this.items)[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
-                        var item = _step11.value;
-
-                        if (!item.ready && unready || !unready) {
-                            price += item.questionPrice();
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError11 = true;
-                    _iteratorError11 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion11 && _iterator11.return) {
-                            _iterator11.return();
-                        }
-                    } finally {
-                        if (_didIteratorError11) {
-                            throw _iteratorError11;
-                        }
-                    }
-                }
-
-                return price;
-            }
-
-            /***
-             * @ngdoc method
-             * @name totalPrice
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates total price of the items after coupuns have been applied
-             *
-             * @returns {integer} total price
-             */
-            // return the total price after coupons have been applied
-
-        }, {
-            key: 'totalPrice',
-            value: function totalPrice(options) {
-                var unready = options && options.unready;
-                var price = 0;
-                var _iteratorNormalCompletion12 = true;
-                var _didIteratorError12 = false;
-                var _iteratorError12 = undefined;
-
-                try {
-                    for (var _iterator12 = Array.from(this.items)[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-                        var item = _step12.value;
-
-                        if (!item.ready && unready || !unready) {
-                            price += item.totalPrice();
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError12 = true;
-                    _iteratorError12 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion12 && _iterator12.return) {
-                            _iterator12.return();
-                        }
-                    } finally {
-                        if (_didIteratorError12) {
-                            throw _iteratorError12;
-                        }
-                    }
-                }
-
-                return price;
-            }
-
-            /***
-             * @ngdoc method
-             * @name updateTotalPrice
-             * @methodOf BB.Models:Basket
-             * @description
-             * Update the total_price attribute using totalPrice method
-             *
-             * @returns {integer} the updated total_price variable
-             */
-
-        }, {
-            key: 'updateTotalPrice',
-            value: function updateTotalPrice(options) {
-                return this.total_price = this.totalPrice(options);
-            }
-
-            /***
-             * @ngdoc method
-             * @name fullPrice
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates full price of all items, before applying any coupons or deals
-             *
-             * @returns {integer} full price
-             */
-            // return the full price before any coupons or deals have been applied
-
-        }, {
-            key: 'fullPrice',
-            value: function fullPrice() {
-                var price = 0;
-                var _iteratorNormalCompletion13 = true;
-                var _didIteratorError13 = false;
-                var _iteratorError13 = undefined;
-
-                try {
-                    for (var _iterator13 = Array.from(this.items)[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-                        var item = _step13.value;
-
-                        price += item.fullPrice();
-                    }
-                } catch (err) {
-                    _didIteratorError13 = true;
-                    _iteratorError13 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion13 && _iterator13.return) {
-                            _iterator13.return();
-                        }
-                    } finally {
-                        if (_didIteratorError13) {
-                            throw _iteratorError13;
-                        }
-                    }
-                }
-
-                return price;
-            }
-
-            /***
-             * @ngdoc method
-             * @name hasCoupon
-             * @methodOf BB.Models:Basket
-             * @description
-             * Checks if there is an item in items array, that is a coupon
-             *
-             * @returns {boolean} true or false if a coupon is found or not
-             */
-
-        }, {
-            key: 'hasCoupon',
-            value: function hasCoupon() {
-                var _iteratorNormalCompletion14 = true;
-                var _didIteratorError14 = false;
-                var _iteratorError14 = undefined;
-
-                try {
-                    for (var _iterator14 = Array.from(this.items)[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
-                        var item = _step14.value;
-
-                        if (item.is_coupon) {
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError14 = true;
-                    _iteratorError14 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion14 && _iterator14.return) {
-                            _iterator14.return();
-                        }
-                    } finally {
-                        if (_didIteratorError14) {
-                            throw _iteratorError14;
-                        }
-                    }
-                }
-
+                return ready;
+            } else {
                 return false;
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name totalCoupons
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates the full discount for the basket
-             *
-             * @returns {integer} full discount
-             */
-            // return the total coupon discount applied to the basket
+        /***
+         * @ngdoc method
+         * @name timeItems
+         * @methodOf BB.Models:Basket
+         * @description
+         * Returns an array of time items (i.e. event and appointment bookings)
+         *
+         * @returns {array}
+         */
 
-        }, {
-            key: 'totalCoupons',
-            value: function totalCoupons() {
-                return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
-            }
 
-            /***
-             * @ngdoc method
-             * @name totalDuration
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates total duration of all items in basket
-             *
-             * @returns {integer} total duration
-             */
+        Basket.prototype.timeItems = function timeItems() {
+            var titems = [];
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
 
-        }, {
-            key: 'totalDuration',
-            value: function totalDuration() {
-                var duration = 0;
-                var _iteratorNormalCompletion15 = true;
-                var _didIteratorError15 = false;
-                var _iteratorError15 = undefined;
+            try {
+                for (var _iterator4 = Array.from(this.items)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var i = _step4.value;
 
-                try {
-                    for (var _iterator15 = Array.from(this.items)[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
-                        var item = _step15.value;
-
-                        if (item.service && item.service.listed_duration) {
-                            duration += item.service.listed_duration;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError15 = true;
-                    _iteratorError15 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion15 && _iterator15.return) {
-                            _iterator15.return();
-                        }
-                    } finally {
-                        if (_didIteratorError15) {
-                            throw _iteratorError15;
-                        }
+                    if (i.isTimeItem()) {
+                        titems.push(i);
                     }
                 }
-
-                return duration;
-            }
-
-            /***
-             * @ngdoc method
-             * @name containsDeal
-             * @methodOf BB.Models:Basket
-             * @description
-             * Checks if there is an item in items array, that is a deal
-             *
-             * @returns {boolean} true or false depending if a deal was found or not
-             */
-
-        }, {
-            key: 'containsDeal',
-            value: function containsDeal() {
-                var _iteratorNormalCompletion16 = true;
-                var _didIteratorError16 = false;
-                var _iteratorError16 = undefined;
-
+            } catch (err) {
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
+            } finally {
                 try {
-                    for (var _iterator16 = Array.from(this.items)[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
-                        var item = _step16.value;
-
-                        if (item.deal_id) {
-                            return true;
-                        }
+                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                        _iterator4.return();
                     }
-                } catch (err) {
-                    _didIteratorError16 = true;
-                    _iteratorError16 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion16 && _iterator16.return) {
-                            _iterator16.return();
-                        }
-                    } finally {
-                        if (_didIteratorError16) {
-                            throw _iteratorError16;
-                        }
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
                     }
                 }
+            }
 
+            return titems;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasTimeItems
+         * @methodOf BB.Models:Basket
+         * @description
+         * Indicates if the basket contains time items (i.e. event and appointment bookings)
+         *
+         * @returns {boolean}
+         */
+
+
+        Basket.prototype.hasTimeItems = function hasTimeItems() {
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
+
+            try {
+                for (var _iterator5 = Array.from(this.items)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var i = _step5.value;
+
+                    if (i.isTimeItem()) {
+                        return true;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                        _iterator5.return();
+                    }
+                } finally {
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        /***
+         * @ngdoc method
+         * @name basketItems
+         * @methodOf BB.Models:Basket
+         * @description
+         * Gets all BasketItem's that are not coupons
+         *
+         * @returns {array} array of basket items
+         */
+
+
+        Basket.prototype.basketItems = function basketItems() {
+            var bitems = [];
+            var _iteratorNormalCompletion6 = true;
+            var _didIteratorError6 = false;
+            var _iteratorError6 = undefined;
+
+            try {
+                for (var _iterator6 = Array.from(this.items)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                    var i = _step6.value;
+
+                    if (!i.is_coupon) {
+                        bitems.push(i);
+                    }
+                }
+            } catch (err) {
+                _didIteratorError6 = true;
+                _iteratorError6 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion6 && _iterator6.return) {
+                        _iterator6.return();
+                    }
+                } finally {
+                    if (_didIteratorError6) {
+                        throw _iteratorError6;
+                    }
+                }
+            }
+
+            return bitems;
+        };
+
+        /***
+         * @ngdoc method
+         * @name externalPurchaseItems
+         * @methodOf BB.Models:Basket
+         * @description
+         * Gets all external purchases in the basket
+         *
+         * @returns {array} array of external purchases
+         */
+
+
+        Basket.prototype.externalPurchaseItems = function externalPurchaseItems() {
+            var eitems = [];
+            var _iteratorNormalCompletion7 = true;
+            var _didIteratorError7 = false;
+            var _iteratorError7 = undefined;
+
+            try {
+                for (var _iterator7 = Array.from(this.items)[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+                    var i = _step7.value;
+
+                    if (i.isExternalPurchase()) {
+                        eitems.push(i);
+                    }
+                }
+            } catch (err) {
+                _didIteratorError7 = true;
+                _iteratorError7 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion7 && _iterator7.return) {
+                        _iterator7.return();
+                    }
+                } finally {
+                    if (_didIteratorError7) {
+                        throw _iteratorError7;
+                    }
+                }
+            }
+
+            return eitems;
+        };
+
+        /***
+         * @ngdoc method
+         * @name couponItems
+         * @methodOf BB.Models:Basket
+         * @description
+         * Build an array of items that are coupons
+         *
+         * @returns {array} the newly build array of coupon items
+         */
+
+
+        Basket.prototype.couponItems = function couponItems() {
+            var citems = [];
+            var _iteratorNormalCompletion8 = true;
+            var _didIteratorError8 = false;
+            var _iteratorError8 = undefined;
+
+            try {
+                for (var _iterator8 = Array.from(this.items)[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+                    var i = _step8.value;
+
+                    if (i.is_coupon) {
+                        citems.push(i);
+                    }
+                }
+            } catch (err) {
+                _didIteratorError8 = true;
+                _iteratorError8 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion8 && _iterator8.return) {
+                        _iterator8.return();
+                    }
+                } finally {
+                    if (_didIteratorError8) {
+                        throw _iteratorError8;
+                    }
+                }
+            }
+
+            return citems;
+        };
+
+        /***
+         * @ngdoc method
+         * @name removeCoupons
+         * @methodOf BB.Models:Basket
+         * @description
+         * Remove coupon items from the items array
+         *
+         * @returns {array} the items array after removing items that are coupons
+         */
+
+
+        Basket.prototype.removeCoupons = function removeCoupons() {
+            return this.items = _.reject(this.items, function (x) {
+                return x.is_coupon;
+            });
+        };
+
+        /***
+         * @ngdoc method
+         * @name setSettings
+         * @methodOf BB.Models:Basket
+         * @description
+         * Extend the settings with the set param passed to the function
+         *
+         * @returns {object} settings object
+         */
+
+
+        Basket.prototype.setSettings = function setSettings(set) {
+            if (!set) {
+                return;
+            }
+            if (!this.settings) {
+                this.settings = {};
+            }
+            return $.extend(this.settings, set);
+        };
+
+        /***
+         * @ngdoc method
+         * @name setClient
+         * @methodOf BB.Models:Basket
+         * @description
+         * Set the client
+         *
+         * @returns {object} client object
+         */
+
+
+        Basket.prototype.setClient = function setClient(client) {
+            return this.client = client;
+        };
+
+        /***
+         * @ngdoc method
+         * @name setClientDetails
+         * @methodOf BB.Models:Basket
+         * @description
+         * Set client details
+         *
+         * @returns {object} client details
+         */
+
+
+        Basket.prototype.setClientDetails = function setClientDetails(client_details) {
+            return this.client_details = new BBModel.PurchaseItem(client_details);
+        };
+
+        /***
+         * @ngdoc method
+         * @name getPostData
+         * @methodOf BB.Models:Basket
+         * @description
+         * Build an array with details for every item in items array
+         *
+         * @returns {array} newly created details array
+         */
+
+
+        Basket.prototype.getPostData = function getPostData() {
+            var post = {
+                client: this.client.getPostData(),
+                settings: this.settings,
+                reference: this.reference
+            };
+            post.is_admin = this.is_admin;
+            post.parent_client_id = this.parent_client_id;
+            post.take_from_wallet = this.take_from_wallet;
+            post.items = [];
+            var _iteratorNormalCompletion9 = true;
+            var _didIteratorError9 = false;
+            var _iteratorError9 = undefined;
+
+            try {
+                for (var _iterator9 = Array.from(this.items)[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+                    var item = _step9.value;
+
+                    post.items.push(item.getPostData());
+                }
+            } catch (err) {
+                _didIteratorError9 = true;
+                _iteratorError9 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion9 && _iterator9.return) {
+                        _iterator9.return();
+                    }
+                } finally {
+                    if (_didIteratorError9) {
+                        throw _iteratorError9;
+                    }
+                }
+            }
+
+            return post;
+        };
+
+        /***
+         * @ngdoc method
+         * @name dueTotal
+         * @methodOf BB.Models:Basket
+         * @description
+         * Total price after checking every item if it is on the wait list
+         *
+         * @returns {integer} total
+         */
+        // the amount due now - taking account of any wait list items
+
+
+        Basket.prototype.dueTotal = function dueTotal() {
+            var total = this.totalPrice();
+            var _iteratorNormalCompletion10 = true;
+            var _didIteratorError10 = false;
+            var _iteratorError10 = undefined;
+
+            try {
+                for (var _iterator10 = Array.from(this.items)[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+                    var item = _step10.value;
+
+                    if (item.isWaitlist()) {
+                        total -= item.price;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError10 = true;
+                _iteratorError10 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion10 && _iterator10.return) {
+                        _iterator10.return();
+                    }
+                } finally {
+                    if (_didIteratorError10) {
+                        throw _iteratorError10;
+                    }
+                }
+            }
+
+            if (total < 0) {
+                total = 0;
+            }
+            return total;
+        };
+
+        /***
+         * @ngdoc method
+         * @name length
+         * @methodOf BB.Models:Basket
+         * @description
+         * Length of the items array
+         *
+         * @returns {integer} length
+         */
+
+
+        Basket.prototype.length = function length() {
+            return this.items.length;
+        };
+
+        /***
+         * @ngdoc method
+         * @name questionPrice
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates total question's price
+         *
+         * @returns {integer} question's price
+         */
+
+
+        Basket.prototype.questionPrice = function questionPrice(options) {
+            var unready = options && options.unready;
+            var price = 0;
+            var _iteratorNormalCompletion11 = true;
+            var _didIteratorError11 = false;
+            var _iteratorError11 = undefined;
+
+            try {
+                for (var _iterator11 = Array.from(this.items)[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+                    var item = _step11.value;
+
+                    if (!item.ready && unready || !unready) {
+                        price += item.questionPrice();
+                    }
+                }
+            } catch (err) {
+                _didIteratorError11 = true;
+                _iteratorError11 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion11 && _iterator11.return) {
+                        _iterator11.return();
+                    }
+                } finally {
+                    if (_didIteratorError11) {
+                        throw _iteratorError11;
+                    }
+                }
+            }
+
+            return price;
+        };
+
+        /***
+         * @ngdoc method
+         * @name totalPrice
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates total price of the items after coupuns have been applied
+         *
+         * @returns {integer} total price
+         */
+        // return the total price after coupons have been applied
+
+
+        Basket.prototype.totalPrice = function totalPrice(options) {
+            var unready = options && options.unready;
+            var price = 0;
+            var _iteratorNormalCompletion12 = true;
+            var _didIteratorError12 = false;
+            var _iteratorError12 = undefined;
+
+            try {
+                for (var _iterator12 = Array.from(this.items)[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
+                    var item = _step12.value;
+
+                    if (!item.ready && unready || !unready) {
+                        price += item.totalPrice();
+                    }
+                }
+            } catch (err) {
+                _didIteratorError12 = true;
+                _iteratorError12 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion12 && _iterator12.return) {
+                        _iterator12.return();
+                    }
+                } finally {
+                    if (_didIteratorError12) {
+                        throw _iteratorError12;
+                    }
+                }
+            }
+
+            return price;
+        };
+
+        /***
+         * @ngdoc method
+         * @name updateTotalPrice
+         * @methodOf BB.Models:Basket
+         * @description
+         * Update the total_price attribute using totalPrice method
+         *
+         * @returns {integer} the updated total_price variable
+         */
+
+
+        Basket.prototype.updateTotalPrice = function updateTotalPrice(options) {
+            return this.total_price = this.totalPrice(options);
+        };
+
+        /***
+         * @ngdoc method
+         * @name fullPrice
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates full price of all items, before applying any coupons or deals
+         *
+         * @returns {integer} full price
+         */
+        // return the full price before any coupons or deals have been applied
+
+
+        Basket.prototype.fullPrice = function fullPrice() {
+            var price = 0;
+            var _iteratorNormalCompletion13 = true;
+            var _didIteratorError13 = false;
+            var _iteratorError13 = undefined;
+
+            try {
+                for (var _iterator13 = Array.from(this.items)[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
+                    var item = _step13.value;
+
+                    price += item.fullPrice();
+                }
+            } catch (err) {
+                _didIteratorError13 = true;
+                _iteratorError13 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion13 && _iterator13.return) {
+                        _iterator13.return();
+                    }
+                } finally {
+                    if (_didIteratorError13) {
+                        throw _iteratorError13;
+                    }
+                }
+            }
+
+            return price;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasCoupon
+         * @methodOf BB.Models:Basket
+         * @description
+         * Checks if there is an item in items array, that is a coupon
+         *
+         * @returns {boolean} true or false if a coupon is found or not
+         */
+
+
+        Basket.prototype.hasCoupon = function hasCoupon() {
+            var _iteratorNormalCompletion14 = true;
+            var _didIteratorError14 = false;
+            var _iteratorError14 = undefined;
+
+            try {
+                for (var _iterator14 = Array.from(this.items)[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
+                    var item = _step14.value;
+
+                    if (item.is_coupon) {
+                        return true;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError14 = true;
+                _iteratorError14 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion14 && _iterator14.return) {
+                        _iterator14.return();
+                    }
+                } finally {
+                    if (_didIteratorError14) {
+                        throw _iteratorError14;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        /***
+         * @ngdoc method
+         * @name totalCoupons
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates the full discount for the basket
+         *
+         * @returns {integer} full discount
+         */
+        // return the total coupon discount applied to the basket
+
+
+        Basket.prototype.totalCoupons = function totalCoupons() {
+            return this.fullPrice() - this.totalPrice() - this.totalDealPaid();
+        };
+
+        /***
+         * @ngdoc method
+         * @name totalDuration
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates total duration of all items in basket
+         *
+         * @returns {integer} total duration
+         */
+
+
+        Basket.prototype.totalDuration = function totalDuration() {
+            var duration = 0;
+            var _iteratorNormalCompletion15 = true;
+            var _didIteratorError15 = false;
+            var _iteratorError15 = undefined;
+
+            try {
+                for (var _iterator15 = Array.from(this.items)[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
+                    var item = _step15.value;
+
+                    if (item.service && item.service.listed_duration) {
+                        duration += item.service.listed_duration;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError15 = true;
+                _iteratorError15 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion15 && _iterator15.return) {
+                        _iterator15.return();
+                    }
+                } finally {
+                    if (_didIteratorError15) {
+                        throw _iteratorError15;
+                    }
+                }
+            }
+
+            return duration;
+        };
+
+        /***
+         * @ngdoc method
+         * @name containsDeal
+         * @methodOf BB.Models:Basket
+         * @description
+         * Checks if there is an item in items array, that is a deal
+         *
+         * @returns {boolean} true or false depending if a deal was found or not
+         */
+
+
+        Basket.prototype.containsDeal = function containsDeal() {
+            var _iteratorNormalCompletion16 = true;
+            var _didIteratorError16 = false;
+            var _iteratorError16 = undefined;
+
+            try {
+                for (var _iterator16 = Array.from(this.items)[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
+                    var item = _step16.value;
+
+                    if (item.deal_id) {
+                        return true;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError16 = true;
+                _iteratorError16 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion16 && _iterator16.return) {
+                        _iterator16.return();
+                    }
+                } finally {
+                    if (_didIteratorError16) {
+                        throw _iteratorError16;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasDeal
+         * @methodOf BB.Models:Basket
+         * @description
+         * Checks if there is any item in items array with a deal code
+         *
+         * @returns {boolean} true or false depending if a deal code was found or not
+         */
+
+
+        Basket.prototype.hasDeal = function hasDeal() {
+            var _iteratorNormalCompletion17 = true;
+            var _didIteratorError17 = false;
+            var _iteratorError17 = undefined;
+
+            try {
+                for (var _iterator17 = Array.from(this.items)[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
+                    var item = _step17.value;
+
+                    if (item.deal_codes && item.deal_codes.length > 0) {
+                        return true;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError17 = true;
+                _iteratorError17 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion17 && _iterator17.return) {
+                        _iterator17.return();
+                    }
+                } finally {
+                    if (_didIteratorError17) {
+                        throw _iteratorError17;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getDealCodes
+         * @methodOf BB.Models:Basket
+         * @description
+         * Builds an array of deal codes
+         *
+         * @returns {array} deal codes array
+         */
+
+
+        Basket.prototype.getDealCodes = function getDealCodes() {
+            this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
+            return this.deals;
+        };
+
+        /***
+         * @ngdoc method
+         * @name totalDeals
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates the total amount of deal codes array
+         *
+         * @returns {integer} total amount of deals
+         */
+        // return the total value of deals (gift certificates) applied to the basket
+
+
+        Basket.prototype.totalDeals = function totalDeals() {
+            var value = 0;
+            var _iteratorNormalCompletion18 = true;
+            var _didIteratorError18 = false;
+            var _iteratorError18 = undefined;
+
+            try {
+                for (var _iterator18 = Array.from(this.getDealCodes())[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+                    var deal = _step18.value;
+
+                    value += deal.value;
+                }
+            } catch (err) {
+                _didIteratorError18 = true;
+                _iteratorError18 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion18 && _iterator18.return) {
+                        _iterator18.return();
+                    }
+                } finally {
+                    if (_didIteratorError18) {
+                        throw _iteratorError18;
+                    }
+                }
+            }
+
+            return value;
+        };
+
+        /***
+         * @ngdoc method
+         * @name totalDealPaid
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates the amount paid by gift certificates
+         *
+         * @returns {integer} amount paid by deals
+         */
+        // return amount paid by deals (gift certficates)
+
+
+        Basket.prototype.totalDealPaid = function totalDealPaid() {
+            var total_cert_paid = 0;
+            var _iteratorNormalCompletion19 = true;
+            var _didIteratorError19 = false;
+            var _iteratorError19 = undefined;
+
+            try {
+                for (var _iterator19 = Array.from(this.items)[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
+                    var item = _step19.value;
+
+                    if (item.certificate_paid) {
+                        total_cert_paid += item.certificate_paid;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError19 = true;
+                _iteratorError19 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion19 && _iterator19.return) {
+                        _iterator19.return();
+                    }
+                } finally {
+                    if (_didIteratorError19) {
+                        throw _iteratorError19;
+                    }
+                }
+            }
+
+            return total_cert_paid;
+        };
+
+        /***
+         * @ngdoc method
+         * @name remainingDealBalance
+         * @methodOf BB.Models:Basket
+         * @description
+         * Calculates the difference between total deals amount and amount paid by deals
+         *
+         * @returns {integer} The remaining deal (gift certificate) balance
+         */
+        // return the remaining deal (gift certificate) balance
+
+
+        Basket.prototype.remainingDealBalance = function remainingDealBalance() {
+            return this.totalDeals() - this.totalDealPaid();
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasWaitlistItem
+         * @methodOf BB.Models:Basket
+         * @description
+         * Checks if the basket contains an wait list event
+         *
+         * @returns {boolean} true or false
+         */
+
+
+        Basket.prototype.hasWaitlistItem = function hasWaitlistItem() {
+            var _iteratorNormalCompletion20 = true;
+            var _didIteratorError20 = false;
+            var _iteratorError20 = undefined;
+
+            try {
+                for (var _iterator20 = Array.from(this.items)[Symbol.iterator](), _step20; !(_iteratorNormalCompletion20 = (_step20 = _iterator20.next()).done); _iteratorNormalCompletion20 = true) {
+                    var item = _step20.value;
+
+                    if (item.isWaitlist()) {
+                        return true;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError20 = true;
+                _iteratorError20 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion20 && _iterator20.return) {
+                        _iterator20.return();
+                    }
+                } finally {
+                    if (_didIteratorError20) {
+                        throw _iteratorError20;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasExternalPurchase
+         * @methodOf BB.Models:Basket
+         * @description
+         * Checks if the basket contains an external purchase
+         *
+         * @returns {boolean} true or false
+         */
+
+
+        Basket.prototype.hasExternalPurchase = function hasExternalPurchase() {
+            var _iteratorNormalCompletion21 = true;
+            var _didIteratorError21 = false;
+            var _iteratorError21 = undefined;
+
+            try {
+                for (var _iterator21 = Array.from(this.items)[Symbol.iterator](), _step21; !(_iteratorNormalCompletion21 = (_step21 = _iterator21.next()).done); _iteratorNormalCompletion21 = true) {
+                    var item = _step21.value;
+
+                    if (item.isExternalPurchase()) {
+                        return true;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError21 = true;
+                _iteratorError21 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion21 && _iterator21.return) {
+                        _iterator21.return();
+                    }
+                } finally {
+                    if (_didIteratorError21) {
+                        throw _iteratorError21;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        /***
+         * @ngdoc method
+         * @name useWallet
+         * @methodOf BB.Models:Basket
+         * @description
+         * Indicates if a wallet should be used for payment
+         *
+         * @returns {boolean} true or false
+         */
+
+
+        Basket.prototype.useWallet = function useWallet(value, client) {
+            if (client && client.$has('wallet') && value) {
+                this.take_from_wallet = true;
+                return true;
+            } else {
+                this.take_from_wallet = false;
                 return false;
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name hasDeal
-             * @methodOf BB.Models:Basket
-             * @description
-             * Checks if there is any item in items array with a deal code
-             *
-             * @returns {boolean} true or false depending if a deal code was found or not
-             */
+        Basket.$applyCoupon = function $applyCoupon(company, params) {
+            return BasketService.applyCoupon(company, params);
+        };
 
-        }, {
-            key: 'hasDeal',
-            value: function hasDeal() {
-                var _iteratorNormalCompletion17 = true;
-                var _didIteratorError17 = false;
-                var _iteratorError17 = undefined;
+        Basket.$updateBasket = function $updateBasket(company, params) {
+            return BasketService.updateBasket(company, params);
+        };
 
+        Basket.$deleteItem = function $deleteItem(item, company, params) {
+            return BasketService.deleteItem(item, company, params);
+        };
+
+        Basket.$checkout = function $checkout(company, basket, params) {
+            return BasketService.checkout(company, basket, params);
+        };
+
+        Basket.$empty = function $empty(bb) {
+            return BasketService.empty(bb);
+        };
+
+        Basket.$applyDeal = function $applyDeal(company, params) {
+            return BasketService.applyDeal(company, params);
+        };
+
+        Basket.$removeDeal = function $removeDeal(company, params) {
+            return BasketService.removeDeal(company, params);
+        };
+
+        /***
+         * @ngdoc method
+         * @name voucherRemainder
+         * @methodOf BB.Models:Basket
+         * @description
+         * Remaining voucher value if used
+         *
+         * @returns {integer} remaining voucher value
+         */
+
+
+        Basket.prototype.voucherRemainder = function voucherRemainder() {
+            var amount = 0;
+            var _iteratorNormalCompletion22 = true;
+            var _didIteratorError22 = false;
+            var _iteratorError22 = undefined;
+
+            try {
+                for (var _iterator22 = Array.from(this.items)[Symbol.iterator](), _step22; !(_iteratorNormalCompletion22 = (_step22 = _iterator22.next()).done); _iteratorNormalCompletion22 = true) {
+                    var item = _step22.value;
+
+                    if (item.voucher_remainder) {
+                        amount += item.voucher_remainder;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError22 = true;
+                _iteratorError22 = err;
+            } finally {
                 try {
-                    for (var _iterator17 = Array.from(this.items)[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
-                        var item = _step17.value;
-
-                        if (item.deal_codes && item.deal_codes.length > 0) {
-                            return true;
-                        }
+                    if (!_iteratorNormalCompletion22 && _iterator22.return) {
+                        _iterator22.return();
                     }
-                } catch (err) {
-                    _didIteratorError17 = true;
-                    _iteratorError17 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion17 && _iterator17.return) {
-                            _iterator17.return();
-                        }
-                    } finally {
-                        if (_didIteratorError17) {
-                            throw _iteratorError17;
-                        }
+                    if (_didIteratorError22) {
+                        throw _iteratorError22;
                     }
                 }
-
-                return false;
             }
 
-            /***
-             * @ngdoc method
-             * @name getDealCodes
-             * @methodOf BB.Models:Basket
-             * @description
-             * Builds an array of deal codes
-             *
-             * @returns {array} deal codes array
-             */
-
-        }, {
-            key: 'getDealCodes',
-            value: function getDealCodes() {
-                this.deals = this.items[0] && this.items[0].deal_codes ? this.items[0].deal_codes : [];
-                return this.deals;
-            }
-
-            /***
-             * @ngdoc method
-             * @name totalDeals
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates the total amount of deal codes array
-             *
-             * @returns {integer} total amount of deals
-             */
-            // return the total value of deals (gift certificates) applied to the basket
-
-        }, {
-            key: 'totalDeals',
-            value: function totalDeals() {
-                var value = 0;
-                var _iteratorNormalCompletion18 = true;
-                var _didIteratorError18 = false;
-                var _iteratorError18 = undefined;
-
-                try {
-                    for (var _iterator18 = Array.from(this.getDealCodes())[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
-                        var deal = _step18.value;
-
-                        value += deal.value;
-                    }
-                } catch (err) {
-                    _didIteratorError18 = true;
-                    _iteratorError18 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion18 && _iterator18.return) {
-                            _iterator18.return();
-                        }
-                    } finally {
-                        if (_didIteratorError18) {
-                            throw _iteratorError18;
-                        }
-                    }
-                }
-
-                return value;
-            }
-
-            /***
-             * @ngdoc method
-             * @name totalDealPaid
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates the amount paid by gift certificates
-             *
-             * @returns {integer} amount paid by deals
-             */
-            // return amount paid by deals (gift certficates)
-
-        }, {
-            key: 'totalDealPaid',
-            value: function totalDealPaid() {
-                var total_cert_paid = 0;
-                var _iteratorNormalCompletion19 = true;
-                var _didIteratorError19 = false;
-                var _iteratorError19 = undefined;
-
-                try {
-                    for (var _iterator19 = Array.from(this.items)[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
-                        var item = _step19.value;
-
-                        if (item.certificate_paid) {
-                            total_cert_paid += item.certificate_paid;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError19 = true;
-                    _iteratorError19 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion19 && _iterator19.return) {
-                            _iterator19.return();
-                        }
-                    } finally {
-                        if (_didIteratorError19) {
-                            throw _iteratorError19;
-                        }
-                    }
-                }
-
-                return total_cert_paid;
-            }
-
-            /***
-             * @ngdoc method
-             * @name remainingDealBalance
-             * @methodOf BB.Models:Basket
-             * @description
-             * Calculates the difference between total deals amount and amount paid by deals
-             *
-             * @returns {integer} The remaining deal (gift certificate) balance
-             */
-            // return the remaining deal (gift certificate) balance
-
-        }, {
-            key: 'remainingDealBalance',
-            value: function remainingDealBalance() {
-                return this.totalDeals() - this.totalDealPaid();
-            }
-
-            /***
-             * @ngdoc method
-             * @name hasWaitlistItem
-             * @methodOf BB.Models:Basket
-             * @description
-             * Checks if the basket contains an wait list event
-             *
-             * @returns {boolean} true or false
-             */
-
-        }, {
-            key: 'hasWaitlistItem',
-            value: function hasWaitlistItem() {
-                var _iteratorNormalCompletion20 = true;
-                var _didIteratorError20 = false;
-                var _iteratorError20 = undefined;
-
-                try {
-                    for (var _iterator20 = Array.from(this.items)[Symbol.iterator](), _step20; !(_iteratorNormalCompletion20 = (_step20 = _iterator20.next()).done); _iteratorNormalCompletion20 = true) {
-                        var item = _step20.value;
-
-                        if (item.isWaitlist()) {
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError20 = true;
-                    _iteratorError20 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion20 && _iterator20.return) {
-                            _iterator20.return();
-                        }
-                    } finally {
-                        if (_didIteratorError20) {
-                            throw _iteratorError20;
-                        }
-                    }
-                }
-
-                return false;
-            }
-
-            /***
-             * @ngdoc method
-             * @name hasExternalPurchase
-             * @methodOf BB.Models:Basket
-             * @description
-             * Checks if the basket contains an external purchase
-             *
-             * @returns {boolean} true or false
-             */
-
-        }, {
-            key: 'hasExternalPurchase',
-            value: function hasExternalPurchase() {
-                var _iteratorNormalCompletion21 = true;
-                var _didIteratorError21 = false;
-                var _iteratorError21 = undefined;
-
-                try {
-                    for (var _iterator21 = Array.from(this.items)[Symbol.iterator](), _step21; !(_iteratorNormalCompletion21 = (_step21 = _iterator21.next()).done); _iteratorNormalCompletion21 = true) {
-                        var item = _step21.value;
-
-                        if (item.isExternalPurchase()) {
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError21 = true;
-                    _iteratorError21 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion21 && _iterator21.return) {
-                            _iterator21.return();
-                        }
-                    } finally {
-                        if (_didIteratorError21) {
-                            throw _iteratorError21;
-                        }
-                    }
-                }
-
-                return false;
-            }
-
-            /***
-             * @ngdoc method
-             * @name useWallet
-             * @methodOf BB.Models:Basket
-             * @description
-             * Indicates if a wallet should be used for payment
-             *
-             * @returns {boolean} true or false
-             */
-
-        }, {
-            key: 'useWallet',
-            value: function useWallet(value, client) {
-                if (client && client.$has('wallet') && value) {
-                    this.take_from_wallet = true;
-                    return true;
-                } else {
-                    this.take_from_wallet = false;
-                    return false;
-                }
-            }
-        }, {
-            key: 'voucherRemainder',
-
-
-            /***
-             * @ngdoc method
-             * @name voucherRemainder
-             * @methodOf BB.Models:Basket
-             * @description
-             * Remaining voucher value if used
-             *
-             * @returns {integer} remaining voucher value
-             */
-            value: function voucherRemainder() {
-                var amount = 0;
-                var _iteratorNormalCompletion22 = true;
-                var _didIteratorError22 = false;
-                var _iteratorError22 = undefined;
-
-                try {
-                    for (var _iterator22 = Array.from(this.items)[Symbol.iterator](), _step22; !(_iteratorNormalCompletion22 = (_step22 = _iterator22.next()).done); _iteratorNormalCompletion22 = true) {
-                        var item = _step22.value;
-
-                        if (item.voucher_remainder) {
-                            amount += item.voucher_remainder;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError22 = true;
-                    _iteratorError22 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion22 && _iterator22.return) {
-                            _iterator22.return();
-                        }
-                    } finally {
-                        if (_didIteratorError22) {
-                            throw _iteratorError22;
-                        }
-                    }
-                }
-
-                return amount;
-            }
-        }], [{
-            key: '$applyCoupon',
-            value: function $applyCoupon(company, params) {
-                return BasketService.applyCoupon(company, params);
-            }
-        }, {
-            key: '$updateBasket',
-            value: function $updateBasket(company, params) {
-                return BasketService.updateBasket(company, params);
-            }
-        }, {
-            key: '$deleteItem',
-            value: function $deleteItem(item, company, params) {
-                return BasketService.deleteItem(item, company, params);
-            }
-        }, {
-            key: '$checkout',
-            value: function $checkout(company, basket, params) {
-                return BasketService.checkout(company, basket, params);
-            }
-        }, {
-            key: '$empty',
-            value: function $empty(bb) {
-                return BasketService.empty(bb);
-            }
-        }, {
-            key: '$applyDeal',
-            value: function $applyDeal(company, params) {
-                return BasketService.applyDeal(company, params);
-            }
-        }, {
-            key: '$removeDeal',
-            value: function $removeDeal(company, params) {
-                return BasketService.removeDeal(company, params);
-            }
-        }]);
+            return amount;
+        };
 
         return Basket;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -3909,7 +3792,7 @@ angular.module('BB.Models').factory("BasketItemModel", function ($q, $window, BB
             function BasketItem(data, bb) {
                 _classCallCheck(this, BasketItem);
 
-                var _this = _possibleConstructorReturn(this, (BasketItem.__proto__ || Object.getPrototypeOf(BasketItem)).call(this, data));
+                var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
                 _this.ready = false;
                 _this.days_link = null;
@@ -4114,1892 +3997,1821 @@ angular.module('BB.Models').factory("BasketItemModel", function ($q, $window, BB
              */
 
 
-            _createClass(BasketItem, [{
-                key: "setDefaults",
-                value: function setDefaults(defaults) {
-                    if (defaults.settings) {
-                        this.settings = defaults.settings;
-                    }
-                    if (defaults.company) {
-                        this.setCompany(defaults.company);
-                    }
-                    if (defaults.merge_resources) {
-                        this.setResource(null);
-                    }
-                    if (defaults.merge_people) {
-                        this.setPerson(null);
-                    }
-                    if (defaults.resource) {
-                        this.setResource(defaults.resource);
-                    }
-                    if (defaults.person) {
-                        this.setPerson(defaults.person);
-                    }
-                    if (defaults.service) {
-                        this.setService(defaults.service);
-                    }
-                    if (defaults.category) {
-                        this.setCategory(defaults.category);
-                    }
-                    if (defaults.date) {
-                        // NOTE: date is not set as it might not be available
-                        defaults.date = moment(defaults.date);
-                    }
-                    if (defaults.time) {
-                        // NOTE: time is not set as it might not be available
-                        var time = defaults.time ? parseInt(defaults.time) : 0;
-                        defaults.datetime = DateTimeUtilitiesService.convertTimeToMoment(defaults.date, time);
-                    }
-                    if (defaults.service_ref) {
-                        this.service_ref = defaults.service_ref;
-                    }
-                    if (defaults.group) {
-                        this.group = defaults.group;
-                    }
-                    if (defaults.clinic) {
-                        this.clinic = defaults.clinic;
-                        this.clinic_id = defaults.clinic.id;
-                    }
-                    if (defaults.private_note) {
-                        this.private_note = defaults.private_note;
-                    }
-                    if (defaults.event_group) {
-                        this.setEventGroup(defaults.event_group);
-                    }
-                    if (defaults.event) {
-                        this.setEvent(defaults.event);
-                    }
-                    return this.defaults = defaults;
+            BasketItem.prototype.setDefaults = function setDefaults(defaults) {
+                if (defaults.settings) {
+                    this.settings = defaults.settings;
+                }
+                if (defaults.company) {
+                    this.setCompany(defaults.company);
+                }
+                if (defaults.merge_resources) {
+                    this.setResource(null);
+                }
+                if (defaults.merge_people) {
+                    this.setPerson(null);
+                }
+                if (defaults.resource) {
+                    this.setResource(defaults.resource);
+                }
+                if (defaults.person) {
+                    this.setPerson(defaults.person);
+                }
+                if (defaults.service) {
+                    this.setService(defaults.service);
+                }
+                if (defaults.category) {
+                    this.setCategory(defaults.category);
+                }
+                if (defaults.date) {
+                    // NOTE: date is not set as it might not be available
+                    defaults.date = moment(defaults.date);
+                }
+                if (defaults.time) {
+                    // NOTE: time is not set as it might not be available
+                    var time = defaults.time ? parseInt(defaults.time) : 0;
+                    defaults.datetime = DateTimeUtilitiesService.convertTimeToMoment(defaults.date, time);
+                }
+                if (defaults.service_ref) {
+                    this.service_ref = defaults.service_ref;
+                }
+                if (defaults.group) {
+                    this.group = defaults.group;
+                }
+                if (defaults.clinic) {
+                    this.clinic = defaults.clinic;
+                    this.clinic_id = defaults.clinic.id;
+                }
+                if (defaults.private_note) {
+                    this.private_note = defaults.private_note;
+                }
+                if (defaults.event_group) {
+                    this.setEventGroup(defaults.event_group);
+                }
+                if (defaults.event) {
+                    this.setEvent(defaults.event);
+                }
+                return this.defaults = defaults;
+            };
+
+            /***
+             * @ngdoc method
+             * @name storeDefaults
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Store the default settings by attaching them to the current context
+             *
+             * @returns {array} defaults variable
+             */
+
+
+            BasketItem.prototype.storeDefaults = function storeDefaults(defaults) {
+                return this.defaults = defaults;
+            };
+
+            /***
+             * @ngdoc method
+             * @name canLoadItem
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * See if this item is read to have a specific object type loads - i.e. services, resources, or people
+             * @param {object} company a hash representing a company object
+             *
+             * @returns {boolean} if this item can be loaded
+             */
+
+
+            BasketItem.prototype.canLoadItem = function canLoadItem(item) {
+                if (this.service && this.item !== 'service') {
+                    return true; // we have a service and we want something else
+                } else if (this.resource && !this.anyResource() && item !== 'resource') {
+                    return true; // we have a resource and we want something else
+                } else if (this.person && !this.anyPerson() && item !== 'person') {
+                    return true; // we have a person and we want something else
+                } else {
+                    return false;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name defaultService
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Return the default service or event group
+             *
+             * @returns {Object} Default Service or EventGroup
+             */
+
+
+            BasketItem.prototype.defaultService = function defaultService() {
+                if (this.defaults && this.defaults.service) {
+                    return this.defaults.service;
+                } else if (this.defaults && this.defaults.event_group) {
+                    return this.defaults.event_group;
+                } else {
+                    return null;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setSlot
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set the current slot based on the passed parameter
+             *
+             * @param {object} slot A hash representing a slot object
+             * @returns {array} The available slot
+             */
+
+
+            BasketItem.prototype.setSlot = function setSlot(slot) {
+
+                this.date = new BBModel.Day({ date: slot.datetime.toISODate(), spaces: 1 });
+                var t = slot.datetime.hour() * 60 + slot.datetime.minute();
+                this.time = new BBModel.TimeSlot({ time: t, avail: 1, price: this.price });
+                return this.available_slot = slot.id;
+            };
+
+            /***
+             * @ngdoc method
+             * @name setCompany
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set the current company based on the passed parameter
+             * @param {object} company a hash representing a company object
+             */
+
+
+            BasketItem.prototype.setCompany = function setCompany(company) {
+                this.company = company;
+                this.parts_links.company = this.company.$href('self');
+                if (this.item_details) {
+                    return this.item_details.currency_code = this.company.currency_code;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name clearExistingItem
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Clear existing item
+             */
+
+
+            BasketItem.prototype.clearExistingItem = function clearExistingItem() {
+                if (this.$has('self') && this.event_id) {
+                    var prom = this.$del('self');
+                    this.promises.push(prom);
+                    prom.then(function () {});
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name storeDefaults
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Store the default settings by attaching them to the current context
-                 *
-                 * @returns {array} defaults variable
-                 */
+                delete this.earliest_time;
+                return delete this.event_id; // when changing the service - we ahve to clear any pre-set event
+            };
 
-            }, {
-                key: "storeDefaults",
-                value: function storeDefaults(defaults) {
-                    return this.defaults = defaults;
+            /***
+             * @ngdoc method
+             * @name setItem
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set the current item based on the item object passed as parameter
+             */
+
+
+            BasketItem.prototype.setItem = function setItem(item) {
+                if (!item) {
+                    return;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name canLoadItem
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * See if this item is read to have a specific object type loads - i.e. services, resources, or people
-                 * @param {object} company a hash representing a company object
-                 *
-                 * @returns {boolean} if this item can be loaded
-                 */
-
-            }, {
-                key: "canLoadItem",
-                value: function canLoadItem(item) {
-                    if (this.service && this.item !== 'service') {
-                        return true; // we have a service and we want something else
-                    } else if (this.resource && !this.anyResource() && item !== 'resource') {
-                        return true; // we have a resource and we want something else
-                    } else if (this.person && !this.anyPerson() && item !== 'person') {
-                        return true; // we have a person and we want something else
-                    } else {
-                        return false;
-                    }
+                if (item.type === "person") {
+                    return this.setPerson(item);
+                } else if (item.type === "service") {
+                    return this.setService(item);
+                } else if (item.type === "resource") {
+                    return this.setResource(item);
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name defaultService
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Return the default service or event group
-                 *
-                 * @returns {Object} Default Service or EventGroup
-                 */
+            /***
+             * @ngdoc method
+             * @name setService
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set service in according of server parameter, if default_question is null
+             *
+             * @returns {array} The returned service set
+             */
 
-            }, {
-                key: "defaultService",
-                value: function defaultService() {
-                    if (this.defaults && this.defaults.service) {
-                        return this.defaults.service;
-                    } else if (this.defaults && this.defaults.event_group) {
-                        return this.defaults.event_group;
-                    } else {
-                        return null;
-                    }
+
+            BasketItem.prototype.setService = function setService(serv, default_questions) {
+                var _this2 = this;
+
+                // if there was previously a service - reset the item details - i.e. the asnwers to questions
+                var prom = void 0;
+                if (default_questions == null) {
+                    default_questions = null;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name setSlot
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set the current slot based on the passed parameter
-                 *
-                 * @param {object} slot A hash representing a slot object
-                 * @returns {array} The available slot
-                 */
-
-            }, {
-                key: "setSlot",
-                value: function setSlot(slot) {
-
-                    this.date = new BBModel.Day({ date: slot.datetime.toISODate(), spaces: 1 });
-                    var t = slot.datetime.hour() * 60 + slot.datetime.minute();
-                    this.time = new BBModel.TimeSlot({ time: t, avail: 1, price: this.price });
-                    return this.available_slot = slot.id;
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setCompany
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set the current company based on the passed parameter
-                 * @param {object} company a hash representing a company object
-                 */
-
-            }, {
-                key: "setCompany",
-                value: function setCompany(company) {
-                    this.company = company;
-                    this.parts_links.company = this.company.$href('self');
-                    if (this.item_details) {
-                        return this.item_details.currency_code = this.company.currency_code;
-                    }
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name clearExistingItem
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Clear existing item
-                 */
-
-            }, {
-                key: "clearExistingItem",
-                value: function clearExistingItem() {
-                    if (this.$has('self') && this.event_id) {
-                        var prom = this.$del('self');
-                        this.promises.push(prom);
-                        prom.then(function () {});
-                    }
-
-                    delete this.earliest_time;
-                    return delete this.event_id; // when changing the service - we ahve to clear any pre-set event
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setItem
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set the current item based on the item object passed as parameter
-                 */
-
-            }, {
-                key: "setItem",
-                value: function setItem(item) {
-                    if (!item) {
+                if (this.service) {
+                    if (this.service.self && serv.self && this.service.self === serv.self) {
+                        // return if it's the same service
+                        // make sure we reset the fact that we are using this service
+                        if (this.service.$has('book')) {
+                            this.book_link = this.service;
+                        }
+                        if (serv.$has('days')) {
+                            this.days_link = serv;
+                        }
+                        if (serv.$has('book')) {
+                            this.book_link = serv;
+                        }
                         return;
                     }
-                    if (item.type === "person") {
-                        return this.setPerson(item);
-                    } else if (item.type === "service") {
-                        return this.setService(item);
-                    } else if (item.type === "resource") {
-                        return this.setResource(item);
+                    // if it's a different service
+                    this.item_details = null;
+                    this.clearExistingItem();
+                }
+
+                if (this.service && serv && this.service.self && serv.self) {
+                    if (this.service.self !== serv.self && serv.durations && serv.durations.length > 1) {
+                        this.duration = null;
+                        this.listed_duration = null;
                     }
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name setService
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set service in according of server parameter, if default_question is null
-                 *
-                 * @returns {array} The returned service set
-                 */
+                this.service = serv;
+                if (serv && serv instanceof BookableItemModel) {
+                    this.service = serv.item;
+                }
 
-            }, {
-                key: "setService",
-                value: function setService(serv, default_questions) {
-                    var _this2 = this;
+                this.parts_links.service = this.service.$href('self');
+                if (this.service.$has('book')) {
+                    this.book_link = this.service;
+                }
+                if (serv.$has('days')) {
+                    this.days_link = serv;
+                }
+                if (serv.$has('book')) {
+                    this.book_link = serv;
+                }
 
-                    // if there was previously a service - reset the item details - i.e. the asnwers to questions
-                    var prom = void 0;
-                    if (default_questions == null) {
-                        default_questions = null;
-                    }
-                    if (this.service) {
-                        if (this.service.self && serv.self && this.service.self === serv.self) {
-                            // return if it's the same service
-                            // make sure we reset the fact that we are using this service
-                            if (this.service.$has('book')) {
-                                this.book_link = this.service;
-                            }
-                            if (serv.$has('days')) {
-                                this.days_link = serv;
-                            }
-                            if (serv.$has('book')) {
-                                this.book_link = serv;
-                            }
-                            return;
+                if (this.service.$has('questions')) {
+                    this.has_questions = true;
+
+                    // we have a questions link - but are there actaully any questions ?
+                    prom = this.service.$get('questions');
+                    this.promises.push(prom);
+                    prom.then(function (details) {
+                        if (_this2.company) {
+                            details.currency_code = _this2.company.currency_code;
                         }
-                        // if it's a different service
-                        this.item_details = null;
-                        this.clearExistingItem();
-                    }
-
-                    if (this.service && serv && this.service.self && serv.self) {
-                        if (this.service.self !== serv.self && serv.durations && serv.durations.length > 1) {
-                            this.duration = null;
-                            this.listed_duration = null;
+                        _this2.item_details = new BBModel.ItemDetails(details);
+                        _this2.has_questions = _this2.item_details.hasQuestions;
+                        if (default_questions) {
+                            _this2.item_details.setAnswers(default_questions);
+                            return _this2.setAskedQuestions();
                         }
-                    }
+                    } // make sure the item knows the questions were all answered
+                    , function (err) {
+                        return _this2.has_questions = false;
+                    });
+                } else {
+                    this.has_questions = false;
+                }
 
-                    this.service = serv;
-                    if (serv && serv instanceof BookableItemModel) {
-                        this.service = serv.item;
-                    }
+                // select the first and only duration if this service only has one option
 
-                    this.parts_links.service = this.service.$href('self');
-                    if (this.service.$has('book')) {
-                        this.book_link = this.service;
-                    }
-                    if (serv.$has('days')) {
-                        this.days_link = serv;
-                    }
-                    if (serv.$has('book')) {
-                        this.book_link = serv;
-                    }
+                if (this.service && this.service.durations && this.service.durations.length === 1) {
+                    this.setDuration(this.service.durations[0]);
+                    this.listed_duration = this.service.durations[0];
+                }
+                // check if the service has a listed duration (this is used for calculating the end time for display)
+                if (this.service && this.service.listed_durations && this.service.listed_durations.length === 1) {
+                    this.listed_duration = this.service.listed_durations[0];
+                }
 
-                    if (this.service.$has('questions')) {
-                        this.has_questions = true;
-
-                        // we have a questions link - but are there actaully any questions ?
-                        prom = this.service.$get('questions');
-                        this.promises.push(prom);
-                        prom.then(function (details) {
-                            if (_this2.company) {
-                                details.currency_code = _this2.company.currency_code;
-                            }
-                            _this2.item_details = new BBModel.ItemDetails(details);
-                            _this2.has_questions = _this2.item_details.hasQuestions;
-                            if (default_questions) {
-                                _this2.item_details.setAnswers(default_questions);
-                                return _this2.setAskedQuestions();
-                            }
-                        } // make sure the item knows the questions were all answered
-                        , function (err) {
-                            return _this2.has_questions = false;
-                        });
-                    } else {
-                        this.has_questions = false;
+                if (this.service.$has('category')) {
+                    // we have a category?
+                    prom = this.service.$getCategory();
+                    if (prom) {
+                        return this.promises.push(prom);
                     }
+                }
+            };
 
-                    // select the first and only duration if this service only has one option
+            /***
+             * @ngdoc method
+             * @name setEventGroup
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set event group based on the event_group param
+             *
+             * @param {object} event_group a hash
+             */
 
-                    if (this.service && this.service.durations && this.service.durations.length === 1) {
-                        this.setDuration(this.service.durations[0]);
-                        this.listed_duration = this.service.durations[0];
-                    }
-                    // check if the service has a listed duration (this is used for calculating the end time for display)
-                    if (this.service && this.service.listed_durations && this.service.listed_durations.length === 1) {
-                        this.listed_duration = this.service.listed_durations[0];
-                    }
 
-                    if (this.service.$has('category')) {
-                        // we have a category?
-                        prom = this.service.$getCategory();
-                        if (prom) {
-                            return this.promises.push(prom);
-                        }
+            BasketItem.prototype.setEventGroup = function setEventGroup(event_group) {
+                if (this.event_group) {
+                    if (this.event_group.self && event_group.self && this.event_group.self === event_group.self) {
+                        // return if it's the same event_chain
+                        return;
                     }
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name setEventGroup
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set event group based on the event_group param
-                 *
-                 * @param {object} event_group a hash
-                 */
+                this.event_group = event_group;
+                this.parts_links.event_group = this.event_group.$href('self').replace('event_group', 'service');
 
-            }, {
-                key: "setEventGroup",
-                value: function setEventGroup(event_group) {
-                    if (this.event_group) {
-                        if (this.event_group.self && event_group.self && this.event_group.self === event_group.self) {
-                            // return if it's the same event_chain
-                            return;
-                        }
+                if (this.event_group.$has('category')) {
+                    // we have a category?
+                    var prom = this.event_group.$getCategory();
+                    if (prom) {
+                        return this.promises.push(prom);
                     }
+                }
+            };
 
-                    this.event_group = event_group;
-                    this.parts_links.event_group = this.event_group.$href('self').replace('event_group', 'service');
+            /***
+             * @ngdoc method
+             * @name setEventChain
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set event chain in according of event_chain parameter, default_qustions is null
+             *
+             * @returns {array} The returned set event chaint
+             */
 
-                    if (this.event_group.$has('category')) {
-                        // we have a category?
-                        var prom = this.event_group.$getCategory();
-                        if (prom) {
-                            return this.promises.push(prom);
-                        }
+
+            BasketItem.prototype.setEventChain = function setEventChain(event_chain, default_questions) {
+                var _this3 = this;
+
+                if (default_questions == null) {
+                    default_questions = null;
+                }
+                if (this.event_chain) {
+
+                    if (this.event_chain.self && event_chain.self && this.event_chain.self === event_chain.self) {
+                        // return if it's the same event_chain
+                        return;
                     }
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name setEventChain
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set event chain in according of event_chain parameter, default_qustions is null
-                 *
-                 * @returns {array} The returned set event chaint
-                 */
+                this.event_chain = event_chain;
+                this.base_price = parseFloat(event_chain.price);
 
-            }, {
-                key: "setEventChain",
-                value: function setEventChain(event_chain, default_questions) {
-                    var _this3 = this;
+                if (this.price != null && this.price !== this.base_price) {
+                    this.setPrice(this.price);
+                } else {
+                    this.setPrice(this.base_price);
+                }
 
-                    if (default_questions == null) {
-                        default_questions = null;
+                if (this.event_chain.isSingleBooking()) {
+                    // i.e. does not have tickets sets and max bookings is 1
+
+                    // if you can only book one ticket - just use that
+                    this.tickets = {
+                        name: $translate.instant('COMMON.TERMINOLOGY.ADMITTANCE'),
+                        max: 1,
+                        type: "normal",
+                        price: this.base_price
+                    };
+
+                    this.tickets.pre_paid_booking_id = this.pre_paid_booking_id;
+                    if (this.num_book) {
+                        this.tickets.qty = this.num_book;
                     }
-                    if (this.event_chain) {
+                }
 
-                        if (this.event_chain.self && event_chain.self && this.event_chain.self === event_chain.self) {
-                            // return if it's the same event_chain
-                            return;
-                        }
-                    }
+                if (this.event_chain.$has('questions')) {
 
-                    this.event_chain = event_chain;
-                    this.base_price = parseFloat(event_chain.price);
+                    this.has_questions = true;
 
-                    if (this.price != null && this.price !== this.base_price) {
-                        this.setPrice(this.price);
-                    } else {
-                        this.setPrice(this.base_price);
-                    }
+                    // we have a questions link - but are there actaully any questions ?
+                    var prom = this.event_chain.$get('questions');
+                    this.promises.push(prom);
+                    return prom.then(function (details) {
+                        _this3.item_details = new BBModel.ItemDetails(details);
+                        _this3.has_questions = _this3.item_details.hasQuestions;
+                        if (_this3.questions) {
+                            var _iteratorNormalCompletion = true;
+                            var _didIteratorError = false;
+                            var _iteratorError = undefined;
 
-                    if (this.event_chain.isSingleBooking()) {
-                        // i.e. does not have tickets sets and max bookings is 1
+                            try {
+                                for (var _iterator = Array.from(_this3.item_details.questions)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                    var q = _step.value;
 
-                        // if you can only book one ticket - just use that
-                        this.tickets = {
-                            name: $translate.instant('COMMON.TERMINOLOGY.ADMITTANCE'),
-                            max: 1,
-                            type: "normal",
-                            price: this.base_price
-                        };
-
-                        this.tickets.pre_paid_booking_id = this.pre_paid_booking_id;
-                        if (this.num_book) {
-                            this.tickets.qty = this.num_book;
-                        }
-                    }
-
-                    if (this.event_chain.$has('questions')) {
-
-                        this.has_questions = true;
-
-                        // we have a questions link - but are there actaully any questions ?
-                        var prom = this.event_chain.$get('questions');
-                        this.promises.push(prom);
-                        return prom.then(function (details) {
-                            _this3.item_details = new BBModel.ItemDetails(details);
-                            _this3.has_questions = _this3.item_details.hasQuestions;
-                            if (_this3.questions) {
-                                var _iteratorNormalCompletion = true;
-                                var _didIteratorError = false;
-                                var _iteratorError = undefined;
-
-                                try {
-                                    for (var _iterator = Array.from(_this3.item_details.questions)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                        var q = _step.value;
-
-                                        var a = _.find(_this3.questions, function (c) {
-                                            return c.id === q.id;
-                                        });
-                                        if (a && q.answer === undefined || a !== q.answer) {
-                                            q.answer = a.answer;
-                                        }
-                                    }
-                                } catch (err) {
-                                    _didIteratorError = true;
-                                    _iteratorError = err;
-                                } finally {
-                                    try {
-                                        if (!_iteratorNormalCompletion && _iterator.return) {
-                                            _iterator.return();
-                                        }
-                                    } finally {
-                                        if (_didIteratorError) {
-                                            throw _iteratorError;
-                                        }
+                                    var a = _.find(_this3.questions, function (c) {
+                                        return c.id === q.id;
+                                    });
+                                    if (a && q.answer === undefined || a !== q.answer) {
+                                        q.answer = a.answer;
                                     }
                                 }
-
-                                _this3.setAskedQuestions();
+                            } catch (err) {
+                                _didIteratorError = true;
+                                _iteratorError = err;
+                            } finally {
+                                try {
+                                    if (!_iteratorNormalCompletion && _iterator.return) {
+                                        _iterator.return();
+                                    }
+                                } finally {
+                                    if (_didIteratorError) {
+                                        throw _iteratorError;
+                                    }
+                                }
                             }
-                            if (default_questions) {
-                                _this3.item_details.setAnswers(default_questions);
-                                return _this3.setAskedQuestions();
-                            }
-                        } // make sure the item knows the questions were all answered
-                        , function (err) {
-                            return _this3.has_questions = false;
-                        });
-                    } else {
-                        return this.has_questions = false;
-                    }
-                }
 
-                /***
-                 * @ngdoc method
-                 * @name setEvent
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set event according to event parameter
-                 *
-                 * @param {object} event A hash representing an event object
-                 */
-
-            }, {
-                key: "setEvent",
-                value: function setEvent(event, default_questions) {
-                    var _this4 = this;
-
-                    if (default_questions == null) {
-                        default_questions = null;
-                    }
-                    if (this.event) {
-                        this.event.unselect();
-                    }
-                    this.event = event;
-                    this.event.select();
-                    this.event_chain_id = event.event_chain_id;
-                    this.setDate({ date: event.date });
-                    this.setTime(event.time);
-                    this.setDuration(event.duration);
-                    if (event.$has('book')) {
-                        this.book_link = event;
-                    }
-                    if (event.qty) {
-                        this.num_book = event.qty;
-                    }
-                    var prom = this.event.getChain();
-                    this.promises.push(prom);
-                    prom.then(function (chain) {
-                        return _this4.setEventChain(chain, default_questions);
-                    });
-                    prom = this.event.getGroup();
-                    this.promises.push(prom);
-                    prom.then(function (group) {
-                        return _this4.setEventGroup(group);
-                    });
-                    if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
-                        if (this.company.getSettings().has_waitlists) {
-                            return this.status = 8;
+                            _this3.setAskedQuestions();
                         }
-                    } else if (this.event.getSpacesLeft() <= 0 && this.company.settings && this.company.settings.has_waitlists) {
+                        if (default_questions) {
+                            _this3.item_details.setAnswers(default_questions);
+                            return _this3.setAskedQuestions();
+                        }
+                    } // make sure the item knows the questions were all answered
+                    , function (err) {
+                        return _this3.has_questions = false;
+                    });
+                } else {
+                    return this.has_questions = false;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setEvent
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set event according to event parameter
+             *
+             * @param {object} event A hash representing an event object
+             */
+
+
+            BasketItem.prototype.setEvent = function setEvent(event, default_questions) {
+                var _this4 = this;
+
+                if (default_questions == null) {
+                    default_questions = null;
+                }
+                if (this.event) {
+                    this.event.unselect();
+                }
+                this.event = event;
+                this.event.select();
+                this.event_chain_id = event.event_chain_id;
+                this.setDate({ date: event.date });
+                this.setTime(event.time);
+                this.setDuration(event.duration);
+                if (event.$has('book')) {
+                    this.book_link = event;
+                }
+                if (event.qty) {
+                    this.num_book = event.qty;
+                }
+                var prom = this.event.getChain();
+                this.promises.push(prom);
+                prom.then(function (chain) {
+                    return _this4.setEventChain(chain, default_questions);
+                });
+                prom = this.event.getGroup();
+                this.promises.push(prom);
+                prom.then(function (group) {
+                    return _this4.setEventGroup(group);
+                });
+                if (this.event.getSpacesLeft() <= 0 && !this.company.settings) {
+                    if (this.company.getSettings().has_waitlists) {
                         return this.status = 8;
                     }
+                } else if (this.event.getSpacesLeft() <= 0 && this.company.settings && this.company.settings.has_waitlists) {
+                    return this.status = 8;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setCategory
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set category according to cat parameter
+             *
+             * @param {object} cat A hash representing a category object
+             */
+            // if someone sets a category - we may then later restrict the service list by category
+
+
+            BasketItem.prototype.setCategory = function setCategory(cat) {
+                return this.category = cat;
+            };
+
+            /***
+             * @ngdoc method
+             * @name setPerson
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set person according to per parameter
+             *
+             * @param {object} per A hash representing a person object
+              * @param {boolean} set_selected The returned set resource for basket item
+             */
+
+
+            BasketItem.prototype.setPerson = function setPerson(per, set_selected) {
+                if (set_selected == null) {
+                    set_selected = true;
+                }
+                if (set_selected && this.earliest_time) {
+                    delete this.earliest_time;
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name setCategory
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set category according to cat parameter
-                 *
-                 * @param {object} cat A hash representing a category object
-                 */
-                // if someone sets a category - we may then later restrict the service list by category
-
-            }, {
-                key: "setCategory",
-                value: function setCategory(cat) {
-                    return this.category = cat;
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setPerson
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set person according to per parameter
-                 *
-                 * @param {object} per A hash representing a person object
-                  * @param {boolean} set_selected The returned set resource for basket item
-                 */
-
-            }, {
-                key: "setPerson",
-                value: function setPerson(per, set_selected) {
-                    if (set_selected == null) {
-                        set_selected = true;
+                if (!per) {
+                    this.person = true;
+                    if (set_selected) {
+                        this.settings.person = -1;
                     }
-                    if (set_selected && this.earliest_time) {
-                        delete this.earliest_time;
-                    }
-
-                    if (!per) {
-                        this.person = true;
-                        if (set_selected) {
-                            this.settings.person = -1;
-                        }
-                        this.parts_links.person = null;
-                        if (this.service) {
-                            this.setService(this.service);
-                        }
-                        if (this.resource && !this.anyResource()) {
-                            this.setResource(this.resource, false);
-                        }
-                        if (this.event_id) {
-                            delete this.event_id; // when changing the person - we ahve to clear any pre-set event
-                            if (this.resource && this.defaults && this.defaults.merge_resources) {
-                                return this.setResource(null);
-                            } // if a resources has been automatically set - clear it
-                        }
-                    } else {
-                        this.person = per;
-                        if (set_selected) {
-                            this.settings.person = this.person.id;
-                        }
-                        this.parts_links.person = this.person.$href('self');
-                        if (per.$has('days')) {
-                            this.days_link = per;
-                        }
-                        if (per.$has('book')) {
-                            this.book_link = per;
-                        }
-                        if (this.event_id && this.$has('person') && this.$href('person') !== this.person.self) {
-                            delete this.event_id; // when changing the person - we ahve to clear any pre-set event
-                            if (this.resource && this.defaults && this.defaults.merge_resources) {
-                                return this.setResource(null);
-                            } // if a resources has been automatically set - clear it
-                        }
-                    }
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setStaffGroup
-                 * @methodOf BB.Models:BasketItem
-                 * @description Set the current staff group id
-                 */
-
-            }, {
-                key: "setPersonGroupId",
-                value: function setPersonGroupId(id) {
-                    return this.person_group_id = id;
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setResource
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set resource in according of res parameter, if set_selected is true
-                 *
-                 * @returns {object} The returned set resource for basket item
-                 */
-
-            }, {
-                key: "setResource",
-                value: function setResource(res, set_selected) {
-                    if (set_selected == null) {
-                        set_selected = true;
-                    }
-                    if (set_selected && this.earliest_time) {
-                        delete this.earliest_time;
-                    }
-
-                    if (!res) {
-                        this.resource = true;
-                        if (set_selected) {
-                            this.settings.resource = -1;
-                        }
-                        this.parts_links.resource = null;
-                        if (this.service) {
-                            this.setService(this.service);
-                        }
-                        if (this.person && !this.anyPerson()) {
-                            this.setPerson(this.person, false);
-                        }
-                        if (this.event_id) {
-                            delete this.event_id; // when changing the resource - we ahve to clear any pre-set event
-                            if (this.person && this.defaults && this.defaults.merge_people) {
-                                return this.setPerson(null);
-                            } // if a person has been automatically set - clear it
-                        }
-                    } else {
-                        this.resource = res;
-                        if (set_selected) {
-                            this.settings.resource = this.resource.id;
-                        }
-                        this.parts_links.resource = this.resource.$href('self');
-                        if (res.$has('days')) {
-                            this.days_link = res;
-                        }
-                        if (res.$has('book')) {
-                            this.book_link = res;
-                        }
-                        if (this.event_id && this.$has('resource') && this.$href('resource') !== this.resource.self) {
-                            delete this.event_id; // when changing the resource - we ahve to clear any pre-set event
-                            if (this.person && this.defaults && this.defaults.merge_people) {
-                                return this.setPerson(null);
-                            } // if a person has been automatically set - clear it
-                        }
-                    }
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setDuration
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set duration in according of dur parameter
-                 *
-                 * @returns {integer} The returned set duration for basket item
-                 */
-
-            }, {
-                key: "setDuration",
-                value: function setDuration(dur) {
-                    this.duration = dur;
+                    this.parts_links.person = null;
                     if (this.service) {
-                        this.base_price = this.service.getPriceByDuration(dur);
-                    } else if (this.time && this.time.price) {
-                        this.base_price = this.time.price;
-                    } else if (this.price) {
-                        this.base_price = this.price;
+                        this.setService(this.service);
                     }
-
-                    return this.setPrice(this.base_price);
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name print_time
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get to print time
-                 *
-                 * @returns {date} The returned print time
-                 */
-
-            }, {
-                key: "print_time",
-                value: function print_time() {
-                    if (this.time) {
-                        return this.time.print_time();
+                    if (this.resource && !this.anyResource()) {
+                        this.setResource(this.resource, false);
                     }
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name print_end_time
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get to print end time
-                 *
-                 * @returns {date} The returned print end time
-                 */
-
-            }, {
-                key: "print_end_time",
-                value: function print_end_time() {
-                    if (this.time) {
-                        return this.time.print_end_time(this.duration);
+                    if (this.event_id) {
+                        delete this.event_id; // when changing the person - we ahve to clear any pre-set event
+                        if (this.resource && this.defaults && this.defaults.merge_resources) {
+                            return this.setResource(null);
+                        } // if a resources has been automatically set - clear it
+                    }
+                } else {
+                    this.person = per;
+                    if (set_selected) {
+                        this.settings.person = this.person.id;
+                    }
+                    this.parts_links.person = this.person.$href('self');
+                    if (per.$has('days')) {
+                        this.days_link = per;
+                    }
+                    if (per.$has('book')) {
+                        this.book_link = per;
+                    }
+                    if (this.event_id && this.$has('person') && this.$href('person') !== this.person.self) {
+                        delete this.event_id; // when changing the person - we ahve to clear any pre-set event
+                        if (this.resource && this.defaults && this.defaults.merge_resources) {
+                            return this.setResource(null);
+                        } // if a resources has been automatically set - clear it
                     }
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name print_time12
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get to print time12 if show suffix is true
-                 *
-                 * @returns {date} The returned print time12
-                 */
+            /***
+             * @ngdoc method
+             * @name setStaffGroup
+             * @methodOf BB.Models:BasketItem
+             * @description Set the current staff group id
+             */
 
-            }, {
-                key: "print_time12",
-                value: function print_time12(show_suffix) {
-                    if (show_suffix == null) {
-                        show_suffix = true;
+
+            BasketItem.prototype.setPersonGroupId = function setPersonGroupId(id) {
+                return this.person_group_id = id;
+            };
+
+            /***
+             * @ngdoc method
+             * @name setResource
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set resource in according of res parameter, if set_selected is true
+             *
+             * @returns {object} The returned set resource for basket item
+             */
+
+
+            BasketItem.prototype.setResource = function setResource(res, set_selected) {
+                if (set_selected == null) {
+                    set_selected = true;
+                }
+                if (set_selected && this.earliest_time) {
+                    delete this.earliest_time;
+                }
+
+                if (!res) {
+                    this.resource = true;
+                    if (set_selected) {
+                        this.settings.resource = -1;
                     }
-                    if (this.time) {
-                        return this.time.print_time12(show_suffix);
+                    this.parts_links.resource = null;
+                    if (this.service) {
+                        this.setService(this.service);
+                    }
+                    if (this.person && !this.anyPerson()) {
+                        this.setPerson(this.person, false);
+                    }
+                    if (this.event_id) {
+                        delete this.event_id; // when changing the resource - we ahve to clear any pre-set event
+                        if (this.person && this.defaults && this.defaults.merge_people) {
+                            return this.setPerson(null);
+                        } // if a person has been automatically set - clear it
+                    }
+                } else {
+                    this.resource = res;
+                    if (set_selected) {
+                        this.settings.resource = this.resource.id;
+                    }
+                    this.parts_links.resource = this.resource.$href('self');
+                    if (res.$has('days')) {
+                        this.days_link = res;
+                    }
+                    if (res.$has('book')) {
+                        this.book_link = res;
+                    }
+                    if (this.event_id && this.$has('resource') && this.$href('resource') !== this.resource.self) {
+                        delete this.event_id; // when changing the resource - we ahve to clear any pre-set event
+                        if (this.person && this.defaults && this.defaults.merge_people) {
+                            return this.setPerson(null);
+                        } // if a person has been automatically set - clear it
                     }
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name print_end_time12
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get to print end time12 if show_suffix is true
-                 *
-                 * @returns {date} The returned print end time12
-                 */
+            /***
+             * @ngdoc method
+             * @name setDuration
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set duration in according of dur parameter
+             *
+             * @returns {integer} The returned set duration for basket item
+             */
 
-            }, {
-                key: "print_end_time12",
-                value: function print_end_time12(show_suffix) {
-                    if (show_suffix == null) {
-                        show_suffix = true;
-                    }
-                    if (this.time) {
-                        return this.time.print_end_time12(show_suffix, this.duration);
-                    }
+
+            BasketItem.prototype.setDuration = function setDuration(dur) {
+                this.duration = dur;
+                if (this.service) {
+                    this.base_price = this.service.getPriceByDuration(dur);
+                } else if (this.time && this.time.price) {
+                    this.base_price = this.time.price;
+                } else if (this.price) {
+                    this.base_price = this.price;
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name setTime
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set time in according of time parameter
-                 *
-                 * @returns {date} The returned set time
-                 */
+                return this.setPrice(this.base_price);
+            };
 
-            }, {
-                key: "setTime",
-                value: function setTime(time) {
-                    if (this.time) {
-                        this.time.unselect();
-                    }
-                    this.time = time;
-                    if (this.time) {
-                        this.time.select();
+            /***
+             * @ngdoc method
+             * @name print_time
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get to print time
+             *
+             * @returns {date} The returned print time
+             */
 
-                        if (this.datetime) {
-                            this.datetime = DateTimeUtilitiesService.convertTimeToMoment(this.date.date, this.time.time);
-                        }
 
-                        if (this.price && this.time.price && this.price !== this.time.price) {
-                            this.setPrice(this.time.price);
-                        } else if (this.price && !this.time.price) {
-                            this.setPrice(this.price);
-                        } else if (this.time.price && !this.price) {
-                            this.setPrice(this.time.price);
-                        } else if (this.price && this.time.price) {
-                            this.setPrice(this.price);
-                        } else {
-                            this.setPrice(null);
-                        }
-                    }
-
-                    return this.checkReady();
+            BasketItem.prototype.print_time = function print_time() {
+                if (this.time) {
+                    return this.time.print_time();
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name setDate
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set date in according of date parameter
-                 *
-                 * @returns {date} The returned set date
-                 */
+            /***
+             * @ngdoc method
+             * @name print_end_time
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get to print end time
+             *
+             * @returns {date} The returned print end time
+             */
 
-            }, {
-                key: "setDate",
-                value: function setDate(date) {
-                    this.date = date;
-                    if (this.date) {
-                        this.date.date = moment(this.date.date);
-                        if (this.datetime) {
-                            this.datetime.date(this.date.date.date());
-                            this.datetime.month(this.date.date.month());
-                            this.datetime.year(this.date.date.year());
-                        }
-                    }
 
-                    return this.checkReady();
+            BasketItem.prototype.print_end_time = function print_end_time() {
+                if (this.time) {
+                    return this.time.print_end_time(this.duration);
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name clearDateTime
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Clear date and time
-                 *
-                 * @returns {date} The returned clear date and time
-                 */
+            /***
+             * @ngdoc method
+             * @name print_time12
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get to print time12 if show suffix is true
+             *
+             * @returns {date} The returned print time12
+             */
 
-            }, {
-                key: "clearDateTime",
-                value: function clearDateTime() {
-                    delete this.date;
-                    delete this.time;
-                    delete this.datetime;
-                    this.ready = false;
-                    return this.reserve_ready = false;
+
+            BasketItem.prototype.print_time12 = function print_time12(show_suffix) {
+                if (show_suffix == null) {
+                    show_suffix = true;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name clearTime
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Clear time
-                 *
-                 * @returns {date} The returned clear time
-                 */
-
-            }, {
-                key: "clearTime",
-                value: function clearTime() {
-                    delete this.time;
-                    this.ready = false;
-                    return this.reserve_ready = false;
+                if (this.time) {
+                    return this.time.print_time12(show_suffix);
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name clearTime
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set group in according of group parameter
-                 *
-                 * @returns {object} The returned set group
-                 */
+            /***
+             * @ngdoc method
+             * @name print_end_time12
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get to print end time12 if show_suffix is true
+             *
+             * @returns {date} The returned print end time12
+             */
 
-            }, {
-                key: "setGroup",
-                value: function setGroup(group) {
-                    return this.group = group;
+
+            BasketItem.prototype.print_end_time12 = function print_end_time12(show_suffix) {
+                if (show_suffix == null) {
+                    show_suffix = true;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name setAskedQuestions
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set asked questions
-                 *
-                 * @returns {object} The returned set asked questions
-                 */
-
-            }, {
-                key: "setAskedQuestions",
-                value: function setAskedQuestions() {
-                    this.asked_questions = true;
-                    return this.checkReady();
+                if (this.time) {
+                    return this.time.print_end_time12(show_suffix, this.duration);
                 }
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name checkReady
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Check if an item is fully ready for checkout
-                 * @ready - means it's fully ready for checkout
-                 * @reserve_ready - means the question still need asking - but it can be reserved
-                 *
-                 * @returns {boolean} whether it's fully ready for checkout
-                 */
+            /***
+             * @ngdoc method
+             * @name setTime
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set time in according of time parameter
+             *
+             * @returns {date} The returned set time
+             */
 
-            }, {
-                key: "checkReady",
-                value: function checkReady() {
-                    this.ready = false;
 
-                    if (this.checkReserveReady() && (this.asked_questions || !this.has_questions)) {
-                        this.ready = true;
+            BasketItem.prototype.setTime = function setTime(time) {
+                if (this.time) {
+                    this.time.unselect();
+                }
+                this.time = time;
+                if (this.time) {
+                    this.time.select();
+
+                    if (this.datetime) {
+                        this.datetime = DateTimeUtilitiesService.convertTimeToMoment(this.date.date, this.time.time);
                     }
 
-                    return this.ready;
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name checkReserveReady
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Check if an item can be reserved
-                 *
-                 * @returns {boolean} whether it's ready to be reserved
-                 */
-
-            }, {
-                key: "checkReserveReady",
-                value: function checkReserveReady() {
-                    this.reserve_ready = false;
-
-                    if (this.date && this.time && this.service || this.event || this.product || this.package_item || this.bulk_purchase || this.external_purchase || this.deal || this.is_coupon || this.date && this.service && this.service.duration_unit === 'day') {
-                        this.reserve_ready = true;
+                    if (this.price && this.time.price && this.price !== this.time.price) {
+                        this.setPrice(this.time.price);
+                    } else if (this.price && !this.time.price) {
+                        this.setPrice(this.price);
+                    } else if (this.time.price && !this.price) {
+                        this.setPrice(this.time.price);
+                    } else if (this.price && this.time.price) {
+                        this.setPrice(this.price);
+                    } else {
+                        this.setPrice(null);
                     }
-
-                    return this.reserve_ready;
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name getPostData
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Build an array with details for every basket item in items array
-                 *
-                 * @returns {array} Newly created details array
-                 */
+                return this.checkReady();
+            };
 
-            }, {
-                key: "getPostData",
-                value: function getPostData() {
-                    if (this.cloneAnswersItem) {
-                        var _iteratorNormalCompletion2 = true;
-                        var _didIteratorError2 = false;
-                        var _iteratorError2 = undefined;
+            /***
+             * @ngdoc method
+             * @name setDate
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set date in according of date parameter
+             *
+             * @returns {date} The returned set date
+             */
 
-                        try {
-                            for (var _iterator2 = Array.from(this.cloneAnswersItem.item_details.questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                                var o_question = _step2.value;
-                                var _iteratorNormalCompletion3 = true;
-                                var _didIteratorError3 = false;
-                                var _iteratorError3 = undefined;
 
-                                try {
-                                    for (var _iterator3 = Array.from(this.item_details.questions)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                                        var m_question = _step3.value;
+            BasketItem.prototype.setDate = function setDate(date) {
+                this.date = date;
+                if (this.date) {
+                    this.date.date = moment(this.date.date);
+                    if (this.datetime) {
+                        this.datetime.date(this.date.date.date());
+                        this.datetime.month(this.date.date.month());
+                        this.datetime.year(this.date.date.year());
+                    }
+                }
 
-                                        if (m_question.id === o_question.id) {
-                                            m_question.answer = o_question.answer;
-                                            // mark questionds as asked if we're cloning
-                                            this.setAskedQuestions();
-                                        }
-                                    }
-                                } catch (err) {
-                                    _didIteratorError3 = true;
-                                    _iteratorError3 = err;
-                                } finally {
-                                    try {
-                                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                                            _iterator3.return();
-                                        }
-                                    } finally {
-                                        if (_didIteratorError3) {
-                                            throw _iteratorError3;
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (err) {
-                            _didIteratorError2 = true;
-                            _iteratorError2 = err;
-                        } finally {
+                return this.checkReady();
+            };
+
+            /***
+             * @ngdoc method
+             * @name clearDateTime
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Clear date and time
+             *
+             * @returns {date} The returned clear date and time
+             */
+
+
+            BasketItem.prototype.clearDateTime = function clearDateTime() {
+                delete this.date;
+                delete this.time;
+                delete this.datetime;
+                this.ready = false;
+                return this.reserve_ready = false;
+            };
+
+            /***
+             * @ngdoc method
+             * @name clearTime
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Clear time
+             *
+             * @returns {date} The returned clear time
+             */
+
+
+            BasketItem.prototype.clearTime = function clearTime() {
+                delete this.time;
+                this.ready = false;
+                return this.reserve_ready = false;
+            };
+
+            /***
+             * @ngdoc method
+             * @name clearTime
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set group in according of group parameter
+             *
+             * @returns {object} The returned set group
+             */
+
+
+            BasketItem.prototype.setGroup = function setGroup(group) {
+                return this.group = group;
+            };
+
+            /***
+             * @ngdoc method
+             * @name setAskedQuestions
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set asked questions
+             *
+             * @returns {object} The returned set asked questions
+             */
+
+
+            BasketItem.prototype.setAskedQuestions = function setAskedQuestions() {
+                this.asked_questions = true;
+                return this.checkReady();
+            };
+
+            /***
+             * @ngdoc method
+             * @name checkReady
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Check if an item is fully ready for checkout
+             * @ready - means it's fully ready for checkout
+             * @reserve_ready - means the question still need asking - but it can be reserved
+             *
+             * @returns {boolean} whether it's fully ready for checkout
+             */
+
+
+            BasketItem.prototype.checkReady = function checkReady() {
+                this.ready = false;
+
+                if (this.checkReserveReady() && (this.asked_questions || !this.has_questions)) {
+                    this.ready = true;
+                }
+
+                return this.ready;
+            };
+
+            /***
+             * @ngdoc method
+             * @name checkReserveReady
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Check if an item can be reserved
+             *
+             * @returns {boolean} whether it's ready to be reserved
+             */
+
+
+            BasketItem.prototype.checkReserveReady = function checkReserveReady() {
+                this.reserve_ready = false;
+
+                if (this.date && this.time && this.service || this.event || this.product || this.package_item || this.bulk_purchase || this.external_purchase || this.deal || this.is_coupon || this.date && this.service && this.service.duration_unit === 'day') {
+                    this.reserve_ready = true;
+                }
+
+                return this.reserve_ready;
+            };
+
+            /***
+             * @ngdoc method
+             * @name getPostData
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Build an array with details for every basket item in items array
+             *
+             * @returns {array} Newly created details array
+             */
+
+
+            BasketItem.prototype.getPostData = function getPostData() {
+                if (this.cloneAnswersItem) {
+                    var _iteratorNormalCompletion2 = true;
+                    var _didIteratorError2 = false;
+                    var _iteratorError2 = undefined;
+
+                    try {
+                        for (var _iterator2 = Array.from(this.cloneAnswersItem.item_details.questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            var o_question = _step2.value;
+                            var _iteratorNormalCompletion3 = true;
+                            var _didIteratorError3 = false;
+                            var _iteratorError3 = undefined;
+
                             try {
-                                if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                    _iterator2.return();
+                                for (var _iterator3 = Array.from(this.item_details.questions)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                                    var m_question = _step3.value;
+
+                                    if (m_question.id === o_question.id) {
+                                        m_question.answer = o_question.answer;
+                                        // mark questionds as asked if we're cloning
+                                        this.setAskedQuestions();
+                                    }
                                 }
+                            } catch (err) {
+                                _didIteratorError3 = true;
+                                _iteratorError3 = err;
                             } finally {
-                                if (_didIteratorError2) {
-                                    throw _iteratorError2;
+                                try {
+                                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                                        _iterator3.return();
+                                    }
+                                } finally {
+                                    if (_didIteratorError3) {
+                                        throw _iteratorError3;
+                                    }
                                 }
                             }
                         }
-                    }
-
-                    var data = {};
-                    if (this.date) {
-                        data.date = this.date.date.toISODate();
-                    }
-                    if (this.time) {
-                        data.time = this.time.time;
-                        if (this.time.event_id) {
-                            data.event_id = this.time.event_id;
-                        } else if (this.time.event_ids) {
-                            // what's this about?
-                            data.event_ids = this.time.event_ids;
+                    } catch (err) {
+                        _didIteratorError2 = true;
+                        _iteratorError2 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                _iterator2.return();
+                            }
+                        } finally {
+                            if (_didIteratorError2) {
+                                throw _iteratorError2;
+                            }
                         }
-                    } else if (this.date && this.date.event_id) {
-                        data.event_id = this.date.event_id;
-                    }
-                    data.price = this.price;
-                    data.paid = this.paid;
-                    if (this.book_link) {
-                        data.book = this.book_link.$href('book');
-                    }
-                    data.id = this.id;
-                    data.duration = this.duration;
-                    data.settings = this.settings;
-                    data.child_client_ids = this.child_client_ids;
-                    if (!data.settings) {
-                        data.settings = {};
-                    }
-                    if (this.earliest_time) {
-                        data.settings.earliest_time = this.earliest_time;
-                    }
-                    if (this.item_details && this.asked_questions) {
-                        data.questions = this.item_details.getPostData();
-                    }
-                    if (this.move_item_id) {
-                        data.move_item_id = this.move_item_id;
-                    }
-                    if (this.srcBooking) {
-                        data.move_item_id = this.srcBooking.id;
-                    }
-                    if (this.service) {
-                        data.service_id = this.service.id;
-                    }
-                    if (this.resource) {
-                        data.resource_id = this.resource.id;
-                    }
-                    if (this.person) {
-                        data.person_id = this.person.id;
-                    }
-                    if (this.person_group_id) {
-                        data.person_group_id = this.person_group_id;
-                    }
-                    data.length = this.length;
-                    if (this.event) {
-                        data.event_id = this.event.id;
-                        // when can events have a prepaid booking id?
-                        if (this.event.pre_paid_booking_id != null) {
-                            data.pre_paid_booking_id = this.event.pre_paid_booking_id;
-                        } else if (this.tickets && this.tickets.pre_paid_booking_id != null) {
-                            data.pre_paid_booking_id = this.tickets.pre_paid_booking_id;
-                        }
-                        data.tickets = this.tickets;
-                    }
-                    if (this.pre_paid_booking_id != null) {
-                        data.pre_paid_booking_id = this.pre_paid_booking_id;
-                    }
-                    data.event_chain_id = this.event_chain_id;
-                    data.event_group_id = this.event_group_id;
-                    data.qty = this.qty;
-                    if (this.status) {
-                        data.status = this.status;
-                    }
-                    if (this.num_resources != null) {
-                        data.num_resources = parseInt(this.num_resources);
-                    }
-                    if (this.package_item) {
-                        data.package_id = this.package_item.id;
-                    }
-                    if (this.bulk_purchase) {
-                        data.bulk_purchase_id = this.bulk_purchase.id;
-                    }
-                    data.external_purchase = this.external_purchase;
-                    if (this.deal) {
-                        data.deal = this.deal;
-                    }
-                    if (this.deal && this.recipient) {
-                        data.recipient = this.recipient;
-                    }
-                    if (this.deal && this.recipient && this.recipient_mail) {
-                        data.recipient_mail = this.recipient_mail;
-                    }
-                    data.coupon_id = this.coupon_id;
-                    data.is_coupon = this.is_coupon;
-                    if (this.attachment_id) {
-                        data.attachment_id = this.attachment_id;
-                    }
-                    if (this.deal_codes) {
-                        data.vouchers = this.deal_codes;
-                    }
-                    if (this.product) {
-                        data.product_id = this.product.id;
-                    }
-                    data.ref = this.ref;
-                    if (this.move_reason) {
-                        data.move_reason = this.move_reason;
-                    }
-
-                    if (this.email) {
-                        data.email = this.email;
-                    }
-                    if (this.first_name) {
-                        data.first_name = this.first_name;
-                    }
-                    if (this.last_name) {
-                        data.last_name = this.last_name;
-                    }
-
-                    if (this.email != null) {
-                        data.email = this.email;
-                    }
-                    if (this.email_admin != null) {
-                        data.email_admin = this.email_admin;
-                    }
-                    if (this.private_note) {
-                        data.private_note = this.private_note;
-                    }
-                    if (this.available_slot) {
-                        data.available_slot = this.available_slot;
-                    }
-                    if (this.clinic_id) {
-                        data.clinic_id = this.clinic_id;
-                    }
-                    return data;
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name setPrice
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set price in according of nprice parameter
-                 *
-                 * @returns {integer} The returned set price
-                 */
-
-            }, {
-                key: "setPrice",
-                value: function setPrice(nprice) {
-                    var printed_price = void 0;
-                    if (nprice != null) {
-                        this.price = parseFloat(nprice);
-                        printed_price = this.price / 100;
-                        this.printed_price = printed_price % 1 === 0 ? "\xA3" + parseInt(printed_price) : $window.sprintf("£%.2f", printed_price);
-                        if (this.company && this.company.settings) {
-                            this.printed_vat_cal = this.company.settings.payment_tax;
-                        }
-                        if (this.printed_vat_cal) {
-                            this.printed_vat = this.printed_vat_cal / 100 * printed_price;
-                        }
-                        if (this.printed_vat_cal) {
-                            return this.printed_vat_inc = this.printed_vat_cal / 100 * printed_price + printed_price;
-                        }
-                    } else {
-                        this.price = null;
-                        this.printed_price = null;
-                        this.printed_vat_cal = null;
-                        this.printed_vat = null;
-                        return this.printed_vat_inc = null;
                     }
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name getStep
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Build a temp object with current step variables
-                 *
-                 * @returns {object} Temp hash
-                 */
-
-            }, {
-                key: "getStep",
-                value: function getStep() {
-                    var temp = {};
-                    temp.service = this.service;
-                    temp.category = this.category;
-                    temp.person = this.person;
-                    temp.resource = this.resource;
-                    temp.duration = this.duration;
-                    temp.event = this.event;
-                    temp.event_group = this.event_group;
-                    temp.event_chain = this.event_chain;
-                    temp.time = this.time;
-                    temp.date = this.date;
-                    temp.days_link = this.days_link;
-                    temp.book_link = this.book_link;
-                    temp.ready = this.ready;
-                    temp.num_book = this.num_book;
-                    temp.tickets = this.tickets;
-                    return temp;
+                var data = {};
+                if (this.date) {
+                    data.date = this.date.date.toISODate();
+                }
+                if (this.time) {
+                    data.time = this.time.time;
+                    if (this.time.event_id) {
+                        data.event_id = this.time.event_id;
+                    } else if (this.time.event_ids) {
+                        // what's this about?
+                        data.event_ids = this.time.event_ids;
+                    }
+                } else if (this.date && this.date.event_id) {
+                    data.event_id = this.date.event_id;
+                }
+                data.price = this.price;
+                data.paid = this.paid;
+                if (this.book_link) {
+                    data.book = this.book_link.$href('book');
+                }
+                data.id = this.id;
+                data.duration = this.duration;
+                data.settings = this.settings;
+                data.child_client_ids = this.child_client_ids;
+                if (!data.settings) {
+                    data.settings = {};
+                }
+                if (this.earliest_time) {
+                    data.settings.earliest_time = this.earliest_time;
+                }
+                if (this.item_details && this.asked_questions) {
+                    data.questions = this.item_details.getPostData();
+                }
+                if (this.move_item_id) {
+                    data.move_item_id = this.move_item_id;
+                }
+                if (this.srcBooking) {
+                    data.move_item_id = this.srcBooking.id;
+                }
+                if (this.service) {
+                    data.service_id = this.service.id;
+                }
+                if (this.resource) {
+                    data.resource_id = this.resource.id;
+                }
+                if (this.person) {
+                    data.person_id = this.person.id;
+                }
+                if (this.person_group_id) {
+                    data.person_group_id = this.person_group_id;
+                }
+                data.length = this.length;
+                if (this.event) {
+                    data.event_id = this.event.id;
+                    // when can events have a prepaid booking id?
+                    if (this.event.pre_paid_booking_id != null) {
+                        data.pre_paid_booking_id = this.event.pre_paid_booking_id;
+                    } else if (this.tickets && this.tickets.pre_paid_booking_id != null) {
+                        data.pre_paid_booking_id = this.tickets.pre_paid_booking_id;
+                    }
+                    data.tickets = this.tickets;
+                }
+                if (this.pre_paid_booking_id != null) {
+                    data.pre_paid_booking_id = this.pre_paid_booking_id;
+                }
+                data.event_chain_id = this.event_chain_id;
+                data.event_group_id = this.event_group_id;
+                data.qty = this.qty;
+                if (this.status) {
+                    data.status = this.status;
+                }
+                if (this.num_resources != null) {
+                    data.num_resources = parseInt(this.num_resources);
+                }
+                if (this.package_item) {
+                    data.package_id = this.package_item.id;
+                }
+                if (this.bulk_purchase) {
+                    data.bulk_purchase_id = this.bulk_purchase.id;
+                }
+                data.external_purchase = this.external_purchase;
+                if (this.deal) {
+                    data.deal = this.deal;
+                }
+                if (this.deal && this.recipient) {
+                    data.recipient = this.recipient;
+                }
+                if (this.deal && this.recipient && this.recipient_mail) {
+                    data.recipient_mail = this.recipient_mail;
+                }
+                data.coupon_id = this.coupon_id;
+                data.is_coupon = this.is_coupon;
+                if (this.attachment_id) {
+                    data.attachment_id = this.attachment_id;
+                }
+                if (this.deal_codes) {
+                    data.vouchers = this.deal_codes;
+                }
+                if (this.product) {
+                    data.product_id = this.product.id;
+                }
+                data.ref = this.ref;
+                if (this.move_reason) {
+                    data.move_reason = this.move_reason;
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name loadStep
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Build current step variables based on a hash object passed as parameter
-                 *
-                 * @param {object} step Hash object representing a step
-                 *
-                 * @returns {object} The returned load step
-                 */
-
-            }, {
-                key: "loadStep",
-                value: function loadStep(step) {
-                    this.service = step.service;
-                    this.category = step.category;
-                    this.person = step.person;
-                    this.resource = step.resource;
-                    this.duration = step.duration;
-                    this.event = step.event;
-                    this.event_chain = step.event_chain;
-                    this.event_group = step.event_group;
-                    this.time = step.time;
-                    this.date = step.date;
-                    this.days_link = step.days_link;
-                    this.book_link = step.book_link;
-                    this.ready = step.ready;
-                    this.num_book = step.num_book;
-                    return this.tickets = step.tickets;
+                if (this.email) {
+                    data.email = this.email;
+                }
+                if (this.first_name) {
+                    data.first_name = this.first_name;
+                }
+                if (this.last_name) {
+                    data.last_name = this.last_name;
                 }
 
-                /***
-                 * @ngdoc method
-                 * @name describe
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get information about of the basket item
-                 *
-                 * @returns {object} The returned title
-                 */
-
-            }, {
-                key: "describe",
-                value: function describe() {
-                    var title = "-";
-                    if (this.service) {
-                        title = this.service.name;
-                    }
-                    if (this.event_group && this.event && title === "-") {
-                        title = this.event_group.name + " - " + this.event.description;
-                    }
-                    if (this.product) {
-                        title = this.product.name;
-                    }
-                    if (this.external_purchase) {
-                        title = this.external_purchase.name;
-                    }
-                    if (this.deal) {
-                        title = this.deal.name;
-                    }
-                    if (this.package_item) {
-                        title = this.package_item.name;
-                    }
-                    if (this.bulk_purchase) {
-                        title = this.bulk_purchase.name;
-                    }
-                    return title;
+                if (this.email != null) {
+                    data.email = this.email;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name booking_date
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get booking date of the basket item, in according of format parameter
-                 *
-                 * @returns {date} The returned booking date
-                 */
-
-            }, {
-                key: "booking_date",
-                value: function booking_date(format) {
-                    if (!this.date || !this.date.date) {
-                        return null;
-                    }
-                    return this.date.date.format(format);
+                if (this.email_admin != null) {
+                    data.email_admin = this.email_admin;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name booking_time
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get booking time of the basket item in according with separator = '-'
-                 *
-                 * @returns {date} The returned booking time
-                 */
-
-            }, {
-                key: "booking_time",
-                value: function booking_time(seperator) {
-                    if (seperator == null) {
-                        seperator = '-';
-                    }
-                    if (!this.time) {
-                        return null;
-                    }
-                    var duration = this.listed_duration ? this.listed_duration : this.duration;
-                    return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
+                if (this.private_note) {
+                    data.private_note = this.private_note;
                 }
+                if (this.available_slot) {
+                    data.available_slot = this.available_slot;
+                }
+                if (this.clinic_id) {
+                    data.clinic_id = this.clinic_id;
+                }
+                return data;
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name duePrice
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get due price for the basket item
-                 *
-                 * @returns {string} The returned price
-                 */
+            /***
+             * @ngdoc method
+             * @name setPrice
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set price in according of nprice parameter
+             *
+             * @returns {integer} The returned set price
+             */
 
-            }, {
-                key: "duePrice",
-                value: function duePrice() {
-                    if (this.isWaitlist()) {
-                        return 0;
+
+            BasketItem.prototype.setPrice = function setPrice(nprice) {
+                var printed_price = void 0;
+                if (nprice != null) {
+                    this.price = parseFloat(nprice);
+                    printed_price = this.price / 100;
+                    this.printed_price = printed_price % 1 === 0 ? "\xA3" + parseInt(printed_price) : $window.sprintf("£%.2f", printed_price);
+                    if (this.company && this.company.settings) {
+                        this.printed_vat_cal = this.company.settings.payment_tax;
                     }
-                    return this.price;
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name isWaitlist
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Checks if this is a wait list
-                 *
-                 * @returns {boolean} If this is a wait list
-                 */
-
-            }, {
-                key: "isWaitlist",
-                value: function isWaitlist() {
-                    return this.status && this.status === 8; // 8 = waitlist
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name start_datetime
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get booking start date and time
-                 *
-                 * @returns {date} The returned start date time
-                 */
-
-            }, {
-                key: "start_datetime",
-                value: function start_datetime() {
-                    if (!this.date || !this.time) {
-                        return null;
+                    if (this.printed_vat_cal) {
+                        this.printed_vat = this.printed_vat_cal / 100 * printed_price;
                     }
-                    return DateTimeUtilitiesService.convertTimeToMoment(this.date.date, this.time.time);
-                }
-            }, {
-                key: "startDatetime",
-                value: function startDatetime() {
-                    return this.start_datetime();
-                }
-
-                /***
-                 * @ngdoc method
-                 * @name end_datetime
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get booking end date and time
-                 *
-                 * @returns {date} The returned end date time
-                 */
-
-            }, {
-                key: "end_datetime",
-                value: function end_datetime() {
-                    if (!this.date || !this.time || !this.listed_duration && !this.duration) {
-                        return null;
+                    if (this.printed_vat_cal) {
+                        return this.printed_vat_inc = this.printed_vat_cal / 100 * printed_price + printed_price;
                     }
-                    var duration = this.listed_duration ? this.listed_duration : this.duration;
-                    var time = this.time.time + duration;
-                    return DateTimeUtilitiesService.convertTimeToMoment(this.date.date, time);
+                } else {
+                    this.price = null;
+                    this.printed_price = null;
+                    this.printed_vat_cal = null;
+                    this.printed_vat = null;
+                    return this.printed_vat_inc = null;
                 }
-            }, {
-                key: "endDatetime",
-                value: function endDatetime() {
-                    return this.end_datetime();
+            };
+
+            /***
+             * @ngdoc method
+             * @name getStep
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Build a temp object with current step variables
+             *
+             * @returns {object} Temp hash
+             */
+
+
+            BasketItem.prototype.getStep = function getStep() {
+                var temp = {};
+                temp.service = this.service;
+                temp.category = this.category;
+                temp.person = this.person;
+                temp.resource = this.resource;
+                temp.duration = this.duration;
+                temp.event = this.event;
+                temp.event_group = this.event_group;
+                temp.event_chain = this.event_chain;
+                temp.time = this.time;
+                temp.date = this.date;
+                temp.days_link = this.days_link;
+                temp.book_link = this.book_link;
+                temp.ready = this.ready;
+                temp.num_book = this.num_book;
+                temp.tickets = this.tickets;
+                return temp;
+            };
+
+            /***
+             * @ngdoc method
+             * @name loadStep
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Build current step variables based on a hash object passed as parameter
+             *
+             * @param {object} step Hash object representing a step
+             *
+             * @returns {object} The returned load step
+             */
+
+
+            BasketItem.prototype.loadStep = function loadStep(step) {
+                this.service = step.service;
+                this.category = step.category;
+                this.person = step.person;
+                this.resource = step.resource;
+                this.duration = step.duration;
+                this.event = step.event;
+                this.event_chain = step.event_chain;
+                this.event_group = step.event_group;
+                this.time = step.time;
+                this.date = step.date;
+                this.days_link = step.days_link;
+                this.book_link = step.book_link;
+                this.ready = step.ready;
+                this.num_book = step.num_book;
+                return this.tickets = step.tickets;
+            };
+
+            /***
+             * @ngdoc method
+             * @name describe
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get information about of the basket item
+             *
+             * @returns {object} The returned title
+             */
+
+
+            BasketItem.prototype.describe = function describe() {
+                var title = "-";
+                if (this.service) {
+                    title = this.service.name;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name setSrcBooking
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set a booking are to be a move if according of booking parameter
-                 *
-                 * @returns {object} The returned end date time
-                 */
-                // set a booking are to be a move (or a copy?) from a previous booking
-
-            }, {
-                key: "setSrcBooking",
-                value: function setSrcBooking(booking) {
-                    this.srcBooking = booking;
-                    // convert duration from seconds to minutes
-                    return this.duration = booking.duration;
+                if (this.event_group && this.event && title === "-") {
+                    title = this.event_group.name + " - " + this.event.description;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name anyPerson
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Verify type of any person
-                 *
-                 * @returns {boolean} The returned any person
-                 */
-
-            }, {
-                key: "anyPerson",
-                value: function anyPerson() {
-                    return this.person && typeof this.person === 'boolean';
+                if (this.product) {
+                    title = this.product.name;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name anyResource
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Verify type of any resorce
-                 *
-                 * @returns {boolean} The returned any resource
-                 */
-
-            }, {
-                key: "anyResource",
-                value: function anyResource() {
-                    return this.resource && typeof this.resource === 'boolean';
+                if (this.external_purchase) {
+                    title = this.external_purchase.name;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name isMovingBooking
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Verify if booking has been moved
-                 *
-                 * @returns {boolean} The returned moving booking
-                 */
-
-            }, {
-                key: "isMovingBooking",
-                value: function isMovingBooking() {
-                    return this.srcBooking || this.move_item_id;
+                if (this.deal) {
+                    title = this.deal.name;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name setCloneAnswers
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Set clone answers in according of other item parameter
-                 *
-                 * @returns {object} The returned clone answers
-                 */
-
-            }, {
-                key: "setCloneAnswers",
-                value: function setCloneAnswers(otherItem) {
-                    return this.cloneAnswersItem = otherItem;
+                if (this.package_item) {
+                    title = this.package_item.name;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name questionPrice
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Question price for the basket item
-                 *
-                 * @returns {integer} The returned question price
-                 */
-
-            }, {
-                key: "questionPrice",
-                value: function questionPrice() {
-
-                    if (!this.item_details) {
-                        return 0;
-                    }
-                    return this.item_details.questionPrice(this.getQty());
+                if (this.bulk_purchase) {
+                    title = this.bulk_purchase.name;
                 }
+                return title;
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name getQty
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get quantity of tickets
-                 *
-                 * @returns {integer} The returned quatity of tickets
-                 */
+            /***
+             * @ngdoc method
+             * @name booking_date
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get booking date of the basket item, in according of format parameter
+             *
+             * @returns {date} The returned booking date
+             */
 
-            }, {
-                key: "getQty",
-                value: function getQty() {
-                    if (this.qty) {
-                        return this.qty;
-                    }
-                    if (this.tickets) {
-                        return this.tickets.qty;
-                    }
-                    return 1;
+
+            BasketItem.prototype.booking_date = function booking_date(format) {
+                if (!this.date || !this.date.date) {
+                    return null;
                 }
+                return this.date.date.format(format);
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name totalPrice
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Total price of the basket item (price including discounts)
-                 *
-                 * @returns {integer} The returned total price
-                 */
+            /***
+             * @ngdoc method
+             * @name booking_time
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get booking time of the basket item in according with separator = '-'
+             *
+             * @returns {date} The returned booking time
+             */
 
-            }, {
-                key: "totalPrice",
-                value: function totalPrice() {
-                    if (this.tickets && this.tickets.pre_paid_booking_id) {
-                        return 0;
-                    }
-                    if (this.pre_paid_booking_id) {
-                        return 0;
-                    }
-                    if (this.discount_price != null) {
-                        return this.discount_price + this.questionPrice();
-                    }
-                    var pr = this.total_price;
-                    if (!angular.isNumber(pr)) {
-                        pr = this.price;
-                    }
-                    if (!angular.isNumber(pr)) {
-                        pr = 0;
-                    }
-                    return pr + this.questionPrice();
+
+            BasketItem.prototype.booking_time = function booking_time(seperator) {
+                if (seperator == null) {
+                    seperator = '-';
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name fullPrice
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Full price for the basket item (price not including discounts)
-                 *
-                 * @returns {integer} The returned full price
-                 */
-
-            }, {
-                key: "fullPrice",
-                value: function fullPrice() {
-                    var pr = this.base_price;
-                    if (!pr) {
-                        pr = this.total_price;
-                    }
-                    if (!pr) {
-                        pr = this.price;
-                    }
-                    if (!pr) {
-                        pr = 0;
-                    }
-                    return pr + this.questionPrice();
+                if (!this.time) {
+                    return null;
                 }
+                var duration = this.listed_duration ? this.listed_duration : this.duration;
+                return this.time.print_time() + " " + seperator + " " + this.time.print_end_time(duration);
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name setProduct
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Apply a product to the BasketItem
-                 *
-                 */
+            /***
+             * @ngdoc method
+             * @name duePrice
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get due price for the basket item
+             *
+             * @returns {string} The returned price
+             */
 
-            }, {
-                key: "setProduct",
-                value: function setProduct(product) {
-                    this.product = product;
-                    if (this.product.$has('book')) {
-                        this.book_link = this.product;
-                    }
-                    if (product.price) {
-                        return this.setPrice(product.price);
-                    }
+
+            BasketItem.prototype.duePrice = function duePrice() {
+                if (this.isWaitlist()) {
+                    return 0;
                 }
+                return this.price;
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name setPackageItem
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Apply a package to the BasketItem
-                 *
-                 */
+            /***
+             * @ngdoc method
+             * @name isWaitlist
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Checks if this is a wait list
+             *
+             * @returns {boolean} If this is a wait list
+             */
 
-            }, {
-                key: "setPackageItem",
-                value: function setPackageItem(package_item) {
-                    this.package_item = package_item;
-                    if (this.package_item.$has('book')) {
-                        this.book_link = this.package_item;
-                    }
-                    if (package_item.price) {
-                        return this.setPrice(package_item.price);
-                    }
+
+            BasketItem.prototype.isWaitlist = function isWaitlist() {
+                return this.status && this.status === 8; // 8 = waitlist
+            };
+
+            /***
+             * @ngdoc method
+             * @name start_datetime
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get booking start date and time
+             *
+             * @returns {date} The returned start date time
+             */
+
+
+            BasketItem.prototype.start_datetime = function start_datetime() {
+                if (!this.date || !this.time) {
+                    return null;
                 }
+                return DateTimeUtilitiesService.convertTimeToMoment(this.date.date, this.time.time);
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name setBulkPurchase
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Apply a bulk purchase to the BasketItem
-                 *
-                 */
+            BasketItem.prototype.startDatetime = function startDatetime() {
+                return this.start_datetime();
+            };
 
-            }, {
-                key: "setBulkPurchase",
-                value: function setBulkPurchase(bulk_purchase) {
-                    this.bulk_purchase = bulk_purchase;
-                    if (this.bulk_purchase.$has('book')) {
-                        this.book_link = this.bulk_purchase;
-                    }
-                    if (bulk_purchase.price) {
-                        return this.setPrice(bulk_purchase.price);
-                    }
+            /***
+             * @ngdoc method
+             * @name end_datetime
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get booking end date and time
+             *
+             * @returns {date} The returned end date time
+             */
+
+
+            BasketItem.prototype.end_datetime = function end_datetime() {
+                if (!this.date || !this.time || !this.listed_duration && !this.duration) {
+                    return null;
                 }
+                var duration = this.listed_duration ? this.listed_duration : this.duration;
+                var time = this.time.time + duration;
+                return DateTimeUtilitiesService.convertTimeToMoment(this.date.date, time);
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name setExternalPurchase
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Apply an external purchase to the BasketItem
-                 *
-                 */
+            BasketItem.prototype.endDatetime = function endDatetime() {
+                return this.end_datetime();
+            };
 
-            }, {
-                key: "setExternalPurchase",
-                value: function setExternalPurchase(external_purchase) {
-                    this.external_purchase = external_purchase;
-                    this.book_link = this.company;
-                    if (external_purchase.price) {
-                        return this.setPrice(external_purchase.price);
-                    }
+            /***
+             * @ngdoc method
+             * @name setSrcBooking
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set a booking are to be a move if according of booking parameter
+             *
+             * @returns {object} The returned end date time
+             */
+            // set a booking are to be a move (or a copy?) from a previous booking
+
+
+            BasketItem.prototype.setSrcBooking = function setSrcBooking(booking) {
+                this.srcBooking = booking;
+                // convert duration from seconds to minutes
+                return this.duration = booking.duration;
+            };
+
+            /***
+             * @ngdoc method
+             * @name anyPerson
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Verify type of any person
+             *
+             * @returns {boolean} The returned any person
+             */
+
+
+            BasketItem.prototype.anyPerson = function anyPerson() {
+                return this.person && typeof this.person === 'boolean';
+            };
+
+            /***
+             * @ngdoc method
+             * @name anyResource
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Verify type of any resorce
+             *
+             * @returns {boolean} The returned any resource
+             */
+
+
+            BasketItem.prototype.anyResource = function anyResource() {
+                return this.resource && typeof this.resource === 'boolean';
+            };
+
+            /***
+             * @ngdoc method
+             * @name isMovingBooking
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Verify if booking has been moved
+             *
+             * @returns {boolean} The returned moving booking
+             */
+
+
+            BasketItem.prototype.isMovingBooking = function isMovingBooking() {
+                return this.srcBooking || this.move_item_id;
+            };
+
+            /***
+             * @ngdoc method
+             * @name setCloneAnswers
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Set clone answers in according of other item parameter
+             *
+             * @returns {object} The returned clone answers
+             */
+
+
+            BasketItem.prototype.setCloneAnswers = function setCloneAnswers(otherItem) {
+                return this.cloneAnswersItem = otherItem;
+            };
+
+            /***
+             * @ngdoc method
+             * @name questionPrice
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Question price for the basket item
+             *
+             * @returns {integer} The returned question price
+             */
+
+
+            BasketItem.prototype.questionPrice = function questionPrice() {
+
+                if (!this.item_details) {
+                    return 0;
                 }
+                return this.item_details.questionPrice(this.getQty());
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name setDeal
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Apply a deal on to BasketItem
-                 *
-                 */
+            /***
+             * @ngdoc method
+             * @name getQty
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get quantity of tickets
+             *
+             * @returns {integer} The returned quatity of tickets
+             */
 
-            }, {
-                key: "setDeal",
-                value: function setDeal(deal) {
-                    this.deal = deal;
-                    if (this.deal.$has('book')) {
-                        this.book_link = this.deal;
-                    }
-                    if (deal.price) {
-                        return this.setPrice(deal.price);
-                    }
+
+            BasketItem.prototype.getQty = function getQty() {
+                if (this.qty) {
+                    return this.qty;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name hasPrice
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Checks if the BasketItem has a price
-                 *
-                 * @returns {boolean}
-                 */
-
-            }, {
-                key: "hasPrice",
-                value: function hasPrice() {
-                    return this.price != null;
+                if (this.tickets) {
+                    return this.tickets.qty;
                 }
+                return 1;
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name getAttachment
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get attachment of the basket item
-                 *
-                 * @returns {object} The attachment
-                 */
+            /***
+             * @ngdoc method
+             * @name totalPrice
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Total price of the basket item (price including discounts)
+             *
+             * @returns {integer} The returned total price
+             */
 
-            }, {
-                key: "getAttachment",
-                value: function getAttachment() {
-                    var _this5 = this;
 
-                    if (this.attachment) {
-                        return this.attachment;
-                    }
-                    if (this.$has('attachment') && this.attachment_id) {
-                        return this._data.$get('attachment').then(function (att) {
-                            _this5.attachment = att;
-                            return _this5.attachment;
-                        });
-                    }
+            BasketItem.prototype.totalPrice = function totalPrice() {
+                if (this.tickets && this.tickets.pre_paid_booking_id) {
+                    return 0;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name deleteAttachment
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Delete attachment of the basket item
-                 *
-                 * @returns {object} The attachment
-                 */
-
-            }, {
-                key: "deleteAttachment",
-                value: function deleteAttachment() {
-                    if (this.attachment_id) {
-                        this._data.$del("del_attachment", {});
-                        return this.attachment_id = null;
-                    }
+                if (this.pre_paid_booking_id) {
+                    return 0;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name setPrepaidBooking
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Apply a prepaid booking to BasketItem
-                 *
-                 */
-
-            }, {
-                key: "setPrepaidBooking",
-                value: function setPrepaidBooking(pre_paid_booking) {
-                    this.pre_paid_booking = pre_paid_booking;
-                    return this.pre_paid_booking_id = pre_paid_booking.id;
+                if (this.discount_price != null) {
+                    return this.discount_price + this.questionPrice();
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name hasPrepaidBooking
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Indicates if the basket item has a prepaid booking applied
-                 *
-                 * @returns {boolean} boolean indicating if the BasketItem has a prepaid booking
-                 */
-
-            }, {
-                key: "hasPrepaidBooking",
-                value: function hasPrepaidBooking() {
-                    return this.pre_paid_booking_id != null;
+                var pr = this.total_price;
+                if (!angular.isNumber(pr)) {
+                    pr = this.price;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name getEventId
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Get the event id for the BasketItem
-                 *
-                 * @returns {string} The Event ID
-                 */
-
-            }, {
-                key: "getEventId",
-                value: function getEventId() {
-                    if (this.time && this.time.event_id) {
-                        return this.time.event_id;
-                    } else if (this.date && this.date.event_id) {
-                        return this.date.event_id;
-                    } else if (this.event) {
-                        return this.event.id;
-                    }
+                if (!angular.isNumber(pr)) {
+                    pr = 0;
                 }
+                return pr + this.questionPrice();
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name isExternalPurchase
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Indicates if the BasketItem is an external purchase
-                 *
-                 * @returns {boolean}
-                 */
+            /***
+             * @ngdoc method
+             * @name fullPrice
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Full price for the basket item (price not including discounts)
+             *
+             * @returns {integer} The returned full price
+             */
 
-            }, {
-                key: "isExternalPurchase",
-                value: function isExternalPurchase() {
-                    return this.external_purchase != null;
+
+            BasketItem.prototype.fullPrice = function fullPrice() {
+                var pr = this.base_price;
+                if (!pr) {
+                    pr = this.total_price;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name getName
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Returns the basket item name
-                 *
-                 * @returns {String}
-                 */
-
-            }, {
-                key: "getName",
-                value: function getName() {
-                    if (this.session_name) {
-                        return this.session_name;
-                    } else {
-                        return this.service_name;
-                    }
+                if (!pr) {
+                    pr = this.price;
                 }
-
-                /***
-                 * @ngdoc method
-                 * @name getAttendeeName
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Returns the attendee name
-                 *
-                 * @returns {String}
-                 */
-
-            }, {
-                key: "getAttendeeName",
-                value: function getAttendeeName(client) {
-                    if (this.first_name) {
-                        return this.first_name + " " + this.last_name;
-                    } else if (client) {
-                        return client.getName();
-                    }
+                if (!pr) {
+                    pr = 0;
                 }
+                return pr + this.questionPrice();
+            };
 
-                /***
-                 * @ngdoc method
-                 * @name isTimeItem
-                 * @methodOf BB.Models:BasketItem
-                 * @description
-                 * Indicates if the BasketItem is a time item (i.e. either an event
-                 * or appointment booking)
-                 *
-                 * @returns {boolean}
-                 */
+            /***
+             * @ngdoc method
+             * @name setProduct
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Apply a product to the BasketItem
+             *
+             */
 
-            }, {
-                key: "isTimeItem",
-                value: function isTimeItem() {
-                    return this.service || this.event;
+
+            BasketItem.prototype.setProduct = function setProduct(product) {
+                this.product = product;
+                if (this.product.$has('book')) {
+                    this.book_link = this.product;
                 }
-            }]);
+                if (product.price) {
+                    return this.setPrice(product.price);
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setPackageItem
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Apply a package to the BasketItem
+             *
+             */
+
+
+            BasketItem.prototype.setPackageItem = function setPackageItem(package_item) {
+                this.package_item = package_item;
+                if (this.package_item.$has('book')) {
+                    this.book_link = this.package_item;
+                }
+                if (package_item.price) {
+                    return this.setPrice(package_item.price);
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setBulkPurchase
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Apply a bulk purchase to the BasketItem
+             *
+             */
+
+
+            BasketItem.prototype.setBulkPurchase = function setBulkPurchase(bulk_purchase) {
+                this.bulk_purchase = bulk_purchase;
+                if (this.bulk_purchase.$has('book')) {
+                    this.book_link = this.bulk_purchase;
+                }
+                if (bulk_purchase.price) {
+                    return this.setPrice(bulk_purchase.price);
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setExternalPurchase
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Apply an external purchase to the BasketItem
+             *
+             */
+
+
+            BasketItem.prototype.setExternalPurchase = function setExternalPurchase(external_purchase) {
+                this.external_purchase = external_purchase;
+                this.book_link = this.company;
+                if (external_purchase.price) {
+                    return this.setPrice(external_purchase.price);
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setDeal
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Apply a deal on to BasketItem
+             *
+             */
+
+
+            BasketItem.prototype.setDeal = function setDeal(deal) {
+                this.deal = deal;
+                if (this.deal.$has('book')) {
+                    this.book_link = this.deal;
+                }
+                if (deal.price) {
+                    return this.setPrice(deal.price);
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name hasPrice
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Checks if the BasketItem has a price
+             *
+             * @returns {boolean}
+             */
+
+
+            BasketItem.prototype.hasPrice = function hasPrice() {
+                return this.price != null;
+            };
+
+            /***
+             * @ngdoc method
+             * @name getAttachment
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get attachment of the basket item
+             *
+             * @returns {object} The attachment
+             */
+
+
+            BasketItem.prototype.getAttachment = function getAttachment() {
+                var _this5 = this;
+
+                if (this.attachment) {
+                    return this.attachment;
+                }
+                if (this.$has('attachment') && this.attachment_id) {
+                    return this._data.$get('attachment').then(function (att) {
+                        _this5.attachment = att;
+                        return _this5.attachment;
+                    });
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name deleteAttachment
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Delete attachment of the basket item
+             *
+             * @returns {object} The attachment
+             */
+
+            BasketItem.prototype.deleteAttachment = function deleteAttachment() {
+                if (this.attachment_id) {
+                    this._data.$del("del_attachment", {});
+                    return this.attachment_id = null;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name setPrepaidBooking
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Apply a prepaid booking to BasketItem
+             *
+             */
+
+
+            BasketItem.prototype.setPrepaidBooking = function setPrepaidBooking(pre_paid_booking) {
+                this.pre_paid_booking = pre_paid_booking;
+                return this.pre_paid_booking_id = pre_paid_booking.id;
+            };
+
+            /***
+             * @ngdoc method
+             * @name hasPrepaidBooking
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Indicates if the basket item has a prepaid booking applied
+             *
+             * @returns {boolean} boolean indicating if the BasketItem has a prepaid booking
+             */
+
+
+            BasketItem.prototype.hasPrepaidBooking = function hasPrepaidBooking() {
+                return this.pre_paid_booking_id != null;
+            };
+
+            /***
+             * @ngdoc method
+             * @name getEventId
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Get the event id for the BasketItem
+             *
+             * @returns {string} The Event ID
+             */
+
+
+            BasketItem.prototype.getEventId = function getEventId() {
+                if (this.time && this.time.event_id) {
+                    return this.time.event_id;
+                } else if (this.date && this.date.event_id) {
+                    return this.date.event_id;
+                } else if (this.event) {
+                    return this.event.id;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name isExternalPurchase
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Indicates if the BasketItem is an external purchase
+             *
+             * @returns {boolean}
+             */
+
+
+            BasketItem.prototype.isExternalPurchase = function isExternalPurchase() {
+                return this.external_purchase != null;
+            };
+
+            /***
+             * @ngdoc method
+             * @name getName
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Returns the basket item name
+             *
+             * @returns {String}
+             */
+
+
+            BasketItem.prototype.getName = function getName() {
+                if (this.session_name) {
+                    return this.session_name;
+                } else {
+                    return this.service_name;
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name getAttendeeName
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Returns the attendee name
+             *
+             * @returns {String}
+             */
+
+
+            BasketItem.prototype.getAttendeeName = function getAttendeeName(client) {
+                if (this.first_name) {
+                    return this.first_name + " " + this.last_name;
+                } else if (client) {
+                    return client.getName();
+                }
+            };
+
+            /***
+             * @ngdoc method
+             * @name isTimeItem
+             * @methodOf BB.Models:BasketItem
+             * @description
+             * Indicates if the BasketItem is a time item (i.e. either an event
+             * or appointment booking)
+             *
+             * @returns {boolean}
+             */
+
+
+            BasketItem.prototype.isTimeItem = function isTimeItem() {
+                return this.service || this.event;
+            };
 
             return BasketItem;
         }(BaseModel)
     );
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -6025,20 +5837,17 @@ angular.module('BB.Models').factory("BookableItemModel", function ($q, BBModel, 
     return __initClass__(function (_BaseModel) {
         _inherits(BookableItem, _BaseModel);
 
-        _createClass(BookableItem, null, [{
-            key: "initClass",
-            value: function initClass() {
+        BookableItem.initClass = function initClass() {
 
-                this.prototype.item = null;
+            this.prototype.item = null;
 
-                this.prototype.promise = null;
-            }
-        }]);
+            this.prototype.promise = null;
+        };
 
         function BookableItem(data) {
             _classCallCheck(this, BookableItem);
 
-            var _this = _possibleConstructorReturn(this, (BookableItem.__proto__ || Object.getPrototypeOf(BookableItem)).apply(this, arguments));
+            var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             _this.name = "-Waiting-";
             _this.ready = $q.defer();
@@ -6090,12 +5899,9 @@ angular.module('BB.Models').factory("BookableItemModel", function ($q, BBModel, 
             return _this;
         }
 
-        _createClass(BookableItem, null, [{
-            key: "$query",
-            value: function $query(params) {
-                return ItemService.query(params);
-            }
-        }]);
+        BookableItem.$query = function $query(params) {
+            return ItemService.query(params);
+        };
 
         return BookableItem;
     }(BaseModel));
@@ -6106,8 +5912,6 @@ function __initClass__(c) {
     return c;
 }
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -6130,15 +5934,12 @@ angular.module('BB.Models').factory("BulkPurchaseModel", function ($q, BBModel, 
         function BulkPurchase() {
             _classCallCheck(this, BulkPurchase);
 
-            return _possibleConstructorReturn(this, (BulkPurchase.__proto__ || Object.getPrototypeOf(BulkPurchase)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(BulkPurchase, null, [{
-            key: "$query",
-            value: function $query(company) {
-                return BulkPurchaseService.query(company);
-            }
-        }]);
+        BulkPurchase.$query = function $query(company) {
+            return BulkPurchaseService.query(company);
+        };
 
         return BulkPurchase;
     }(BaseModel);
@@ -6167,15 +5968,13 @@ angular.module('BB.Models').factory("BusinessQuestionModel", function ($q, $filt
         function BusinessQuestion(data) {
             _classCallCheck(this, BusinessQuestion);
 
-            return _possibleConstructorReturn(this, (BusinessQuestion.__proto__ || Object.getPrototypeOf(BusinessQuestion)).call(this, data));
+            return _possibleConstructorReturn(this, _BaseModel.call(this, data));
         }
 
         return BusinessQuestion;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -6199,22 +5998,17 @@ angular.module('BB.Models').factory("CategoryModel", function ($q, BBModel, Base
         function Category() {
             _classCallCheck(this, Category);
 
-            return _possibleConstructorReturn(this, (Category.__proto__ || Object.getPrototypeOf(Category)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(Category, null, [{
-            key: "$query",
-            value: function $query(company) {
-                return CategoryService.query(company);
-            }
-        }]);
+        Category.$query = function $query(company) {
+            return CategoryService.query(company);
+        };
 
         return Category;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -6254,7 +6048,7 @@ angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseMo
         function Client(data) {
             _classCallCheck(this, Client);
 
-            var _this = _possibleConstructorReturn(this, (Client.__proto__ || Object.getPrototypeOf(Client)).apply(this, arguments));
+            var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             _this.name = _this.getName();
             if (data) {
@@ -6284,599 +6078,576 @@ angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseMo
          */
 
 
-        _createClass(Client, [{
-            key: 'setClientDetails',
-            value: function setClientDetails(details) {
-                this.client_details = details;
-                return this.questions = this.client_details.questions;
+        Client.prototype.setClientDetails = function setClientDetails(details) {
+            this.client_details = details;
+            return this.questions = this.client_details.questions;
+        };
+
+        /**
+         * @ngdoc method
+         * @name setTimeZone
+         * @methodOf BB.Models:Client
+         * @description
+         * Set client time zone in according to time_zone parameter
+         * @param {string} time_zone
+         */
+
+
+        Client.prototype.setTimeZone = function setTimeZone(time_zone) {
+            if (time_zone != null) {
+                this.time_zone = time_zone;
             }
+        };
 
-            /**
-             * @ngdoc method
-             * @name setTimeZone
-             * @methodOf BB.Models:Client
-             * @description
-             * Set client time zone in according to time_zone parameter
-             * @param {string} time_zone
-             */
+        /***
+         * @ngdoc method
+         * @name setDefaults
+         * @methodOf BB.Models:Client
+         * @description
+         * Set client defaults in according of values parameter
+         *
+         * @returns {object} The returned client defaults
+         */
 
-        }, {
-            key: 'setTimeZone',
-            value: function setTimeZone(time_zone) {
-                if (time_zone != null) {
-                    this.time_zone = time_zone;
-                }
+
+        Client.prototype.setDefaults = function setDefaults(values) {
+            if (values.name) {
+                this.name = values.name;
             }
-
-            /***
-             * @ngdoc method
-             * @name setDefaults
-             * @methodOf BB.Models:Client
-             * @description
-             * Set client defaults in according of values parameter
-             *
-             * @returns {object} The returned client defaults
-             */
-
-        }, {
-            key: 'setDefaults',
-            value: function setDefaults(values) {
-                if (values.name) {
-                    this.name = values.name;
-                }
-                if (values.first_name) {
-                    this.first_name = values.first_name;
-                }
-                if (values.last_name) {
-                    this.last_name = values.last_name;
-                }
-                if (values.phone) {
-                    this.phone = values.phone;
-                }
-                if (values.mobile) {
-                    this.mobile = values.mobile;
-                }
-                if (values.email) {
-                    this.email = values.email;
-                }
-                if (values.id) {
-                    this.id = values.id;
-                }
-                if (values.ref) {
-                    this.comp_ref = values.ref;
-                }
-                if (values.comp_ref) {
-                    this.comp_ref = values.comp_ref;
-                }
-                if (values.address1) {
-                    this.address1 = values.address1;
-                }
-                if (values.address2) {
-                    this.address2 = values.address2;
-                }
-                if (values.address3) {
-                    this.address3 = values.address3;
-                }
-                if (values.address4) {
-                    this.address4 = values.address4;
-                }
-                if (values.address5) {
-                    this.address5 = values.address5;
-                }
-                if (values.postcode) {
-                    this.postcode = values.postcode;
-                }
-                if (values.country) {
-                    this.country = values.country;
-                }
-                if (values.answers) {
-                    this.default_answers = values.answers;
-                }
-                if (values.time_zone) {
-                    return this.time_zone = values.time_zone;
-                }
+            if (values.first_name) {
+                this.first_name = values.first_name;
             }
+            if (values.last_name) {
+                this.last_name = values.last_name;
+            }
+            if (values.phone) {
+                this.phone = values.phone;
+            }
+            if (values.mobile) {
+                this.mobile = values.mobile;
+            }
+            if (values.email) {
+                this.email = values.email;
+            }
+            if (values.id) {
+                this.id = values.id;
+            }
+            if (values.ref) {
+                this.comp_ref = values.ref;
+            }
+            if (values.comp_ref) {
+                this.comp_ref = values.comp_ref;
+            }
+            if (values.address1) {
+                this.address1 = values.address1;
+            }
+            if (values.address2) {
+                this.address2 = values.address2;
+            }
+            if (values.address3) {
+                this.address3 = values.address3;
+            }
+            if (values.address4) {
+                this.address4 = values.address4;
+            }
+            if (values.address5) {
+                this.address5 = values.address5;
+            }
+            if (values.postcode) {
+                this.postcode = values.postcode;
+            }
+            if (values.country) {
+                this.country = values.country;
+            }
+            if (values.answers) {
+                this.default_answers = values.answers;
+            }
+            if (values.time_zone) {
+                return this.time_zone = values.time_zone;
+            }
+        };
 
-            /***
-             * @ngdoc method
-             * @name pre_fill_answers
-             * @methodOf BB.Models:Client
-             * @description
-             * Pre fill client answers according of details
-             *
-             * @returns {object} The returned pre fill answers
-             */
+        /***
+         * @ngdoc method
+         * @name pre_fill_answers
+         * @methodOf BB.Models:Client
+         * @description
+         * Pre fill client answers according of details
+         *
+         * @returns {object} The returned pre fill answers
+         */
 
-        }, {
-            key: 'pre_fill_answers',
-            value: function pre_fill_answers(details) {
-                var _this2 = this;
 
-                if (!this.default_answers) {
-                    return;
-                }
-                return function () {
-                    var result = [];
-                    var _iteratorNormalCompletion = true;
-                    var _didIteratorError = false;
-                    var _iteratorError = undefined;
+        Client.prototype.pre_fill_answers = function pre_fill_answers(details) {
+            var _this2 = this;
 
+            if (!this.default_answers) {
+                return;
+            }
+            return function () {
+                var result = [];
+                var _iteratorNormalCompletion = true;
+                var _didIteratorError = false;
+                var _iteratorError = undefined;
+
+                try {
+                    for (var _iterator = Array.from(details.questions)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                        var q = _step.value;
+
+                        var item = void 0;
+                        if (_this2.default_answers[q.name]) {
+                            item = q.answer = _this2.default_answers[q.name];
+                        }
+                        result.push(item);
+                    }
+                } catch (err) {
+                    _didIteratorError = true;
+                    _iteratorError = err;
+                } finally {
                     try {
-                        for (var _iterator = Array.from(details.questions)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                            var q = _step.value;
-
-                            var item = void 0;
-                            if (_this2.default_answers[q.name]) {
-                                item = q.answer = _this2.default_answers[q.name];
-                            }
-                            result.push(item);
+                        if (!_iteratorNormalCompletion && _iterator.return) {
+                            _iterator.return();
                         }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
                     } finally {
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return) {
-                                _iterator.return();
-                            }
-                        } finally {
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
+                        if (_didIteratorError) {
+                            throw _iteratorError;
                         }
                     }
+                }
 
-                    return result;
-                }();
+                return result;
+            }();
+        };
+
+        /***
+         * @ngdoc method
+         * @name getName
+         * @methodOf BB.Models:Client
+         * @description
+         * Get client first name and last name
+         *
+         * @returns {string} The returned client name
+         */
+
+
+        Client.prototype.getName = function getName() {
+            var str = "";
+            if (this.first_name) {
+                str += this.first_name;
+            }
+            if (str.length > 0 && this.last_name) {
+                str += " ";
+            }
+            if (this.last_name) {
+                str += this.last_name;
+            }
+            return str;
+        };
+
+        /***
+         * @ngdoc method
+         * @name addressSingleLine
+         * @methodOf BB.Models:Address
+         * @description
+         * Get the address and postcode of the client
+         *
+         * @returns {string} The returned address
+         */
+
+
+        Client.prototype.addressSingleLine = function addressSingleLine() {
+            var str = "";
+            if (this.address1) {
+                str += this.address1;
+            }
+            if (this.address2 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address2) {
+                str += this.address2;
+            }
+            if (this.address3 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address3) {
+                str += this.address3;
+            }
+            if (this.address4 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address4) {
+                str += this.address4;
+            }
+            if (this.address5 && str.length > 0) {
+                str += ", ";
+            }
+            if (this.address5) {
+                str += this.address5;
+            }
+            if (this.postcode && str.length > 0) {
+                str += ", ";
+            }
+            if (this.postcode) {
+                str += this.postcode;
+            }
+            return str;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasAddress
+         * @methodOf BB.Models:Address
+         * @description
+         * Checks if this is considered a valid address
+         *
+         * @returns {boolean} If this is a valid address
+         */
+
+
+        Client.prototype.hasAddress = function hasAddress() {
+            return this.address1 || this.address2 || this.postcode;
+        };
+
+        /***
+         * @ngdoc method
+         * @name addressCsvLine
+         * @methodOf BB.Models:Address
+         * @description
+         * Get all address fields, postcode and country for CSV file
+         *
+         * @returns {string} The returned address
+         */
+
+
+        Client.prototype.addressCsvLine = function addressCsvLine() {
+            var str = "";
+            if (this.address1) {
+                str += this.address1;
+            }
+            str += ", ";
+            if (this.address2) {
+                str += this.address2;
+            }
+            str += ", ";
+            if (this.address3) {
+                str += this.address3;
+            }
+            str += ", ";
+            if (this.address4) {
+                str += this.address4;
+            }
+            str += ", ";
+            if (this.address5) {
+                str += this.address5;
+            }
+            str += ", ";
+            if (this.postcode) {
+                str += this.postcode;
+            }
+            str += ", ";
+            if (this.country) {
+                str += this.country;
+            }
+            return str;
+        };
+
+        /***
+         * @ngdoc method
+         * @name addressMultiLine
+         * @methodOf BB.Models:Address
+         * @description
+         * Get address several lines separated by line breaks
+         *
+         * @returns {string} The returned address
+         */
+
+
+        Client.prototype.addressMultiLine = function addressMultiLine() {
+            var str = "";
+            if (this.address1) {
+                str += this.address1;
+            }
+            if (this.address2 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address2) {
+                str += this.address2;
+            }
+            if (this.address3 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address3) {
+                str += this.address3;
+            }
+            if (this.address4 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address4) {
+                str += this.address4;
+            }
+            if (this.address5 && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.address5) {
+                str += this.address5;
+            }
+            if (this.postcode && str.length > 0) {
+                str += "<br/>";
+            }
+            if (this.postcode) {
+                str += this.postcode;
+            }
+            return str;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getPostData
+         * @methodOf BB.Models:Address
+         * @description
+         * Build an array with details of the client
+         *
+         * @returns {array} newly created details array
+         */
+
+
+        Client.prototype.getPostData = function getPostData() {
+            var x = {};
+            x.first_name = this.first_name;
+            x.last_name = this.last_name;
+            if (this.house_number) {
+                x.address1 = this.house_number + " " + this.address1;
+            } else {
+                x.address1 = this.address1;
+            }
+            x.address2 = this.address2;
+            x.address3 = this.address3;
+            x.address4 = this.address4;
+            x.address5 = this.address5;
+            x.postcode = this.postcode;
+            x.country = this.country;
+            x.email = this.email;
+            x.id = this.id;
+            x.comp_ref = this.comp_ref;
+            x.parent_client_id = this.parent_client_id;
+            x.password = this.password;
+            x.notifications = this.notifications;
+            if (this.member_level_id) {
+                x.member_level_id = this.member_level_id;
+            }
+            if (this.send_welcome_email) {
+                x.send_welcome_email = this.send_welcome_email;
+            }
+            if (this.default_company_id) {
+                x.default_company_id = this.default_company_id;
+            }
+            if (this.time_zone) {
+                x.time_zone = this.time_zone;
             }
 
-            /***
-             * @ngdoc method
-             * @name getName
-             * @methodOf BB.Models:Client
-             * @description
-             * Get client first name and last name
-             *
-             * @returns {string} The returned client name
-             */
-
-        }, {
-            key: 'getName',
-            value: function getName() {
-                var str = "";
-                if (this.first_name) {
-                    str += this.first_name;
+            if (this.phone) {
+                x.phone = this.phone;
+                if (this.phone_prefix) {
+                    x.phone_prefix = this.phone_prefix;
                 }
-                if (str.length > 0 && this.last_name) {
-                    str += " ";
-                }
-                if (this.last_name) {
-                    str += this.last_name;
-                }
-                return str;
             }
 
-            /***
-             * @ngdoc method
-             * @name addressSingleLine
-             * @methodOf BB.Models:Address
-             * @description
-             * Get the address and postcode of the client
-             *
-             * @returns {string} The returned address
-             */
-
-        }, {
-            key: 'addressSingleLine',
-            value: function addressSingleLine() {
-                var str = "";
-                if (this.address1) {
-                    str += this.address1;
-                }
-                if (this.address2 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address2) {
-                    str += this.address2;
-                }
-                if (this.address3 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address3) {
-                    str += this.address3;
-                }
-                if (this.address4 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address4) {
-                    str += this.address4;
-                }
-                if (this.address5 && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.address5) {
-                    str += this.address5;
-                }
-                if (this.postcode && str.length > 0) {
-                    str += ", ";
-                }
-                if (this.postcode) {
-                    str += this.postcode;
-                }
-                return str;
+            if (this.mobile) {
+                this.remove_prefix();
+                x.mobile = this.mobile;
+                x.mobile_prefix = this.mobile_prefix;
             }
 
-            /***
-             * @ngdoc method
-             * @name hasAddress
-             * @methodOf BB.Models:Address
-             * @description
-             * Checks if this is considered a valid address
-             *
-             * @returns {boolean} If this is a valid address
-             */
+            if (this.questions) {
+                x.questions = [];
+                var _iteratorNormalCompletion2 = true;
+                var _didIteratorError2 = false;
+                var _iteratorError2 = undefined;
 
-        }, {
-            key: 'hasAddress',
-            value: function hasAddress() {
-                return this.address1 || this.address2 || this.postcode;
-            }
+                try {
+                    for (var _iterator2 = Array.from(this.questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                        var q = _step2.value;
 
-            /***
-             * @ngdoc method
-             * @name addressCsvLine
-             * @methodOf BB.Models:Address
-             * @description
-             * Get all address fields, postcode and country for CSV file
-             *
-             * @returns {string} The returned address
-             */
-
-        }, {
-            key: 'addressCsvLine',
-            value: function addressCsvLine() {
-                var str = "";
-                if (this.address1) {
-                    str += this.address1;
-                }
-                str += ", ";
-                if (this.address2) {
-                    str += this.address2;
-                }
-                str += ", ";
-                if (this.address3) {
-                    str += this.address3;
-                }
-                str += ", ";
-                if (this.address4) {
-                    str += this.address4;
-                }
-                str += ", ";
-                if (this.address5) {
-                    str += this.address5;
-                }
-                str += ", ";
-                if (this.postcode) {
-                    str += this.postcode;
-                }
-                str += ", ";
-                if (this.country) {
-                    str += this.country;
-                }
-                return str;
-            }
-
-            /***
-             * @ngdoc method
-             * @name addressMultiLine
-             * @methodOf BB.Models:Address
-             * @description
-             * Get address several lines separated by line breaks
-             *
-             * @returns {string} The returned address
-             */
-
-        }, {
-            key: 'addressMultiLine',
-            value: function addressMultiLine() {
-                var str = "";
-                if (this.address1) {
-                    str += this.address1;
-                }
-                if (this.address2 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address2) {
-                    str += this.address2;
-                }
-                if (this.address3 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address3) {
-                    str += this.address3;
-                }
-                if (this.address4 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address4) {
-                    str += this.address4;
-                }
-                if (this.address5 && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.address5) {
-                    str += this.address5;
-                }
-                if (this.postcode && str.length > 0) {
-                    str += "<br/>";
-                }
-                if (this.postcode) {
-                    str += this.postcode;
-                }
-                return str;
-            }
-
-            /***
-             * @ngdoc method
-             * @name getPostData
-             * @methodOf BB.Models:Address
-             * @description
-             * Build an array with details of the client
-             *
-             * @returns {array} newly created details array
-             */
-
-        }, {
-            key: 'getPostData',
-            value: function getPostData() {
-                var x = {};
-                x.first_name = this.first_name;
-                x.last_name = this.last_name;
-                if (this.house_number) {
-                    x.address1 = this.house_number + " " + this.address1;
-                } else {
-                    x.address1 = this.address1;
-                }
-                x.address2 = this.address2;
-                x.address3 = this.address3;
-                x.address4 = this.address4;
-                x.address5 = this.address5;
-                x.postcode = this.postcode;
-                x.country = this.country;
-                x.email = this.email;
-                x.id = this.id;
-                x.comp_ref = this.comp_ref;
-                x.parent_client_id = this.parent_client_id;
-                x.password = this.password;
-                x.notifications = this.notifications;
-                if (this.member_level_id) {
-                    x.member_level_id = this.member_level_id;
-                }
-                if (this.send_welcome_email) {
-                    x.send_welcome_email = this.send_welcome_email;
-                }
-                if (this.default_company_id) {
-                    x.default_company_id = this.default_company_id;
-                }
-                if (this.time_zone) {
-                    x.time_zone = this.time_zone;
-                }
-
-                if (this.phone) {
-                    x.phone = this.phone;
-                    if (this.phone_prefix) {
-                        x.phone_prefix = this.phone_prefix;
+                        x.questions.push(q.getPostData());
                     }
-                }
-
-                if (this.mobile) {
-                    this.remove_prefix();
-                    x.mobile = this.mobile;
-                    x.mobile_prefix = this.mobile_prefix;
-                }
-
-                if (this.questions) {
-                    x.questions = [];
-                    var _iteratorNormalCompletion2 = true;
-                    var _didIteratorError2 = false;
-                    var _iteratorError2 = undefined;
-
+                } catch (err) {
+                    _didIteratorError2 = true;
+                    _iteratorError2 = err;
+                } finally {
                     try {
-                        for (var _iterator2 = Array.from(this.questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            var q = _step2.value;
-
-                            x.questions.push(q.getPostData());
+                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                            _iterator2.return();
                         }
-                    } catch (err) {
-                        _didIteratorError2 = true;
-                        _iteratorError2 = err;
                     } finally {
-                        try {
-                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                _iterator2.return();
-                            }
-                        } finally {
-                            if (_didIteratorError2) {
-                                throw _iteratorError2;
-                            }
+                        if (_didIteratorError2) {
+                            throw _iteratorError2;
                         }
                     }
                 }
-                return x;
             }
+            return x;
+        };
 
-            /***
-             * @ngdoc method
-             * @name valid
-             * @methodOf BB.Models:Address
-             * @description
-             * Checks if this is considered a valid email
-             *
-             * @returns {boolean} If this is a valid email
-             */
+        /***
+         * @ngdoc method
+         * @name valid
+         * @methodOf BB.Models:Address
+         * @description
+         * Checks if this is considered a valid email
+         *
+         * @returns {boolean} If this is a valid email
+         */
 
-        }, {
-            key: 'valid',
-            value: function valid() {
-                if (this.isValid) {
-                    return this.isValid;
-                }
-                if (this.email || this.hasServerId()) {
-                    return true;
-                } else {
-                    return false;
-                }
+
+        Client.prototype.valid = function valid() {
+            if (this.isValid) {
+                return this.isValid;
             }
-
-            /***
-             * @ngdoc method
-             * @name setValid
-             * @methodOf BB.Models:Address
-             * @description
-             * Set valid client, according of val
-             *
-             * @returns {object} The returned valid client
-             */
-
-        }, {
-            key: 'setValid',
-            value: function setValid(val) {
-                return this.isValid = val;
+            if (this.email || this.hasServerId()) {
+                return true;
+            } else {
+                return false;
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name hasServerId
-             * @methodOf BB.Models:Address
-             * @description
-             * Checks if this has a id
-             *
-             * @returns {boolean} If this has a id
-             */
+        /***
+         * @ngdoc method
+         * @name setValid
+         * @methodOf BB.Models:Address
+         * @description
+         * Set valid client, according of val
+         *
+         * @returns {object} The returned valid client
+         */
 
-        }, {
-            key: 'hasServerId',
-            value: function hasServerId() {
-                return this.id;
+
+        Client.prototype.setValid = function setValid(val) {
+            return this.isValid = val;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasServerId
+         * @methodOf BB.Models:Address
+         * @description
+         * Checks if this has a id
+         *
+         * @returns {boolean} If this has a id
+         */
+
+
+        Client.prototype.hasServerId = function hasServerId() {
+            return this.id;
+        };
+
+        /***
+         * @ngdoc method
+         * @name setAskedQuestions
+         * @methodOf BB.Models:Address
+         * @description
+         * Set asked questions of the client
+         *
+         * @returns {boolean} If this is set
+         */
+
+
+        Client.prototype.setAskedQuestions = function setAskedQuestions() {
+            return this.asked_questions = true;
+        };
+
+        /***
+         * @ngdoc method
+         * @name fullMobile
+         * @methodOf BB.Models:Address
+         * @description
+         * Full mobile phone number of the client
+         *
+         * @returns {object} The returned full mobile number
+         */
+
+
+        Client.prototype.fullMobile = function fullMobile() {
+            if (!this.mobile) {
+                return;
             }
-
-            /***
-             * @ngdoc method
-             * @name setAskedQuestions
-             * @methodOf BB.Models:Address
-             * @description
-             * Set asked questions of the client
-             *
-             * @returns {boolean} If this is set
-             */
-
-        }, {
-            key: 'setAskedQuestions',
-            value: function setAskedQuestions() {
-                return this.asked_questions = true;
+            if (!this.mobile_prefix) {
+                return this.mobile;
             }
+            return '+' + this.mobile_prefix + (this.mobile.substr(0, 1) === '0' ? this.mobile.substr(1) : this.mobile);
+        };
 
-            /***
-             * @ngdoc method
-             * @name fullMobile
-             * @methodOf BB.Models:Address
-             * @description
-             * Full mobile phone number of the client
-             *
-             * @returns {object} The returned full mobile number
-             */
+        /***
+         * @ngdoc method
+         * @name remove_prefix
+         * @methodOf BB.Models:Address
+         * @description
+         * Remove prefix from mobile number of the client
+         *
+         * @returns {array} The returned full mobile number without prefix
+         */
 
-        }, {
-            key: 'fullMobile',
-            value: function fullMobile() {
-                if (!this.mobile) {
-                    return;
-                }
-                if (!this.mobile_prefix) {
-                    return this.mobile;
-                }
-                return '+' + this.mobile_prefix + (this.mobile.substr(0, 1) === '0' ? this.mobile.substr(1) : this.mobile);
+
+        Client.prototype.remove_prefix = function remove_prefix() {
+            var pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
+            if (pref_arr) {
+                this.mobile.replace(pref_arr[0], "");
+                return this.mobile_prefix = pref_arr[0];
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name remove_prefix
-             * @methodOf BB.Models:Address
-             * @description
-             * Remove prefix from mobile number of the client
-             *
-             * @returns {array} The returned full mobile number without prefix
-             */
+        /***
+         * @ngdoc method
+         * @name $getPrePaidBookings
+         * @methodOf BB.Models:Address
+         * @description
+         * Get pre paid bookings promise of the client
+         *
+         * @returns {promise} A promise for client pre paid bookings
+         */
 
-        }, {
-            key: 'remove_prefix',
-            value: function remove_prefix() {
-                var pref_arr = this.mobile.match(/^(\+|00)(999|998|997|996|995|994|993|992|991|990|979|978|977|976|975|974|973|972|971|970|969|968|967|966|965|964|963|962|961|960|899|898|897|896|895|894|893|892|891|890|889|888|887|886|885|884|883|882|881|880|879|878|877|876|875|874|873|872|871|870|859|858|857|856|855|854|853|852|851|850|839|838|837|836|835|834|833|832|831|830|809|808|807|806|805|804|803|802|801|800|699|698|697|696|695|694|693|692|691|690|689|688|687|686|685|684|683|682|681|680|679|678|677|676|675|674|673|672|671|670|599|598|597|596|595|594|593|592|591|590|509|508|507|506|505|504|503|502|501|500|429|428|427|426|425|424|423|422|421|420|389|388|387|386|385|384|383|382|381|380|379|378|377|376|375|374|373|372|371|370|359|358|357|356|355|354|353|352|351|350|299|298|297|296|295|294|293|292|291|290|289|288|287|286|285|284|283|282|281|280|269|268|267|266|265|264|263|262|261|260|259|258|257|256|255|254|253|252|251|250|249|248|247|246|245|244|243|242|241|240|239|238|237|236|235|234|233|232|231|230|229|228|227|226|225|224|223|222|221|220|219|218|217|216|215|214|213|212|211|210|98|95|94|93|92|91|90|86|84|82|81|66|65|64|63|62|61|60|58|57|56|55|54|53|52|51|49|48|47|46|45|44|43|41|40|39|36|34|33|32|31|30|27|20|7|1)/);
-                if (pref_arr) {
-                    this.mobile.replace(pref_arr[0], "");
-                    return this.mobile_prefix = pref_arr[0];
-                }
-            }
 
-            /***
-             * @ngdoc method
-             * @name $getPrePaidBookings
-             * @methodOf BB.Models:Address
-             * @description
-             * Get pre paid bookings promise of the client
-             *
-             * @returns {promise} A promise for client pre paid bookings
-             */
-
-        }, {
-            key: '$getPrePaidBookings',
-            value: function $getPrePaidBookings(params) {
-                var defer = $q.defer();
-                if (this.$has('pre_paid_bookings')) {
-                    this.$get('pre_paid_bookings', params).then(function (collection) {
-                        return collection.$get('pre_paid_bookings').then(function (prepaids) {
-                            return defer.resolve(Array.from(prepaids).map(function (prepaid) {
-                                return new BBModel.PrePaidBooking(prepaid);
-                            }));
-                        }, function (err) {
-                            return defer.reject(err);
-                        });
+        Client.prototype.$getPrePaidBookings = function $getPrePaidBookings(params) {
+            var defer = $q.defer();
+            if (this.$has('pre_paid_bookings')) {
+                this.$get('pre_paid_bookings', params).then(function (collection) {
+                    return collection.$get('pre_paid_bookings').then(function (prepaids) {
+                        return defer.resolve(Array.from(prepaids).map(function (prepaid) {
+                            return new BBModel.PrePaidBooking(prepaid);
+                        }));
                     }, function (err) {
-                        return (
-                            // =====================================================================================================
-                            // TO FIX IN API:
-                            // When a default Client is generated by SSO, @get('pre_paid_bookings') returns 401
-                            // which in turn throws an error in the Widget
-                            // I am going to fail this error silently so that the Widget will not display the error for CHORLEY
-                            // =====================================================================================================
-                            defer.resolve([])
-                        );
+                        return defer.reject(err);
                     });
-                    // defer.reject(err)
-                    // return empty array if there are no prepaid bookings
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
+                }, function (err) {
+                    return (
+                        // =====================================================================================================
+                        // TO FIX IN API:
+                        // When a default Client is generated by SSO, @get('pre_paid_bookings') returns 401
+                        // which in turn throws an error in the Widget
+                        // I am going to fail this error silently so that the Widget will not display the error for CHORLEY
+                        // =====================================================================================================
+                        defer.resolve([])
+                    );
+                });
+                // defer.reject(err)
+                // return empty array if there are no prepaid bookings
+            } else {
+                defer.resolve([]);
             }
-        }], [{
-            key: '$create_or_update',
-            value: function $create_or_update(company, client) {
-                return ClientService.create_or_update(company, client);
-            }
-        }, {
-            key: '$query_by_email',
-            value: function $query_by_email(company, email) {
-                return ClientService.query_by_email(company, email);
-            }
-        }]);
+            return defer.promise;
+        };
+
+        Client.$create_or_update = function $create_or_update(company, client) {
+            return ClientService.create_or_update(company, client);
+        };
+
+        Client.$query_by_email = function $query_by_email(company, email) {
+            return ClientService.query_by_email(company, email);
+        };
 
         return Client;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -6903,7 +6674,7 @@ angular.module('BB.Models').factory("ClientDetailsModel", function ($q, BBModel,
         function ClientDetails(data) {
             _classCallCheck(this, ClientDetails);
 
-            var _this = _possibleConstructorReturn(this, (ClientDetails.__proto__ || Object.getPrototypeOf(ClientDetails)).apply(this, arguments));
+            var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             _this.questions = [];
             if (_this._data) {
@@ -6947,129 +6718,122 @@ angular.module('BB.Models').factory("ClientDetailsModel", function ($q, BBModel,
          */
 
 
-        _createClass(ClientDetails, [{
-            key: "getPostData",
-            value: function getPostData(questions) {
-                var data = [];
-                var _iteratorNormalCompletion2 = true;
-                var _didIteratorError2 = false;
-                var _iteratorError2 = undefined;
+        ClientDetails.prototype.getPostData = function getPostData(questions) {
+            var data = [];
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = Array.from(questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var q = _step2.value;
+
+                    data.push({ answer: q.answer, id: q.id, price: q.price });
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            return data;
+        };
+
+        /***
+         * @ngdoc method
+         * @name setAnswers
+         * @methodOf BB.Models:ClientDetails
+         * @description
+         * Set answers of the client details in function of answers
+         *
+         * @returns {object} The returned answers
+         */
+        // load the answers from an answer set - probably from loading an existing basket item
+
+
+        ClientDetails.prototype.setAnswers = function setAnswers(answers) {
+            var _this2 = this;
+
+            // turn answers into a hash
+            var ahash = {};
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
+
+            try {
+                for (var _iterator3 = Array.from(answers)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var a = _step3.value;
+
+                    ahash[a.question_id] = a;
+                }
+            } catch (err) {
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
+                    }
+                } finally {
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
+                    }
+                }
+            }
+
+            return function () {
+                var result = [];
+                var _iteratorNormalCompletion4 = true;
+                var _didIteratorError4 = false;
+                var _iteratorError4 = undefined;
 
                 try {
-                    for (var _iterator2 = Array.from(questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                        var q = _step2.value;
+                    for (var _iterator4 = Array.from(_this2.questions)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                        var q = _step4.value;
 
-                        data.push({ answer: q.answer, id: q.id, price: q.price });
+                        var item = void 0;
+                        if (ahash[q.id]) {
+                            // if we have answer for it
+                            item = q.answer = ahash[q.id].answer;
+                        }
+                        result.push(item);
                     }
                 } catch (err) {
-                    _didIteratorError2 = true;
-                    _iteratorError2 = err;
+                    _didIteratorError4 = true;
+                    _iteratorError4 = err;
                 } finally {
                     try {
-                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                            _iterator2.return();
+                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                            _iterator4.return();
                         }
                     } finally {
-                        if (_didIteratorError2) {
-                            throw _iteratorError2;
+                        if (_didIteratorError4) {
+                            throw _iteratorError4;
                         }
                     }
                 }
 
-                return data;
-            }
+                return result;
+            }();
+        };
 
-            /***
-             * @ngdoc method
-             * @name setAnswers
-             * @methodOf BB.Models:ClientDetails
-             * @description
-             * Set answers of the client details in function of answers
-             *
-             * @returns {object} The returned answers
-             */
-            // load the answers from an answer set - probably from loading an existing basket item
-
-        }, {
-            key: "setAnswers",
-            value: function setAnswers(answers) {
-                var _this2 = this;
-
-                // turn answers into a hash
-                var ahash = {};
-                var _iteratorNormalCompletion3 = true;
-                var _didIteratorError3 = false;
-                var _iteratorError3 = undefined;
-
-                try {
-                    for (var _iterator3 = Array.from(answers)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                        var a = _step3.value;
-
-                        ahash[a.question_id] = a;
-                    }
-                } catch (err) {
-                    _didIteratorError3 = true;
-                    _iteratorError3 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                            _iterator3.return();
-                        }
-                    } finally {
-                        if (_didIteratorError3) {
-                            throw _iteratorError3;
-                        }
-                    }
-                }
-
-                return function () {
-                    var result = [];
-                    var _iteratorNormalCompletion4 = true;
-                    var _didIteratorError4 = false;
-                    var _iteratorError4 = undefined;
-
-                    try {
-                        for (var _iterator4 = Array.from(_this2.questions)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                            var q = _step4.value;
-
-                            var item = void 0;
-                            if (ahash[q.id]) {
-                                // if we have answer for it
-                                item = q.answer = ahash[q.id].answer;
-                            }
-                            result.push(item);
-                        }
-                    } catch (err) {
-                        _didIteratorError4 = true;
-                        _iteratorError4 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                                _iterator4.return();
-                            }
-                        } finally {
-                            if (_didIteratorError4) {
-                                throw _iteratorError4;
-                            }
-                        }
-                    }
-
-                    return result;
-                }();
-            }
-        }], [{
-            key: "$query",
-            value: function $query(company) {
-                return ClientDetailsService.query(company);
-            }
-        }]);
+        ClientDetails.$query = function $query(company) {
+            return ClientDetailsService.query(company);
+        };
 
         return ClientDetails;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -7110,7 +6874,7 @@ angular.module('BB.Models').factory("ClinicModel", function ($q, BBModel, BaseMo
         function Clinic(data) {
             _classCallCheck(this, Clinic);
 
-            var _this = _possibleConstructorReturn(this, (Clinic.__proto__ || Object.getPrototypeOf(Clinic)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.setTimes();
             _this.setResourcesAndPeople();
@@ -7131,60 +6895,54 @@ angular.module('BB.Models').factory("ClinicModel", function ($q, BBModel, BaseMo
          */
 
 
-        _createClass(Clinic, [{
-            key: "setResourcesAndPeople",
-            value: function setResourcesAndPeople() {
-                this.resources = _.reduce(this.resource_ids, function (h, id) {
-                    h[id] = true;
-                    return h;
-                }, {});
-                this.people = _.reduce(this.person_ids, function (h, id) {
-                    h[id] = true;
-                    return h;
-                }, {});
-                this.services = _.reduce(this.service_ids, function (h, id) {
-                    h[id] = true;
-                    return h;
-                }, {});
-                this.uncovered = !this.person_ids || this.person_ids.length === 0;
-                if (this.uncovered) {
-                    return this.className = "clinic_uncovered";
-                } else {
-                    return this.className = "clinic_covered";
-                }
+        Clinic.prototype.setResourcesAndPeople = function setResourcesAndPeople() {
+            this.resources = _.reduce(this.resource_ids, function (h, id) {
+                h[id] = true;
+                return h;
+            }, {});
+            this.people = _.reduce(this.person_ids, function (h, id) {
+                h[id] = true;
+                return h;
+            }, {});
+            this.services = _.reduce(this.service_ids, function (h, id) {
+                h[id] = true;
+                return h;
+            }, {});
+            this.uncovered = !this.person_ids || this.person_ids.length === 0;
+            if (this.uncovered) {
+                return this.className = "clinic_uncovered";
+            } else {
+                return this.className = "clinic_covered";
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name setTimes
-             * @methodOf BB.Models:Clinic
-             * @description
-             * Set time for clinic
-             *
-             * @returns {object} The returned time
-             */
+        /***
+         * @ngdoc method
+         * @name setTimes
+         * @methodOf BB.Models:Clinic
+         * @description
+         * Set time for clinic
+         *
+         * @returns {object} The returned time
+         */
 
-        }, {
-            key: "setTimes",
-            value: function setTimes() {
-                if (this.start_time) {
-                    this.start_time = moment(this.start_time);
-                    this.start = this.start_time;
-                }
-                if (this.end_time) {
-                    this.end_time = moment(this.end_time);
-                    this.end = this.end_time;
-                }
-                return this.title = this.name;
+
+        Clinic.prototype.setTimes = function setTimes() {
+            if (this.start_time) {
+                this.start_time = moment(this.start_time);
+                this.start = this.start_time;
             }
-        }]);
+            if (this.end_time) {
+                this.end_time = moment(this.end_time);
+                this.end = this.end_time;
+            }
+            return this.title = this.name;
+        };
 
         return Clinic;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -7199,31 +6957,26 @@ angular.module('BB.Models').factory("BBCollectionModel", function ($q, BBModel, 
         function BBCollection() {
             _classCallCheck(this, BBCollection);
 
-            return _possibleConstructorReturn(this, (BBCollection.__proto__ || Object.getPrototypeOf(BBCollection)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(BBCollection, [{
-            key: 'getNextPage',
-            value: function getNextPage(params) {
+        BBCollection.prototype.getNextPage = function getNextPage(params) {
 
-                var deferred = $q.defer();
+            var deferred = $q.defer();
 
-                this.$get('next', params).then(function (collection) {
-                    return deferred.resolve(new BBModel.BBCollection(collection));
-                }, function () {
-                    return deferred.reject();
-                });
+            this.$get('next', params).then(function (collection) {
+                return deferred.resolve(new BBModel.BBCollection(collection));
+            }, function () {
+                return deferred.reject();
+            });
 
-                return deferred.promise;
-            }
-        }]);
+            return deferred.promise;
+        };
 
         return BBCollection;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -7264,7 +7017,7 @@ angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseM
             // instantiate each child company as a hal resource
             // we'll set the @companies array to all companies - including grandchildren
             // and we'll have an array called child_companies that contains only direct ancesstors
-            var _this = _possibleConstructorReturn(this, (Company.__proto__ || Object.getPrototypeOf(Company)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             if (_this.companies) {
                 var all_companies = [];
@@ -7340,231 +7093,223 @@ angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseM
          */
 
 
-        _createClass(Company, [{
-            key: 'getCompanyByRef',
-            value: function getCompanyByRef(ref) {
-                var defer = $q.defer();
-                this.$get('companies').then(function (companies) {
-                    var company = _.find(companies, function (c) {
-                        return c.reference === ref;
-                    });
-                    if (company) {
-                        return defer.resolve(company);
-                    } else {
-                        return defer.reject('No company for ref ' + ref);
-                    }
-                }, function (err) {
-                    console.log('err ', err);
-                    return defer.reject(err);
+        Company.prototype.getCompanyByRef = function getCompanyByRef(ref) {
+            var defer = $q.defer();
+            this.$get('companies').then(function (companies) {
+                var company = _.find(companies, function (c) {
+                    return c.reference === ref;
                 });
-                return defer.promise;
-            }
-
-            /***
-             * @ngdoc method
-             * @name findChildCompany
-             * @methodOf BB.Models:Company
-             * @description
-             * Find a child company by id
-             *
-             * @returns {object} The child company
-             */
-
-        }, {
-            key: 'findChildCompany',
-            value: function findChildCompany(id) {
-                if (!this.companies) {
-                    return null;
+                if (company) {
+                    return defer.resolve(company);
+                } else {
+                    return defer.reject('No company for ref ' + ref);
                 }
-                var _iteratorNormalCompletion3 = true;
-                var _didIteratorError3 = false;
-                var _iteratorError3 = undefined;
+            }, function (err) {
+                console.log('err ', err);
+                return defer.reject(err);
+            });
+            return defer.promise;
+        };
 
-                try {
-                    for (var _iterator3 = Array.from(this.companies)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                        var c = _step3.value;
+        /***
+         * @ngdoc method
+         * @name findChildCompany
+         * @methodOf BB.Models:Company
+         * @description
+         * Find a child company by id
+         *
+         * @returns {object} The child company
+         */
 
-                        if (c.id === parseInt(id)) {
-                            return c;
-                        }
-                        if (c.ref && c.ref === String(id)) {
-                            return c;
-                        }
-                    }
-                    // failed to find by id - maybe by name ?
-                } catch (err) {
-                    _didIteratorError3 = true;
-                    _iteratorError3 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                            _iterator3.return();
-                        }
-                    } finally {
-                        if (_didIteratorError3) {
-                            throw _iteratorError3;
-                        }
-                    }
-                }
 
-                if (typeof id === "string") {
-                    var name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-                    var _iteratorNormalCompletion4 = true;
-                    var _didIteratorError4 = false;
-                    var _iteratorError4 = undefined;
-
-                    try {
-                        for (var _iterator4 = Array.from(this.companies)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                            c = _step4.value;
-
-                            var cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
-                            if (name === cname) {
-                                return c;
-                            }
-                        }
-                    } catch (err) {
-                        _didIteratorError4 = true;
-                        _iteratorError4 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                                _iterator4.return();
-                            }
-                        } finally {
-                            if (_didIteratorError4) {
-                                throw _iteratorError4;
-                            }
-                        }
-                    }
-                }
+        Company.prototype.findChildCompany = function findChildCompany(id) {
+            if (!this.companies) {
                 return null;
             }
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
 
-            /***
-             * @ngdoc method
-             * @name getSettings
-             * @methodOf BB.Models:Company
-             * @description
-             * Get settings company
-             *
-             * @returns {promise} A promise for settings company
-             */
+            try {
+                for (var _iterator3 = Array.from(this.companies)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var c = _step3.value;
 
-        }, {
-            key: 'getSettings',
-            value: function getSettings() {
-                var _this2 = this;
+                    if (c.id === parseInt(id)) {
+                        return c;
+                    }
+                    if (c.ref && c.ref === String(id)) {
+                        return c;
+                    }
+                }
+                // failed to find by id - maybe by name ?
+            } catch (err) {
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
+                    }
+                } finally {
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
+                    }
+                }
+            }
 
-                var def = $q.defer();
-                if (this.settings) {
-                    def.resolve(this.settings);
+            if (typeof id === "string") {
+                var name = id.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
+                var _iteratorNormalCompletion4 = true;
+                var _didIteratorError4 = false;
+                var _iteratorError4 = undefined;
+
+                try {
+                    for (var _iterator4 = Array.from(this.companies)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                        c = _step4.value;
+
+                        var cname = c.name.replace(/[\s\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '').toLowerCase();
+                        if (name === cname) {
+                            return c;
+                        }
+                    }
+                } catch (err) {
+                    _didIteratorError4 = true;
+                    _iteratorError4 = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                            _iterator4.return();
+                        }
+                    } finally {
+                        if (_didIteratorError4) {
+                            throw _iteratorError4;
+                        }
+                    }
+                }
+            }
+            return null;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getSettings
+         * @methodOf BB.Models:Company
+         * @description
+         * Get settings company
+         *
+         * @returns {promise} A promise for settings company
+         */
+
+
+        Company.prototype.getSettings = function getSettings() {
+            var _this2 = this;
+
+            var def = $q.defer();
+            if (this.settings) {
+                def.resolve(this.settings);
+            } else {
+                if (this.$has('settings')) {
+                    this.$get('settings').then(function (set) {
+                        _this2.settings = new BBModel.CompanySettings(set);
+                        return def.resolve(_this2.settings);
+                    });
                 } else {
-                    if (this.$has('settings')) {
-                        this.$get('settings').then(function (set) {
-                            _this2.settings = new BBModel.CompanySettings(set);
-                            return def.resolve(_this2.settings);
-                        });
-                    } else {
-                        def.reject("Company has no settings");
-                    }
+                    def.reject("Company has no settings");
                 }
-                return def.promise;
             }
+            return def.promise;
+        };
 
-            /***
-             * @ngdoc method
-             * @name pusherSubscribe
-             * @methodOf BB.Models:Company
-             * @description
-             * Push subscribe for company
-             *
-             * @returns {object} Subscriber company
-             */
+        /***
+         * @ngdoc method
+         * @name pusherSubscribe
+         * @methodOf BB.Models:Company
+         * @description
+         * Push subscribe for company
+         *
+         * @returns {object} Subscriber company
+         */
 
-        }, {
-            key: 'pusherSubscribe',
-            value: function pusherSubscribe(callback, options) {
-                if (options == null) {
-                    options = {};
+
+        Company.prototype.pusherSubscribe = function pusherSubscribe(callback, options) {
+            if (options == null) {
+                options = {};
+            }
+            if (typeof Pusher !== 'undefined' && Pusher !== null && this.pusher == null) {
+                if (!this.$has('pusher')) {
+                    return;
                 }
-                if (typeof Pusher !== 'undefined' && Pusher !== null && this.pusher == null) {
-                    if (!this.$has('pusher')) {
-                        return;
-                    }
-                    this.pusher = new Pusher('c8d8cea659cc46060608', {
-                        encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
-                        authEndpoint: this.$link('pusher').href,
-                        auth: {
-                            headers: {
-                                'App-Id': AppConfig.appId,
-                                'App-Key': AppConfig.appKey,
-                                'Auth-Token': $sessionStorage.getItem('auth_token')
-                            }
+                this.pusher = new Pusher('c8d8cea659cc46060608', {
+                    encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
+                    authEndpoint: this.$link('pusher').href,
+                    auth: {
+                        headers: {
+                            'App-Id': AppConfig.appId,
+                            'App-Key': AppConfig.appKey,
+                            'Auth-Token': $sessionStorage.getItem('auth_token')
                         }
-                    });
-                }
-
-                var channelName = 'private-c' + this.id + '-w' + this.numeric_widget_id;
-
-                // Nuke the channel if it exists, must be done if this is to be used in multiple pages
-                // this is being delt differently in the newer implementation
-                if (this.pusher.channel(channelName) != null) {
-                    this.pusher.unsubscribe(channelName);
-                }
-
-                this.pusher_channel = this.pusher.subscribe(channelName);
-                this.pusher_channel.bind('booking', callback);
-                this.pusher_channel.bind('cancellation', callback);
-                return this.pusher_channel.bind('updating', callback);
+                    }
+                });
             }
 
-            /***
-             * @ngdoc method
-             * @name getPusherChannel
-             * @methodOf BB.Models:Company
-             *
-             * @returns {object} Pusher channel
-             */
+            var channelName = 'private-c' + this.id + '-w' + this.numeric_widget_id;
 
-        }, {
-            key: 'getPusherChannel',
-            value: function getPusherChannel(model, options) {
-                if (options == null) {
-                    options = {};
+            // Nuke the channel if it exists, must be done if this is to be used in multiple pages
+            // this is being delt differently in the newer implementation
+            if (this.pusher.channel(channelName) != null) {
+                this.pusher.unsubscribe(channelName);
+            }
+
+            this.pusher_channel = this.pusher.subscribe(channelName);
+            this.pusher_channel.bind('booking', callback);
+            this.pusher_channel.bind('cancellation', callback);
+            return this.pusher_channel.bind('updating', callback);
+        };
+
+        /***
+         * @ngdoc method
+         * @name getPusherChannel
+         * @methodOf BB.Models:Company
+         *
+         * @returns {object} Pusher channel
+         */
+
+
+        Company.prototype.getPusherChannel = function getPusherChannel(model, options) {
+            if (options == null) {
+                options = {};
+            }
+            if (!this.pusher) {
+                if (!this.$has('pusher')) {
+                    return;
                 }
-                if (!this.pusher) {
-                    if (!this.$has('pusher')) {
-                        return;
-                    }
-                    this.pusher = new Pusher('c8d8cea659cc46060608', {
-                        encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
-                        authEndpoint: this.$link('pusher').href,
-                        auth: {
-                            headers: {
-                                'App-Id': AppConfig.appId,
-                                'App-Key': AppConfig.appKey,
-                                'Auth-Token': $sessionStorage.getItem('auth_token')
-                            }
+                this.pusher = new Pusher('c8d8cea659cc46060608', {
+                    encrypted: options.hasOwnProperty('encrypted') ? options.encrypted : true,
+                    authEndpoint: this.$link('pusher').href,
+                    auth: {
+                        headers: {
+                            'App-Id': AppConfig.appId,
+                            'App-Key': AppConfig.appKey,
+                            'Auth-Token': $sessionStorage.getItem('auth_token')
                         }
-                    });
-                }
-                if (this.$has(model)) {
-                    var channelName = this.$href(model);
-                    channelName = channelName.replace(/https?:\/\//, '').replace(/\//g, '-').replace(/:/g, '_');
-                    if (this.pusher.channel(channelName)) {
-                        return this.pusher.channel(channelName);
-                    } else {
-                        this.pusher.subscribe(channelName);
-                        return this.pusher.channel(channelName);
                     }
+                });
+            }
+            if (this.$has(model)) {
+                var channelName = this.$href(model);
+                channelName = channelName.replace(/https?:\/\//, '').replace(/\//g, '-').replace(/:/g, '_');
+                if (this.pusher.channel(channelName)) {
+                    return this.pusher.channel(channelName);
+                } else {
+                    this.pusher.subscribe(channelName);
+                    return this.pusher.channel(channelName);
                 }
             }
-        }], [{
-            key: '$query',
-            value: function $query(company_id, options) {
-                return CompanyService.query(company_id, options);
-            }
-        }]);
+        };
+
+        Company.$query = function $query(company_id, options) {
+            return CompanyService.query(company_id, options);
+        };
 
         return Company;
     }(BaseModel);
@@ -7593,15 +7338,13 @@ angular.module('BB.Models').factory("CompanySettingsModel", function ($q, BBMode
     function CompanySettings() {
       _classCallCheck(this, CompanySettings);
 
-      return _possibleConstructorReturn(this, (CompanySettings.__proto__ || Object.getPrototypeOf(CompanySettings)).apply(this, arguments));
+      return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
     }
 
     return CompanySettings;
   }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -7627,7 +7370,7 @@ angular.module('BB.Models').factory("DayModel", function ($q, BBModel, BaseModel
         function Day(data) {
             _classCallCheck(this, Day);
 
-            var _this = _possibleConstructorReturn(this, (Day.__proto__ || Object.getPrototypeOf(Day)).apply(this, arguments));
+            var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             _this.string_date = _this.date;
             _this.date = moment(_this.date);
@@ -7645,66 +7388,58 @@ angular.module('BB.Models').factory("DayModel", function ($q, BBModel, BaseModel
          */
 
 
-        _createClass(Day, [{
-            key: "day",
-            value: function day() {
-                return this.date.date();
-            }
+        Day.prototype.day = function day() {
+            return this.date.date();
+        };
 
-            /***
-             * @ngdoc method
-             * @name off
-             * @methodOf BB.Models:Day
-             * @description
-             * Get off by month
-             *
-             * @returns {date} The returned off
-             */
+        /***
+         * @ngdoc method
+         * @name off
+         * @methodOf BB.Models:Day
+         * @description
+         * Get off by month
+         *
+         * @returns {date} The returned off
+         */
 
-        }, {
-            key: "off",
-            value: function off(month) {
-                return this.date.month() !== month;
-            }
 
-            /***
-             * @ngdoc method
-             * @name class
-             * @methodOf BB.Models:Day
-             * @description
-             * Get class in according of month
-             *
-             * @returns {string} The returned class
-             */
+        Day.prototype.off = function off(month) {
+            return this.date.month() !== month;
+        };
 
-        }, {
-            key: "class",
-            value: function _class(month) {
-                var str = "";
-                if (this.date.month() < month) {
-                    str += "off off-prev";
-                }
-                if (this.date.month() > month) {
-                    str += "off off-next";
-                }
-                if (this.spaces === 0) {
-                    str += " not-avail";
-                }
-                return str;
+        /***
+         * @ngdoc method
+         * @name class
+         * @methodOf BB.Models:Day
+         * @description
+         * Get class in according of month
+         *
+         * @returns {string} The returned class
+         */
+
+
+        Day.prototype.class = function _class(month) {
+            var str = "";
+            if (this.date.month() < month) {
+                str += "off off-prev";
             }
-        }], [{
-            key: "$query",
-            value: function $query(prms) {
-                return DayService.query(prms);
+            if (this.date.month() > month) {
+                str += "off off-next";
             }
-        }]);
+            if (this.spaces === 0) {
+                str += " not-avail";
+            }
+            return str;
+        };
+
+        Day.$query = function $query(prms) {
+            return DayService.query(prms);
+        };
 
         return Day;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -7719,22 +7454,17 @@ angular.module('BB.Models').factory("DealModel", function ($q, BBModel, BaseMode
         function Deal() {
             _classCallCheck(this, Deal);
 
-            return _possibleConstructorReturn(this, (Deal.__proto__ || Object.getPrototypeOf(Deal)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(Deal, null, [{
-            key: "$query",
-            value: function $query(company) {
-                return DealService.query(company);
-            }
-        }]);
+        Deal.$query = function $query(company) {
+            return DealService.query(company);
+        };
 
         return Deal;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -7765,7 +7495,7 @@ angular.module('BB.Models').factory("EventModel", function ($q, BBModel, BaseMod
         function Event(data) {
             _classCallCheck(this, Event);
 
-            var _this = _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.date = moment.parseZone(_this.datetime);
             _this.time = new BBModel.TimeSlot({ time: DateTimeUtilitiesService.convertMomentToTime(_this.date) });
@@ -7787,488 +7517,463 @@ angular.module('BB.Models').factory("EventModel", function ($q, BBModel, BaseMod
          */
 
 
-        _createClass(Event, [{
-            key: 'getGroup',
-            value: function getGroup() {
-                var _this2 = this;
+        Event.prototype.getGroup = function getGroup() {
+            var _this2 = this;
 
-                var defer = $q.defer();
-                if (this.group) {
-                    defer.resolve(this.group);
-                } else if (this.$has('event_groups') || this.$has('event_group')) {
-                    var event_group = 'event_group';
-                    if (this.$has('event_groups')) {
-                        event_group = 'event_groups';
+            var defer = $q.defer();
+            if (this.group) {
+                defer.resolve(this.group);
+            } else if (this.$has('event_groups') || this.$has('event_group')) {
+                var event_group = 'event_group';
+                if (this.$has('event_groups')) {
+                    event_group = 'event_groups';
+                }
+                this.$get(event_group).then(function (group) {
+                    _this2.group = new BBModel.EventGroup(group);
+                    return defer.resolve(_this2.group);
+                }, function (err) {
+                    return defer.reject(err);
+                });
+            } else {
+                defer.reject("No event group");
+            }
+            return defer.promise;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getGroup
+         * @methodOf BB.Models:Event
+         * @description
+         * Get the chains of the event
+         *
+         * @returns {promise} A promise for the chains event
+         */
+
+
+        Event.prototype.getChain = function getChain(params) {
+            var _this3 = this;
+
+            var defer = $q.defer();
+            if (this.chain) {
+                defer.resolve(this.chain);
+            } else {
+                if (this.$has('event_chains') || this.$has('event_chain')) {
+                    var event_chain = 'event_chain';
+                    if (this.$has('event_chains')) {
+                        event_chain = 'event_chains';
                     }
-                    this.$get(event_group).then(function (group) {
-                        _this2.group = new BBModel.EventGroup(group);
-                        return defer.resolve(_this2.group);
-                    }, function (err) {
-                        return defer.reject(err);
+                    this.$get(event_chain, params).then(function (chain) {
+                        _this3.chain = new BBModel.EventChain(chain);
+                        return defer.resolve(_this3.chain);
                     });
                 } else {
-                    defer.reject("No event group");
-                }
-                return defer.promise;
-            }
-
-            /***
-             * @ngdoc method
-             * @name getGroup
-             * @methodOf BB.Models:Event
-             * @description
-             * Get the chains of the event
-             *
-             * @returns {promise} A promise for the chains event
-             */
-
-        }, {
-            key: 'getChain',
-            value: function getChain(params) {
-                var _this3 = this;
-
-                var defer = $q.defer();
-                if (this.chain) {
-                    defer.resolve(this.chain);
-                } else {
-                    if (this.$has('event_chains') || this.$has('event_chain')) {
-                        var event_chain = 'event_chain';
-                        if (this.$has('event_chains')) {
-                            event_chain = 'event_chains';
-                        }
-                        this.$get(event_chain, params).then(function (chain) {
-                            _this3.chain = new BBModel.EventChain(chain);
-                            return defer.resolve(_this3.chain);
-                        });
-                    } else {
-                        defer.reject("No event chain");
-                    }
-                }
-                return defer.promise;
-            }
-
-            /***
-             * @ngdoc method
-             * @name getDuration
-             * @methodOf BB.Models:Event
-             * @description
-             * Get duration of the event chains
-             *
-             * @returns {promise} A promise for duration of the event
-             */
-
-        }, {
-            key: 'getDuration',
-            value: function getDuration() {
-                var _this4 = this;
-
-                var defer = new $q.defer();
-                if (this.duration) {
-                    defer.resolve(this.duration);
-                } else {
-                    this.getChain().then(function (chain) {
-                        _this4.duration = chain.duration;
-                        return defer.resolve(_this4.duration);
-                    });
-                }
-                return defer.promise;
-            }
-
-            /***
-             * @ngdoc method
-             * @name getDescription
-             * @methodOf BB.Models:Event
-             * @description
-             * Get duration of the event
-             *
-             * @returns {object} The returned description
-             */
-
-        }, {
-            key: 'getDescription',
-            value: function getDescription() {
-                return this.getChain().description;
-            }
-
-            /***
-             * @ngdoc method
-             * @name getColour
-             * @methodOf BB.Models:Event
-             * @description
-             * Get the colour
-             *
-             * @returns {string} The returned colour
-             */
-
-        }, {
-            key: 'getColour',
-            value: function getColour() {
-                if (this.getGroup()) {
-                    return this.getGroup().colour;
-                } else {
-                    return "#FFFFFF";
+                    defer.reject("No event chain");
                 }
             }
+            return defer.promise;
+        };
 
-            /***
-             * @ngdoc method
-             * @name getPounds
-             * @methodOf BB.Models:Event
-             * @description
-             * Get pounts
-             *
-             * @returns {integer} The returned pounts
-             */
+        /***
+         * @ngdoc method
+         * @name getDuration
+         * @methodOf BB.Models:Event
+         * @description
+         * Get duration of the event chains
+         *
+         * @returns {promise} A promise for duration of the event
+         */
 
-        }, {
-            key: 'getPounds',
-            value: function getPounds() {
-                if (this.chain) {
-                    return Math.floor(this.getPrice()).toFixed(0);
-                }
+
+        Event.prototype.getDuration = function getDuration() {
+            var _this4 = this;
+
+            var defer = new $q.defer();
+            if (this.duration) {
+                defer.resolve(this.duration);
+            } else {
+                this.getChain().then(function (chain) {
+                    _this4.duration = chain.duration;
+                    return defer.resolve(_this4.duration);
+                });
             }
+            return defer.promise;
+        };
 
-            /***
-             * @ngdoc method
-             * @name getPrice
-             * @methodOf BB.Models:Event
-             * @description
-             * Get price
-             *
-             * @returns {integer} The returned price
-             */
+        /***
+         * @ngdoc method
+         * @name getDescription
+         * @methodOf BB.Models:Event
+         * @description
+         * Get duration of the event
+         *
+         * @returns {object} The returned description
+         */
 
-        }, {
-            key: 'getPrice',
-            value: function getPrice() {
+
+        Event.prototype.getDescription = function getDescription() {
+            return this.getChain().description;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getColour
+         * @methodOf BB.Models:Event
+         * @description
+         * Get the colour
+         *
+         * @returns {string} The returned colour
+         */
+
+
+        Event.prototype.getColour = function getColour() {
+            if (this.getGroup()) {
+                return this.getGroup().colour;
+            } else {
+                return "#FFFFFF";
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name getPounds
+         * @methodOf BB.Models:Event
+         * @description
+         * Get pounts
+         *
+         * @returns {integer} The returned pounts
+         */
+
+
+        Event.prototype.getPounds = function getPounds() {
+            if (this.chain) {
+                return Math.floor(this.getPrice()).toFixed(0);
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name getPrice
+         * @methodOf BB.Models:Event
+         * @description
+         * Get price
+         *
+         * @returns {integer} The returned price
+         */
+
+
+        Event.prototype.getPrice = function getPrice() {
+            return 0;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getPence
+         * @methodOf BB.Models:Event
+         * @description
+         * Get price
+         *
+         * @returns {integer} The returned pence
+         */
+
+
+        Event.prototype.getPence = function getPence() {
+            if (this.chain) {
+                return (this.getPrice() % 1).toFixed(2).slice(-2);
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name getNumBooked
+         * @methodOf BB.Models:Event
+         * @description
+         * Get the number booked
+         *
+         * @returns {object} The returned number booked
+         */
+
+
+        Event.prototype.getNumBooked = function getNumBooked() {
+            return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getSpacesLeft
+         * @methodOf BB.Models:Event
+         * @description
+         * Get the number of spaces left (possibly limited by a specific ticket pool)
+         *
+         * @returns {object} The returned spaces left
+         */
+
+
+        Event.prototype.getSpacesLeft = function getSpacesLeft(pool) {
+            if (pool == null) {
+                pool = null;
+            }
+            if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
+                return this.ticket_spaces[pool].left;
+            } else {
+                var x = this.num_spaces - this.getNumBooked();
+                if (x < 0) {
+                    return 0;
+                }
+                return x;
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name getWaitSpacesLeft
+         * @methodOf BB.Models:Event
+         * @description
+         * Get the number of waitlist spaces left (possibly limited by a specific ticket pool)
+         *
+         * @returns {object} The returned spaces left
+         */
+
+
+        Event.prototype.getWaitSpacesLeft = function getWaitSpacesLeft() {
+            var wait = this.chain.waitlength;
+            if (!wait) {
+                wait = 0;
+            }
+            wait = wait - this.spaces_wait;
+            if (wait <= 0) {
                 return 0;
             }
 
-            /***
-             * @ngdoc method
-             * @name getPence
-             * @methodOf BB.Models:Event
-             * @description
-             * Get price
-             *
-             * @returns {integer} The returned pence
-             */
+            return wait;
+        };
 
-        }, {
-            key: 'getPence',
-            value: function getPence() {
-                if (this.chain) {
-                    return (this.getPrice() % 1).toFixed(2).slice(-2);
+        /***
+         * @ngdoc method
+         * @name hasSpace
+         * @methodOf BB.Models:Event
+         * @description
+         * Checks if this considered a valid space
+         *
+         * @returns {boolean} If this is a valid space
+         */
+
+
+        Event.prototype.hasSpace = function hasSpace() {
+            return this.getSpacesLeft() > 0;
+        };
+
+        /***
+         * @ngdoc method
+         * @name hasWaitlistSpace
+         * @methodOf BB.Models:Event
+         * @description
+         * Checks if this considered a valid waiting list space
+         *
+         * @returns {boolean} If this is a valid waiting list space
+         */
+
+
+        Event.prototype.hasWaitlistSpace = function hasWaitlistSpace() {
+            return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getRemainingDescription
+         * @methodOf BB.Models:Event
+         * @description
+         * Get the remaining description
+         *
+         * @returns {object} The returned remaining description
+         */
+
+
+        Event.prototype.getRemainingDescription = function getRemainingDescription() {
+            var left = this.getSpacesLeft();
+            if (left > 0 && left < 3) {
+                return $translate.instant("CORE.EVENT.SPACES_LEFT", { N: left }, 'messageformat');
+            }
+            if (this.hasWaitlistSpace()) {
+                return $translate.instant("CORE.EVENT.JOIN_WAITLIST");
+            }
+            return "";
+        };
+
+        /***
+         * @ngdoc method
+         * @name select
+         * @methodOf BB.Models:Event
+         * @description
+         * Checks is this considered a selected
+         *
+         * @returns {boolean} If this is a selected
+         */
+
+
+        Event.prototype.select = function select() {
+            return this.selected = true;
+        };
+
+        /***
+         * @ngdoc method
+         * @name unselect
+         * @methodOf BB.Models:Event
+         * @description
+         * Unselect if is selected
+         *
+         * @returns {boolean} If this is a unselected
+         */
+
+
+        Event.prototype.unselect = function unselect() {
+            if (this.selected) {
+                return delete this.selected;
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name prepEvent
+         * @methodOf BB.Models:Event
+         * @description
+         * Prepare the event
+         *
+         * @returns {promise} A promise for the event
+         */
+
+
+        Event.prototype.prepEvent = function prepEvent(params) {
+            var _this5 = this;
+
+            // build out some useful event stuff
+            var def = $q.defer();
+            this.getChain(params).then(function () {
+
+                if (_this5.chain.$has('address')) {
+                    _this5.chain.$getAddress().then(function (address) {
+                        return _this5.chain.address = address;
+                    });
                 }
-            }
 
-            /***
-             * @ngdoc method
-             * @name getNumBooked
-             * @methodOf BB.Models:Event
-             * @description
-             * Get the number booked
-             *
-             * @returns {object} The returned number booked
-             */
+                return _this5.chain.getTickets().then(function (tickets) {
+                    _this5.tickets = tickets;
 
-        }, {
-            key: 'getNumBooked',
-            value: function getNumBooked() {
-                return this.spaces_blocked + this.spaces_booked + this.spaces_reserved + this.spaces_held;
-            }
+                    _this5.price_range = {};
+                    if (tickets && tickets.length > 0) {
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
 
-            /***
-             * @ngdoc method
-             * @name getSpacesLeft
-             * @methodOf BB.Models:Event
-             * @description
-             * Get the number of spaces left (possibly limited by a specific ticket pool)
-             *
-             * @returns {object} The returned spaces left
-             */
+                        try {
+                            for (var _iterator = Array.from(_this5.tickets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                var ticket = _step.value;
 
-        }, {
-            key: 'getSpacesLeft',
-            value: function getSpacesLeft(pool) {
-                if (pool == null) {
-                    pool = null;
-                }
-                if (pool && this.ticket_spaces && this.ticket_spaces[pool]) {
-                    return this.ticket_spaces[pool].left;
-                } else {
-                    var x = this.num_spaces - this.getNumBooked();
-                    if (x < 0) {
-                        return 0;
-                    }
-                    return x;
-                }
-            }
-
-            /***
-             * @ngdoc method
-             * @name getWaitSpacesLeft
-             * @methodOf BB.Models:Event
-             * @description
-             * Get the number of waitlist spaces left (possibly limited by a specific ticket pool)
-             *
-             * @returns {object} The returned spaces left
-             */
-
-        }, {
-            key: 'getWaitSpacesLeft',
-            value: function getWaitSpacesLeft() {
-                var wait = this.chain.waitlength;
-                if (!wait) {
-                    wait = 0;
-                }
-                wait = wait - this.spaces_wait;
-                if (wait <= 0) {
-                    return 0;
-                }
-
-                return wait;
-            }
-
-            /***
-             * @ngdoc method
-             * @name hasSpace
-             * @methodOf BB.Models:Event
-             * @description
-             * Checks if this considered a valid space
-             *
-             * @returns {boolean} If this is a valid space
-             */
-
-        }, {
-            key: 'hasSpace',
-            value: function hasSpace() {
-                return this.getSpacesLeft() > 0;
-            }
-
-            /***
-             * @ngdoc method
-             * @name hasWaitlistSpace
-             * @methodOf BB.Models:Event
-             * @description
-             * Checks if this considered a valid waiting list space
-             *
-             * @returns {boolean} If this is a valid waiting list space
-             */
-
-        }, {
-            key: 'hasWaitlistSpace',
-            value: function hasWaitlistSpace() {
-                return this.getSpacesLeft() <= 0 && this.getChain().waitlength > this.spaces_wait;
-            }
-
-            /***
-             * @ngdoc method
-             * @name getRemainingDescription
-             * @methodOf BB.Models:Event
-             * @description
-             * Get the remaining description
-             *
-             * @returns {object} The returned remaining description
-             */
-
-        }, {
-            key: 'getRemainingDescription',
-            value: function getRemainingDescription() {
-                var left = this.getSpacesLeft();
-                if (left > 0 && left < 3) {
-                    return $translate.instant("CORE.EVENT.SPACES_LEFT", { N: left }, 'messageformat');
-                }
-                if (this.hasWaitlistSpace()) {
-                    return $translate.instant("CORE.EVENT.JOIN_WAITLIST");
-                }
-                return "";
-            }
-
-            /***
-             * @ngdoc method
-             * @name select
-             * @methodOf BB.Models:Event
-             * @description
-             * Checks is this considered a selected
-             *
-             * @returns {boolean} If this is a selected
-             */
-
-        }, {
-            key: 'select',
-            value: function select() {
-                return this.selected = true;
-            }
-
-            /***
-             * @ngdoc method
-             * @name unselect
-             * @methodOf BB.Models:Event
-             * @description
-             * Unselect if is selected
-             *
-             * @returns {boolean} If this is a unselected
-             */
-
-        }, {
-            key: 'unselect',
-            value: function unselect() {
-                if (this.selected) {
-                    return delete this.selected;
-                }
-            }
-
-            /***
-             * @ngdoc method
-             * @name prepEvent
-             * @methodOf BB.Models:Event
-             * @description
-             * Prepare the event
-             *
-             * @returns {promise} A promise for the event
-             */
-
-        }, {
-            key: 'prepEvent',
-            value: function prepEvent(params) {
-                var _this5 = this;
-
-                // build out some useful event stuff
-                var def = $q.defer();
-                this.getChain(params).then(function () {
-
-                    if (_this5.chain.$has('address')) {
-                        _this5.chain.$getAddress().then(function (address) {
-                            return _this5.chain.address = address;
-                        });
-                    }
-
-                    return _this5.chain.getTickets().then(function (tickets) {
-                        _this5.tickets = tickets;
-
-                        _this5.price_range = {};
-                        if (tickets && tickets.length > 0) {
-                            var _iteratorNormalCompletion = true;
-                            var _didIteratorError = false;
-                            var _iteratorError = undefined;
-
-                            try {
-                                for (var _iterator = Array.from(_this5.tickets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                    var ticket = _step.value;
-
-                                    if (!_this5.price_range.from || _this5.price_range.from && ticket.price < _this5.price_range.from) {
-                                        _this5.price_range.from = ticket.price;
-                                    }
-                                    if (!_this5.price_range.to || _this5.price_range.to && ticket.price > _this5.price_range.to) {
-                                        _this5.price_range.to = ticket.price;
-                                    }
-                                    ticket.old_price = ticket.price;
+                                if (!_this5.price_range.from || _this5.price_range.from && ticket.price < _this5.price_range.from) {
+                                    _this5.price_range.from = ticket.price;
                                 }
-                            } catch (err) {
-                                _didIteratorError = true;
-                                _iteratorError = err;
+                                if (!_this5.price_range.to || _this5.price_range.to && ticket.price > _this5.price_range.to) {
+                                    _this5.price_range.to = ticket.price;
+                                }
+                                ticket.old_price = ticket.price;
+                            }
+                        } catch (err) {
+                            _didIteratorError = true;
+                            _iteratorError = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
+                                }
                             } finally {
-                                try {
-                                    if (!_iteratorNormalCompletion && _iterator.return) {
-                                        _iterator.return();
-                                    }
-                                } finally {
-                                    if (_didIteratorError) {
-                                        throw _iteratorError;
-                                    }
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
                                 }
                             }
-                        } else {
-                            _this5.price_range.from = _this5.price;
-                            _this5.price_range.to = _this5.price;
                         }
-
-                        _this5.ticket_prices = _.indexBy(tickets, 'name');
-
-                        return def.resolve(_this5);
-                    });
-                });
-                return def.promise;
-            }
-
-            /***
-             * @ngdoc method
-             * @name updatePrice
-             * @methodOf BB.Models:Event
-             * @description
-             * Update price for the ticket
-             *
-             * @returns {object} The returned update price
-             */
-
-        }, {
-            key: 'updatePrice',
-            value: function updatePrice() {
-                return Array.from(this.tickets).map(function (ticket) {
-                    return ticket.pre_paid_booking_id ? ticket.price = 0 : ticket.price = ticket.old_price;
-                });
-            }
-        }, {
-            key: 'numTicketsSelected',
-
-
-            /***
-             * @ngdoc method
-             * @name numTicketsSelected
-             * @methodOf BB.Models:Event
-             * @description
-             *
-             *
-             * @returns {object} get number of tickets selected
-             */
-            value: function numTicketsSelected() {
-                var num = 0;
-                var _iteratorNormalCompletion2 = true;
-                var _didIteratorError2 = false;
-                var _iteratorError2 = undefined;
-
-                try {
-                    for (var _iterator2 = Array.from(this.tickets)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                        var ticket = _step2.value;
-
-                        num += ticket.qty;
+                    } else {
+                        _this5.price_range.from = _this5.price;
+                        _this5.price_range.to = _this5.price;
                     }
-                } catch (err) {
-                    _didIteratorError2 = true;
-                    _iteratorError2 = err;
+
+                    _this5.ticket_prices = _.indexBy(tickets, 'name');
+
+                    return def.resolve(_this5);
+                });
+            });
+            return def.promise;
+        };
+
+        /***
+         * @ngdoc method
+         * @name updatePrice
+         * @methodOf BB.Models:Event
+         * @description
+         * Update price for the ticket
+         *
+         * @returns {object} The returned update price
+         */
+
+
+        Event.prototype.updatePrice = function updatePrice() {
+            return Array.from(this.tickets).map(function (ticket) {
+                return ticket.pre_paid_booking_id ? ticket.price = 0 : ticket.price = ticket.old_price;
+            });
+        };
+
+        Event.$query = function $query(company, params) {
+            return EventService.query(company, params);
+        };
+
+        Event.$summary = function $summary(company, params) {
+            return EventService.summary(company, params);
+        };
+
+        /***
+         * @ngdoc method
+         * @name numTicketsSelected
+         * @methodOf BB.Models:Event
+         * @description
+         *
+         *
+         * @returns {object} get number of tickets selected
+         */
+
+
+        Event.prototype.numTicketsSelected = function numTicketsSelected() {
+            var num = 0;
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = Array.from(this.tickets)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var ticket = _step2.value;
+
+                    num += ticket.qty;
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                            _iterator2.return();
-                        }
-                    } finally {
-                        if (_didIteratorError2) {
-                            throw _iteratorError2;
-                        }
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
                     }
                 }
+            }
 
-                return num;
-            }
-        }], [{
-            key: '$query',
-            value: function $query(company, params) {
-                return EventService.query(company, params);
-            }
-        }, {
-            key: '$summary',
-            value: function $summary(company, params) {
-                return EventService.summary(company, params);
-            }
-        }]);
+            return num;
+        };
 
         return Event;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -8302,7 +8007,7 @@ angular.module('BB.Models').factory("EventChainModel", function ($q, BBModel, Ba
         function EventChain(data) {
             _classCallCheck(this, EventChain);
 
-            var _this = _possibleConstructorReturn(this, (EventChain.__proto__ || Object.getPrototypeOf(EventChain)).apply(this, arguments));
+            var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             _this.capacity_view = _this.setCapacityView(_this.capacity_view);
             if (_this.start_date) {
@@ -8314,194 +8019,183 @@ angular.module('BB.Models').factory("EventChainModel", function ($q, BBModel, Ba
             return _this;
         }
 
-        _createClass(EventChain, [{
-            key: "setCapacityView",
-            value: function setCapacityView(capacity_view) {
-                var capacity_view_str = void 0;
-                switch (capacity_view) {
-                    case 0:
-                        capacity_view_str = "DO_NOT_DISPLAY";
-                        break;
-                    case 1:
-                        capacity_view_str = "NUM_SPACES";
-                        break;
-                    case 2:
-                        capacity_view_str = "NUM_SPACES_LEFT";
-                        break;
-                    case 3:
-                        capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
-                        break;
-                    default:
-                        capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
-                }
-                return capacity_view_str;
+        EventChain.prototype.setCapacityView = function setCapacityView(capacity_view) {
+            var capacity_view_str = void 0;
+            switch (capacity_view) {
+                case 0:
+                    capacity_view_str = "DO_NOT_DISPLAY";
+                    break;
+                case 1:
+                    capacity_view_str = "NUM_SPACES";
+                    break;
+                case 2:
+                    capacity_view_str = "NUM_SPACES_LEFT";
+                    break;
+                case 3:
+                    capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
+                    break;
+                default:
+                    capacity_view_str = "NUM_SPACES_AND_SPACES_LEFT";
             }
-        }, {
-            key: "name",
-            value: function name() {
-                //comment
-                return this._data.name;
-            }
+            return capacity_view_str;
+        };
 
-            /***
-             * @ngdoc method
-             * @name isSingleBooking
-             * @methodOf BB.Models:EventChain
-             * @description
-             * Verify if is a single booking
-             *
-             * @returns {array} If maximum number of bookings is equal with 1 and not have an ticket sets
-             */
+        EventChain.prototype.name = function name() {
+            //comment
+            return this._data.name;
+        };
 
-        }, {
-            key: "isSingleBooking",
-            value: function isSingleBooking() {
-                return this.max_num_bookings === 1 && !this.$has('ticket_sets');
-            }
+        /***
+         * @ngdoc method
+         * @name isSingleBooking
+         * @methodOf BB.Models:EventChain
+         * @description
+         * Verify if is a single booking
+         *
+         * @returns {array} If maximum number of bookings is equal with 1 and not have an ticket sets
+         */
 
-            /***
-             * @ngdoc method
-             * @name hasTickets
-             * @methodOf BB.Models:EventChain
-             * @description
-             * Checks if this is considered a valid tickets
-             *
-             * @returns {boolean} If this have an ticket sets
-             */
 
-        }, {
-            key: "hasTickets",
-            value: function hasTickets() {
-                return this.$has('ticket_sets');
-            }
+        EventChain.prototype.isSingleBooking = function isSingleBooking() {
+            return this.max_num_bookings === 1 && !this.$has('ticket_sets');
+        };
 
-            /***
-             * @ngdoc method
-             * @name getTickets
-             * @methodOf BB.Models:EventChain
-             * @description
-             * Get the tickets of the event
-             *
-             * @returns {promise} A promise for the tickets
-             */
+        /***
+         * @ngdoc method
+         * @name hasTickets
+         * @methodOf BB.Models:EventChain
+         * @description
+         * Checks if this is considered a valid tickets
+         *
+         * @returns {boolean} If this have an ticket sets
+         */
 
-        }, {
-            key: "getTickets",
-            value: function getTickets() {
-                var _this2 = this;
 
-                var def = $q.defer();
-                if (this.tickets) {
-                    def.resolve(this.tickets);
-                } else {
-                    if (this.$has('ticket_sets')) {
-                        this.$get('ticket_sets').then(function (tickets) {
-                            _this2.tickets = [];
-                            var _iteratorNormalCompletion = true;
-                            var _didIteratorError = false;
-                            var _iteratorError = undefined;
+        EventChain.prototype.hasTickets = function hasTickets() {
+            return this.$has('ticket_sets');
+        };
 
-                            try {
-                                for (var _iterator = Array.from(tickets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                    var ticket = _step.value;
+        /***
+         * @ngdoc method
+         * @name getTickets
+         * @methodOf BB.Models:EventChain
+         * @description
+         * Get the tickets of the event
+         *
+         * @returns {promise} A promise for the tickets
+         */
 
-                                    // mark that this ticket is part of ticket set so that the range can be calculated correctly
-                                    ticket.ticket_set = true;
-                                    _this2.tickets.push(new BBModel.EventTicket(ticket));
-                                }
-                            } catch (err) {
-                                _didIteratorError = true;
-                                _iteratorError = err;
-                            } finally {
-                                try {
-                                    if (!_iteratorNormalCompletion && _iterator.return) {
-                                        _iterator.return();
-                                    }
-                                } finally {
-                                    if (_didIteratorError) {
-                                        throw _iteratorError;
-                                    }
-                                }
-                            }
 
-                            _this2.adjustTicketsForRemaining();
-                            return def.resolve(_this2.tickets);
-                        });
-                    } else {
-                        this.tickets = [new BBModel.EventTicket({
-                            name: $translate.instant('COMMON.TERMINOLOGY.ADMITTANCE'),
-                            min_num_bookings: 1,
-                            max_num_bookings: this.max_num_bookings,
-                            type: "normal",
-                            price: this.price
-                        })];
-                        this.adjustTicketsForRemaining();
-                        def.resolve(this.tickets);
-                    }
-                }
-                return def.promise;
-            }
+        EventChain.prototype.getTickets = function getTickets() {
+            var _this2 = this;
 
-            /***
-             * @ngdoc method
-             * @name adjustTicketsForRemaining
-             * @methodOf BB.Models:EventChain
-             * @description
-             * Adjust the number of tickets that can be booked due to changes in the number of remaining spaces for each ticket set
-             *
-             * @returns {object} The returned adjust tickets for remaining
-             */
-
-        }, {
-            key: "adjustTicketsForRemaining",
-            value: function adjustTicketsForRemaining() {
-                var _this3 = this;
-
-                if (this.tickets) {
-                    return function () {
-                        var result = [];
-                        var _iteratorNormalCompletion2 = true;
-                        var _didIteratorError2 = false;
-                        var _iteratorError2 = undefined;
+            var def = $q.defer();
+            if (this.tickets) {
+                def.resolve(this.tickets);
+            } else {
+                if (this.$has('ticket_sets')) {
+                    this.$get('ticket_sets').then(function (tickets) {
+                        _this2.tickets = [];
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
 
                         try {
-                            for (var _iterator2 = Array.from(_this3.tickets)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                                _this3.ticket = _step2.value;
+                            for (var _iterator = Array.from(tickets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                var ticket = _step.value;
 
-                                result.push(_this3.ticket.max_spaces = _this3.spaces);
+                                // mark that this ticket is part of ticket set so that the range can be calculated correctly
+                                ticket.ticket_set = true;
+                                _this2.tickets.push(new BBModel.EventTicket(ticket));
                             }
                         } catch (err) {
-                            _didIteratorError2 = true;
-                            _iteratorError2 = err;
+                            _didIteratorError = true;
+                            _iteratorError = err;
                         } finally {
                             try {
-                                if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                    _iterator2.return();
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
                                 }
                             } finally {
-                                if (_didIteratorError2) {
-                                    throw _iteratorError2;
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
                                 }
                             }
                         }
 
-                        return result;
-                    }();
+                        _this2.adjustTicketsForRemaining();
+                        return def.resolve(_this2.tickets);
+                    });
+                } else {
+                    this.tickets = [new BBModel.EventTicket({
+                        name: $translate.instant('COMMON.TERMINOLOGY.ADMITTANCE'),
+                        min_num_bookings: 1,
+                        max_num_bookings: this.max_num_bookings,
+                        type: "normal",
+                        price: this.price
+                    })];
+                    this.adjustTicketsForRemaining();
+                    def.resolve(this.tickets);
                 }
             }
-        }], [{
-            key: "$query",
-            value: function $query(prms) {
-                return EventChainService.query(prms);
+            return def.promise;
+        };
+
+        /***
+         * @ngdoc method
+         * @name adjustTicketsForRemaining
+         * @methodOf BB.Models:EventChain
+         * @description
+         * Adjust the number of tickets that can be booked due to changes in the number of remaining spaces for each ticket set
+         *
+         * @returns {object} The returned adjust tickets for remaining
+         */
+
+
+        EventChain.prototype.adjustTicketsForRemaining = function adjustTicketsForRemaining() {
+            var _this3 = this;
+
+            if (this.tickets) {
+                return function () {
+                    var result = [];
+                    var _iteratorNormalCompletion2 = true;
+                    var _didIteratorError2 = false;
+                    var _iteratorError2 = undefined;
+
+                    try {
+                        for (var _iterator2 = Array.from(_this3.tickets)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            _this3.ticket = _step2.value;
+
+                            result.push(_this3.ticket.max_spaces = _this3.spaces);
+                        }
+                    } catch (err) {
+                        _didIteratorError2 = true;
+                        _iteratorError2 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                _iterator2.return();
+                            }
+                        } finally {
+                            if (_didIteratorError2) {
+                                throw _iteratorError2;
+                            }
+                        }
+                    }
+
+                    return result;
+                }();
             }
-        }]);
+        };
+
+        EventChain.$query = function $query(prms) {
+            return EventChainService.query(prms);
+        };
 
         return EventChain;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -8528,27 +8222,21 @@ angular.module('BB.Models').factory("EventGroupModel", function ($q, BBModel, Ba
         function EventGroup() {
             _classCallCheck(this, EventGroup);
 
-            return _possibleConstructorReturn(this, (EventGroup.__proto__ || Object.getPrototypeOf(EventGroup)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(EventGroup, [{
-            key: "name",
-            value: function name() {
-                return this._data.name;
-            }
-        }, {
-            key: "colour",
-            value: function colour() {
-                return this._data.colour;
-            }
-        }]);
+        EventGroup.prototype.name = function name() {
+            return this._data.name;
+        };
+
+        EventGroup.prototype.colour = function colour() {
+            return this._data.colour;
+        };
 
         return EventGroup;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -8575,22 +8263,17 @@ angular.module('BB.Models').factory("EventSequenceModel", function ($q, BBModel,
         function EventSequence() {
             _classCallCheck(this, EventSequence);
 
-            return _possibleConstructorReturn(this, (EventSequence.__proto__ || Object.getPrototypeOf(EventSequence)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(EventSequence, [{
-            key: "name",
-            value: function name() {
-                return this._data.name;
-            }
-        }]);
+        EventSequence.prototype.name = function name() {
+            return this._data.name;
+        };
 
         return EventSequence;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -8624,7 +8307,7 @@ angular.module('BB.Models').factory("EventTicketModel", function ($q, BBModel, B
         function EventTicket(data) {
             _classCallCheck(this, EventTicket);
 
-            var _this = _possibleConstructorReturn(this, (EventTicket.__proto__ || Object.getPrototypeOf(EventTicket)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.max = _this.max_num_bookings;
 
@@ -8654,226 +8337,218 @@ angular.module('BB.Models').factory("EventTicketModel", function ($q, BBModel, B
          */
 
 
-        _createClass(EventTicket, [{
-            key: "fullName",
-            value: function fullName() {
-                if (this.pool_name) {
-                    return this.pool_name + " - " + this.name;
-                }
-                return this.name;
+        EventTicket.prototype.fullName = function fullName() {
+            if (this.pool_name) {
+                return this.pool_name + " - " + this.name;
+            }
+            return this.name;
+        };
+
+        /***
+         * @ngdoc method
+         * @name getRange
+         * @methodOf BB.Models:EventTicket
+         * @description
+         * Get the range between minimum number of bookings and the maximum number of bookings
+         *
+         * @returns {array} The returned range
+         */
+
+
+        EventTicket.prototype.getRange = function getRange(event, cap) {
+
+            if (!event) {
+                return;
             }
 
-            /***
-             * @ngdoc method
-             * @name getRange
-             * @methodOf BB.Models:EventTicket
-             * @description
-             * Get the range between minimum number of bookings and the maximum number of bookings
-             *
-             * @returns {array} The returned range
-             */
-
-        }, {
-            key: "getRange",
-            value: function getRange(event, cap) {
-
-                if (!event) {
-                    return;
-                }
-
-                // if not simple ticket, pass pool id to event methods
-                var pool = null;
-                if (this.ticket_set) {
-                    pool = this.pool_id;
-                }
-
-                var max = this.getMax(event, pool, cap);
-                var min = max <= this.min_num_bookings ? max : this.min_num_bookings;
-
-                return [].concat(__range__(min, max, true));
+            // if not simple ticket, pass pool id to event methods
+            var pool = null;
+            if (this.ticket_set) {
+                pool = this.pool_id;
             }
 
-            /***
-             * @ngdoc method
-             * @name getMax
-             * @methodOf BB.Models:EventTicket
-             * @description
-             * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
-             *
-             * @returns {Integer} The max number of tickets that can be selected
-             */
+            var max = this.getMax(event, pool, cap);
+            var min = max <= this.min_num_bookings ? max : this.min_num_bookings;
 
-        }, {
-            key: "getMax",
-            value: function getMax(ev, pool, cap) {
+            return [].concat(__range__(min, max, true));
+        };
 
-                var spaces_left = void 0,
-                    wait_spaces = void 0;
-                if (pool == null) {
-                    pool = null;
+        /***
+         * @ngdoc method
+         * @name getMax
+         * @methodOf BB.Models:EventTicket
+         * @description
+         * Get the maximum - this looks at an optional cap, the maximum available and potential a running count of tickets already selected (from passing in the event being booked)
+         *
+         * @returns {Integer} The max number of tickets that can be selected
+         */
+
+
+        EventTicket.prototype.getMax = function getMax(ev, pool, cap) {
+
+            var spaces_left = void 0,
+                wait_spaces = void 0;
+            if (pool == null) {
+                pool = null;
+            }
+            if (cap == null) {
+                cap = null;
+            }
+            var isAvailable = function isAvailable(event) {
+                _.each(event.ticket_spaces, function (ts) {
+                    if (ts.left <= 0) {
+                        return false;
+                    }
+                });
+                return true;
+            };
+
+            if (!ev) {
+                return 0;
+            }
+
+            // only show wait spaces if no spaces available in any pool
+            if (!isAvailable(ev) || ev.getSpacesLeft() <= 0) {
+                spaces_left = ev.getWaitSpacesLeft();
+                wait_spaces = true;
+            } else {
+                spaces_left = ev.getSpacesLeft(pool);
+            }
+
+            var live_max = spaces_left <= this.max ? spaces_left : this.max;
+
+            var used = 0;
+
+            // count number of spaces used across the same ticket pool (except when spaces_left are waitlist ones)
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = Array.from(ev.tickets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var ticket = _step.value;
+
+                    if (ticket.pool_id === this.pool_id || wait_spaces) {
+                        used += ticket.totalQty();
+                    }
                 }
-                if (cap == null) {
-                    cap = null;
-                }
-                var isAvailable = function isAvailable(event) {
-                    _.each(event.ticket_spaces, function (ts) {
-                        if (ts.left <= 0) {
-                            return false;
-                        }
-                    });
-                    return true;
-                };
 
-                if (!ev) {
-                    return 0;
-                }
-
-                // only show wait spaces if no spaces available in any pool
-                if (!isAvailable(ev) || ev.getSpacesLeft() <= 0) {
-                    spaces_left = ev.getWaitSpacesLeft();
-                    wait_spaces = true;
-                } else {
-                    spaces_left = ev.getSpacesLeft(pool);
-                }
-
-                var live_max = spaces_left <= this.max ? spaces_left : this.max;
-
-                var used = 0;
-
-                // count number of spaces used across the same ticket pool (except when spaces_left are waitlist ones)
-                var _iteratorNormalCompletion = true;
-                var _didIteratorError = false;
-                var _iteratorError = undefined;
-
+                // subtract self from used space count
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
                 try {
-                    for (var _iterator = Array.from(ev.tickets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                        var ticket = _step.value;
-
-                        if (ticket.pool_id === this.pool_id || wait_spaces) {
-                            used += ticket.totalQty();
-                        }
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
                     }
-
-                    // subtract self from used space count
-                } catch (err) {
-                    _didIteratorError = true;
-                    _iteratorError = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion && _iterator.return) {
-                            _iterator.return();
-                        }
-                    } finally {
-                        if (_didIteratorError) {
-                            throw _iteratorError;
-                        }
+                    if (_didIteratorError) {
+                        throw _iteratorError;
                     }
                 }
+            }
 
-                if (this.qty) {
-                    used = used - this.totalQty();
-                }
+            if (this.qty) {
+                used = used - this.totalQty();
+            }
 
-                // adjust number of spaces used by count_as
+            // adjust number of spaces used by count_as
+            if (this.counts_as) {
+                used = Math.ceil(used / this.counts_as);
+            }
+
+            live_max = live_max - used;
+            if (live_max < 0) {
+                live_max = 0;
+            }
+
+            var left = left - used;
+            if (left < 0) {
+                left = 0;
+            }
+
+            // use ticket cap if set
+            if (this.cap) {
+                cap = this.cap;
+            }
+
+            if (!cap || cap > left) {
+                cap = left;
+            }
+
+            // adjust max by cap if it's lower
+            if (cap) {
+                var c = cap;
                 if (this.counts_as) {
-                    used = Math.ceil(used / this.counts_as);
+                    c = cap / this.counts_as;
                 }
-
-                live_max = live_max - used;
-                if (live_max < 0) {
-                    live_max = 0;
+                if (c < live_max) {
+                    return c;
                 }
-
-                var left = left - used;
-                if (left < 0) {
-                    left = 0;
-                }
-
-                // use ticket cap if set
-                if (this.cap) {
-                    cap = this.cap;
-                }
-
-                if (!cap || cap > left) {
-                    cap = left;
-                }
-
-                // adjust max by cap if it's lower
-                if (cap) {
-                    var c = cap;
-                    if (this.counts_as) {
-                        c = cap / this.counts_as;
-                    }
-                    if (c < live_max) {
-                        return c;
-                    }
-                }
-
-                return live_max;
             }
 
-            /***
-             * @ngdoc method
-             * @name totalQty
-             * @methodOf BB.Models:EventTicket
-             * @description
-             * Get the total quantity of the event ticket
-             *
-             * @returns {array} The returned total quantity
-             */
+            return live_max;
+        };
 
-        }, {
-            key: "totalQty",
-            value: function totalQty() {
-                if (!this.qty) {
-                    return 0;
-                }
-                if (!this.counts_as) {
-                    return this.qty;
-                }
-                return this.qty * this.counts_as;
+        /***
+         * @ngdoc method
+         * @name totalQty
+         * @methodOf BB.Models:EventTicket
+         * @description
+         * Get the total quantity of the event ticket
+         *
+         * @returns {array} The returned total quantity
+         */
+
+
+        EventTicket.prototype.totalQty = function totalQty() {
+            if (!this.qty) {
+                return 0;
             }
-
-            /***
-             * @ngdoc method
-             * @name add
-             * @methodOf BB.Models:EventTicket
-             * @description
-             * Add to the a quantity a new value
-             *
-             * @returns {array} The returned new quantity added
-             */
-
-        }, {
-            key: "add",
-            value: function add(value) {
-                if (!this.qty) {
-                    this.qty = 0;
-                }
-                this.qty = parseInt(this.qty);
-
-                if (angular.isNumber(this.qty) && this.qty >= this.max && value > 0 || this.qty === 0 && value < 0) {
-                    return;
-                }
-                return this.qty += value;
+            if (!this.counts_as) {
+                return this.qty;
             }
+            return this.qty * this.counts_as;
+        };
 
-            /***
-             * @ngdoc method
-             * @name subtract
-             * @methodOf BB.Models:EventTicket
-             * @description
-             * Subtract a value from the quantity
-             *
-             * @returns {array} The returned substract
-             */
+        /***
+         * @ngdoc method
+         * @name add
+         * @methodOf BB.Models:EventTicket
+         * @description
+         * Add to the a quantity a new value
+         *
+         * @returns {array} The returned new quantity added
+         */
 
-        }, {
-            key: "subtract",
-            value: function subtract(value) {
-                return this.add(-value);
+
+        EventTicket.prototype.add = function add(value) {
+            if (!this.qty) {
+                this.qty = 0;
             }
-        }]);
+            this.qty = parseInt(this.qty);
+
+            if (angular.isNumber(this.qty) && this.qty >= this.max && value > 0 || this.qty === 0 && value < 0) {
+                return;
+            }
+            return this.qty += value;
+        };
+
+        /***
+         * @ngdoc method
+         * @name subtract
+         * @methodOf BB.Models:EventTicket
+         * @description
+         * Subtract a value from the quantity
+         *
+         * @returns {array} The returned substract
+         */
+
+
+        EventTicket.prototype.subtract = function subtract(value) {
+            return this.add(-value);
+        };
 
         return EventTicket;
     }(BaseModel);
@@ -8903,7 +8578,7 @@ angular.module('BB.Models').factory("ExternalPurchaseModel", function ($q, BBMod
     function ExternalPurchase() {
       _classCallCheck(this, ExternalPurchase);
 
-      return _possibleConstructorReturn(this, (ExternalPurchase.__proto__ || Object.getPrototypeOf(ExternalPurchase)).apply(this, arguments));
+      return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
     }
 
     return ExternalPurchase;
@@ -8935,15 +8610,13 @@ angular.module('BB.Models').factory("ImageModel", function ($q, $filter, BBModel
         function Image(data) {
             _classCallCheck(this, Image);
 
-            return _possibleConstructorReturn(this, (Image.__proto__ || Object.getPrototypeOf(Image)).call(this, data));
+            return _possibleConstructorReturn(this, _BaseModel.call(this, data));
         }
 
         return Image;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -8974,7 +8647,7 @@ angular.module('BB.Models').factory("ItemDetailsModel", function ($q, $bbug, Ite
         function ItemDetails(data) {
             _classCallCheck(this, ItemDetails);
 
-            var _this = _possibleConstructorReturn(this, (ItemDetails.__proto__ || Object.getPrototypeOf(ItemDetails)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this._data = data;
             if (_this._data) {
@@ -9031,202 +8704,192 @@ angular.module('BB.Models').factory("ItemDetailsModel", function ($q, $bbug, Ite
          */
 
 
-        _createClass(ItemDetails, [{
-            key: "questionPrice",
-            value: function questionPrice(qty) {
-                if (!qty) {
-                    qty = 1;
-                }
-                this.checkConditionalQuestions();
-                var price = 0;
-                var _iteratorNormalCompletion2 = true;
-                var _didIteratorError2 = false;
-                var _iteratorError2 = undefined;
+        ItemDetails.prototype.questionPrice = function questionPrice(qty) {
+            if (!qty) {
+                qty = 1;
+            }
+            this.checkConditionalQuestions();
+            var price = 0;
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
 
+            try {
+                for (var _iterator2 = Array.from(this.questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var q = _step2.value;
+
+                    price += q.selectedPriceQty(qty);
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
                 try {
-                    for (var _iterator2 = Array.from(this.questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                        var q = _step2.value;
-
-                        price += q.selectedPriceQty(qty);
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
                     }
-                } catch (err) {
-                    _didIteratorError2 = true;
-                    _iteratorError2 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                            _iterator2.return();
-                        }
-                    } finally {
-                        if (_didIteratorError2) {
-                            throw _iteratorError2;
-                        }
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
                     }
                 }
-
-                return price;
             }
 
-            /***
-             * @ngdoc method
-             * @name checkConditionalQuestions
-             * @methodOf BB.Models:ItemDetails
-             * @description
-             * Checks if exist conditional questions
-             *
-             * @returns {boolean} The returned existing conditional questions
-             */
+            return price;
+        };
 
-        }, {
-            key: "checkConditionalQuestions",
-            value: function checkConditionalQuestions() {
-                return BBModel.Question.$checkConditionalQuestions(this.questions);
-            }
+        /***
+         * @ngdoc method
+         * @name checkConditionalQuestions
+         * @methodOf BB.Models:ItemDetails
+         * @description
+         * Checks if exist conditional questions
+         *
+         * @returns {boolean} The returned existing conditional questions
+         */
 
-            /***
-             * @ngdoc method
-             * @name getPostData
-             * @methodOf BB.Models:ItemDetails
-             * @description
-             * Get data
-             *
-             * @returns {array} The returned data
-             */
 
-        }, {
-            key: "getPostData",
-            value: function getPostData() {
-                var data = [];
-                var _iteratorNormalCompletion3 = true;
-                var _didIteratorError3 = false;
-                var _iteratorError3 = undefined;
+        ItemDetails.prototype.checkConditionalQuestions = function checkConditionalQuestions() {
+            return BBModel.Question.$checkConditionalQuestions(this.questions);
+        };
 
+        /***
+         * @ngdoc method
+         * @name getPostData
+         * @methodOf BB.Models:ItemDetails
+         * @description
+         * Get data
+         *
+         * @returns {array} The returned data
+         */
+
+
+        ItemDetails.prototype.getPostData = function getPostData() {
+            var data = [];
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
+
+            try {
+                for (var _iterator3 = Array.from(this.questions)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var q = _step3.value;
+
+                    if (q.currentlyShown) {
+                        data.push(q.getPostData());
+                    }
+                }
+            } catch (err) {
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
+            } finally {
                 try {
-                    for (var _iterator3 = Array.from(this.questions)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                        var q = _step3.value;
-
-                        if (q.currentlyShown) {
-                            data.push(q.getPostData());
-                        }
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
                     }
-                } catch (err) {
-                    _didIteratorError3 = true;
-                    _iteratorError3 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                            _iterator3.return();
-                        }
-                    } finally {
-                        if (_didIteratorError3) {
-                            throw _iteratorError3;
-                        }
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
                     }
                 }
-
-                return data;
             }
 
-            /***
-             * @ngdoc method
-             * @name setAnswers
-             * @methodOf BB.Models:ItemDetails
-             * @description
-             * Load the answers from an answer set - probably from loading an existing basket item
-             *
-             * @returns {object} The returned answers set
-             */
-            // load the answers from an answer set - probably from loading an existing basket item
+            return data;
+        };
 
-        }, {
-            key: "setAnswers",
-            value: function setAnswers(answers) {
-                // turn answers into a hash
-                var ahash = {};
-                var _iteratorNormalCompletion4 = true;
-                var _didIteratorError4 = false;
-                var _iteratorError4 = undefined;
+        /***
+         * @ngdoc method
+         * @name setAnswers
+         * @methodOf BB.Models:ItemDetails
+         * @description
+         * Load the answers from an answer set - probably from loading an existing basket item
+         *
+         * @returns {object} The returned answers set
+         */
+        // load the answers from an answer set - probably from loading an existing basket item
 
+
+        ItemDetails.prototype.setAnswers = function setAnswers(answers) {
+            // turn answers into a hash
+            var ahash = {};
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
+
+            try {
+                for (var _iterator4 = Array.from(answers)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var a = _step4.value;
+
+                    ahash[a.id] = a;
+                }
+            } catch (err) {
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
+            } finally {
                 try {
-                    for (var _iterator4 = Array.from(answers)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                        var a = _step4.value;
-
-                        ahash[a.id] = a;
+                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                        _iterator4.return();
                     }
-                } catch (err) {
-                    _didIteratorError4 = true;
-                    _iteratorError4 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                            _iterator4.return();
-                        }
-                    } finally {
-                        if (_didIteratorError4) {
-                            throw _iteratorError4;
-                        }
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
                     }
                 }
+            }
 
-                var _iteratorNormalCompletion5 = true;
-                var _didIteratorError5 = false;
-                var _iteratorError5 = undefined;
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
 
+            try {
+                for (var _iterator5 = Array.from(this.questions)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var q = _step5.value;
+
+                    if (ahash[q.id]) {
+                        // if we have answer for it
+                        q.answer = ahash[q.id].answer;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
+            } finally {
                 try {
-                    for (var _iterator5 = Array.from(this.questions)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                        var q = _step5.value;
-
-                        if (ahash[q.id]) {
-                            // if we have answer for it
-                            q.answer = ahash[q.id].answer;
-                        }
+                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                        _iterator5.return();
                     }
-                } catch (err) {
-                    _didIteratorError5 = true;
-                    _iteratorError5 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                            _iterator5.return();
-                        }
-                    } finally {
-                        if (_didIteratorError5) {
-                            throw _iteratorError5;
-                        }
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
                     }
                 }
-
-                return this.checkConditionalQuestions();
             }
 
-            /***
-             * @ngdoc method
-             * @name getQuestion
-             * @methodOf BB.Models:ItemDetails
-             * @description
-             * Get question about item details by id
-             *
-             * @returns {object} The returned question
-             */
+            return this.checkConditionalQuestions();
+        };
 
-        }, {
-            key: "getQuestion",
-            value: function getQuestion(id) {
-                return _.findWhere(this.questions, { id: id });
-            }
-        }], [{
-            key: "$query",
-            value: function $query(prms) {
-                return ItemDetailsService.query(prms);
-            }
-        }]);
+        /***
+         * @ngdoc method
+         * @name getQuestion
+         * @methodOf BB.Models:ItemDetails
+         * @description
+         * Get question about item details by id
+         *
+         * @returns {object} The returned question
+         */
+
+
+        ItemDetails.prototype.getQuestion = function getQuestion(id) {
+            return _.findWhere(this.questions, { id: id });
+        };
+
+        ItemDetails.$query = function $query(prms) {
+            return ItemDetailsService.query(prms);
+        };
 
         return ItemDetails;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9241,87 +8904,69 @@ angular.module('BB.Models').factory("LoginModel", function ($q, LoginService, BB
         function Login(data) {
             _classCallCheck(this, Login);
 
-            return _possibleConstructorReturn(this, (Login.__proto__ || Object.getPrototypeOf(Login)).call(this, data));
+            return _possibleConstructorReturn(this, _BaseModel.call(this, data));
         }
 
-        _createClass(Login, null, [{
-            key: "$companyLogin",
-            value: function $companyLogin(company, params, form) {
-                return LoginService.companyLogin(company, params, form);
-            }
-        }, {
-            key: "$login",
-            value: function $login(form, options) {
-                return LoginService.login(form, options);
-            }
-        }, {
-            key: "$FBLogin",
-            value: function $FBLogin(company, params) {
-                return LoginService.FBLogin(company, params);
-            }
-        }, {
-            key: "$companyQuery",
-            value: function $companyQuery(id) {
-                return LoginService.companyQuery(id);
-            }
-        }, {
-            key: "$memberQuery",
-            value: function $memberQuery(params) {
-                return LoginService.memberQuery(params);
-            }
-        }, {
-            key: "$ssoLogin",
-            value: function $ssoLogin(options, data) {
-                return LoginService.ssoLogin(options, data);
-            }
-        }, {
-            key: "$isLoggedIn",
-            value: function $isLoggedIn() {
-                return LoginService.isLoggedIn();
-            }
-        }, {
-            key: "$setLogin",
-            value: function $setLogin(member, persist) {
-                return LoginService.setLogin(member, persist);
-            }
-        }, {
-            key: "$member",
-            value: function $member() {
-                return LoginService.member();
-            }
-        }, {
-            key: "$checkLogin",
-            value: function $checkLogin() {
-                return LoginService.checkLogin();
-            }
-        }, {
-            key: "$logout",
-            value: function $logout() {
-                return LoginService.logout();
-            }
-        }, {
-            key: "$FBLogout",
-            value: function $FBLogout(options) {
-                return LoginService.FBLogout(options);
-            }
-        }, {
-            key: "$sendPasswordReset",
-            value: function $sendPasswordReset(company, params) {
-                return LoginService.sendPasswordReset(company, params);
-            }
-        }, {
-            key: "$updatePassword",
-            value: function $updatePassword(member, params) {
-                return LoginService.updatePassword(member, params);
-            }
-        }]);
+        Login.$companyLogin = function $companyLogin(company, params, form) {
+            return LoginService.companyLogin(company, params, form);
+        };
+
+        Login.$login = function $login(form, options) {
+            return LoginService.login(form, options);
+        };
+
+        Login.$FBLogin = function $FBLogin(company, params) {
+            return LoginService.FBLogin(company, params);
+        };
+
+        Login.$companyQuery = function $companyQuery(id) {
+            return LoginService.companyQuery(id);
+        };
+
+        Login.$memberQuery = function $memberQuery(params) {
+            return LoginService.memberQuery(params);
+        };
+
+        Login.$ssoLogin = function $ssoLogin(options, data) {
+            return LoginService.ssoLogin(options, data);
+        };
+
+        Login.$isLoggedIn = function $isLoggedIn() {
+            return LoginService.isLoggedIn();
+        };
+
+        Login.$setLogin = function $setLogin(member, persist) {
+            return LoginService.setLogin(member, persist);
+        };
+
+        Login.$member = function $member() {
+            return LoginService.member();
+        };
+
+        Login.$checkLogin = function $checkLogin() {
+            return LoginService.checkLogin();
+        };
+
+        Login.$logout = function $logout() {
+            return LoginService.logout();
+        };
+
+        Login.$FBLogout = function $FBLogout(options) {
+            return LoginService.FBLogout(options);
+        };
+
+        Login.$sendPasswordReset = function $sendPasswordReset(company, params) {
+            return LoginService.sendPasswordReset(company, params);
+        };
+
+        Login.$updatePassword = function $updatePassword(member, params) {
+            return LoginService.updatePassword(member, params);
+        };
 
         return Login;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9336,22 +8981,17 @@ angular.module('BB.Models').factory("MembershipLevelModel", function ($q, BBMode
         function MembershipLevel() {
             _classCallCheck(this, MembershipLevel);
 
-            return _possibleConstructorReturn(this, (MembershipLevel.__proto__ || Object.getPrototypeOf(MembershipLevel)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(MembershipLevel, [{
-            key: "$getMembershipLevels",
-            value: function $getMembershipLevels(company) {
-                return MembershipLevelsService.getMembershipLevels(company);
-            }
-        }]);
+        MembershipLevel.prototype.$getMembershipLevels = function $getMembershipLevels(company) {
+            return MembershipLevelsService.getMembershipLevels(company);
+        };
 
         return MembershipLevel;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9374,27 +9014,21 @@ angular.module('BB.Models').factory("PackageItemModel", function ($q, PackageIte
         function PackageItem() {
             _classCallCheck(this, PackageItem);
 
-            return _possibleConstructorReturn(this, (PackageItem.__proto__ || Object.getPrototypeOf(PackageItem)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(PackageItem, null, [{
-            key: "$query",
-            value: function $query(company) {
-                return PackageItemService.query(company);
-            }
-        }, {
-            key: "$getPackageServices",
-            value: function $getPackageServices(package_item) {
-                return PackageItemService.getPackageServices(package_item);
-            }
-        }]);
+        PackageItem.$query = function $query(company) {
+            return PackageItemService.query(company);
+        };
+
+        PackageItem.$getPackageServices = function $getPackageServices(package_item) {
+            return PackageItemService.getPackageServices(package_item);
+        };
 
         return PackageItem;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9505,63 +9139,58 @@ angular.module('BB.Models').factory("PaginationModel", function () {
      */
 
 
-    _createClass(Pagination, [{
-      key: "initialise",
-      value: function initialise(items, total_items) {
-        this.current_page = 1;
-        this.items = items || [];
-        this.num_items = total_items || 0;
-        return this.update();
-      }
+    Pagination.prototype.initialise = function initialise(items, total_items) {
+      this.current_page = 1;
+      this.items = items || [];
+      this.num_items = total_items || 0;
+      return this.update();
+    };
 
-      /***
-       * @ngdoc method
-       * @name update
-       * @methodOf BB.Models:Service
-       * @description
-       * Updates the pagination summary when the page changes
-       *
-       * @returns {boolean} Flag to indicate if items in current page are present
-       * @returns {integer} The page to load based on
-       */
+    /***
+     * @ngdoc method
+     * @name update
+     * @methodOf BB.Models:Service
+     * @description
+     * Updates the pagination summary when the page changes
+     *
+     * @returns {boolean} Flag to indicate if items in current page are present
+     * @returns {integer} The page to load based on
+     */
 
-    }, {
-      key: "update",
-      value: function update() {
-        var start = (this.current_page - 1) * this.page_size + 1;
-        var end = this.current_page * this.page_size;
-        end = this.num_items < end ? this.num_items : end;
-        var total = end >= 100 ? "100+" : end;
-        this.summary = $translate.instant('CORE.PAGINATION.SUMMARY', { start: start, end: end, total: total });
 
-        var page_to_load = Math.ceil(this.current_page * this.page_size / this.request_page_size);
+    Pagination.prototype.update = function update() {
+      var start = (this.current_page - 1) * this.page_size + 1;
+      var end = this.current_page * this.page_size;
+      end = this.num_items < end ? this.num_items : end;
+      var total = end >= 100 ? "100+" : end;
+      this.summary = $translate.instant('CORE.PAGINATION.SUMMARY', { start: start, end: end, total: total });
 
-        return [this.items[start - 1] != null, page_to_load];
-      }
+      var page_to_load = Math.ceil(this.current_page * this.page_size / this.request_page_size);
 
-      /***
-       * @ngdoc method
-       * @name add
-       * @methodOf BB.Models:Service
-       * @description
-       * Appends additional items (from subsequent data requests) to items array
-       *
-       * @param {integer} The page number of the data request
-       * @param {array} The new items
-       *
-       */
+      return [this.items[start - 1] != null, page_to_load];
+    };
 
-    }, {
-      key: "add",
-      value: function add(request_page, new_items) {
-        var _this = this;
+    /***
+     * @ngdoc method
+     * @name add
+     * @methodOf BB.Models:Service
+     * @description
+     * Appends additional items (from subsequent data requests) to items array
+     *
+     * @param {integer} The page number of the data request
+     * @param {array} The new items
+     *
+     */
 
-        var start = (request_page - 1) * this.request_page_size;
-        return Array.from(new_items).map(function (item, index) {
-          return _this.items[start + index] = item;
-        });
-      }
-    }]);
+
+    Pagination.prototype.add = function add(request_page, new_items) {
+      var _this = this;
+
+      var start = (request_page - 1) * this.request_page_size;
+      return Array.from(new_items).map(function (item, index) {
+        return _this.items[start + index] = item;
+      });
+    };
 
     return Pagination;
   }();
@@ -9590,15 +9219,13 @@ angular.module('BB.Models').factory("PaymentCallbacksModel", function ($q, $filt
         function PaymentCallbacks(data) {
             _classCallCheck(this, PaymentCallbacks);
 
-            return _possibleConstructorReturn(this, (PaymentCallbacks.__proto__ || Object.getPrototypeOf(PaymentCallbacks)).call(this, data));
+            return _possibleConstructorReturn(this, _BaseModel.call(this, data));
         }
 
         return PaymentCallbacks;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9630,33 +9257,26 @@ angular.module('BB.Models').factory("PersonModel", function ($q, BBModel, BaseMo
         function Person() {
             _classCallCheck(this, Person);
 
-            return _possibleConstructorReturn(this, (Person.__proto__ || Object.getPrototypeOf(Person)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(Person, null, [{
-            key: "$query",
-
-
-            /***
-             * @ngdoc method
-             * @name $query
-             * @methodOf BB.Models:Person
-             * @description
-             * Static function that loads an array of people from a company object
-             *
-             * @returns {promise} A returned promise
-             */
-            value: function $query(company) {
-                return PersonService.query(company);
-            }
-        }]);
+        /***
+         * @ngdoc method
+         * @name $query
+         * @methodOf BB.Models:Person
+         * @description
+         * Static function that loads an array of people from a company object
+         *
+         * @returns {promise} A returned promise
+         */
+        Person.$query = function $query(company) {
+            return PersonService.query(company);
+        };
 
         return Person;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9680,7 +9300,7 @@ angular.module('BB.Models').factory("PrePaidBookingModel", function ($q, BBModel
         function PrePaidBooking(data) {
             _classCallCheck(this, PrePaidBooking);
 
-            var _this = _possibleConstructorReturn(this, (PrePaidBooking.__proto__ || Object.getPrototypeOf(PrePaidBooking)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             if (_this.book_by) {
                 _this.book_by = moment(_this.book_by);
@@ -9696,20 +9316,17 @@ angular.module('BB.Models').factory("PrePaidBookingModel", function ($q, BBModel
             return _this;
         }
 
-        _createClass(PrePaidBooking, [{
-            key: 'checkValidity',
-            value: function checkValidity(item) {
-                if (this.service_id && item.service_id && this.service_id !== item.service_id) {
-                    return false;
-                } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
-                    return false;
-                } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
-                    return false;
-                } else {
-                    return true;
-                }
+        PrePaidBooking.prototype.checkValidity = function checkValidity(item) {
+            if (this.service_id && item.service_id && this.service_id !== item.service_id) {
+                return false;
+            } else if (this.resource_id && item.resource_id && this.resource_id !== item.resource_id) {
+                return false;
+            } else if (this.person_id && item.person_id && this.person_id !== item.person_id) {
+                return false;
+            } else {
+                return true;
             }
-        }]);
+        };
 
         return PrePaidBooking;
     }(BaseModel);
@@ -9729,15 +9346,13 @@ angular.module('BB.Models').factory("ProductModel", function ($q, BBModel, BaseM
     function Product() {
       _classCallCheck(this, Product);
 
-      return _possibleConstructorReturn(this, (Product.__proto__ || Object.getPrototypeOf(Product)).apply(this, arguments));
+      return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
     }
 
     return Product;
   }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9764,7 +9379,7 @@ angular.module('BB.Models').factory("PurchaseItemModel", function ($q, BBModel, 
         function PurchaseItem(data) {
             _classCallCheck(this, PurchaseItem);
 
-            var _this = _possibleConstructorReturn(this, (PurchaseItem.__proto__ || Object.getPrototypeOf(PurchaseItem)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.parts_links = {};
             if (data) {
@@ -9795,51 +9410,44 @@ angular.module('BB.Models').factory("PurchaseItemModel", function ($q, BBModel, 
          */
 
 
-        _createClass(PurchaseItem, [{
-            key: 'describe',
-            value: function describe() {
-                return this.get('describe');
-            }
+        PurchaseItem.prototype.describe = function describe() {
+            return this.get('describe');
+        };
 
-            /***
-             * @ngdoc method
-             * @name full_describe
-             * @methodOf BB.Models:PurchaseItem
-             * @description
-             * Full description of the item purchase
-             *
-             * @returns {object} The returned full describe
-             */
+        /***
+         * @ngdoc method
+         * @name full_describe
+         * @methodOf BB.Models:PurchaseItem
+         * @description
+         * Full description of the item purchase
+         *
+         * @returns {object} The returned full describe
+         */
 
-        }, {
-            key: 'full_describe',
-            value: function full_describe() {
-                return this.get('full_describe');
-            }
 
-            /***
-             * @ngdoc method
-             * @name hasPrice
-             * @methodOf BB.Models:PurchaseItem
-             * @description
-             * Checks if the item for purchase have a price
-             *
-             * @returns {boolean} If the item for purchase have a price
-             */
+        PurchaseItem.prototype.full_describe = function full_describe() {
+            return this.get('full_describe');
+        };
 
-        }, {
-            key: 'hasPrice',
-            value: function hasPrice() {
-                return this.price && this.price > 0;
-            }
-        }]);
+        /***
+         * @ngdoc method
+         * @name hasPrice
+         * @methodOf BB.Models:PurchaseItem
+         * @description
+         * Checks if the item for purchase have a price
+         *
+         * @returns {boolean} If the item for purchase have a price
+         */
+
+
+        PurchaseItem.prototype.hasPrice = function hasPrice() {
+            return this.price && this.price > 0;
+        };
 
         return PurchaseItem;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9868,7 +9476,7 @@ angular.module('BB.Models').factory("PurchaseTotalModel", function ($q, BBModel,
         function PurchaseTotal(data) {
             _classCallCheck(this, PurchaseTotal);
 
-            var _this = _possibleConstructorReturn(this, (PurchaseTotal.__proto__ || Object.getPrototypeOf(PurchaseTotal)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.promise = _this._data.$get('purchase_items');
             _this.purchase_items = [];
@@ -9901,77 +9509,67 @@ angular.module('BB.Models').factory("PurchaseTotalModel", function ($q, BBModel,
          */
 
 
-        _createClass(PurchaseTotal, [{
-            key: 'icalLink',
-            value: function icalLink() {
-                return this._data.$href('ical');
-            }
+        PurchaseTotal.prototype.icalLink = function icalLink() {
+            return this._data.$href('ical');
+        };
 
-            /***
-             * @ngdoc method
-             * @name webcalLink
-             * @methodOf BB.Models:PurchaseTotal
-             * @description
-             * Get webcalLink
-             *
-             * @returns {object} The returned webcalLink
-             */
+        /***
+         * @ngdoc method
+         * @name webcalLink
+         * @methodOf BB.Models:PurchaseTotal
+         * @description
+         * Get webcalLink
+         *
+         * @returns {object} The returned webcalLink
+         */
 
-        }, {
-            key: 'webcalLink',
-            value: function webcalLink() {
-                return this._data.$href('ical');
-            }
 
-            /***
-             * @ngdoc method
-             * @name gcalLink
-             * @methodOf BB.Models:PurchaseTotal
-             * @description
-             * Get the gcalLink
-             *
-             * @returns {object} The returned gcalLink
-             */
+        PurchaseTotal.prototype.webcalLink = function webcalLink() {
+            return this._data.$href('ical');
+        };
 
-        }, {
-            key: 'gcalLink',
-            value: function gcalLink() {
-                return this._data.$href('gcal');
-            }
+        /***
+         * @ngdoc method
+         * @name gcalLink
+         * @methodOf BB.Models:PurchaseTotal
+         * @description
+         * Get the gcalLink
+         *
+         * @returns {object} The returned gcalLink
+         */
 
-            /***
-             * @ngdoc method
-             * @name id
-             * @methodOf BB.Models:PurchaseTotal
-             * @description
-             * Get the id
-             *
-             * @returns {object} The returned id
-             */
 
-        }, {
-            key: 'id',
-            value: function id() {
-                return this.get('id');
-            }
-        }], [{
-            key: '$query',
-            value: function $query(params) {
-                return PurchaseService.query(params);
-            }
-        }, {
-            key: '$bookingRefQuery',
-            value: function $bookingRefQuery(params) {
-                return PurchaseService.query(params);
-            }
-        }]);
+        PurchaseTotal.prototype.gcalLink = function gcalLink() {
+            return this._data.$href('gcal');
+        };
+
+        /***
+         * @ngdoc method
+         * @name id
+         * @methodOf BB.Models:PurchaseTotal
+         * @description
+         * Get the id
+         *
+         * @returns {object} The returned id
+         */
+
+
+        PurchaseTotal.prototype.id = function id() {
+            return this.get('id');
+        };
+
+        PurchaseTotal.$query = function $query(params) {
+            return PurchaseService.query(params);
+        };
+
+        PurchaseTotal.$bookingRefQuery = function $bookingRefQuery(params) {
+            return PurchaseService.query(params);
+        };
 
         return PurchaseTotal;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9998,7 +9596,7 @@ angular.module('BB.Models').factory("QuestionModel", function ($q, $filter, BBMo
         function Question(data) {
             _classCallCheck(this, Question);
 
-            var _this = _possibleConstructorReturn(this, (Question.__proto__ || Object.getPrototypeOf(Question)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
             // weirdly quesiton is  not currently initited as a hal object
 
 
@@ -10062,208 +9660,195 @@ angular.module('BB.Models').factory("QuestionModel", function ($q, $filter, BBMo
          */
 
 
-        _createClass(Question, [{
-            key: 'hasPrice',
-            value: function hasPrice() {
-                return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
-            }
+        Question.prototype.hasPrice = function hasPrice() {
+            return this.detail_type === "check-price" || this.detail_type === "select-price" || this.detail_type === "radio-price";
+        };
 
-            /***
-             * @ngdoc method
-             * @name selectedPrice
-             * @methodOf BB.Models:Question
-             * @description
-             * Select price if detail type si equal with check-price
-             *
-             * @returns {float} The returned selected price
-             */
+        /***
+         * @ngdoc method
+         * @name selectedPrice
+         * @methodOf BB.Models:Question
+         * @description
+         * Select price if detail type si equal with check-price
+         *
+         * @returns {float} The returned selected price
+         */
 
-        }, {
-            key: 'selectedPrice',
-            value: function selectedPrice() {
-                if (!this.hasPrice()) {
-                    return 0;
-                }
-                if (this.detail_type === "check-price") {
-                    return this.answer ? this.price : 0;
-                }
-                var _iteratorNormalCompletion2 = true;
-                var _didIteratorError2 = false;
-                var _iteratorError2 = undefined;
 
-                try {
-                    for (var _iterator2 = Array.from(this._data.options)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                        var option = _step2.value;
-
-                        if (this.answer === option.name) {
-                            return option.price;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError2 = true;
-                    _iteratorError2 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                            _iterator2.return();
-                        }
-                    } finally {
-                        if (_didIteratorError2) {
-                            throw _iteratorError2;
-                        }
-                    }
-                }
-
+        Question.prototype.selectedPrice = function selectedPrice() {
+            if (!this.hasPrice()) {
                 return 0;
             }
+            if (this.detail_type === "check-price") {
+                return this.answer ? this.price : 0;
+            }
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
 
-            /***
-             * @ngdoc method
-             * @name selectedPriceQty
-             * @methodOf BB.Models:Question
-             * @description
-             * Select price quantity if selected price has been selected
-             *
-             * @returns {object} The returned selected price quantity
-             */
+            try {
+                for (var _iterator2 = Array.from(this._data.options)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var option = _step2.value;
 
-        }, {
-            key: 'selectedPriceQty',
-            value: function selectedPriceQty(qty) {
-                if (!qty) {
-                    qty = 1;
+                    if (this.answer === option.name) {
+                        return option.price;
+                    }
                 }
-                var p = this.selectedPrice();
-                if (this.price_per_booking) {
-                    p = p * qty;
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
                 }
-                return p;
             }
 
-            /***
-             * @ngdoc method
-             * @name getAnswerId
-             * @methodOf BB.Models:Question
-             * @description
-             * Get answer id
-             *
-             * @returns {object} The returned answer id
-             */
+            return 0;
+        };
 
-        }, {
-            key: 'getAnswerId',
-            value: function getAnswerId() {
-                if (!this.answer || !this.options || this.options.length === 0) {
-                    return null;
-                }
-                var _iteratorNormalCompletion3 = true;
-                var _didIteratorError3 = false;
-                var _iteratorError3 = undefined;
+        /***
+         * @ngdoc method
+         * @name selectedPriceQty
+         * @methodOf BB.Models:Question
+         * @description
+         * Select price quantity if selected price has been selected
+         *
+         * @returns {object} The returned selected price quantity
+         */
 
-                try {
-                    for (var _iterator3 = Array.from(this.options)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                        var o = _step3.value;
 
-                        if (this.answer === o.name) {
-                            return o.id;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError3 = true;
-                    _iteratorError3 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                            _iterator3.return();
-                        }
-                    } finally {
-                        if (_didIteratorError3) {
-                            throw _iteratorError3;
-                        }
-                    }
-                }
+        Question.prototype.selectedPriceQty = function selectedPriceQty(qty) {
+            if (!qty) {
+                qty = 1;
+            }
+            var p = this.selectedPrice();
+            if (this.price_per_booking) {
+                p = p * qty;
+            }
+            return p;
+        };
 
+        /***
+         * @ngdoc method
+         * @name getAnswerId
+         * @methodOf BB.Models:Question
+         * @description
+         * Get answer id
+         *
+         * @returns {object} The returned answer id
+         */
+
+
+        Question.prototype.getAnswerId = function getAnswerId() {
+            if (!this.answer || !this.options || this.options.length === 0) {
                 return null;
             }
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
 
-            /***
-             * @ngdoc method
-             * @name showElement
-             * @methodOf BB.Models:Question
-             * @description
-             * Show element
-             *
-             * @returns {boolean} If element is displayed
-             */
+            try {
+                for (var _iterator3 = Array.from(this.options)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var o = _step3.value;
 
-        }, {
-            key: 'showElement',
-            value: function showElement() {
-                return this.currentlyShown = true;
-            }
-
-            /***
-             * @ngdoc hideElement
-             * @name showElement
-             * @methodOf BB.Models:Question
-             * @description
-             * Hide element
-             *
-             * @returns {boolean} If element is hidden
-             */
-
-        }, {
-            key: 'hideElement',
-            value: function hideElement() {
-                return this.currentlyShown = false;
-            }
-
-            /***
-             * @ngdoc hideElement
-             * @name getPostData
-             * @methodOf BB.Models:Question
-             * @description
-             * Get post data
-             *
-             * @returns {object} The returned post data
-             */
-
-        }, {
-            key: 'getPostData',
-            value: function getPostData() {
-                var x = {};
-                x.id = this.id;
-                x.answer = this.answer;
-                if (this.detail_type === "date" && this.answer) {
-                    x.answer = moment(this.answer).toISODate();
+                    if (this.answer === o.name) {
+                        return o.id;
+                    }
                 }
-                var p = this.selectedPrice();
-                if (p) {
-                    x.price = p;
+            } catch (err) {
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
+                    }
+                } finally {
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
+                    }
                 }
-                return x;
             }
-        }], [{
-            key: '$addAnswersByName',
-            value: function $addAnswersByName(obj, keys) {
-                return QuestionService.addAnswersByName(obj, keys);
+
+            return null;
+        };
+
+        /***
+         * @ngdoc method
+         * @name showElement
+         * @methodOf BB.Models:Question
+         * @description
+         * Show element
+         *
+         * @returns {boolean} If element is displayed
+         */
+
+
+        Question.prototype.showElement = function showElement() {
+            return this.currentlyShown = true;
+        };
+
+        /***
+         * @ngdoc hideElement
+         * @name showElement
+         * @methodOf BB.Models:Question
+         * @description
+         * Hide element
+         *
+         * @returns {boolean} If element is hidden
+         */
+
+
+        Question.prototype.hideElement = function hideElement() {
+            return this.currentlyShown = false;
+        };
+
+        /***
+         * @ngdoc hideElement
+         * @name getPostData
+         * @methodOf BB.Models:Question
+         * @description
+         * Get post data
+         *
+         * @returns {object} The returned post data
+         */
+
+
+        Question.prototype.getPostData = function getPostData() {
+            var x = {};
+            x.id = this.id;
+            x.answer = this.answer;
+            if (this.detail_type === "date" && this.answer) {
+                x.answer = moment(this.answer).toISODate();
             }
-        }, {
-            key: '$addDynamicAnswersByName',
-            value: function $addDynamicAnswersByName(questions) {
-                return QuestionService.addDynamicAnswersByName(questions);
+            var p = this.selectedPrice();
+            if (p) {
+                x.price = p;
             }
-        }, {
-            key: '$addAnswersFromDefaults',
-            value: function $addAnswersFromDefaults(questions, answers) {
-                return QuestionService.addAnswersFromDefaults(questions, answers);
-            }
-        }, {
-            key: '$checkConditionalQuestions',
-            value: function $checkConditionalQuestions(questions) {
-                return QuestionService.checkConditionalQuestions(questions);
-            }
-        }]);
+            return x;
+        };
+
+        Question.$addAnswersByName = function $addAnswersByName(obj, keys) {
+            return QuestionService.addAnswersByName(obj, keys);
+        };
+
+        Question.$addDynamicAnswersByName = function $addDynamicAnswersByName(questions) {
+            return QuestionService.addDynamicAnswersByName(questions);
+        };
+
+        Question.$addAnswersFromDefaults = function $addAnswersFromDefaults(questions, answers) {
+            return QuestionService.addAnswersFromDefaults(questions, answers);
+        };
+
+        Question.$checkConditionalQuestions = function $checkConditionalQuestions(questions) {
+            return QuestionService.checkConditionalQuestions(questions);
+        };
 
         return Question;
     }(BaseModel);
@@ -10283,15 +9868,13 @@ angular.module('BB.Models').factory("ReasonModel", function ($q, BBModel, BaseMo
     function Reason() {
       _classCallCheck(this, Reason);
 
-      return _possibleConstructorReturn(this, (Reason.__proto__ || Object.getPrototypeOf(Reason)).apply(this, arguments));
+      return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
     }
 
     return Reason;
   }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10323,33 +9906,26 @@ angular.module('BB.Models').factory("ResourceModel", function ($q, BBModel, Base
         function Resource() {
             _classCallCheck(this, Resource);
 
-            return _possibleConstructorReturn(this, (Resource.__proto__ || Object.getPrototypeOf(Resource)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(Resource, null, [{
-            key: "$query",
-
-
-            /***
-             * @ngdoc method
-             * @name $query
-             * @methodOf BB.Models:Resource
-             * @description
-             * Static function that loads an array of resources from a company object
-             *
-             * @returns {promise} A returned promise
-             */
-            value: function $query(company) {
-                return ResourceService.query(company);
-            }
-        }]);
+        /***
+         * @ngdoc method
+         * @name $query
+         * @methodOf BB.Models:Resource
+         * @description
+         * Static function that loads an array of resources from a company object
+         *
+         * @returns {promise} A returned promise
+         */
+        Resource.$query = function $query(company) {
+            return ResourceService.query(company);
+        };
 
         return Resource;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10381,7 +9957,7 @@ angular.module('BB.Models').factory("ServiceModel", function ($q, BBModel, BaseM
         function Service(data) {
             _classCallCheck(this, Service);
 
-            var _this = _possibleConstructorReturn(this, (Service.__proto__ || Object.getPrototypeOf(Service)).apply(this, arguments));
+            var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             if (_this.prices && _this.prices.length > 0) {
                 _this.price = _this.prices[0];
@@ -10412,91 +9988,83 @@ angular.module('BB.Models').factory("ServiceModel", function ($q, BBModel, BaseM
          */
 
 
-        _createClass(Service, [{
-            key: 'getPriceByDuration',
-            value: function getPriceByDuration(dur) {
-                for (var i = 0; i < this.durations.length; i++) {
-                    var d = this.durations[i];
-                    if (d === dur) {
-                        return this.prices[i];
-                    }
+        Service.prototype.getPriceByDuration = function getPriceByDuration(dur) {
+            for (var i = 0; i < this.durations.length; i++) {
+                var d = this.durations[i];
+                if (d === dur) {
+                    return this.prices[i];
                 }
             }
+        };
 
-            // return price
+        // return price
 
-            /***
-             * @ngdoc method
-             * @name $getCategory
-             * @methodOf BB.Models:Service
-             * @description
-             * Get category promise
-             *
-             * @returns {object} The returning category promise
-             */
+        /***
+         * @ngdoc method
+         * @name $getCategory
+         * @methodOf BB.Models:Service
+         * @description
+         * Get category promise
+         *
+         * @returns {object} The returning category promise
+         */
 
-        }, {
-            key: '$getCategory',
-            value: function $getCategory() {
-                var _this2 = this;
 
-                if (!this.$has('category')) {
-                    return null;
+        Service.prototype.$getCategory = function $getCategory() {
+            var _this2 = this;
+
+            if (!this.$has('category')) {
+                return null;
+            }
+            var prom = this.$get('category');
+            prom.then(function (cat) {
+                return _this2.category = new BBModel.Category(cat);
+            });
+            return prom;
+        };
+
+        /***
+         * @ngdoc method
+         * @name days_array
+         * @methodOf BB.Models:Service
+         * @description
+         * Put days in array
+         *
+         * @returns {array} The returning days array
+         */
+
+
+        Service.prototype.days_array = function days_array() {
+            var arr = [];
+            for (var x = this.min_bookings, end = this.max_bookings, asc = this.min_bookings <= end; asc ? x <= end : x >= end; asc ? x++ : x--) {
+                var str = x + ' day';
+                if (x > 1) {
+                    str += "s";
                 }
-                var prom = this.$get('category');
-                prom.then(function (cat) {
-                    return _this2.category = new BBModel.Category(cat);
-                });
-                return prom;
+                arr.push({ name: str, val: x });
             }
+            return arr;
+        };
 
-            /***
-             * @ngdoc method
-             * @name days_array
-             * @methodOf BB.Models:Service
-             * @description
-             * Put days in array
-             *
-             * @returns {array} The returning days array
-             */
+        /***
+         * @ngdoc method
+         * @name $query
+         * @methodOf BB.Models:Service
+         * @description
+         * Static function that loads an array of services from a company object
+         *
+         * @returns {promise} A returned promise
+         */
 
-        }, {
-            key: 'days_array',
-            value: function days_array() {
-                var arr = [];
-                for (var x = this.min_bookings, end = this.max_bookings, asc = this.min_bookings <= end; asc ? x <= end : x >= end; asc ? x++ : x--) {
-                    var str = x + ' day';
-                    if (x > 1) {
-                        str += "s";
-                    }
-                    arr.push({ name: str, val: x });
-                }
-                return arr;
-            }
 
-            /***
-             * @ngdoc method
-             * @name $query
-             * @methodOf BB.Models:Service
-             * @description
-             * Static function that loads an array of services from a company object
-             *
-             * @returns {promise} A returned promise
-             */
-
-        }], [{
-            key: '$query',
-            value: function $query(company) {
-                return ServiceService.query(company);
-            }
-        }]);
+        Service.$query = function $query(company) {
+            return ServiceService.query(company);
+        };
 
         return Service;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10522,25 +10090,20 @@ angular.module('BB.Models').factory("SlotModel", function ($q, BBModel, BaseMode
         function Slot(data) {
             _classCallCheck(this, Slot);
 
-            var _this = _possibleConstructorReturn(this, (Slot.__proto__ || Object.getPrototypeOf(Slot)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.datetime = moment(data.datetime);
             return _this;
         }
 
-        _createClass(Slot, null, [{
-            key: "$query",
-            value: function $query(company, params) {
-                return SlotService.query(company, params);
-            }
-        }]);
+        Slot.$query = function $query(company, params) {
+            return SlotService.query(company, params);
+        };
 
         return Slot;
     }(BaseModel);
 });
 "use strict";
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10563,15 +10126,12 @@ angular.module('BB.Models').factory("SpaceModel", function ($q, BBModel, BaseMod
         function Space() {
             _classCallCheck(this, Space);
 
-            return _possibleConstructorReturn(this, (Space.__proto__ || Object.getPrototypeOf(Space)).apply(this, arguments));
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
         }
 
-        _createClass(Space, [{
-            key: "$query",
-            value: function $query(company) {
-                return SpaceService.query(company);
-            }
-        }]);
+        Space.prototype.$query = function $query(company) {
+            return SpaceService.query(company);
+        };
 
         return Space;
     }(BaseModel);
@@ -10602,15 +10162,13 @@ angular.module('BB.Models').factory("SurveyQuestionModel", function ($q, $window
     function SurveyQuestion() {
       _classCallCheck(this, SurveyQuestion);
 
-      return _possibleConstructorReturn(this, (SurveyQuestion.__proto__ || Object.getPrototypeOf(SurveyQuestion)).apply(this, arguments));
+      return _possibleConstructorReturn(this, _QuestionModel.apply(this, arguments));
     }
 
     return SurveyQuestion;
   }(QuestionModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10641,7 +10199,7 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
         function TimeSlot(data, service) {
             _classCallCheck(this, TimeSlot);
 
-            var _this = _possibleConstructorReturn(this, (TimeSlot.__proto__ || Object.getPrototypeOf(TimeSlot)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.service = service;
             _this.datetime = moment.parseZone(_this.datetime);
@@ -10660,131 +10218,121 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
          */
 
 
-        _createClass(TimeSlot, [{
-            key: 'endDateTime',
-            value: function endDateTime(dur) {
-                var duration = void 0;
-                if (!dur) {
-                    duration = this.service.listed_durations[0];
-                }
-                return this.datetime.clone().add(duration, 'minutes');
+        TimeSlot.prototype.endDateTime = function endDateTime(dur) {
+            var duration = void 0;
+            if (!dur) {
+                duration = this.service.listed_durations[0];
             }
+            return this.datetime.clone().add(duration, 'minutes');
+        };
 
-            /***
-             * @ngdoc method
-             * @name availability
-             * @methodOf BB.Models:TimeSlot
-             * @description
-             * Get availability
-             *
-             * @returns {number} Availability (> 0 means the slot is available)
-             */
+        /***
+         * @ngdoc method
+         * @name availability
+         * @methodOf BB.Models:TimeSlot
+         * @description
+         * Get availability
+         *
+         * @returns {number} Availability (> 0 means the slot is available)
+         */
 
-        }, {
-            key: 'availability',
-            value: function availability() {
-                return this.avail;
+
+        TimeSlot.prototype.availability = function availability() {
+            return this.avail;
+        };
+
+        /***
+         * @ngdoc method
+         * @name select
+         * @methodOf BB.Models:TimeSlot
+         * @description
+         * Select the time slot
+         *
+         * @returns {boolean} Selected status
+         */
+
+
+        TimeSlot.prototype.select = function select() {
+            return this.selected = true;
+        };
+
+        /***
+         * @ngdoc method
+         * @name unselect
+         * @methodOf BB.Models:TimeSlot
+         * @description
+         * Unselect time slot
+         *
+         */
+
+
+        TimeSlot.prototype.unselect = function unselect() {
+            if (this.selected) {
+                return delete this.selected;
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name select
-             * @methodOf BB.Models:TimeSlot
-             * @description
-             * Select the time slot
-             *
-             * @returns {boolean} Selected status
-             */
+        /***
+         * @ngdoc method
+         * @name disable
+         * @methodOf BB.Models:TimeSlot
+         * @description
+         * Disable time slot by reason
+         *
+         */
 
-        }, {
-            key: 'select',
-            value: function select() {
-                return this.selected = true;
+
+        TimeSlot.prototype.disable = function disable(reason) {
+            this.disabled = true;
+            return this.disabled_reason = reason;
+        };
+
+        /***
+         * @ngdoc method
+         * @name enable
+         * @methodOf BB.Models:TimeSlot
+         * @description
+         * Enable time slot
+         *
+         */
+
+
+        TimeSlot.prototype.enable = function enable() {
+            if (this.disabled) {
+                delete this.disabled;
             }
-
-            /***
-             * @ngdoc method
-             * @name unselect
-             * @methodOf BB.Models:TimeSlot
-             * @description
-             * Unselect time slot
-             *
-             */
-
-        }, {
-            key: 'unselect',
-            value: function unselect() {
-                if (this.selected) {
-                    return delete this.selected;
-                }
+            if (this.disabled_reason) {
+                return delete this.disabled_reason;
             }
+        };
 
-            /***
-             * @ngdoc method
-             * @name disable
-             * @methodOf BB.Models:TimeSlot
-             * @description
-             * Disable time slot by reason
-             *
-             */
+        /***
+         * @ngdoc method
+         * @name status
+         * @methodOf BB.Models:TimeSlot
+         * @description
+         * Get the status of the time slot
+         *
+         * @returns {string} Status of the time slot
+         */
 
-        }, {
-            key: 'disable',
-            value: function disable(reason) {
-                this.disabled = true;
-                return this.disabled_reason = reason;
+
+        TimeSlot.prototype.status = function status() {
+            if (this.selected) {
+                return "selected";
             }
-
-            /***
-             * @ngdoc method
-             * @name enable
-             * @methodOf BB.Models:TimeSlot
-             * @description
-             * Enable time slot
-             *
-             */
-
-        }, {
-            key: 'enable',
-            value: function enable() {
-                if (this.disabled) {
-                    delete this.disabled;
-                }
-                if (this.disabled_reason) {
-                    return delete this.disabled_reason;
-                }
-            }
-
-            /***
-             * @ngdoc method
-             * @name status
-             * @methodOf BB.Models:TimeSlot
-             * @description
-             * Get the status of the time slot
-             *
-             * @returns {string} Status of the time slot
-             */
-
-        }, {
-            key: 'status',
-            value: function status() {
-                if (this.selected) {
-                    return "selected";
-                }
-                if (this.disabled) {
-                    return "disabled";
-                }
-                if (this.availability() > 0) {
-                    return "enabled";
-                }
+            if (this.disabled) {
                 return "disabled";
             }
-        }], [{
-            key: '$query',
-            value: function $query(params) {
-                return TimeService.query(params);
+            if (this.availability() > 0) {
+                return "enabled";
             }
-        }]);
+            return "disabled";
+        };
+
+        TimeSlot.$query = function $query(params) {
+            return TimeService.query(params);
+        };
 
         return TimeSlot;
     }(BaseModel);
@@ -25332,8 +24880,6 @@ var ModalDeleteAll = function ModalDeleteAll($scope, $rootScope, $uibModalInstan
 };
 'use strict';
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -25347,7 +24893,7 @@ angular.module('BB.Models').factory("Purchase.BookingModel", function ($q, $wind
         function Purchase_Booking(data) {
             _classCallCheck(this, Purchase_Booking);
 
-            var _this = _possibleConstructorReturn(this, (Purchase_Booking.__proto__ || Object.getPrototypeOf(Purchase_Booking)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.ready = false;
 
@@ -25368,316 +24914,295 @@ angular.module('BB.Models').factory("Purchase.BookingModel", function ($q, $wind
             return _this;
         }
 
-        _createClass(Purchase_Booking, [{
-            key: 'getGroup',
-            value: function getGroup() {
-                var _this2 = this;
+        Purchase_Booking.prototype.getGroup = function getGroup() {
+            var _this2 = this;
 
-                if (this.group) {
-                    return this.group;
-                }
-                if (this._data.$has('event_groups')) {
-                    return this._data.$get('event_groups').then(function (group) {
-                        _this2.group = group;
-                        return _this2.group;
-                    });
-                }
+            if (this.group) {
+                return this.group;
             }
-        }, {
-            key: 'getColour',
-            value: function getColour() {
-                if (this.getGroup()) {
-                    return this.getGroup().colour;
-                } else {
-                    return "#FFFFFF";
-                }
+            if (this._data.$has('event_groups')) {
+                return this._data.$get('event_groups').then(function (group) {
+                    _this2.group = group;
+                    return _this2.group;
+                });
             }
-        }, {
-            key: 'getCompany',
-            value: function getCompany() {
-                var _this3 = this;
+        };
 
-                if (this.company) {
-                    return this.company;
-                }
-                if (this.$has('company')) {
-                    return this._data.$get('company').then(function (company) {
-                        _this3.company = new BBModel.Company(company);
-                        return _this3.company;
-                    });
-                }
+        Purchase_Booking.prototype.getColour = function getColour() {
+            if (this.getGroup()) {
+                return this.getGroup().colour;
+            } else {
+                return "#FFFFFF";
             }
-        }, {
-            key: '$getAnswers',
-            value: function $getAnswers() {
-                var _this4 = this;
+        };
 
-                var defer = $q.defer();
-                if (this.answers != null) {
-                    defer.resolve(this.answers);
-                } else {
-                    this.answers = [];
-                    if (this._data.$has('answers')) {
-                        this._data.$get('answers').then(function (answers) {
-                            _this4.answers = Array.from(answers).map(function (a) {
-                                return new BBModel.Answer(a);
-                            });
-                            return defer.resolve(_this4.answers);
-                        });
-                    } else {
-                        defer.resolve([]);
-                    }
-                }
-                return defer.promise;
+        Purchase_Booking.prototype.getCompany = function getCompany() {
+            var _this3 = this;
+
+            if (this.company) {
+                return this.company;
             }
-        }, {
-            key: '$getSurveyAnswers',
-            value: function $getSurveyAnswers() {
-                var _this5 = this;
+            if (this.$has('company')) {
+                return this._data.$get('company').then(function (company) {
+                    _this3.company = new BBModel.Company(company);
+                    return _this3.company;
+                });
+            }
+        };
 
-                var defer = $q.defer();
-                if (this.survey_answers) {
-                    defer.resolve(this.survey_answers);
-                }
-                if (this._data.$has('survey_answers')) {
-                    this._data.$get('survey_answers').then(function (survey_answers) {
-                        _this5.survey_answers = Array.from(survey_answers).map(function (a) {
+        Purchase_Booking.prototype.$getAnswers = function $getAnswers() {
+            var _this4 = this;
+
+            var defer = $q.defer();
+            if (this.answers != null) {
+                defer.resolve(this.answers);
+            } else {
+                this.answers = [];
+                if (this._data.$has('answers')) {
+                    this._data.$get('answers').then(function (answers) {
+                        _this4.answers = Array.from(answers).map(function (a) {
                             return new BBModel.Answer(a);
                         });
-                        return defer.resolve(_this5.survey_answers);
+                        return defer.resolve(_this4.answers);
                     });
                 } else {
                     defer.resolve([]);
                 }
-                return defer.promise;
             }
-        }, {
-            key: 'answer',
-            value: function answer(q) {
-                if (this.answers != null) {
-                    var _iteratorNormalCompletion = true;
-                    var _didIteratorError = false;
-                    var _iteratorError = undefined;
+            return defer.promise;
+        };
 
-                    try {
-                        for (var _iterator = Array.from(this.answers)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                            var a = _step.value;
+        Purchase_Booking.prototype.$getSurveyAnswers = function $getSurveyAnswers() {
+            var _this5 = this;
 
-                            if (a.name && a.name === q) {
-                                return a.answer;
-                            }
-                            if (a.question_text && a.question_text === q) {
-                                return a.value;
-                            }
-                        }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return) {
-                                _iterator.return();
-                            }
-                        } finally {
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
-                        }
-                    }
-                } else {
-                    this.$getAnswers();
-                }
-                return null;
+            var defer = $q.defer();
+            if (this.survey_answers) {
+                defer.resolve(this.survey_answers);
             }
-        }, {
-            key: 'getPostData',
-            value: function getPostData() {
-                var data = {};
-
-                data.attended = this.attended;
-                data.client_id = this.client_id;
-                data.company_id = this.company_id;
-                data.time = this.datetime.hour() * 60 + this.datetime.minute();
-                data.date = this.datetime.toISODate();
-                data.deleted = this.deleted;
-                data.describe = this.describe;
-                data.duration = this.duration;
-                data.end_datetime = this.end_datetime;
-
-                // is the booking being moved (i.e. new time/new event) or are we just updating
-                // the existing booking
-                if (this.time && this.time.event_id && !this.isEvent()) {
-                    data.event_id = this.time.event_id;
-                } else if (this.event) {
-                    data.event_id = this.event.id;
-                } else {
-                    data.event_id = this.slot_id;
-                }
-
-                data.full_describe = this.full_describe;
-                data.id = this.id;
-                data.min_cancellation_time = this.min_cancellation_time;
-                data.on_waitlist = this.on_waitlist;
-                data.paid = this.paid;
-                data.person_name = this.person_name;
-                data.price = this.price;
-                data.purchase_id = this.purchase_id;
-                data.purchase_ref = this.purchase_ref;
-                data.quantity = this.quantity;
-                data.self = this.self;
-                if (this.move_item_id) {
-                    data.move_item_id = this.move_item_id;
-                }
-                if (this.srcBooking) {
-                    data.move_item_id = this.srcBooking.id;
-                }
-                if (this.person) {
-                    data.person_id = this.person.id;
-                }
-                if (this.service) {
-                    data.service_id = this.service.id;
-                }
-                if (this.resource) {
-                    data.resource_id = this.resource.id;
-                }
-                if (this.item_details) {
-                    data.questions = this.item_details.getPostData();
-                }
-                if (this.move_reason) {
-                    data.move_reason = this.move_reason;
-                }
-                data.service_name = this.service_name;
-                data.settings = this.settings;
-                if (this.status) {
-                    data.status = this.status;
-                }
-                if (this.email != null) {
-                    data.email = this.email;
-                }
-                if (this.email_admin != null) {
-                    data.email_admin = this.email_admin;
-                }
-                if (this.first_name) {
-                    data.first_name = this.first_name;
-                }
-                if (this.last_name) {
-                    data.last_name = this.last_name;
-                }
-
-                var formatted_survey_answers = [];
-                if (this.survey_questions) {
-                    data.survey_questions = this.survey_questions;
-                    var _iteratorNormalCompletion2 = true;
-                    var _didIteratorError2 = false;
-                    var _iteratorError2 = undefined;
-
-                    try {
-                        for (var _iterator2 = Array.from(this.survey_questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            var q = _step2.value;
-
-                            formatted_survey_answers.push({
-                                value: q.answer,
-                                outcome: q.outcome,
-                                detail_type_id: q.id,
-                                price: q.price
-                            });
-                        }
-                    } catch (err) {
-                        _didIteratorError2 = true;
-                        _iteratorError2 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                _iterator2.return();
-                            }
-                        } finally {
-                            if (_didIteratorError2) {
-                                throw _iteratorError2;
-                            }
-                        }
-                    }
-
-                    data.survey_answers = formatted_survey_answers;
-                }
-
-                return data;
-            }
-        }, {
-            key: 'checkReady',
-            value: function checkReady() {
-                if (this.datetime && this.id && this.purchase_ref) {
-                    return this.ready = true;
-                }
-            }
-        }, {
-            key: 'printed_price',
-            value: function printed_price() {
-                if (parseFloat(this.price) % 1 === 0) {
-                    return '\xA3' + parseInt(this.price);
-                }
-                return $window.sprintf("£%.2f", parseFloat(this.price));
-            }
-        }, {
-            key: 'getDateString',
-            value: function getDateString() {
-                return this.datetime.toISODate();
-            }
-
-            // return the time of day in total minutes
-
-        }, {
-            key: 'getTimeInMins',
-            value: function getTimeInMins() {
-                return this.datetime.hour() * 60 + this.datetime.minute();
-            }
-        }, {
-            key: 'getAttachments',
-            value: function getAttachments() {
-                var _this6 = this;
-
-                if (this.attachments) {
-                    return this.attachments;
-                }
-                if (this.$has('attachments')) {
-                    return this._data.$get('attachments').then(function (atts) {
-                        _this6.attachments = atts.attachments;
-                        return _this6.attachments;
+            if (this._data.$has('survey_answers')) {
+                this._data.$get('survey_answers').then(function (survey_answers) {
+                    _this5.survey_answers = Array.from(survey_answers).map(function (a) {
+                        return new BBModel.Answer(a);
                     });
+                    return defer.resolve(_this5.survey_answers);
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
+
+        Purchase_Booking.prototype.answer = function answer(q) {
+            if (this.answers != null) {
+                var _iteratorNormalCompletion = true;
+                var _didIteratorError = false;
+                var _iteratorError = undefined;
+
+                try {
+                    for (var _iterator = Array.from(this.answers)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                        var a = _step.value;
+
+                        if (a.name && a.name === q) {
+                            return a.answer;
+                        }
+                        if (a.question_text && a.question_text === q) {
+                            return a.value;
+                        }
+                    }
+                } catch (err) {
+                    _didIteratorError = true;
+                    _iteratorError = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion && _iterator.return) {
+                            _iterator.return();
+                        }
+                    } finally {
+                        if (_didIteratorError) {
+                            throw _iteratorError;
+                        }
+                    }
                 }
+            } else {
+                this.$getAnswers();
             }
-        }, {
-            key: 'canCancel',
-            value: function canCancel() {
-                return moment(this.min_cancellation_time).isAfter(moment());
+            return null;
+        };
+
+        Purchase_Booking.prototype.getPostData = function getPostData() {
+            var data = {};
+
+            data.attended = this.attended;
+            data.client_id = this.client_id;
+            data.company_id = this.company_id;
+            data.time = this.datetime.hour() * 60 + this.datetime.minute();
+            data.date = this.datetime.toISODate();
+            data.deleted = this.deleted;
+            data.describe = this.describe;
+            data.duration = this.duration;
+            data.end_datetime = this.end_datetime;
+
+            // is the booking being moved (i.e. new time/new event) or are we just updating
+            // the existing booking
+            if (this.time && this.time.event_id && !this.isEvent()) {
+                data.event_id = this.time.event_id;
+            } else if (this.event) {
+                data.event_id = this.event.id;
+            } else {
+                data.event_id = this.slot_id;
             }
-        }, {
-            key: 'canMove',
-            value: function canMove() {
-                return this.canCancel();
+
+            data.full_describe = this.full_describe;
+            data.id = this.id;
+            data.min_cancellation_time = this.min_cancellation_time;
+            data.on_waitlist = this.on_waitlist;
+            data.paid = this.paid;
+            data.person_name = this.person_name;
+            data.price = this.price;
+            data.purchase_id = this.purchase_id;
+            data.purchase_ref = this.purchase_ref;
+            data.quantity = this.quantity;
+            data.self = this.self;
+            if (this.move_item_id) {
+                data.move_item_id = this.move_item_id;
             }
-        }, {
-            key: 'getAttendeeName',
-            value: function getAttendeeName() {
-                return this.first_name + ' ' + this.last_name;
+            if (this.srcBooking) {
+                data.move_item_id = this.srcBooking.id;
             }
-        }, {
-            key: 'isEvent',
-            value: function isEvent() {
-                return this.event_chain != null;
+            if (this.person) {
+                data.person_id = this.person.id;
             }
-        }], [{
-            key: '$addSurveyAnswersToBooking',
-            value: function $addSurveyAnswersToBooking(booking) {
-                return PurchaseBookingService.addSurveyAnswersToBooking(booking);
+            if (this.service) {
+                data.service_id = this.service.id;
             }
-        }]);
+            if (this.resource) {
+                data.resource_id = this.resource.id;
+            }
+            if (this.item_details) {
+                data.questions = this.item_details.getPostData();
+            }
+            if (this.move_reason) {
+                data.move_reason = this.move_reason;
+            }
+            data.service_name = this.service_name;
+            data.settings = this.settings;
+            if (this.status) {
+                data.status = this.status;
+            }
+            if (this.email != null) {
+                data.email = this.email;
+            }
+            if (this.email_admin != null) {
+                data.email_admin = this.email_admin;
+            }
+            if (this.first_name) {
+                data.first_name = this.first_name;
+            }
+            if (this.last_name) {
+                data.last_name = this.last_name;
+            }
+
+            var formatted_survey_answers = [];
+            if (this.survey_questions) {
+                data.survey_questions = this.survey_questions;
+                var _iteratorNormalCompletion2 = true;
+                var _didIteratorError2 = false;
+                var _iteratorError2 = undefined;
+
+                try {
+                    for (var _iterator2 = Array.from(this.survey_questions)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                        var q = _step2.value;
+
+                        formatted_survey_answers.push({
+                            value: q.answer,
+                            outcome: q.outcome,
+                            detail_type_id: q.id,
+                            price: q.price
+                        });
+                    }
+                } catch (err) {
+                    _didIteratorError2 = true;
+                    _iteratorError2 = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                            _iterator2.return();
+                        }
+                    } finally {
+                        if (_didIteratorError2) {
+                            throw _iteratorError2;
+                        }
+                    }
+                }
+
+                data.survey_answers = formatted_survey_answers;
+            }
+
+            return data;
+        };
+
+        Purchase_Booking.prototype.checkReady = function checkReady() {
+            if (this.datetime && this.id && this.purchase_ref) {
+                return this.ready = true;
+            }
+        };
+
+        Purchase_Booking.prototype.printed_price = function printed_price() {
+            if (parseFloat(this.price) % 1 === 0) {
+                return '\xA3' + parseInt(this.price);
+            }
+            return $window.sprintf("£%.2f", parseFloat(this.price));
+        };
+
+        Purchase_Booking.prototype.getDateString = function getDateString() {
+            return this.datetime.toISODate();
+        };
+
+        // return the time of day in total minutes
+
+
+        Purchase_Booking.prototype.getTimeInMins = function getTimeInMins() {
+            return this.datetime.hour() * 60 + this.datetime.minute();
+        };
+
+        Purchase_Booking.prototype.getAttachments = function getAttachments() {
+            var _this6 = this;
+
+            if (this.attachments) {
+                return this.attachments;
+            }
+            if (this.$has('attachments')) {
+                return this._data.$get('attachments').then(function (atts) {
+                    _this6.attachments = atts.attachments;
+                    return _this6.attachments;
+                });
+            }
+        };
+
+        Purchase_Booking.prototype.canCancel = function canCancel() {
+            return moment(this.min_cancellation_time).isAfter(moment());
+        };
+
+        Purchase_Booking.prototype.canMove = function canMove() {
+            return this.canCancel();
+        };
+
+        Purchase_Booking.prototype.getAttendeeName = function getAttendeeName() {
+            return this.first_name + ' ' + this.last_name;
+        };
+
+        Purchase_Booking.prototype.isEvent = function isEvent() {
+            return this.event_chain != null;
+        };
+
+        Purchase_Booking.$addSurveyAnswersToBooking = function $addSurveyAnswersToBooking(booking) {
+            return PurchaseBookingService.addSurveyAnswersToBooking(booking);
+        };
 
         return Purchase_Booking;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -25692,68 +25217,63 @@ angular.module('BB.Models').factory("Purchase.CourseBookingModel", function ($q,
         function Purchase_Course_Booking(data) {
             _classCallCheck(this, Purchase_Course_Booking);
 
-            return _possibleConstructorReturn(this, (Purchase_Course_Booking.__proto__ || Object.getPrototypeOf(Purchase_Course_Booking)).call(this, data));
+            return _possibleConstructorReturn(this, _BaseModel.call(this, data));
         }
 
-        _createClass(Purchase_Course_Booking, [{
-            key: 'getBookings',
-            value: function getBookings() {
-                var _this2 = this;
+        Purchase_Course_Booking.prototype.getBookings = function getBookings() {
+            var _this2 = this;
 
-                var defer = $q.defer();
-                if (this.bookings) {
-                    defer.resolve(this.bookings);
-                }
-                if (this._data.$has('bookings')) {
-                    this._data.$get('bookings').then(function (bookings) {
-                        _this2.bookings = function () {
-                            var result = [];
-                            var _iteratorNormalCompletion = true;
-                            var _didIteratorError = false;
-                            var _iteratorError = undefined;
+            var defer = $q.defer();
+            if (this.bookings) {
+                defer.resolve(this.bookings);
+            }
+            if (this._data.$has('bookings')) {
+                this._data.$get('bookings').then(function (bookings) {
+                    _this2.bookings = function () {
+                        var result = [];
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
 
+                        try {
+                            for (var _iterator = Array.from(bookings)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                var b = _step.value;
+
+                                result.push(new BBModel.Purchase.Booking(b));
+                            }
+                        } catch (err) {
+                            _didIteratorError = true;
+                            _iteratorError = err;
+                        } finally {
                             try {
-                                for (var _iterator = Array.from(bookings)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                    var b = _step.value;
-
-                                    result.push(new BBModel.Purchase.Booking(b));
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
                                 }
-                            } catch (err) {
-                                _didIteratorError = true;
-                                _iteratorError = err;
                             } finally {
-                                try {
-                                    if (!_iteratorNormalCompletion && _iterator.return) {
-                                        _iterator.return();
-                                    }
-                                } finally {
-                                    if (_didIteratorError) {
-                                        throw _iteratorError;
-                                    }
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
                                 }
                             }
+                        }
 
-                            return result;
-                        }();
-                        _this2.bookings.sort(function (a, b) {
-                            return a.datetime.unix() - b.datetime.unix();
-                        });
-                        return defer.resolve(_this2.bookings);
+                        return result;
+                    }();
+                    _this2.bookings.sort(function (a, b) {
+                        return a.datetime.unix() - b.datetime.unix();
                     });
-                } else {
-                    this.bookings = [];
-                    defer.resolve(this.bookings);
-                }
-                return defer.promise;
+                    return defer.resolve(_this2.bookings);
+                });
+            } else {
+                this.bookings = [];
+                defer.resolve(this.bookings);
             }
-        }]);
+            return defer.promise;
+        };
 
         return Purchase_Course_Booking;
     }(BaseModel);
 });
 'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -25768,7 +25288,7 @@ angular.module('BB.Models').factory("Purchase.TotalModel", function ($q, $window
         function Purchase_Total(data) {
             _classCallCheck(this, Purchase_Total);
 
-            var _this = _possibleConstructorReturn(this, (Purchase_Total.__proto__ || Object.getPrototypeOf(Purchase_Total)).call(this, data));
+            var _this = _possibleConstructorReturn(this, _BaseModel.call(this, data));
 
             _this.getItems().then(function (items) {
                 return _this.items = items;
@@ -25782,402 +25302,382 @@ angular.module('BB.Models').factory("Purchase.TotalModel", function ($q, $window
             return _this;
         }
 
-        _createClass(Purchase_Total, [{
-            key: 'id',
-            value: function id() {
-                return this.get('id');
+        Purchase_Total.prototype.id = function id() {
+            return this.get('id');
+        };
+
+        Purchase_Total.prototype.icalLink = function icalLink() {
+            return this._data.$href('ical');
+        };
+
+        Purchase_Total.prototype.webcalLink = function webcalLink() {
+            return this._data.$href('ical');
+        };
+
+        Purchase_Total.prototype.gcalLink = function gcalLink() {
+            return this._data.$href('gcal');
+        };
+
+        Purchase_Total.prototype.getItems = function getItems() {
+            var defer = $q.defer();
+            if (this.items) {
+                defer.resolve(this.items);
             }
-        }, {
-            key: 'icalLink',
-            value: function icalLink() {
-                return this._data.$href('ical');
+            $q.all([this.$getBookings(), this.$getCourseBookings(), this.getPackages(), this.getProducts(), this.getDeals()]).then(function (result) {
+                var items = _.flatten(result);
+                return defer.resolve(items);
+            });
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.$getBookings = function $getBookings() {
+            var _this2 = this;
+
+            var defer = $q.defer();
+            if (this.bookings) {
+                defer.resolve(this.bookings);
             }
-        }, {
-            key: 'webcalLink',
-            value: function webcalLink() {
-                return this._data.$href('ical');
-            }
-        }, {
-            key: 'gcalLink',
-            value: function gcalLink() {
-                return this._data.$href('gcal');
-            }
-        }, {
-            key: 'getItems',
-            value: function getItems() {
-                var defer = $q.defer();
-                if (this.items) {
-                    defer.resolve(this.items);
-                }
-                $q.all([this.$getBookings(), this.$getCourseBookings(), this.getPackages(), this.getProducts(), this.getDeals()]).then(function (result) {
-                    var items = _.flatten(result);
-                    return defer.resolve(items);
-                });
-                return defer.promise;
-            }
-        }, {
-            key: '$getBookings',
-            value: function $getBookings() {
-                var _this2 = this;
-
-                var defer = $q.defer();
-                if (this.bookings) {
-                    defer.resolve(this.bookings);
-                }
-                if (this._data.$has('bookings')) {
-                    this._data.$get('bookings').then(function (bookings) {
-                        _this2.bookings = function () {
-                            var result = [];
-                            var _iteratorNormalCompletion = true;
-                            var _didIteratorError = false;
-                            var _iteratorError = undefined;
-
-                            try {
-                                for (var _iterator = Array.from(bookings)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                    var b = _step.value;
-
-                                    result.push(new BBModel.Purchase.Booking(b));
-                                }
-                            } catch (err) {
-                                _didIteratorError = true;
-                                _iteratorError = err;
-                            } finally {
-                                try {
-                                    if (!_iteratorNormalCompletion && _iterator.return) {
-                                        _iterator.return();
-                                    }
-                                } finally {
-                                    if (_didIteratorError) {
-                                        throw _iteratorError;
-                                    }
-                                }
-                            }
-
-                            return result;
-                        }();
-                        _this2.bookings.sort(function (a, b) {
-                            return a.datetime.unix() - b.datetime.unix();
-                        });
-                        return defer.resolve(_this2.bookings);
-                    });
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
-            }
-        }, {
-            key: '$getCourseBookings',
-            value: function $getCourseBookings() {
-                var _this3 = this;
-
-                var defer = $q.defer();
-                if (this.course_bookings) {
-                    defer.resolve(this.course_bookings);
-                }
-                if (this._data.$has('course_bookings')) {
-                    this._data.$get('course_bookings').then(function (bookings) {
-                        _this3.course_bookings = function () {
-                            var result = [];
-                            var _iteratorNormalCompletion2 = true;
-                            var _didIteratorError2 = false;
-                            var _iteratorError2 = undefined;
-
-                            try {
-                                for (var _iterator2 = Array.from(bookings)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                                    var b = _step2.value;
-
-                                    result.push(new BBModel.Purchase.CourseBooking(b));
-                                }
-                            } catch (err) {
-                                _didIteratorError2 = true;
-                                _iteratorError2 = err;
-                            } finally {
-                                try {
-                                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                        _iterator2.return();
-                                    }
-                                } finally {
-                                    if (_didIteratorError2) {
-                                        throw _iteratorError2;
-                                    }
-                                }
-                            }
-
-                            return result;
-                        }();
-                        return $q.all(_.map(_this3.course_bookings, function (b) {
-                            return b.getBookings();
-                        })).then(function () {
-                            return defer.resolve(_this3.course_bookings);
-                        });
-                    });
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
-            }
-        }, {
-            key: 'getPackages',
-            value: function getPackages() {
-                var _this4 = this;
-
-                var defer = $q.defer();
-                if (this.packages) {
-                    defer.resolve(this.packages);
-                }
-                if (this._data.$has('packages')) {
-                    this._data.$get('packages').then(function (packages) {
-                        _this4.packages = packages;
-                        return defer.resolve(_this4.packages);
-                    });
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
-            }
-        }, {
-            key: 'getProducts',
-            value: function getProducts() {
-                var _this5 = this;
-
-                var defer = $q.defer();
-                if (this.products) {
-                    defer.resolve(this.products);
-                }
-                if (this._data.$has('products')) {
-                    this._data.$get('products').then(function (products) {
-                        _this5.products = products;
-                        return defer.resolve(_this5.products);
-                    });
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
-            }
-        }, {
-            key: 'getDeals',
-            value: function getDeals() {
-                var _this6 = this;
-
-                var defer = $q.defer();
-                if (this.deals) {
-                    defer.resolve(this.deals);
-                }
-                if (this._data.$has('deals')) {
-                    this._data.$get('deals').then(function (deals) {
-                        _this6.deals = deals;
-                        return defer.resolve(_this6.deals);
-                    });
-                } else {
-                    defer.resolve([]);
-                }
-                return defer.promise;
-            }
-        }, {
-            key: 'getMessages',
-            value: function getMessages(booking_texts, msg_type) {
-                var defer = $q.defer();
-                booking_texts = Array.from(booking_texts).filter(function (bt) {
-                    return bt.message_type === msg_type;
-                }).map(function (bt) {
-                    return bt;
-                });
-                if (booking_texts.length === 0) {
-                    defer.resolve([]);
-                } else {
-                    this.getItems().then(function (items) {
-                        var msgs = [];
-                        var _iteratorNormalCompletion3 = true;
-                        var _didIteratorError3 = false;
-                        var _iteratorError3 = undefined;
+            if (this._data.$has('bookings')) {
+                this._data.$get('bookings').then(function (bookings) {
+                    _this2.bookings = function () {
+                        var result = [];
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
 
                         try {
-                            for (var _iterator3 = Array.from(booking_texts)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                                var booking_text = _step3.value;
-                                var _iteratorNormalCompletion4 = true;
-                                var _didIteratorError4 = false;
-                                var _iteratorError4 = undefined;
+                            for (var _iterator = Array.from(bookings)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                var b = _step.value;
 
-                                try {
-                                    for (var _iterator4 = Array.from(items)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                                        var item = _step4.value;
-                                        var _arr = ['company', 'person', 'resource', 'service'];
+                                result.push(new BBModel.Purchase.Booking(b));
+                            }
+                        } catch (err) {
+                            _didIteratorError = true;
+                            _iteratorError = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
+                                }
+                            } finally {
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
+                                }
+                            }
+                        }
 
-                                        for (var _i = 0; _i < _arr.length; _i++) {
-                                            var type = _arr[_i];
-                                            if (item.$has(type) && item.$href(type) === booking_text.$href('item')) {
-                                                if (msgs.indexOf(booking_text.message) === -1) {
-                                                    msgs.push(booking_text.message);
-                                                }
+                        return result;
+                    }();
+                    _this2.bookings.sort(function (a, b) {
+                        return a.datetime.unix() - b.datetime.unix();
+                    });
+                    return defer.resolve(_this2.bookings);
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.$getCourseBookings = function $getCourseBookings() {
+            var _this3 = this;
+
+            var defer = $q.defer();
+            if (this.course_bookings) {
+                defer.resolve(this.course_bookings);
+            }
+            if (this._data.$has('course_bookings')) {
+                this._data.$get('course_bookings').then(function (bookings) {
+                    _this3.course_bookings = function () {
+                        var result = [];
+                        var _iteratorNormalCompletion2 = true;
+                        var _didIteratorError2 = false;
+                        var _iteratorError2 = undefined;
+
+                        try {
+                            for (var _iterator2 = Array.from(bookings)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                                var b = _step2.value;
+
+                                result.push(new BBModel.Purchase.CourseBooking(b));
+                            }
+                        } catch (err) {
+                            _didIteratorError2 = true;
+                            _iteratorError2 = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                    _iterator2.return();
+                                }
+                            } finally {
+                                if (_didIteratorError2) {
+                                    throw _iteratorError2;
+                                }
+                            }
+                        }
+
+                        return result;
+                    }();
+                    return $q.all(_.map(_this3.course_bookings, function (b) {
+                        return b.getBookings();
+                    })).then(function () {
+                        return defer.resolve(_this3.course_bookings);
+                    });
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getPackages = function getPackages() {
+            var _this4 = this;
+
+            var defer = $q.defer();
+            if (this.packages) {
+                defer.resolve(this.packages);
+            }
+            if (this._data.$has('packages')) {
+                this._data.$get('packages').then(function (packages) {
+                    _this4.packages = packages;
+                    return defer.resolve(_this4.packages);
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getProducts = function getProducts() {
+            var _this5 = this;
+
+            var defer = $q.defer();
+            if (this.products) {
+                defer.resolve(this.products);
+            }
+            if (this._data.$has('products')) {
+                this._data.$get('products').then(function (products) {
+                    _this5.products = products;
+                    return defer.resolve(_this5.products);
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getDeals = function getDeals() {
+            var _this6 = this;
+
+            var defer = $q.defer();
+            if (this.deals) {
+                defer.resolve(this.deals);
+            }
+            if (this._data.$has('deals')) {
+                this._data.$get('deals').then(function (deals) {
+                    _this6.deals = deals;
+                    return defer.resolve(_this6.deals);
+                });
+            } else {
+                defer.resolve([]);
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getMessages = function getMessages(booking_texts, msg_type) {
+            var defer = $q.defer();
+            booking_texts = Array.from(booking_texts).filter(function (bt) {
+                return bt.message_type === msg_type;
+            }).map(function (bt) {
+                return bt;
+            });
+            if (booking_texts.length === 0) {
+                defer.resolve([]);
+            } else {
+                this.getItems().then(function (items) {
+                    var msgs = [];
+                    var _iteratorNormalCompletion3 = true;
+                    var _didIteratorError3 = false;
+                    var _iteratorError3 = undefined;
+
+                    try {
+                        for (var _iterator3 = Array.from(booking_texts)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                            var booking_text = _step3.value;
+                            var _iteratorNormalCompletion4 = true;
+                            var _didIteratorError4 = false;
+                            var _iteratorError4 = undefined;
+
+                            try {
+                                for (var _iterator4 = Array.from(items)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                                    var item = _step4.value;
+                                    var _arr = ['company', 'person', 'resource', 'service'];
+
+                                    for (var _i = 0; _i < _arr.length; _i++) {
+                                        var type = _arr[_i];
+                                        if (item.$has(type) && item.$href(type) === booking_text.$href('item')) {
+                                            if (msgs.indexOf(booking_text.message) === -1) {
+                                                msgs.push(booking_text.message);
                                             }
                                         }
                                     }
-                                } catch (err) {
-                                    _didIteratorError4 = true;
-                                    _iteratorError4 = err;
+                                }
+                            } catch (err) {
+                                _didIteratorError4 = true;
+                                _iteratorError4 = err;
+                            } finally {
+                                try {
+                                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                                        _iterator4.return();
+                                    }
                                 } finally {
-                                    try {
-                                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                                            _iterator4.return();
-                                        }
-                                    } finally {
-                                        if (_didIteratorError4) {
-                                            throw _iteratorError4;
-                                        }
+                                    if (_didIteratorError4) {
+                                        throw _iteratorError4;
                                     }
                                 }
                             }
-                        } catch (err) {
-                            _didIteratorError3 = true;
-                            _iteratorError3 = err;
+                        }
+                    } catch (err) {
+                        _didIteratorError3 = true;
+                        _iteratorError3 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                                _iterator3.return();
+                            }
                         } finally {
-                            try {
-                                if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                                    _iterator3.return();
-                                }
-                            } finally {
-                                if (_didIteratorError3) {
-                                    throw _iteratorError3;
-                                }
+                            if (_didIteratorError3) {
+                                throw _iteratorError3;
                             }
                         }
+                    }
 
-                        return defer.resolve(msgs);
+                    return defer.resolve(msgs);
+                });
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getClient = function getClient() {
+            var _this7 = this;
+
+            var defer = $q.defer();
+            if (this._data.$has('client')) {
+                this._data.$get('client').then(function (client) {
+                    _this7.client = new BBModel.Client(client);
+                    return defer.resolve(_this7.client);
+                });
+            } else {
+                defer.reject('No client');
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getMember = function getMember() {
+            var _this8 = this;
+
+            var defer = $q.defer();
+            if (this._data.$has('member')) {
+                this._data.$get('member').then(function (member) {
+                    _this8.member = new BBModel.Client(member);
+                    return defer.resolve(_this8.member);
+                });
+            } else {
+                defer.reject('No member');
+            }
+            return defer.promise;
+        };
+
+        Purchase_Total.prototype.getConfirmMessages = function getConfirmMessages() {
+            var _this9 = this;
+
+            var defer = $q.defer();
+            if (this._data.$has('confirm_messages')) {
+                this._data.$get('confirm_messages').then(function (msgs) {
+                    return _this9.getMessages(msgs, 'Confirm').then(function (filtered_msgs) {
+                        return defer.resolve(filtered_msgs);
                     });
-                }
-                return defer.promise;
+                });
+            } else {
+                defer.reject('no messages');
             }
-        }, {
-            key: 'getClient',
-            value: function getClient() {
-                var _this7 = this;
+            return defer.promise;
+        };
 
-                var defer = $q.defer();
-                if (this._data.$has('client')) {
-                    this._data.$get('client').then(function (client) {
-                        _this7.client = new BBModel.Client(client);
-                        return defer.resolve(_this7.client);
-                    });
-                } else {
-                    defer.reject('No client');
-                }
-                return defer.promise;
+        Purchase_Total.prototype.printed_total_price = function printed_total_price() {
+            if (parseFloat(this.total_price) % 1 === 0) {
+                return '\xA3' + parseInt(this.total_price);
             }
-        }, {
-            key: 'getMember',
-            value: function getMember() {
-                var _this8 = this;
+            return $window.sprintf("£%.2f", parseFloat(this.total_price));
+        };
 
-                var defer = $q.defer();
-                if (this._data.$has('member')) {
-                    this._data.$get('member').then(function (member) {
-                        _this8.member = new BBModel.Client(member);
-                        return defer.resolve(_this8.member);
-                    });
-                } else {
-                    defer.reject('No member');
-                }
-                return defer.promise;
+        Purchase_Total.prototype.newPaymentUrl = function newPaymentUrl() {
+            if (this._data.$has('new_payment')) {
+                return $sce.trustAsResourceUrl(this._data.$href('new_payment'));
             }
-        }, {
-            key: 'getConfirmMessages',
-            value: function getConfirmMessages() {
-                var _this9 = this;
+        };
 
-                var defer = $q.defer();
-                if (this._data.$has('confirm_messages')) {
-                    this._data.$get('confirm_messages').then(function (msgs) {
-                        return _this9.getMessages(msgs, 'Confirm').then(function (filtered_msgs) {
-                            return defer.resolve(filtered_msgs);
-                        });
-                    });
-                } else {
-                    defer.reject('no messages');
-                }
-                return defer.promise;
-            }
-        }, {
-            key: 'printed_total_price',
-            value: function printed_total_price() {
-                if (parseFloat(this.total_price) % 1 === 0) {
-                    return '\xA3' + parseInt(this.total_price);
-                }
-                return $window.sprintf("£%.2f", parseFloat(this.total_price));
-            }
-        }, {
-            key: 'newPaymentUrl',
-            value: function newPaymentUrl() {
-                if (this._data.$has('new_payment')) {
-                    return $sce.trustAsResourceUrl(this._data.$href('new_payment'));
-                }
-            }
-        }, {
-            key: 'totalDuration',
-            value: function totalDuration() {
-                var duration = 0;
-                var _iteratorNormalCompletion5 = true;
-                var _didIteratorError5 = false;
-                var _iteratorError5 = undefined;
+        Purchase_Total.prototype.totalDuration = function totalDuration() {
+            var duration = 0;
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
 
+            try {
+                for (var _iterator5 = Array.from(this.items)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var item = _step5.value;
+
+                    if (item.duration) {
+                        duration += item.duration;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
+            } finally {
                 try {
-                    for (var _iterator5 = Array.from(this.items)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                        var item = _step5.value;
-
-                        if (item.duration) {
-                            duration += item.duration;
-                        }
+                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                        _iterator5.return();
                     }
-                } catch (err) {
-                    _didIteratorError5 = true;
-                    _iteratorError5 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                            _iterator5.return();
-                        }
-                    } finally {
-                        if (_didIteratorError5) {
-                            throw _iteratorError5;
-                        }
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
                     }
                 }
-
-                return duration;
             }
-        }, {
-            key: 'containsWaitlistItems',
-            value: function containsWaitlistItems() {
-                var waitlist = [];
-                var _iteratorNormalCompletion6 = true;
-                var _didIteratorError6 = false;
-                var _iteratorError6 = undefined;
 
+            return duration;
+        };
+
+        Purchase_Total.prototype.containsWaitlistItems = function containsWaitlistItems() {
+            var waitlist = [];
+            var _iteratorNormalCompletion6 = true;
+            var _didIteratorError6 = false;
+            var _iteratorError6 = undefined;
+
+            try {
+                for (var _iterator6 = Array.from(this.items)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                    var item = _step6.value;
+
+                    if (item.on_waitlist === true) {
+                        waitlist.push(item);
+                    }
+                }
+            } catch (err) {
+                _didIteratorError6 = true;
+                _iteratorError6 = err;
+            } finally {
                 try {
-                    for (var _iterator6 = Array.from(this.items)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                        var item = _step6.value;
-
-                        if (item.on_waitlist === true) {
-                            waitlist.push(item);
-                        }
+                    if (!_iteratorNormalCompletion6 && _iterator6.return) {
+                        _iterator6.return();
                     }
-                } catch (err) {
-                    _didIteratorError6 = true;
-                    _iteratorError6 = err;
                 } finally {
-                    try {
-                        if (!_iteratorNormalCompletion6 && _iterator6.return) {
-                            _iterator6.return();
-                        }
-                    } finally {
-                        if (_didIteratorError6) {
-                            throw _iteratorError6;
-                        }
+                    if (_didIteratorError6) {
+                        throw _iteratorError6;
                     }
                 }
-
-                return waitlist.length > 0 ? true : false;
             }
-        }]);
+
+            return waitlist.length > 0 ? true : false;
+        };
 
         return Purchase_Total;
     }(BaseModel);
@@ -34684,7 +34184,15 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
 
     var loader = LoadingService.$loader($scope).notLoaded();
 
-    $scope.filters = { category_name: null, service_name: null, price: { min: 0, max: 100 }, custom_array_value: null };
+    $scope.filters = {
+        category_name: null,
+        service_name: null,
+        price: {
+            min: 0,
+            max: 100
+        },
+        custom_array_value: null
+    };
     $scope.show_custom_array = false;
 
     $scope.options = $scope.$eval($attrs.bbServices) || {};
@@ -34702,7 +34210,10 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
         $scope.hide_disabled = true;
     }
 
-    $scope.price_options = { min: 0, max: 100 };
+    $scope.price_options = {
+        min: 0,
+        max: 100
+    };
 
     $rootScope.connection_started.then(function () {
         if ($scope.bb.company) {
@@ -34772,7 +34283,9 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
             // if there's only one service and single pick hasn't been enabled,
             // automatically select the service.
             if (items.length === 1 && !$scope.options.allow_single_pick) {
-                if (!$scope.selectItem(items[0], $scope.nextRoute, { skip_step: true })) {
+                if (!$scope.selectItem(items[0], $scope.nextRoute, {
+                    skip_step: true
+                })) {
                     setServiceItem(items);
                 }
             } else {
@@ -34790,7 +34303,9 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
                         item = _step.value;
 
                         if (item.self === $scope.booking_item.defaultService().self || item.name === $scope.booking_item.defaultService().name && !item.deleted) {
-                            $scope.selectItem(item, $scope.nextRoute, { skip_step: true });
+                            $scope.selectItem(item, $scope.nextRoute, {
+                                skip_step: true
+                            });
                         }
                     }
                 } catch (err) {
@@ -34892,7 +34407,9 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
                 $scope.bookable_items = items;
 
                 if (services.length === 1 && !$scope.options.allow_single_pick) {
-                    if (!$scope.selectItem(services[0], $scope.nextRoute, { skip_step: true })) {
+                    if (!$scope.selectItem(services[0], $scope.nextRoute, {
+                        skip_step: true
+                    })) {
                         return setServiceItem(services);
                     }
                 } else {
@@ -34988,7 +34505,8 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
         } else {
             $scope.booking_item.setService(item);
             // -----------------------------------------------------------
-            $scope.bb.selected_service = $scope.booking_item.service;
+            // Only set bb.selected_service if the service is a parent service
+            if (!$scope.booking_item.service.child_level_service) $scope.bb.selected_service = $scope.booking_item.service;
             // -----------------------------------------------------------
             if (options.skip_step) {
                 $scope.skipThisStep();
@@ -35005,7 +34523,11 @@ var BBServicesCtrl = function BBServicesCtrl($scope, $rootScope, $q, $attrs, $ui
                 // only set and broadcast if it's changed
                 $scope.booking_item.setService($scope.service);
                 $scope.broadcastItemUpdate();
-                return $scope.bb.selected_service = $scope.service;
+                // -----------------------------------------------------------
+                // Only set bb.selected_service if the service is a parent service
+                if (!$scope.service.child_level_service) $scope.bb.selected_service = $scope.service;
+                // -----------------------------------------------------------
+                return;
             }
         }
     });
