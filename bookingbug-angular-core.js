@@ -1095,6 +1095,27 @@ String.prototype.parameterise = function (seperator) {
 };
 'use strict';
 
+angular.module('BB').constant('routeStates', {
+        Company: 0,
+        Category: 1,
+        Service: 2,
+        Person: 3,
+        Resource: 4,
+        Duration: 5,
+        Date: 6,
+        Time: 7,
+        Client: 8,
+        Summary: 9,
+        Basket: 10,
+        Checkout: 11,
+        Slot: 12,
+        Event: 13,
+        Login: 14,
+        Questions: 15,
+        Confirmation: 16
+});
+'use strict';
+
 /***
  * @ngdoc directive
  * @name BB.Directives:bbWalletRemainder
@@ -1828,27 +1849,6 @@ angular.module('BB.Filters').filter('props', function ($translate) {
 
         return out;
     };
-});
-'use strict';
-
-angular.module('BB').constant('routeStates', {
-        Company: 0,
-        Category: 1,
-        Service: 2,
-        Person: 3,
-        Resource: 4,
-        Duration: 5,
-        Date: 6,
-        Time: 7,
-        Client: 8,
-        Summary: 9,
-        Basket: 10,
-        Checkout: 11,
-        Slot: 12,
-        Event: 13,
-        Login: 14,
-        Questions: 15,
-        Confirmation: 16
 });
 'use strict';
 
@@ -10337,6 +10337,216 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
         return TimeSlot;
     }(BaseModel);
 });
+'use strict';
+
+angular.module('BB.Services').config(function ($translateProvider) {
+    'ngInject';
+
+    var translations = {
+        CORE: {
+            ALERTS: {
+                ERROR_HEADING: "Error",
+                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+                ATTENDEES_CHANGED: "Your booking has been successfully updated",
+                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
+                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
+                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+                FORM_INVALID: "Please complete all required fields",
+                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
+                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
+                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
+                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
+                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+                MISSING_LOCATION: "Please enter your location",
+                MISSING_POSTCODE: "Please enter a postcode",
+                PASSWORD_INVALID: "Sorry, your password is invalid",
+                PASSWORD_MISMATCH: "Your passwords don't match",
+                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+                PASSWORD_RESET_SUCESS: "Your password has been updated.",
+                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
+                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+                STORE_NOT_SELECTED: "You need to select a store",
+                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+                TOPUP_SUCCESS: "Your wallet has been topped up",
+                UPDATE_FAILED: "Update failed. Please try again",
+                UPDATE_SUCCESS: "Updated",
+                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+                BOOKING_CANCELLED: "Your booking has been cancelled.",
+                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
+                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
+                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again."
+            },
+            PAGINATION: {
+                SUMMARY: "{{start}} - {{end}} of {{total}}"
+            },
+            MODAL: {
+                CANCEL_BOOKING: {
+                    HEADER: "Cancel",
+                    QUESTION: "Are you sure you want to cancel this {{type}}?"
+                },
+                SCHEMA_FORM: {
+                    OK_BTN: "@:COMMON.BTN.OK",
+                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+                }
+            },
+            TIMEZONE_INFO: "All times are shown in {{time_zone_name}}.",
+            FILTERS: {
+                DISTANCE: {
+                    MILES: "miles",
+                    KILOMETRES: "km"
+                },
+                CURRENCY: {
+                    THOUSANDS_SEPARATOR: ",",
+                    DECIMAL_SEPARATOR: ".",
+                    CURRENCY_FORMAT: "%s%v"
+                },
+                PRETTY_PRICE: {
+                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+                },
+                TIME_PERIOD: {
+                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+                }
+            },
+            EVENT: {
+                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+                JOIN_WAITLIST: "Join waitlist"
+            }
+        },
+        COMMON: {
+            TERMINOLOGY: {
+                CATEGORY: "Category",
+                DURATION: "Duration",
+                RESOURCE: "Resource",
+                PERSON: "Person",
+                SERVICE: "Service",
+                WALLET: "Wallet",
+                SESSION: "Session",
+                EVENT: "Event",
+                EVENTS: "Events",
+                COURSE: "Course",
+                COURSES: "Courses",
+                DATE: "Date",
+                TIME: "Time",
+                DATE_TIME: "Date/Time",
+                WHEN: "When",
+                GIFT_CERTIFICATE: "Gift Certificate",
+                GIFT_CERTIFICATES: "Gift Certificates",
+                ITEM: "Item",
+                FILTER: "Filter",
+                ANY: "Any",
+                RESET: "Reset",
+                TOTAL: "Total",
+                TOTAL_DUE_NOW: "Total Due Now",
+                BOOKING_FEE: "Booking Fee",
+                PRICE: "Price",
+                PRICE_FREE: "Free",
+                PRINT: "Print",
+                AND: "and",
+                APPOINTMENT: "Appointment",
+                TICKETS: "Tickets",
+                TYPE: "Type",
+                EXPORT: "Export",
+                RECIPIENT: "Recipient",
+                BOOKING_REF: "Booking Reference",
+                MORNING: "Morning",
+                AFTERNOON: "Afternoon",
+                EVENING: "Evening",
+                AVAILABLE: "Available",
+                UNAVAILABLE: "Unavailable",
+                CALENDAR: "Calendar",
+                QUESTIONS: "Questions",
+                BOOKING: "Booking",
+                ADMITTANCE: "Admittance",
+                EDIT: "Edit",
+                CONFIRMATION: "Confirmation",
+                NAME: "Name",
+                FIRST_NAME: "First Name",
+                LAST_NAME: "Last Name",
+                ADDRESS1: "Address",
+                ADDRESS3: "Town",
+                ADDRESS4: "County",
+                POSTCODE: "Postcode",
+                PHONE: "Phone",
+                MOBILE: "Mobile",
+                EMAIL: "Email",
+                SCHEDULE: "Schedule",
+                SEARCH: "Search",
+                STAFF: "Staff",
+                RESOURCES: "Resources"
+            },
+            FORM: {
+                FIRST_NAME_REQUIRED: "Please enter your first name",
+                LAST_NAME_REQUIRED: "Please enter your last name",
+                ADDRESS_REQUIRED: "Please enter your address",
+                POSTCODE_INVALID: "Please enter a valid postcode",
+                PHONE_INVALID: "Please enter a valid phone number",
+                MOBILE_INVALID: "Please enter a valid mobile number",
+                EMAIL_REQUIRED: "Please enter your email",
+                EMAIL_INVALID: "Please enter a valid email address",
+                FIELD_REQUIRED: "This field is required",
+                PASSWORD: "Password",
+                PASSWORD_REQUIRED: "Please enter your password",
+                CONFIRM_PASSWORD: "Confirm password",
+                PASSWORD_MISMATCH: "Please ensure your passwords match",
+                PASSWORD_LENGTH: "Password must be at least 7 characters",
+                REQUIRED: "*Required",
+                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
+                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
+            },
+            BTN: {
+                CANCEL: "Cancel",
+                CLOSE: "Close",
+                NO: "No",
+                OK: "Ok",
+                YES: "Yes",
+                BACK: "Back",
+                NEXT: "Continue",
+                LOGIN: "Login",
+                CONFIRM: "Confirm",
+                SAVE: "Save",
+                SELECT: "Select",
+                BOOK: "Book",
+                BOOK_EVENT: "Book Event",
+                CANCEL_BOOKING: "Cancel Booking",
+                DO_NOT_CANCEL_BOOKING: "Do not cancel",
+                APPLY: "Apply",
+                CLEAR: "Clear",
+                PAY: "Pay",
+                CHECKOUT: "Checkout",
+                TOP_UP: "Top Up",
+                ADD: "Add",
+                SUBMIT: "Submit",
+                DETAILS: "Details",
+                MORE: "More",
+                LESS: "Less",
+                DELETE: "Delete",
+                BUY: "Buy"
+            },
+            LANGUAGE: {
+                EN: "English",
+                DE: "Deutsch",
+                ES: "Español",
+                FR: "Français"
+            }
+        }
+    };
+
+    $translateProvider.translations('en', translations);
+});
 "use strict";
 
 angular.module('BB.Services').factory("AddressListService", function ($q, $window, halClient, UriTemplate) {
@@ -16345,216 +16555,6 @@ angular.module('BB.Services').service('viewportSize', function ($window, $docume
     isMD: isMD,
     isLG: isLG
   };
-});
-'use strict';
-
-angular.module('BB.Services').config(function ($translateProvider) {
-    'ngInject';
-
-    var translations = {
-        CORE: {
-            ALERTS: {
-                ERROR_HEADING: "Error",
-                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
-                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
-                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
-                ATTENDEES_CHANGED: "Your booking has been successfully updated",
-                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
-                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
-                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
-                FORM_INVALID: "Please complete all required fields",
-                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
-                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
-                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
-                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
-                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
-                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
-                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
-                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
-                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
-                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
-                MISSING_LOCATION: "Please enter your location",
-                MISSING_POSTCODE: "Please enter a postcode",
-                PASSWORD_INVALID: "Sorry, your password is invalid",
-                PASSWORD_MISMATCH: "Your passwords don't match",
-                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
-                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
-                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
-                PASSWORD_RESET_SUCESS: "Your password has been updated.",
-                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
-                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
-                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
-                STORE_NOT_SELECTED: "You need to select a store",
-                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
-                TOPUP_SUCCESS: "Your wallet has been topped up",
-                UPDATE_FAILED: "Update failed. Please try again",
-                UPDATE_SUCCESS: "Updated",
-                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
-                BOOKING_CANCELLED: "Your booking has been cancelled.",
-                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
-                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
-                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
-                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
-                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
-                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again."
-            },
-            PAGINATION: {
-                SUMMARY: "{{start}} - {{end}} of {{total}}"
-            },
-            MODAL: {
-                CANCEL_BOOKING: {
-                    HEADER: "Cancel",
-                    QUESTION: "Are you sure you want to cancel this {{type}}?"
-                },
-                SCHEMA_FORM: {
-                    OK_BTN: "@:COMMON.BTN.OK",
-                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-                }
-            },
-            TIMEZONE_INFO: "All times are shown in {{time_zone_name}}.",
-            FILTERS: {
-                DISTANCE: {
-                    MILES: "miles",
-                    KILOMETRES: "km"
-                },
-                CURRENCY: {
-                    THOUSANDS_SEPARATOR: ",",
-                    DECIMAL_SEPARATOR: ".",
-                    CURRENCY_FORMAT: "%s%v"
-                },
-                PRETTY_PRICE: {
-                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-                },
-                TIME_PERIOD: {
-                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-                }
-            },
-            EVENT: {
-                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
-                JOIN_WAITLIST: "Join waitlist"
-            }
-        },
-        COMMON: {
-            TERMINOLOGY: {
-                CATEGORY: "Category",
-                DURATION: "Duration",
-                RESOURCE: "Resource",
-                PERSON: "Person",
-                SERVICE: "Service",
-                WALLET: "Wallet",
-                SESSION: "Session",
-                EVENT: "Event",
-                EVENTS: "Events",
-                COURSE: "Course",
-                COURSES: "Courses",
-                DATE: "Date",
-                TIME: "Time",
-                DATE_TIME: "Date/Time",
-                WHEN: "When",
-                GIFT_CERTIFICATE: "Gift Certificate",
-                GIFT_CERTIFICATES: "Gift Certificates",
-                ITEM: "Item",
-                FILTER: "Filter",
-                ANY: "Any",
-                RESET: "Reset",
-                TOTAL: "Total",
-                TOTAL_DUE_NOW: "Total Due Now",
-                BOOKING_FEE: "Booking Fee",
-                PRICE: "Price",
-                PRICE_FREE: "Free",
-                PRINT: "Print",
-                AND: "and",
-                APPOINTMENT: "Appointment",
-                TICKETS: "Tickets",
-                TYPE: "Type",
-                EXPORT: "Export",
-                RECIPIENT: "Recipient",
-                BOOKING_REF: "Booking Reference",
-                MORNING: "Morning",
-                AFTERNOON: "Afternoon",
-                EVENING: "Evening",
-                AVAILABLE: "Available",
-                UNAVAILABLE: "Unavailable",
-                CALENDAR: "Calendar",
-                QUESTIONS: "Questions",
-                BOOKING: "Booking",
-                ADMITTANCE: "Admittance",
-                EDIT: "Edit",
-                CONFIRMATION: "Confirmation",
-                NAME: "Name",
-                FIRST_NAME: "First Name",
-                LAST_NAME: "Last Name",
-                ADDRESS1: "Address",
-                ADDRESS3: "Town",
-                ADDRESS4: "County",
-                POSTCODE: "Postcode",
-                PHONE: "Phone",
-                MOBILE: "Mobile",
-                EMAIL: "Email",
-                SCHEDULE: "Schedule",
-                SEARCH: "Search",
-                STAFF: "Staff",
-                RESOURCES: "Resources"
-            },
-            FORM: {
-                FIRST_NAME_REQUIRED: "Please enter your first name",
-                LAST_NAME_REQUIRED: "Please enter your last name",
-                ADDRESS_REQUIRED: "Please enter your address",
-                POSTCODE_INVALID: "Please enter a valid postcode",
-                PHONE_INVALID: "Please enter a valid phone number",
-                MOBILE_INVALID: "Please enter a valid mobile number",
-                EMAIL_REQUIRED: "Please enter your email",
-                EMAIL_INVALID: "Please enter a valid email address",
-                FIELD_REQUIRED: "This field is required",
-                PASSWORD: "Password",
-                PASSWORD_REQUIRED: "Please enter your password",
-                CONFIRM_PASSWORD: "Confirm password",
-                PASSWORD_MISMATCH: "Please ensure your passwords match",
-                PASSWORD_LENGTH: "Password must be at least 7 characters",
-                REQUIRED: "*Required",
-                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
-                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
-            },
-            BTN: {
-                CANCEL: "Cancel",
-                CLOSE: "Close",
-                NO: "No",
-                OK: "Ok",
-                YES: "Yes",
-                BACK: "Back",
-                NEXT: "Continue",
-                LOGIN: "Login",
-                CONFIRM: "Confirm",
-                SAVE: "Save",
-                SELECT: "Select",
-                BOOK: "Book",
-                BOOK_EVENT: "Book Event",
-                CANCEL_BOOKING: "Cancel Booking",
-                DO_NOT_CANCEL_BOOKING: "Do not cancel",
-                APPLY: "Apply",
-                CLEAR: "Clear",
-                PAY: "Pay",
-                CHECKOUT: "Checkout",
-                TOP_UP: "Top Up",
-                ADD: "Add",
-                SUBMIT: "Submit",
-                DETAILS: "Details",
-                MORE: "More",
-                LESS: "Less",
-                DELETE: "Delete",
-                BUY: "Buy"
-            },
-            LANGUAGE: {
-                EN: "English",
-                DE: "Deutsch",
-                ES: "Español",
-                FR: "Français"
-            }
-        }
-    };
-
-    $translateProvider.translations('en', translations);
 });
 'use strict';
 
@@ -35366,6 +35366,10 @@ angular.module('BB.Controllers').controller('TimeRangeListStackedController', fu
             }
         }
 
+        $scope.options.ignore_min_advance_datetime = $scope.options.ignore_min_advance_datetime ? true : false;
+
+        setMinMaxDate();
+
         // initialise the time range
         // last selected day is set (i.e, a user has already selected a date)
         if (!$scope.start_date && $scope.last_selected_date) {
@@ -35421,7 +35425,47 @@ angular.module('BB.Controllers').controller('TimeRangeListStackedController', fu
         // AngluarUI date picker
         $scope.selected_date = $scope.selected_day.toDate();
 
-        return isSubtractValid();
+        isSubtractValid();
+
+        isAddValid();
+    };
+
+    /***
+     * @ngdoc method
+     * @name setMinMaxDate
+     * @methodOf BB.Directives:bbTimeRangeStacked
+     * @description
+     * Set min, max date and time range based on min/max advance datetime of the selected service
+     *
+     */
+    var setMinMaxDate = function setMinMaxDate() {
+
+        var current_item = $scope.bb.current_item;
+        // has a service been selected?
+        if (current_item.service && !$scope.options.ignore_min_advance_datetime) {
+
+            $scope.min_date = current_item.service.min_advance_datetime;
+            $scope.max_date = current_item.service.max_advance_datetime;
+
+            // date helpers for use by datepicker-popup
+            $scope.minDateJs = $scope.min_date.toDate();
+            $scope.maxDateJs = $scope.max_date.toDate();
+
+            //calculate duration of max date from today
+            if (!$scope.maxDateDuration) {
+                var maxDate = $scope.max_date.clone();
+                var today = moment().clone();
+                var difference = maxDate.startOf('day').diff(today.startOf('day'), 'days', true);
+                var maxDateDuration = moment.duration(difference, 'days').humanize();
+                // store it on scope in a form to support translations
+                $scope.maxDateDurationObj = { maxDateDuration: maxDateDuration };
+            }
+
+            // if the selected day is before the services min_advance_datetime, adjust the time range
+            if ($scope.selected_day && $scope.selected_day.isBefore(current_item.service.min_advance_datetime, 'day') && !$scope.isAdmin()) {
+                setTimeRange(current_item.service.min_advance_datetime);
+            }
+        }
     };
 
     /***
@@ -35484,6 +35528,27 @@ angular.module('BB.Controllers').controller('TimeRangeListStackedController', fu
             return $scope.subtract_string = "Prev day";
         } else {
             return $scope.subtract_string = "Prev";
+        }
+    };
+
+    /***
+     * @ngdoc method
+     * @name isAddValid
+     * @methodOf BB.Directives:bbTimeRangeStacked
+     * @description
+     * Use to determine if addition of the time range is valid (i.e. it's not more than the max days in advance)
+     *
+     */
+    var isAddValid = function isAddValid() {
+        $scope.is_add_valid = true;
+
+        if (!$scope.isAdmin() && !$scope.options.ignore_max_advance_datetime && $scope.max_date) {
+            var max_date = $scope.max_date.clone();
+            var selected_day = $scope.selected_day.clone();
+            var difference = max_date.startOf('day').diff(selected_day.startOf('day'), 'days', true);
+            if (difference - $scope.time_range_length < 0) {
+                return $scope.is_add_valid = false;
+            }
         }
     };
 
@@ -35631,6 +35696,8 @@ angular.module('BB.Controllers').controller('TimeRangeListStackedController', fu
     $scope.loadData = function () {
 
         loader.notLoaded();
+
+        setMinMaxDate();
 
         // if the selected date has already been loaded, there's no need to call the API
         if ($scope.request && $scope.request.start.twix($scope.request.end).contains($scope.selected_day)) {
@@ -36224,6 +36291,8 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
 
         $scope.options.ignore_min_advance_datetime = $scope.options.ignore_min_advance_datetime ? true : false;
 
+        setMinMaxDate();
+
         // initialise the time range
         // last selected day is set (i.e, a user has already selected a date)
         if (!$scope.start_date && $scope.last_selected_date) {
@@ -36292,6 +36361,46 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
         $scope.selected_date = $scope.selected_day.toDate();
 
         isSubtractValid();
+
+        isAddValid();
+    };
+
+    /***
+     * @ngdoc method
+     * @name setMinMaxDate
+     * @methodOf BB.Directives:bbTimeRanges
+     * @description
+     * Set min, max date and time range based on min/max advance datetime of the selected service
+     *
+     */
+    var setMinMaxDate = function setMinMaxDate() {
+
+        var current_item = $scope.bb.current_item;
+        // has a service been selected?
+        if (current_item.service && !$scope.options.ignore_min_advance_datetime) {
+
+            $scope.min_date = current_item.service.min_advance_datetime;
+            $scope.max_date = current_item.service.max_advance_datetime;
+
+            // date helpers for use by datepicker-popup
+            $scope.minDateJs = $scope.min_date.toDate();
+            $scope.maxDateJs = $scope.max_date.toDate();
+
+            //calculate duration of max date from today
+            if (!$scope.maxDateDuration) {
+                var maxDate = $scope.max_date.clone();
+                var today = moment().clone();
+                var difference = maxDate.startOf('day').diff(today.startOf('day'), 'days', true);
+                var maxDateDuration = moment.duration(difference, 'days').humanize();
+                // store it on scope in a form to support translations
+                $scope.maxDateDurationObj = { maxDateDuration: maxDateDuration };
+            }
+
+            // if the selected day is before the services min_advance_datetime, adjust the time range
+            if ($scope.selected_day && $scope.selected_day.isBefore(current_item.service.min_advance_datetime, 'day') && !$scope.isAdmin()) {
+                setTimeRange(current_item.service.min_advance_datetime);
+            }
+        }
     };
 
     /***
@@ -36396,6 +36505,27 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
             return $scope.subtract_string = "Prev day";
         } else {
             return $scope.subtract_string = "Prev";
+        }
+    };
+
+    /***
+     * @ngdoc method
+     * @name isAddValid
+     * @methodOf BB.Directives:bbTimeRanges
+     * @description
+     * Use to determine if addition of the time range is valid (i.e. it's not more than the max days in advance)
+     *
+     */
+    var isAddValid = function isAddValid() {
+        $scope.is_add_valid = true;
+
+        if (!$scope.isAdmin() && !$scope.options.ignore_max_advance_datetime && $scope.max_date) {
+            var max_date = $scope.max_date.clone();
+            var selected_day = $scope.selected_day.clone();
+            var difference = max_date.startOf('day').diff(selected_day.startOf('day'), 'days', true);
+            if (difference - $scope.time_range_length < 0) {
+                return $scope.is_add_valid = false;
+            }
         }
     };
 
@@ -36546,19 +36676,8 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
      *
      */
     $scope.loadData = function () {
-        var current_item = $scope.bb.current_item;
 
-        // has a service been selected?
-
-        if (current_item.service && !$scope.options.ignore_min_advance_datetime) {
-
-            $scope.min_date = current_item.service.min_advance_datetime;
-            $scope.max_date = current_item.service.max_advance_datetime;
-            // if the selected day is before the services min_advance_datetime, adjust the time range
-            if ($scope.selected_day && $scope.selected_day.isBefore(current_item.service.min_advance_datetime, 'day') && !$scope.isAdmin()) {
-                setTimeRange(current_item.service.min_advance_datetime);
-            }
-        }
+        setMinMaxDate();
 
         var date = $scope.start_date;
         var edate = moment(date).add($scope.time_range_length, 'days');
@@ -36638,11 +36757,11 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
                         $scope.days.push(day);
 
                         if (time_slots.length > 0) {
-                            if (!current_item.earliest_time || current_item.earliest_time.isAfter(d)) {
-                                current_item.earliest_time = moment(d).add(time_slots[0].time, 'minutes');
+                            if (!$scope.bb.current_item.earliest_time || $scope.bb.current_item.earliest_time.isAfter(d)) {
+                                $scope.bb.current_item.earliest_time = moment(d).add(time_slots[0].time, 'minutes');
                             }
-                            if (!current_item.earliest_time_slot || current_item.earliest_time_slot.date.isAfter(d)) {
-                                current_item.earliest_time_slot = {
+                            if (!$scope.bb.current_item.earliest_time_slot || $scope.bb.current_item.earliest_time_slot.date.isAfter(d)) {
+                                $scope.bb.current_item.earliest_time_slot = {
                                     date: moment(d).add(time_slots[0].time, 'minutes'),
                                     time: time_slots[0].time
                                 };
@@ -36691,7 +36810,7 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
                             }
                         }
 
-                        var requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, current_item, $scope.bb.item_defaults);
+                        var requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, $scope.bb.current_item, $scope.bb.item_defaults);
 
                         if (requested_slot.slot && requested_slot.match === "full") {
                             $scope.skipThisStep();
