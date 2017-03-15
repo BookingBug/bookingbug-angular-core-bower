@@ -9256,7 +9256,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('TimeRangeListStackedController', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, PersonService, PurchaseService, DateTimeUtilitiesService) {
-    var isSubtractValid, setEnabledSlots, setTimeRange, spliceExistingDateTimes, updateHideStatus;
+    var isAddValid, isSubtractValid, setEnabledSlots, setMinMaxDate, setTimeRange, spliceExistingDateTimes, updateHideStatus;
     $scope.controller = "public.controllers.TimeRangeListStacked";
     FormDataStoreService.init('TimeRangeListStacked', $scope, ['selected_slot', 'original_start_date', 'start_at_week_start']);
     $scope.notLoaded($scope);
@@ -9282,6 +9282,8 @@ function getURIparam( name ){
           $scope.selected_day = selected_day;
         }
       }
+      $scope.options.ignore_min_advance_datetime = $scope.options.ignore_min_advance_datetime ? true : false;
+      setMinMaxDate();
       if (!$scope.start_date && $scope.last_selected_date) {
         if ($scope.original_start_date) {
           diff = $scope.last_selected_date.diff($scope.original_start_date, 'days');
@@ -9311,7 +9313,7 @@ function getURIparam( name ){
     * @name setTimeRange
     * @methodOf BB.Directives:bbTimeRangeStacked
     * @description
-    * Set time range in according of selected_date 
+    * Set time range in according of selected_date
     *
     * @param {date} selected_date The selected date from multi time range list
     * @param {date} start_date The start date of range list
@@ -9328,7 +9330,36 @@ function getURIparam( name ){
       }
       $scope.selected_day = selected_date;
       $scope.selected_date = $scope.selected_day.toDate();
-      return isSubtractValid();
+      isSubtractValid();
+      return isAddValid();
+    };
+
+    /***
+    * @ngdoc method
+    * @name setMinMaxDate
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Set min, max date and time range based on min/max advance datetime of the selected service
+    *
+     */
+    setMinMaxDate = function() {
+      var current_item, difference, maxDate, today;
+      current_item = $scope.bb.current_item;
+      if (current_item.service && !$scope.options.ignore_min_advance_datetime) {
+        $scope.min_date = current_item.service.min_advance_datetime;
+        $scope.max_date = current_item.service.max_advance_datetime;
+        $scope.minDateJs = $scope.min_date.toDate();
+        $scope.maxDateJs = $scope.max_date.toDate();
+        if (!$scope.maxDateDuration) {
+          maxDate = $scope.max_date.clone();
+          today = moment().clone();
+          difference = maxDate.startOf('day').diff(today.startOf('day'), 'days', true);
+          $scope.maxDateDuration = moment.duration(difference, 'days').humanize();
+        }
+        if ($scope.selected_day && $scope.selected_day.isBefore(current_item.service.min_advance_datetime, 'day') && !$scope.isAdmin()) {
+          return setTimeRange(current_item.service.min_advance_datetime);
+        }
+      }
     };
 
     /***
@@ -9389,6 +9420,27 @@ function getURIparam( name ){
         return $scope.subtract_string = "Prev day";
       } else {
         return $scope.subtract_string = "Prev";
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name isAddValid
+    * @methodOf BB.Directives:bbTimeRangeStacked
+    * @description
+    * Use to determine if addition of the time range is valid (i.e. it's not more than the max days in advance)
+    *
+     */
+    isAddValid = function() {
+      var difference, max_date, selected_day;
+      $scope.is_add_valid = true;
+      if (!$scope.isAdmin() && !$scope.options.ignore_max_advance_datetime && $scope.max_date) {
+        max_date = $scope.max_date.clone();
+        selected_day = $scope.selected_day.clone();
+        difference = max_date.startOf('day').diff(selected_day.startOf('day'), 'day', true);
+        if ((difference - $scope.time_range_length) < 0) {
+          return $scope.is_add_valid = false;
+        }
       }
     };
 
@@ -9504,6 +9556,7 @@ function getURIparam( name ){
      */
     $scope.loadData = function() {
       var edate, grouped_items, i, items, len, pslots;
+      setMinMaxDate();
       $scope.notLoaded($scope);
       if ($scope.request && $scope.request.start.twix($scope.request.end).contains($scope.selected_day)) {
         updateHideStatus();
@@ -12932,7 +12985,7 @@ function getURIparam( name ){
   });
 
   angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize) {
-    var currentPostcode, isSubtractValid, setTimeRange;
+    var currentPostcode, isAddValid, isSubtractValid, setMinMaxDate, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
     FormDataStoreService.init('TimeRangeList', $scope, ['selected_slot', 'postcode', 'original_start_date', 'start_at_week_start']);
@@ -12997,6 +13050,7 @@ function getURIparam( name ){
         }
       }
       $scope.options.ignore_min_advance_datetime = $scope.options.ignore_min_advance_datetime ? true : false;
+      setMinMaxDate();
       if (!$scope.start_date && $scope.last_selected_date) {
         if ($scope.original_start_date) {
           diff = $scope.last_selected_date.diff($scope.original_start_date, 'days');
@@ -13043,6 +13097,35 @@ function getURIparam( name ){
       $scope.selected_day = selected_date;
       $scope.selected_date = $scope.selected_day.toDate();
       isSubtractValid();
+      isAddValid();
+    };
+
+    /***
+    * @ngdoc method
+    * @name setMinMaxDate
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Set min, max date and time range based on min/max advance datetime of the selected service
+    *
+     */
+    setMinMaxDate = function() {
+      var current_item, difference, maxDate, today;
+      current_item = $scope.bb.current_item;
+      if (current_item.service && !$scope.options.ignore_min_advance_datetime) {
+        $scope.min_date = current_item.service.min_advance_datetime;
+        $scope.max_date = current_item.service.max_advance_datetime;
+        $scope.minDateJs = $scope.min_date.toDate();
+        $scope.maxDateJs = $scope.max_date.toDate();
+        if (!$scope.maxDateDuration) {
+          maxDate = $scope.max_date.clone();
+          today = moment().clone();
+          difference = maxDate.startOf('day').diff(today.startOf('day'), 'days', true);
+          $scope.maxDateDuration = moment.duration(difference, 'days').humanize();
+        }
+        if ($scope.selected_day && $scope.selected_day.isBefore(current_item.service.min_advance_datetime, 'day') && !$scope.isAdmin()) {
+          return setTimeRange(current_item.service.min_advance_datetime);
+        }
+      }
     };
 
     /***
@@ -13142,6 +13225,27 @@ function getURIparam( name ){
         return $scope.subtract_string = "Prev day";
       } else {
         return $scope.subtract_string = "Prev";
+      }
+    };
+
+    /***
+    * @ngdoc method
+    * @name isAddValid
+    * @methodOf BB.Directives:bbTimeRanges
+    * @description
+    * Use to determine if addition of the time range is valid (i.e. it's not more than the max days in advance)
+    *
+     */
+    isAddValid = function() {
+      var difference, max_date, selected_day;
+      $scope.is_add_valid = true;
+      if (!$scope.isAdmin() && !$scope.options.ignore_max_advance_datetime && $scope.max_date) {
+        max_date = $scope.max_date.clone();
+        selected_day = $scope.selected_day.clone();
+        difference = max_date.startOf('day').diff(selected_day.startOf('day'), 'day', true);
+        if ((difference - $scope.time_range_length) < 0) {
+          return $scope.is_add_valid = false;
+        }
       }
     };
 
@@ -13274,15 +13378,8 @@ function getURIparam( name ){
     *
      */
     $scope.loadData = function() {
-      var current_item, date, duration, edate, loc, promise;
-      current_item = $scope.bb.current_item;
-      if (current_item.service && !$scope.options.ignore_min_advance_datetime) {
-        $scope.min_date = current_item.service.min_advance_datetime;
-        $scope.max_date = current_item.service.max_advance_datetime;
-        if ($scope.selected_day && $scope.selected_day.isBefore(current_item.service.min_advance_datetime, 'day') && !$scope.isAdmin()) {
-          setTimeRange(current_item.service.min_advance_datetime);
-        }
-      }
+      var date, duration, edate, loc, promise;
+      setMinMaxDate();
       date = $scope.start_date;
       edate = moment(date).add($scope.time_range_length, 'days');
       $scope.end_date = moment(edate).add(-1, 'days');
@@ -13333,11 +13430,11 @@ function getURIparam( name ){
             };
             $scope.days.push(day);
             if (time_slots.length > 0) {
-              if (!current_item.earliest_time || current_item.earliest_time.isAfter(d)) {
-                current_item.earliest_time = moment(d).add(time_slots[0].time, 'minutes');
+              if (!$scope.bb.current_item.earliest_time || $scope.bb.current_item.earliest_time.isAfter(d)) {
+                $scope.bb.current_item.earliest_time = moment(d).add(time_slots[0].time, 'minutes');
               }
-              if (!current_item.earliest_time_slot || current_item.earliest_time_slot.date.isAfter(d)) {
-                current_item.earliest_time_slot = {
+              if (!$scope.bb.current_item.earliest_time_slot || $scope.bb.current_item.earliest_time_slot.date.isAfter(d)) {
+                $scope.bb.current_item.earliest_time_slot = {
                   date: moment(d).add(time_slots[0].time, 'minutes'),
                   time: time_slots[0].time
                 };
@@ -13361,7 +13458,7 @@ function getURIparam( name ){
                 }
               }
             }
-            requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, current_item, $scope.bb.item_defaults);
+            requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, $scope.bb.current_item, $scope.bb.item_defaults);
             if (requested_slot.slot && requested_slot.match === "full") {
               $scope.skipThisStep();
               $scope.selectSlot(requested_slot.slot, day);
