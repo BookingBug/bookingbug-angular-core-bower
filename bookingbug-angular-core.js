@@ -27435,6 +27435,8 @@ angular.module('BB.Controllers').controller('DayList', function ($scope, $rootSc
             });
             $scope.weeks = _.toArray($scope.weeks);
 
+            $scope.$emit('bbDayList:loaded');
+
             return $scope.setLoaded($scope);
         }, function (err) {
             return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
