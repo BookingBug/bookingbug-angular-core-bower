@@ -14476,7 +14476,7 @@ angular.module('BB.Services').factory("ResourceService", function ($q, BBModel) 
  *
  */
 
-angular.module('BB.Services').factory('scrollIntercepter', function ($bbug, $window, GeneralOptions, $timeout) {
+angular.module('BB.Services').factory('scrollIntercepter', function ($bbug, $window, GeneralOptions, AppService, $timeout) {
 
     var currentlyScrolling = false;
 
@@ -14490,7 +14490,12 @@ angular.module('BB.Services').factory('scrollIntercepter', function ($bbug, $win
         if (!currentlyScrolling) {
             currentlyScrolling = true;
 
-            if ('parentIFrame' in $window) {
+            // if theres a modal open, scrolling to it takes the higest precedence
+            if (AppService.isModalOpen()) {
+                $bbug('[uib-modal-window]').animate({
+                    scrollTop: element.offset().top - GeneralOptions.scroll_offset
+                }, transitionTime);
+            } else if ('parentIFrame' in $window) {
                 parentIFrame.scrollToOffset(0, element.offset().top - GeneralOptions.scroll_offset);
             } else {
                 $bbug("html, body").animate({
@@ -22570,7 +22575,7 @@ var bbFormDirective = function bbFormDirective($bbug, $window, ValidatorService,
             $formCtrl = ctrls[0];
             $bbPageCtrl = ctrls[1];
             scope.submitForm = submitForm;
-            elem.on("submit", submitForm); // doesn't work with ng-form just regular form
+            if (attrs.disableAutoSubmit == null) elem.on("submit", submitForm); // doesn't work with ng-form just regular form
         };
 
         // marks child forms as submitted
@@ -22579,10 +22584,8 @@ var bbFormDirective = function bbFormDirective($bbug, $window, ValidatorService,
 
             form.$setSubmitted();
             form.submitted = true; // DEPRECATED - $submitted should be used in favour
-            return angular.forEach(form, function (item) {
-                if (item && item.$$parentForm === form && item.$setSubmitted) {
-                    return setSubmitted(item);
-                }
+            angular.forEach(form, function (item) {
+                if (item && item.$$parentForm === form && item.$setSubmitted) setSubmitted(item);
             });
         };
 
@@ -22594,25 +22597,20 @@ var bbFormDirective = function bbFormDirective($bbug, $window, ValidatorService,
 
             var isValid = ValidatorService.validateForm($formCtrl);
 
-            if (isValid) {
-                serveBBPage();
-            }
+            if (isValid && $bbPageCtrl != null && attrs.noRoute == null) serveBBPage();
 
             return isValid;
         };
 
         var serveBBPage = function serveBBPage() {
 
-            if ($bbPageCtrl != null) {
+            var route = attrs.bbFormRoute;
+            $bbPageCtrl.$scope.checkReady();
 
-                var route = attrs.bbFormRoute;
-                $bbPageCtrl.$scope.checkReady();
-
-                if (route != null && route.length > 0) {
-                    $bbPageCtrl.$scope.routeReady(route);
-                } else {
-                    $bbPageCtrl.$scope.routeReady();
-                }
+            if (route != null && route.length > 0) {
+                $bbPageCtrl.$scope.routeReady(route);
+            } else {
+                $bbPageCtrl.$scope.routeReady();
             }
         };
 
@@ -22626,7 +22624,6 @@ var bbFormDirective = function bbFormDirective($bbug, $window, ValidatorService,
 
                 var invalidInput = invalidFormGroup.find('.ng-invalid');
                 invalidInput.focus();
-                return;
             }
         };
 
