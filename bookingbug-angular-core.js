@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('BB', ['ngStorage', 'ngMessages', 'ngSanitize', 'ngFileUpload', 'ngCookies', 'ngAnimate', 'angular-carousel', 'angular-hal', 'angular-data.DSCacheFactory', 'angular.filter', 'pascalprecht.translate', 'schemaForm', 'ui.bootstrap', 'ui.map', 'ui.router.util', 'ui.select', 'ui-rangeSlider', 'uiGmapgoogle-maps', 'vcRecaptcha', 'BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'BB.i18n', 'BB.uib']);
+angular.module('BB', ['ngStorage', 'ngMessages', 'ngSanitize', 'ngFileUpload', 'ngCookies', 'ngAnimate', 'angular-carousel', 'angular-hal', 'angular-data.DSCacheFactory', 'angular.filter', 'pascalprecht.translate', 'schemaForm', 'ui.bootstrap', 'ui.map', 'ui.router.util', 'ui.select', 'ui-rangeSlider', 'uiGmapgoogle-maps', 'vcRecaptcha', 'BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'BB.analytics', 'BB.i18n', 'BB.uib']);
 
 angular.module('BB.Services', ['ngResource', 'ngSanitize', 'pascalprecht.translate']);
 
@@ -9,6 +9,9 @@ angular.module('BB.Controllers', ['ngSanitize']);
 angular.module('BB.Directives', []);
 angular.module('BB.Filters', []);
 angular.module('BB.Models', []);
+'use strict';
+
+angular.module('BB.analytics', ['angulartics', 'angulartics.piwik']);
 'use strict';
 
 angular.module('BB.i18n', ['tmh.dynamicLocale']);
@@ -37,7 +40,7 @@ if (window.use_no_conflict) {
 
 angular.module('BB').constant('UriTemplate', window.UriTemplate);
 
-angular.module('BB').config(function ($locationProvider, $httpProvider, $provide, uiGmapGoogleMapApiProvider) {
+angular.module('BB').config(function ($locationProvider, $httpProvider, $provide, uiGmapGoogleMapApiProvider, $analyticsProvider) {
     'ngInject';
 
     uiGmapGoogleMapApiProvider.configure({
@@ -134,6 +137,18 @@ angular.module('schemaForm').config(function (schemaFormProvider, schemaFormDeco
 
     schemaFormProvider.defaults.string.unshift(datetimepicker);
 
+    var phonenumber = function phonenumber(name, schema, options) {
+        if (schema.type === 'string' && schema.format === 'tel') {
+            var f = schemaFormProvider.stdFormObj(name, schema, options);
+            f.key = options.path;
+            f.type = 'phonenumber';
+            options.lookup[sfPathProvider.stringify(options.path)] = f;
+            return f;
+        }
+    };
+
+    schemaFormProvider.defaults.string.unshift(phonenumber);
+
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'time', 'bootstrap_ui_time_form.html');
 
     schemaFormDecoratorsProvider.createDirective('time', 'bootstrap_ui_time_form.html');
@@ -141,6 +156,10 @@ angular.module('schemaForm').config(function (schemaFormProvider, schemaFormDeco
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'datetime', 'bootstrap_ui_datetime_form.html');
 
     schemaFormDecoratorsProvider.createDirective('datetime', 'bootstrap_ui_datetime_form.html');
+
+    schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'phonenumber', 'bootstrap_ui_phonenumber_form.html');
+
+    schemaFormDecoratorsProvider.createDirective('phonenumber', 'bootstrap_ui_phonenumber.html');
 
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'price', 'price_form.html');
 
@@ -1511,7 +1530,7 @@ angular.module('BB.Filters').filter('time_period', function ($translate) {
  </example>
  */
 angular.module('BB.Filters').filter('time_period_from_seconds', function ($translate, $filter) {
-    return function (v) {
+    return function (v, precision) {
 
         if (!angular.isNumber(v)) {
             return;
@@ -1520,10 +1539,14 @@ angular.module('BB.Filters').filter('time_period_from_seconds', function ($trans
         var seconds = parseInt(v);
         var time_period = '';
 
+        if (precision == 'minutes') {
+            return moment.duration(seconds / 60, 'minutes').humanize();
+        }
+
         if (seconds >= 60) {
             time_period += $filter('time_period')(seconds / 60);
             if (seconds % 60 > 0) {
-                time_period += $translate.instant('CORE.FILTERS.TIME_PERIOD.TIME_SEPARATOR');
+                time_period += $translate.instant('CORE.FILTERS.TIME_PERIOD.TIME_PERIOD');
             }
         }
         if (seconds % 60 > 0) {
@@ -16579,6 +16602,89 @@ angular.module('BB.uib').run(function ($document, runtimeUibModal) {
 });
 'use strict';
 
+(function (angular) {
+
+    angular.module('BB.analytics').provider('bbAnalyticsPiwik', BBAnalyticsPiwikProvider);
+
+    function BBAnalyticsPiwikProvider($analyticsProvider, $windowProvider) {
+        'ngInject';
+
+        var _this = this;
+
+        var options = {
+            firstPageView: false,
+            virtualPageViews: false,
+            enableLinkTracking: true,
+            trackPageView: false,
+            siteId: 1,
+            trackerUrl: "https://analytics.bookingbug.com/piwik.php",
+            scriptUrl: "https://analytics.bookingbug.com/piwik.js"
+        };
+
+        var $window = $windowProvider.$get();
+        var enabled = false;
+
+        this.isEnabled = function () {
+            return enabled;
+        };
+        this.push = function (data) {
+            if (!this.isEnabled()) return;
+            // ---------------------------------------------------------------
+            // we need to do this because the _paq object is not immediately
+            // available after Piwik script is loaded
+            // ---------------------------------------------------------------
+            var _paq = [];
+            if (!$window._paq) {
+                $window._paq = _paq;
+            } else {
+                _paq = $window._paq;
+            }
+            _paq.push(data);
+        };
+
+        this.setOption = function (option, value) {
+            if (!options.hasOwnProperty(option)) return;
+            options[option] = value;
+        };
+
+        this.getOption = function (option) {
+            if (!options.hasOwnProperty(option)) return null;
+            return options[option];
+        };
+
+        this.enable = function () {
+            enabled = true;
+
+            $analyticsProvider.virtualPageviews(options.virtualPageViews);
+            $analyticsProvider.firstPageview(options.firstPageView);
+
+            if (options.trackPageView) _this.push(['trackPageView']);
+            if (options.enableLinkTracking) _this.push(['enableLinkTracking']);
+
+            _this.push(['setTrackerUrl', options.trackerUrl]);
+            _this.push(['setSiteId', options.siteId]);
+
+            var piwikScript = $window.document.createElement('script');
+            piwikScript.type = 'text/javascript';
+            piwikScript.async = true;
+            piwikScript.defer = true;
+            piwikScript.src = options.scriptUrl;
+
+            var firstScript = $window.document.getElementsByTagName('script')[0];
+            firstScript.parentNode.insertBefore(piwikScript, firstScript);
+        };
+
+        this.$get = function () {
+            return {
+                getOption: _this.getOption,
+                isEnabled: _this.isEnabled,
+                push: _this.push
+            };
+        };
+    }
+})(angular);
+'use strict';
+
 (function () {
     'use strict';
 
@@ -18198,7 +18304,7 @@ angular.module('BB.Directives').directive('bbGetAvailability', function () {
 // International Telephone Input directive
 // http://www.tooorangey.co.uk/posts/that-international-telephone-input-umbraco-7-property-editor/
 // https://github.com/Bluefieldscom/intl-tel-input
-angular.module('BB.Directives').directive("bbIntTelNumber", function ($parse) {
+angular.module('BB.Directives').directive("bbIntTelNumber", function ($bbug, $parse, $rootScope) {
     return {
         restrict: "A",
         require: "ngModel",
@@ -18218,32 +18324,60 @@ angular.module('BB.Directives').directive("bbIntTelNumber", function ($parse) {
                 }
             };
 
-            var format = function format(value) {
+            if (attrs.prefix) {
+                $bbug(element).on("countrychange", function (e, countryData) {
+                    scope.$eval(attrs.prefix + " = \"" + countryData.dialCode + "\"");
+                    format(ctrl.$viewValue);
+                    ctrl.$render();
+                });
+            }
 
+            ctrl.$render = function () {
+                ctrl.$setViewValue(ctrl.$modelValue);
+            };
+
+            var format = function format(value) {
                 var str = "";
-                if (scope.$eval(attrs.ngModel + '_prefix') != null) {
-                    str += "+" + scope.$eval(attrs.ngModel + '_prefix') + " ";
+                if (attrs.prefix) {
+                    if (scope.$eval(attrs.prefix) != null) {
+                        str += "+" + scope.$eval(attrs.prefix) + " ";
+                    }
+                } else {
+                    if (scope.$eval(attrs.ngModel + '_prefix') != null) {
+                        str += "+" + scope.$eval(attrs.ngModel + '_prefix') + " ";
+                    }
                 }
                 if (scope.$eval(attrs.ngModel) != null) {
                     str += scope.$eval(attrs.ngModel);
                 }
                 if (str[0] === "+") {
-                    element.intlTelInput("setNumber", "+" + scope.$eval(attrs.ngModel + '_prefix') + " " + scope.$eval(attrs.ngModel));
-                    ctrl.$setValidity("phone", isValid(value));
+                    if (attrs.prefix) {
+                        if (scope.$eval(attrs.ngModel) != null) {
+                            element.intlTelInput("setNumber", "+" + scope.$eval(attrs.prefix) + " " + scope.$eval(attrs.ngModel));
+                        }
+                    } else {
+                        element.intlTelInput("setNumber", "+" + scope.$eval(attrs.ngModel + '_prefix') + " " + scope.$eval(attrs.ngModel));
+                    }
+                    ctrl.$setValidity(attrs.ngModel, isValid(value));
                 }
                 return str;
             };
 
             var parse = function parse(value) {
                 var prefix = element.intlTelInput("getSelectedCountryData").dialCode;
-                var getter = $parse(attrs.ngModel + '_prefix');
+                var getter = void 0;
+                if (attrs.prefix) {
+                    getter = $parse(attrs.prefix);
+                } else {
+                    getter = $parse(attrs.ngModel + '_prefix');
+                }
                 getter.assign(scope, prefix);
-                ctrl.$setValidity("phone", isValid(value));
+                ctrl.$setValidity(attrs.ngModel, isValid(value));
                 return value;
             };
 
             ctrl.$formatters.push(format);
-            return ctrl.$parsers.push(parse);
+            ctrl.$parsers.push(parse);
         }
     };
 });
@@ -21272,7 +21406,7 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
 
     angular.module('BB').service('bbWidgetPage', BBWidgetPage);
 
-    function BBWidgetPage(AlertService, BBModel, LoadingService, LoginService, $rootScope, $sce) {
+    function BBWidgetPage(AlertService, BBModel, LoadingService, LoginService, $rootScope, $sce, $analytics) {
 
         var $scope = null;
         var setScope = function setScope($s) {
@@ -21337,6 +21471,7 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                 LoadingService.notLoaded($scope);
                 $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
             }
+            $analytics.pageTrack($scope.bb.current_page);
             return $rootScope.$broadcast("page:loaded");
         };
         var setPageLoaded = function setPageLoaded() {
@@ -21478,7 +21613,7 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
 
     angular.module('BB').service('bbWidgetStep', BBWidgetStep);
 
-    function BBWidgetStep(BBModel, LoginService, $rootScope, bbWidgetPage) {
+    function BBWidgetStep(BBModel, LoginService, $rootScope, bbWidgetPage, $window, bbAnalyticsPiwik) {
 
         var $scope = null;
 
@@ -21551,6 +21686,12 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
             }
         };
 
+        function setPiwik() {
+            var category = $scope.bb.current_page;
+            var title = "Load Previous Step";
+            bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+        }
+
         /**
          * @ngdoc method
          * @name loadPreviousStep
@@ -21562,6 +21703,9 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
          * @param {string} caller: The method that called this function
          */
         var loadPreviousStep = function loadPreviousStep(caller) {
+
+            if (bbAnalyticsPiwik.isEnabled()) setPiwik();
+
             var last_step, pages_to_remove_from_history, past_steps, step_to_load;
             guardScope();
             past_steps = _.reject($scope.bb.steps, function (s) {
@@ -22241,7 +22385,7 @@ angular.module('BB.Directives').directive('bbHeader', function ($compile) {
 });
 'use strict';
 
-angular.module('BB.Directives').directive('bbInclude', function ($compile, $rootScope) {
+angular.module('BB.Directives').directive('bbInclude', function ($compile, $rootScope, $analytics) {
     return {
         link: function link(scope, element, attr) {
             var track_page = attr.bbTrackPage != null ? true : false;
@@ -22251,7 +22395,7 @@ angular.module('BB.Directives').directive('bbInclude', function ($compile, $root
                     element.attr('bb-include', null);
                     $compile(element)(scope);
                     if (track_page) {
-                        return $rootScope.$broadcast("page:loaded", attr.bbInclude);
+                        $analytics.pageTrack(attr.bbInclude);
                     }
                 }
             });
@@ -22792,178 +22936,6 @@ angular.module('BB.Directives').directive("bbMatchInput", function () {
             };
 
             return ctrl.$parsers.push(compare);
-        }
-    };
-});
-'use strict';
-
-angular.module('BB.Directives').directive('bbQuestion', function ($compile, $timeout) {
-    return {
-        priority: 0,
-        replace: true,
-        transclude: false,
-        restrict: 'A',
-        compile: function compile(el, attr, trans) {
-            return {
-                pre: function pre(scope, element, attrs) {
-                    var adminRequired = attrs.bbAdminRequired != null ? true : false;
-
-                    var date_format = 'DD/MM/YYYY';
-                    var date_format_2 = 'dd/MM/yyyy';
-
-                    if (attrs.bbDateFormat != null && attrs.bbDateFormat === 'US') {
-                        date_format = 'MM/DD/YYYY';
-                        date_format_2 = 'MM/dd/yyyy';
-                    }
-
-                    return scope.$watch(attrs.bbQuestion, function (question) {
-                        if (question) {
-                            var itemx = void 0,
-                                name = void 0;
-                            var html = '';
-                            var lastName = '';
-                            var placeholder = '';
-
-                            if (attrs.defaultPlaceholder != null) {
-                                if (question.detail_type === "text_area" | question.detail_type === "text_field") {
-                                    if (question.default) {
-                                        placeholder = question.default;
-                                    }
-                                    if (question.answer === question.default) {
-                                        question.answer = "";
-                                    }
-                                }
-                            }
-
-                            scope.recalc = function () {
-                                if (angular.isDefined(scope.recalc_price)) {
-                                    if (!question.outcome) {
-                                        scope.recalc_price();
-                                    }
-                                }
-                                if (angular.isDefined(scope.recalc_question)) {
-                                    return scope.recalc_question();
-                                }
-                            };
-
-                            // are we using a completely custom question
-                            if (scope.idmaps && (scope.idmaps[question.detail_type] || scope.idmaps[question.id])) {
-                                var index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
-                                html = scope.idmaps[index].html;
-                            } else if (question.detail_type === "select" || question.detail_type === "select-price") {
-                                html = '<select ng-model=\'question.answer\' name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-change=\'recalc()\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' class=\'form-question form-control\'>';
-                                var _iteratorNormalCompletion = true;
-                                var _didIteratorError = false;
-                                var _iteratorError = undefined;
-
-                                try {
-                                    for (var _iterator = Array.from(question.options)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                        itemx = _step.value;
-
-                                        html += '<option data_id=\'' + itemx.id + '\' value=\'' + itemx.name.replace(/'/g, "&apos;") + '\'>' + itemx.display_name + '</option>';
-                                    }
-                                } catch (err) {
-                                    _didIteratorError = true;
-                                    _iteratorError = err;
-                                } finally {
-                                    try {
-                                        if (!_iteratorNormalCompletion && _iterator.return) {
-                                            _iterator.return();
-                                        }
-                                    } finally {
-                                        if (_didIteratorError) {
-                                            throw _iteratorError;
-                                        }
-                                    }
-                                }
-
-                                html += "</select>";
-                            } else if (question.detail_type === "text_area") {
-                                html = '<textarea placeholder=\'' + placeholder + '\' ng-model=\'question.answer\' name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' rows=3 class=\'form-question form-control\'>' + question['answer'] + '</textarea>';
-                            } else if (question.detail_type === "radio") {
-                                html = '<div class="radio-group">';
-                                var _iteratorNormalCompletion2 = true;
-                                var _didIteratorError2 = false;
-                                var _iteratorError2 = undefined;
-
-                                try {
-                                    for (var _iterator2 = Array.from(question.options)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                                        itemx = _step2.value;
-
-                                        html += '<div class=\'radio\'><label class=\'radio-label\'><input ng-model=\'question.answer\' name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-change=\'recalc()\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' type=\'radio\' value="' + itemx.name + '"/>' + itemx.name + '<span class=\'input-icon\'></span></label></div>';
-                                    }
-                                } catch (err) {
-                                    _didIteratorError2 = true;
-                                    _iteratorError2 = err;
-                                } finally {
-                                    try {
-                                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                            _iterator2.return();
-                                        }
-                                    } finally {
-                                        if (_didIteratorError2) {
-                                            throw _iteratorError2;
-                                        }
-                                    }
-                                }
-
-                                html += "</div>";
-                            } else if (question.detail_type === "check") {
-                                name = question.name;
-                                // stop the duplication of question names for muliple checkboxes by
-                                // checking the question name against the previous question name.
-
-                                if (name === lastName) {
-                                    name = "";
-                                }
-                                lastName = question.name;
-                                html = '<div class=\'checkbox\' ng-class=\'{"selected": question.answer}\'><label><input name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-model=\'question.answer\' ng-checked=\'question.answer == "1"\' ng-change=\'recalc()\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' type=\'checkbox\' value=1>' + name + '</label></div>';
-                            } else if (question.detail_type === "check-price") {
-                                html = '<div class=\'checkbox\'><label><input name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-model=\'question.answer\' ng-checked=\'question.answer == "1"\' ng-change=\'recalc()\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' type=\'checkbox\' value=1> ({{question.price | currency:\'GBP\'}})</label></div>';
-                            } else if (question.detail_type === "radio-price") {
-                                html = '<div class="radio-group">';
-                                var _iteratorNormalCompletion3 = true;
-                                var _didIteratorError3 = false;
-                                var _iteratorError3 = undefined;
-
-                                try {
-                                    for (var _iterator3 = Array.from(question.options)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                                        itemx = _step3.value;
-
-                                        html += '<div class=\'radio\'><label class=\'radio-label\'><input ng-model=\'question.answer\' name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-change=\'recalc()\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' type=\'radio\' value="' + itemx.name + '"/>' + itemx.display_name + '<span class=\'input-icon\'></span></label></div>';
-                                    }
-                                } catch (err) {
-                                    _didIteratorError3 = true;
-                                    _iteratorError3 = err;
-                                } finally {
-                                    try {
-                                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                                            _iterator3.return();
-                                        }
-                                    } finally {
-                                        if (_didIteratorError3) {
-                                            throw _iteratorError3;
-                                        }
-                                    }
-                                }
-
-                                html += "</div>";
-                            } else if (question.detail_type === "date") {
-                                html = '<div class=\'input-group date-picker\'> <input type=\'text\' class=\'form-question form-control\' name=\'q' + question.id + '\' id=\'' + question.id + '\' bb-datepicker-popup=\'' + date_format + '\' uib-datepicker-popup=\'' + date_format_2 + '\' ng-change=\'recalc()\' ng-model=\'question.answer\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' datepicker-options=\'{"starting-day": 1, "showButtonBar": false, "showWeeks": false}\' show-button-bar=\'false\' is-open=\'opened\' ng-focus=\'opened=true\' /> <span class=\'input-group-btn\' ng-click=\'$event.preventDefault();$event.stopPropagation();opened=true\'> <button class=\'btn btn-default\' type=\'submit\'><span class=\'fa fa-calendar\'></span></button> </span> </div>';
-                            } else {
-                                html = '<input type=\'text\' placeholder=\'' + placeholder + '\'  ng-model=\'question.answer\' name=\'q' + question.id + '\' id=\'' + question.id + '\' ng-required=\'question.currentlyShown && ((' + adminRequired + ' && question.required) || (question.required && !bb.isAdmin))\' class=\'form-question form-control\'/>';
-                            }
-
-                            if (html) {
-                                return $compile(html)(scope, function (cloned, scope) {
-                                    return element.replaceWith(cloned);
-                                });
-                            }
-                        }
-                    });
-                },
-                post: function post(scope, $e, $a, parentControl) {}
-            };
         }
     };
 });
@@ -24302,7 +24274,7 @@ angular.module('BB.Directives').directive('bbPurchase', function () {
     };
 });
 
-angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, $translate, ReasonService, $document) {
+angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, $translate, ReasonService, $document, bbAnalyticsPiwik) {
 
     var setCancelReasonsToBB = void 0;
     $scope.is_waitlist = false;
@@ -24328,9 +24300,13 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
     var failMsg = function failMsg() {
 
         if ($scope.fail_msg) {
-            return AlertService.danger({ msg: $scope.fail_msg });
+            return AlertService.danger({
+                msg: $scope.fail_msg
+            });
         } else {
-            return AlertService.add("danger", { msg: $translate.instant('CORE.ALERTS.GENERIC') });
+            return AlertService.add("danger", {
+                msg: $translate.instant('CORE.ALERTS.GENERIC')
+            });
         }
     };
 
@@ -24470,12 +24446,17 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
                 return $scope.waiting_for_conn_started.then(function () {
                     var company_id = getCompanyID();
                     if (company_id) {
-                        var options = { root: $scope.bb.api_url };
+                        var options = {
+                            root: $scope.bb.api_url
+                        };
                         BBModel.Company.$query(company_id, options).then(function (company) {
                             return setPurchaseCompany(company);
                         });
                     }
-                    var params = { purchase_id: id, url_root: $scope.bb.api_url };
+                    var params = {
+                        purchase_id: id,
+                        url_root: $scope.bb.api_url
+                    };
                     var auth_token = $sessionStorage.getItem('auth_token');
                     if (auth_token) {
                         params.auth_token = auth_token;
@@ -24565,7 +24546,15 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
         return id;
     };
 
+    function setPiwik() {
+        var category = "View Booking";
+        var title = "Move Booking";
+        bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+    }
+
     $scope.move = function (booking, route, options) {
+
+        if (bbAnalyticsPiwik.isEnabled()) setPiwik();
 
         if (options == null) {
             options = {};
@@ -24578,7 +24567,10 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
         }
 
         loader.notLoaded();
-        $scope.initWidget({ company_id: booking.company_id, no_route: true });
+        $scope.initWidget({
+            company_id: booking.company_id,
+            no_route: true
+        });
         return $timeout(function () {
             return $rootScope.connection_started.then(function () {
                 var proms = [];
@@ -24615,7 +24607,10 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
             route = $scope.move_route;
         }
         loader.notLoaded();
-        $scope.initWidget({ company_id: $scope.bookings[0].company_id, no_route: true });
+        $scope.initWidget({
+            company_id: $scope.bookings[0].company_id,
+            no_route: true
+        });
         return $timeout(function () {
             return $rootScope.connection_started.then(function () {
                 var proms = [];
@@ -24740,7 +24735,10 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
 
     // delete a single booking
     $scope.delete = function (_booking) {
-
+        // BB analytics Event
+        $analytics.eventTrack('Cancel Booking', {
+            category: 'View Booking'
+        });
         var modalInstance = $uibModal.open({
             templateUrl: $scope.getPartial("_cancel_modal"),
             controller: ModalDelete,
@@ -24759,7 +24757,9 @@ angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootS
             if (booking.cancel_reason) {
                 cancel_reason = booking.cancel_reason;
             }
-            var data = { cancel_reason: cancel_reason };
+            var data = {
+                cancel_reason: cancel_reason
+            };
             return booking.$del('self', {}, data).then(function (service) {
                 $scope.bookings = _.without($scope.bookings, booking);
                 return $rootScope.$broadcast("booking:cancelled");
@@ -26086,6 +26086,111 @@ angular.module('BB.Directives').directive('bbMinSpend', function () {
 });
 'use strict';
 
+(function () {
+    angular.module('BB.Controllers').controller('BBQuestionController', BBQuestionController);
+
+    function BBQuestionController($scope, $compile, $element) {
+        var _this = this;
+
+        this.$onInit = function () {
+
+            this.isTemplate = true;
+
+            setDateFormats();
+
+            if (this.question) determineTemplate();
+        };
+
+        this.recalc = function () {
+            if (angular.isDefined($scope.recalc_price)) {
+                if (!_this.question.outcome) {
+                    $scope.recalc_price();
+                }
+            }
+            if (angular.isDefined($scope.recalc_question)) {
+                return $scope.recalc_question();
+            }
+        };
+
+        var setDateFormats = function setDateFormats() {
+            _this.date_format = 'DD/MM/YYYY';
+            _this.date_format_2 = 'dd/MM/yyyy';
+            if (_this.dateFormatLocale === 'US') {
+                _this.date_format = 'MM/DD/YYYY';
+                _this.date_format_2 = 'MM/dd/yyyy';
+            }
+        };
+
+        var determineTemplate = function determineTemplate() {
+            _this.name = null;
+            _this.placeholder = '';
+
+            var html = '';
+
+            if (_this.defaultPlaceholder) {
+                if (_this.question.detail_type === "text_area" || _this.question.detail_type === "text_field") {
+                    if (_this.question.default) _this.placeholder = _this.question.default;
+                    if (_this.question.answer === _this.question.default) _this.question.answer = "";
+                }
+            }
+
+            if ($scope.idmaps && ($scope.idmaps[_this.question.detail_type] || $scope.idmaps[_this.question.id])) {
+                var index = $scope.idmaps[_this.question.id] ? _this.question.id : _this.question.detail_type;
+                html = $scope.idmaps[index].html;
+            } else if (_this.question.detail_type === "select" || _this.question.detail_type === "select-price") {
+                _this.templateUrl = "bb-question/_question_select.html";
+            } else if (_this.question.detail_type === "text_area") {
+                _this.templateUrl = "bb-question/_question_text_area.html";
+            } else if (_this.question.detail_type === "radio") {
+                _this.templateUrl = "bb-question/_question_radio.html";
+            } else if (_this.question.detail_type === "check") {
+                // stop the duplication of question names for muliple checkboxes by
+                // checking the question name against the previous question name.
+                _this.name = _this.question.name;
+                _this.templateUrl = "bb-question/_question_check.html";
+            } else if (_this.question.detail_type === "check-price") {
+                _this.templateUrl = "bb-question/_question_check_price.html";
+            } else if (_this.question.detail_type === "radio-price") {
+                _this.templateUrl = "bb-question/_question_radio_price.html";
+            } else if (_this.question.detail_type === "date") {
+                _this.templateUrl = "bb-question/_question_date.html";
+            } else {
+                _this.templateUrl = "bb-question/_question_default.html";
+            }
+
+            compileTemplate(html);
+        };
+
+        var compileTemplate = function compileTemplate(html) {
+            if (!html) return;
+
+            _this.isTemplate = false;
+            $compile(html)($scope, function (cloned, $scope) {
+                $element.replaceWith(cloned);
+            });
+        };
+    }
+})(angular);
+'use strict';
+
+angular.module('BB.Directives').directive('bbQuestion', function ($compile, $timeout, $templateRequest, $templateCache) {
+    return {
+        replace: true,
+        transclude: true,
+        restrict: 'A',
+        bindToController: {
+            question: '=bbQuestion',
+            adminRequired: '=bbAdminRequired',
+            dateFormatLocale: '=bbDateFormat',
+            defaultPlaceholder: '='
+        },
+        template: "<div ng-if=\"$bbQuestionCtrl.isTemplate\"><div ng-include=\"$bbQuestionCtrl.templateUrl\"></div></div>",
+        controller: 'BBQuestionController',
+        controllerAs: '$bbQuestionCtrl'
+    };
+});
+'use strict';
+
 angular.module('BB.Controllers').controller('BasketList', function ($scope, $rootScope, $element, $attrs, $q, AlertService, FormDataStoreService, LoginService, LoadingService, BBModel) {
 
     var params = void 0;
@@ -27326,7 +27431,7 @@ angular.module('BB.Directives').directive('bbCompanies', function () {
 });
 'use strict';
 
-angular.module('BB.Controllers').controller('DayList', function ($scope, $rootScope, $q, DayService) {
+angular.module('BB.Controllers').controller('DayList', function ($scope, $rootScope, $q, DayService, $window, bbAnalyticsPiwik) {
 
     // Load up some day based data
     $rootScope.connection_started.then(function () {
@@ -27356,7 +27461,19 @@ angular.module('BB.Controllers').controller('DayList', function ($scope, $rootSc
         return $scope.current_date_js = $scope.current_date.toDate();
     };
 
+    function setPiwik(amount) {
+        var category = "Calendar";
+        var title = "Load Next Week";
+        if (amount < 0) {
+            title = "Load Previous Week";
+        }
+        bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+    }
+
     $scope.add = function (type, amount) {
+
+        if (bbAnalyticsPiwik.isEnabled()) setPiwik(amount);
+
         setCurrentDate($scope.current_date.add(amount, type));
         return $scope.loadData();
     };
@@ -30119,951 +30236,979 @@ angular.module('BB.Directives').directive('bbLogin', function () {
 });
 'use strict';
 
-angular.module('BB.Controllers').controller('MapCtrl', function ($scope, $element, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, ErrorService, $log, GeolocationService, GeneralOptions) {
+(function (angular) {
 
-    FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
+    angular.module('BB.Controllers').controller('MapCtrl', MapCtrl);
 
-    // init vars
-    $scope.options = $scope.$eval($attrs.bbMap) || {};
+    function MapCtrl($scope, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, ErrorService, $log, GeolocationService, GeneralOptions, bbAnalyticsPiwik) {
 
-    // when set to true, selectItem() does not call decideNextPage() when calling $scope.initWidget()
-    $scope.no_route = $scope.options.no_route || false;
+        FormDataStoreService.init('MapCtrl', $scope, ['address', 'selectedStore', 'search_prms']);
 
-    $scope.num_search_results = $scope.options.num_search_results || 6;
-    $scope.range_limit = $scope.options.range_limit || Infinity;
-    $scope.hide_not_live_stores = $scope.options.hide_not_live_stores || false;
-    $scope.can_filter_by_service = $scope.options.filter_by_service || false; // If set to true then the checkbox toggle for showing stores with/without the selected service will be shown in the template
-    $scope.filter_by_service = $scope.options.filter_by_service || false; // The aforementioned checkbox is bound to this value which can be true or false depending on checked state, hence why we cannot use filter_by_service to show/hide the checkbox
-    $scope.default_zoom = $scope.options.default_zoom || 6;
+        // init vars
+        $scope.options = $scope.$eval($attrs.bbMap) || {};
 
-    // custom map marker icon can be set using GeneralOptions
-    var defaultPin = GeneralOptions.map_marker_icon;
+        // when set to true, selectItem() does not call decideNextPage() when calling $scope.initWidget()
+        $scope.no_route = $scope.options.no_route || false;
 
-    // when set to false, geolocate() only fills the input with the returned address and does not load the map
-    $scope.loadMapOnGeolocate = true;
+        $scope.num_search_results = $scope.options.num_search_results || 6;
+        $scope.range_limit = $scope.options.range_limit || Infinity;
+        $scope.hide_not_live_stores = $scope.options.hide_not_live_stores || false;
+        $scope.can_filter_by_service = $scope.options.filter_by_service || false; // If set to true then the checkbox toggle for showing stores with/without the selected service will be shown in the template
+        $scope.filter_by_service = $scope.options.filter_by_service || false; // The aforementioned checkbox is bound to this value which can be true or false depending on checked state, hence why we cannot use filter_by_service to show/hide the checkbox
+        $scope.default_zoom = $scope.options.default_zoom || 6;
 
-    var map_ready_def = $q.defer();
-    $scope.mapLoaded = $q.defer();
-    $scope.mapReady = map_ready_def.promise;
-    $scope.map_init = $scope.mapLoaded.promise;
-    $scope.showAllMarkers = false;
-    $scope.mapMarkers = [];
-    $scope.shownMarkers = $scope.shownMarkers || [];
-    if (!$scope.numberedPin) {
-        $scope.numberedPin = null;
-    }
-    if (!$scope.address && $attrs.bbAddress) {
-        $scope.address = $scope.$eval($attrs.bbAddress);
-    }
+        // custom map marker icon can be set using GeneralOptions
+        var defaultPin = GeneralOptions.map_marker_icon;
 
-    var loader = LoadingService.$loader($scope);
-
-    // setup geolocation shim
-    webshim.setOptions({ 'waitReady': false, 'loadStyles': false });
-    webshim.polyfill("geolocation");
-
-    $rootScope.connection_started.then(function () {
-        return $scope.initialise();
-    }, function (err) {
-        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-
-    /***
-     * @ngdoc method
-     * @name initialise
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Initialise the google map
-     *
-     */
-    $scope.initialise = function () {
-
-        $scope.mapMarkers = [];
-        $scope.shownMarkers = $scope.shownMarkers || [];
-
-        if (!$scope.selectedStore) {
-            loader.setLoaded();
-        }
-
-        if ($scope.bb.company.companies) {
-            $rootScope.parent_id = $scope.bb.company.id;
-        } else if ($rootScope.parent_id) {
-            $scope.initWidget({
-                company_id: $rootScope.parent_id,
-                first_page: $scope.bb.current_page,
-                keep_basket: true,
-                item_defaults: $scope.bb.item_defaults ? $scope.bb.item_defaults : {}
-            });
-            return;
-        } else {
-            $scope.initWidget({ company_id: $scope.bb.company.id, first_page: null });
-            return;
-        }
-
-        $scope.companies = $scope.bb.company.companies;
-        if (!$scope.companies || $scope.companies.length === 0) {
-            $scope.companies = [$scope.bb.company];
-        }
-
-        if ($scope.bb.current_item.service && $scope.options && $scope.options.filter_by_service) {
-            $scope.notLoaded($scope);
-
-            filterByService().then(function () {
-                return $scope.map_init.then(function () {
-                    return mapInit();
-                });
-            });
-        } else {
-            $scope.map_init.then(function () {
-                return mapInit();
-            });
-        }
-
-        $scope.mapBounds = new google.maps.LatLngBounds();
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-            for (var _iterator = Array.from($scope.companies)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                var comp = _step.value;
-
-                if (comp.address && comp.address.lat && comp.address.long) {
-                    var latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
-                    $scope.mapBounds.extend(latlong);
-                }
-            }
-        } catch (err) {
-            _didIteratorError = true;
-            _iteratorError = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion && _iterator.return) {
-                    _iterator.return();
-                }
-            } finally {
-                if (_didIteratorError) {
-                    throw _iteratorError;
-                }
-            }
-        }
-
-        $scope.mapOptions = {
-            center: $scope.mapBounds.getCenter(),
-            zoom: $scope.default_zoom,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
-            mapTypeControl: true,
-            mapTypeControlOptions: {
-                style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
-            }
-        };
-
-        if ($scope.options && $scope.options.map_options) {
-            for (var key in $scope.options.map_options) {
-                var value = $scope.options.map_options[key];
-                $scope.mapOptions[key] = value;
-            }
-        }
-
-        return map_ready_def.resolve(true);
-    };
-
-    /***
-     * @ngdoc method
-     * @name filterByService
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Set the has_service property and the service object on all companies
-     * so companies can be filtered by service
-     */
-    var filterByService = function filterByService() {
-        var deferred = $q.defer();
-        if ($scope.bb.selected_service.$has('all_children')) {
-            $scope.bb.selected_service.$get('all_children').then(function (resource) {
-                return resource.$get('services').then(function (services) {
-                    var service = void 0;
-                    var company_ids = _.map(services, function (service) {
-                        return service.company_id;
-                    });
-
-                    return Array.from($scope.companies).map(function (company) {
-                        return company.has_service = _.contains(company_ids, company.id), service = _.find(services, function (service) {
-                            return service.company_id === company.id;
-                        }), company.service = service, deferred.resolve();
-                    });
-                });
-            });
-        } else {
-            deferred.resolve();
-        }
-        return deferred.promise;
-    };
-
-    /***
-     * @ngdoc method
-     * @name $scope.filterByService
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Set $scope.shownMarkers to include / exclude
-     * companies without the selected service
-     */
-    $scope.filterByService = function () {
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
-
-        try {
-
-            for (var _iterator2 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                var marker = _step2.value;
-
-                marker.setMap(null);
-            }
-        } catch (err) {
-            _didIteratorError2 = true;
-            _iteratorError2 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                    _iterator2.return();
-                }
-            } finally {
-                if (_didIteratorError2) {
-                    throw _iteratorError2;
-                }
-            }
-        }
-
-        if ($scope.options && $scope.filter_by_service) {
-            $scope.shownMarkers = $scope.shown_markers_with_services;
-        } else {
-            $scope.shownMarkers = $scope.shown_markers;
-        }
-
-        return $timeout(function () {
-            return setMarkers();
-        });
-    };
-
-    var mapInit = function mapInit() {
-        var _iteratorNormalCompletion3 = true;
-        var _didIteratorError3 = false;
-        var _iteratorError3 = undefined;
-
-        try {
-            for (var _iterator3 = Array.from($scope.companies)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                var comp = _step3.value;
-
-                if (comp.address && comp.address.lat && comp.address.long) {
-                    var latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
-                    var marker = new google.maps.Marker({
-                        map: $scope.myMap,
-                        position: latlong,
-                        visible: $scope.showAllMarkers,
-                        icon: defaultPin
-                    });
-                    marker.company = comp;
-                    if (!$scope.hide_not_live_stores || !!comp.live) {
-                        $scope.mapMarkers.push(marker);
-                    }
-                }
-            }
-        } catch (err) {
-            _didIteratorError3 = true;
-            _iteratorError3 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                    _iterator3.return();
-                }
-            } finally {
-                if (_didIteratorError3) {
-                    throw _iteratorError3;
-                }
-            }
-        }
-
-        $timeout(function () {
-            $scope.myMap.fitBounds($scope.mapBounds);
-            if ($scope.options.default_zoom) {
-                $scope.myMap.setZoom($scope.default_zoom);
-            }
-            if ($scope.bb.current_item.service && $scope.options && $scope.filter_by_service) {
-                return loader.setLoaded();
-            }
-        });
-        return checkDataStore();
-    };
-
-    /***
-     * @ngdoc method
-     * @name loadMap
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Set the center, zoom and show the closest markers on the Map
-     *
-     */
-    var loadMap = function loadMap() {
-        $scope.myMap.setCenter($scope.loc);
-        if ($scope.options.default_zoom) {
-            $scope.myMap.setZoom($scope.default_zoom);
-        }
-        $scope.showClosestMarkers($scope.loc);
-        return;
-    };
-
-    /***
-     * @ngdoc method
-     * @name checkDataStore
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * If the user has clicked back to the map then display it.
-     */
-    var checkDataStore = function checkDataStore() {
-        if ($scope.selectedStore) {
-            loader.notLoaded();
-            if ($scope.search_prms) {
-                $scope.searchAddress($scope.search_prms);
-            } else {
-                $scope.geolocate();
-            }
-            return google.maps.event.addListenerOnce($scope.myMap, 'idle', function () {
-                return _.each($scope.mapMarkers, function (marker) {
-                    if ($scope.selectedStore.id === marker.company.id) {
-                        return google.maps.event.trigger(marker, 'click');
-                    }
-                });
-            });
-        }
-    };
-
-    /***
-     * @ngdoc method
-     * @name title
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Create title for the map selection step
-     */
-    $scope.title = function () {
-        var p1 = void 0;
-        var ci = $scope.bb.current_item;
-        if (ci.category && ci.category.description) {
-            p1 = ci.category.description;
-        } else {
-            p1 = $scope.bb.company.extra.department;
-        }
-
-        return p1 + ' - ' + $scope.$eval('getCurrentStepTitle()');
-    };
-
-    /***
-     * @ngdoc method
-     * @name searchAddress
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Search address in according of prms parameter
-     *
-     * @param {object} prms The parameters of the address
-     */
-    $scope.searchAddress = function (prms) {
-
-        // if a reverse geocode has been performed and the address
-        // is no different to one the entered, abort the search
-        if ($scope.loadMapOnGeolocate && $scope.reverse_geocode_address && $scope.reverse_geocode_address === $scope.address) {
-            return false;
-        }
-
-        loader.notLoaded();
-
+        // when set to false, geolocate() only fills the input with the returned address and does not load the map
         $scope.loadMapOnGeolocate = true;
 
-        delete $scope.geocoder_result;
-        if (!prms) {
-            prms = {};
+        var map_ready_def = $q.defer();
+        $scope.mapLoaded = $q.defer();
+        $scope.mapReady = map_ready_def.promise;
+        $scope.map_init = $scope.mapLoaded.promise;
+        $scope.showAllMarkers = false;
+        $scope.mapMarkers = [];
+        $scope.shownMarkers = $scope.shownMarkers || [];
+        if (!$scope.numberedPin) {
+            $scope.numberedPin = null;
         }
-        $scope.search_prms = prms;
-        $scope.map_init.then(function () {
-            var address = $scope.address;
+        if (!$scope.address && $attrs.bbAddress) {
+            $scope.address = $scope.$eval($attrs.bbAddress);
+        }
 
-            if (prms.address) {
-                var _prms = prms;
-                address = _prms.address;
+        var loader = LoadingService.$loader($scope);
+
+        // setup geolocation shim
+        webshim.setOptions({
+            'waitReady': false,
+            'loadStyles': false
+        });
+        webshim.polyfill("geolocation");
+
+        $rootScope.connection_started.then(function () {
+            return $scope.initialise();
+        }, function (err) {
+            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+
+        /***
+         * @ngdoc method
+         * @name initialise
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Initialise the google map
+         *
+         */
+        $scope.initialise = function () {
+
+            $scope.mapMarkers = [];
+            $scope.shownMarkers = $scope.shownMarkers || [];
+
+            if (!$scope.selectedStore) {
+                loader.setLoaded();
             }
 
-            if (address) {
-                var req = { address: address };
-                if (prms.region) {
-                    req.region = prms.region;
-                }
-                if (prms.componentRestrictions) {
-                    req.componentRestrictions = prms.componentRestrictions;
-                }
+            if ($scope.bb.company.companies) {
+                $rootScope.parent_id = $scope.bb.company.id;
+            } else if ($rootScope.parent_id) {
+                $scope.initWidget({
+                    company_id: $rootScope.parent_id,
+                    first_page: $scope.bb.current_page,
+                    keep_basket: true,
+                    item_defaults: $scope.bb.item_defaults ? $scope.bb.item_defaults : {}
+                });
+                return;
+            } else {
+                $scope.initWidget({
+                    company_id: $scope.bb.company.id,
+                    first_page: null
+                });
+                return;
+            }
 
-                if (prms.bounds) {
-                    var sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
-                    var ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
-                    req.bounds = new google.maps.LatLngBounds(sw, ne);
-                }
+            $scope.companies = $scope.bb.company.companies;
+            if (!$scope.companies || $scope.companies.length === 0) {
+                $scope.companies = [$scope.bb.company];
+            }
 
-                return new google.maps.Geocoder().geocode(req, function (results, status) {
+            if ($scope.bb.current_item.service && $scope.options && $scope.options.filter_by_service) {
+                $scope.notLoaded($scope);
 
-                    if (results.length > 0 && status === 'OK') {
-                        $scope.geocoder_result = results[0];
-                    }
-
-                    if (!$scope.geocoder_result || $scope.geocoder_result && $scope.geocoder_result.partial_match) {
-                        searchPlaces(req);
-                    } else if ($scope.geocoder_result) {
-                        searchSuccess($scope.geocoder_result);
-                    } else {
-                        searchFailed();
-                    }
-                    loader.setLoaded();
+                filterByService().then(function () {
+                    return $scope.map_init.then(function () {
+                        return mapInit();
+                    });
+                });
+            } else {
+                $scope.map_init.then(function () {
+                    return mapInit();
                 });
             }
-        });
 
-        return;
-    };
-
-    /***
-     * @ngdoc method
-     * @name searchPlaces
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Search places in according of prms parameter
-     *
-     * @param {object} prms The parameters of the places
-     */
-    var searchPlaces = function searchPlaces(prms) {
-
-        var req = {
-            query: prms.address,
-            types: ['shopping_mall', 'store', 'embassy'] // narrow place types to improve results
-        };
-
-        if (prms.bounds) {
-            req.bounds = prms.bounds;
-        }
-
-        var service = new google.maps.places.PlacesService($scope.myMap);
-        return service.textSearch(req, function (results, status) {
-            if (results.length > 0 && status === 'OK') {
-                searchSuccess(results[0]);
-            } else if ($scope.geocoder_result) {
-                searchSuccess($scope.geocoder_result);
-            } else {
-                searchFailed();
-            }
-            return;
-        });
-    };
-
-    /***
-     * @ngdoc method
-     * @name searchSuccess
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Search has been succeeded, and return
-     *
-     * @param {object} result The result of the search
-     */
-    var searchSuccess = function searchSuccess(result) {
-        AlertService.clear();
-        $scope.search_failed = false;
-        $scope.loc = result.geometry.location;
-        $scope.formatted_address = result.formatted_address;
-        if ($scope.loadMapOnGeolocate) {
-            loadMap();
-        }
-        return $rootScope.$broadcast("map:search_success");
-    };
-
-    /***
-     * @ngdoc method
-     * @name searchFailed
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Search failed and displayed an error
-     */
-    var searchFailed = function searchFailed() {
-        $scope.search_failed = true;
-        AlertService.raise('LOCATION_NOT_FOUND');
-        // need to call apply to update bindings as geocode callback is outside angular library
-        return $rootScope.$apply();
-    };
-
-    /***
-     * @ngdoc method
-     * @name validateAddress
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Validate the address using form
-     *
-     * @param {object} form The form where address has been validate
-     */
-    $scope.validateAddress = function (form) {
-        if (!form) {
-            return false;
-        }
-        if (form.$error.required) {
-            AlertService.clear();
-            AlertService.raise('MISSING_LOCATION');
-            return false;
-        } else {
-            return true;
-        }
-    };
-
-    /***
-     * @ngdoc method
-     * @name showClosestMarkers
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Display the closest markers
-     *
-     * @param {Object} centre The map centre
-     */
-    $scope.showClosestMarkers = function (centre) {
-
-        var distances = [];
-        var distances_with_services = [];
-
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
-
-        try {
-            for (var _iterator4 = Array.from($scope.mapMarkers)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                var marker = _step4.value;
-
-
-                var map_centre = {
-                    lat: centre.lat(),
-                    long: centre.lng()
-                };
-
-                var marker_position = {
-                    lat: marker.position.lat(),
-                    long: marker.position.lng()
-                };
-
-                marker.distance = GeolocationService.haversine(map_centre, marker_position);
-
-                if (!$scope.showAllMarkers) {
-                    marker.setVisible(false);
-                }
-
-                if (marker.distance < $scope.range_limit) {
-                    distances.push(marker);
-                    if (marker.company.has_service) {
-                        distances_with_services.push(marker);
-                    }
-                }
-            }
-        } catch (err) {
-            _didIteratorError4 = true;
-            _iteratorError4 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                    _iterator4.return();
-                }
-            } finally {
-                if (_didIteratorError4) {
-                    throw _iteratorError4;
-                }
-            }
-        }
-
-        distances.sort(function (a, b) {
-            return a.distance - b.distance;
-        });
-
-        distances_with_services.sort(function (a, b) {
-            return a.distance - b.distance;
-        });
-
-        $scope.setShownMarkers(distances, distances_with_services);
-
-        if ($scope.shownMarkers.length != 0) {
-            $timeout(function () {
-                return setMarkers();
-            });
-        }
-        return;
-    };
-
-    /***
-     * @ngdoc method
-     * @name setShownMarkers
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Set the shownMarkers on scope
-     *
-     * @param {array} distances Markers with property distance
-     * @param {array} distances_with_services Markers with property distance and support the pre-selected service
-     */
-    $scope.setShownMarkers = function (distances, distances_with_services) {
-        $scope.shown_markers = distances.slice(0, $scope.num_search_results);
-        $scope.shown_markers_with_services = distances_with_services.slice(0, $scope.num_search_results);
-
-        if ($scope.options && $scope.filter_by_service && $scope.shown_markers_with_services.length != 0) {
-            $scope.shownMarkers = $scope.shown_markers_with_services;
-        } else {
-            $scope.shownMarkers = $scope.shown_markers;
-        }
-    };
-
-    var setMarkers = function setMarkers() {
-
-        var latlong = $scope.loc;
-
-        var localBounds = new google.maps.LatLngBounds();
-        localBounds.extend(latlong);
-        var index = 1;
-
-        var _iteratorNormalCompletion5 = true;
-        var _didIteratorError5 = false;
-        var _iteratorError5 = undefined;
-
-        try {
-            for (var _iterator5 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                var marker = _step5.value;
-
-                if ($scope.numberedPin) {
-                    var iconPath = $window.sprintf($scope.numberedPin, index);
-                    marker.setIcon(iconPath);
-                }
-
-                marker.setVisible(true);
-                marker.setMap($scope.myMap);
-                localBounds.extend(marker.position);
-                index += 1;
-            }
-        } catch (err) {
-            _didIteratorError5 = true;
-            _iteratorError5 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                    _iterator5.return();
-                }
-            } finally {
-                if (_didIteratorError5) {
-                    throw _iteratorError5;
-                }
-            }
-        }
-
-        $scope.$emit('map:shown_markers_updated', $scope.shownMarkers);
-
-        google.maps.event.trigger($scope.myMap, 'resize');
-        $scope.myMap.fitBounds(localBounds);
-        return openDefaultMarker();
-    };
-
-    var openDefaultMarker = function openDefaultMarker() {
-
-        if ($scope.options && $scope.options.no_default_location_details) {
-            return;
-        }
-
-        var open_marker_index = 0;
-        var open_marker = _.find($scope.shownMarkers, function (obj) {
-            open_marker_index++;
-            return obj.company.id === $scope.bb.current_item.company.id;
-        });
-        if (open_marker) {
-            open_marker_index--;
-        } else {
-            open_marker_index = 0;
-        }
-        $scope.shownMarkers[open_marker_index].is_open = true;
-        return $scope.openMarkerInfo($scope.shownMarkers[open_marker_index]);
-    };
-
-    /***
-     * @ngdoc method
-     * @name openMarkerInfo
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Display marker information on the map
-     *
-     * @param {object} marker The marker
-     */
-    $scope.openMarkerInfo = function (marker) {
-        return $timeout(function () {
-
-            $scope.currentMarker = marker;
-            $scope.myMap.setCenter(marker.position);
-            $scope.myInfoWindow.open($scope.myMap, marker);
-            var _iteratorNormalCompletion6 = true;
-            var _didIteratorError6 = false;
-            var _iteratorError6 = undefined;
+            $scope.mapBounds = new google.maps.LatLngBounds();
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
 
             try {
-                for (var _iterator6 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                    var shown_marker = _step6.value;
+                for (var _iterator = Array.from($scope.companies)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var comp = _step.value;
 
-                    if (shown_marker.company.id === marker.company.id) {
-                        shown_marker.is_open = true;
+                    if (comp.address && comp.address.lat && comp.address.long) {
+                        var latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
+                        $scope.mapBounds.extend(latlong);
                     }
                 }
             } catch (err) {
-                _didIteratorError6 = true;
-                _iteratorError6 = err;
+                _didIteratorError = true;
+                _iteratorError = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion6 && _iterator6.return) {
-                        _iterator6.return();
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
                     }
                 } finally {
-                    if (_didIteratorError6) {
-                        throw _iteratorError6;
+                    if (_didIteratorError) {
+                        throw _iteratorError;
                     }
                 }
             }
 
-            return $scope.shownMarkers;
-        }, 250);
-    };
+            $scope.mapOptions = {
+                center: $scope.mapBounds.getCenter(),
+                zoom: $scope.default_zoom,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                mapTypeControl: true,
+                mapTypeControlOptions: {
+                    style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU
+                }
+            };
 
-    /***
-     * @ngdoc method
-     * @name selectItem
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Select an item from map
-     *
-     * @param {array} item The Map or BookableItem to select
-     * @param {string=} route A specific route to load
-     */
-    $scope.selectItem = function (company, route) {
-        if (!$scope.$debounce(1000)) {
-            return;
-        }
+            if ($scope.options && $scope.options.map_options) {
+                for (var key in $scope.options.map_options) {
+                    var value = $scope.options.map_options[key];
+                    $scope.mapOptions[key] = value;
+                }
+            }
 
-        if (!company) {
-            AlertService.warning(ErrorService.getError('STORE_NOT_SELECTED'));
-            return;
-        } else if (!company.id) {
-            AlertService.warning(ErrorService.getError('STORE_NOT_SELECTED'));
-            $log.warn('valid company object not found');
-            return;
-        }
-
-        loader.notLoaded();
-
-        // if the selected store changes, emit an event. the form data store uses
-        // this to clear data, but it can be used to action anything.
-        if ($scope.selectedStore && $scope.selectedStore.id !== company.id) {
-            $scope.$emit('change:storeLocation');
-        }
-
-        $scope.selectedStore = company;
-
-        // Add answers object to the item_defaults if questions have already been asked before the map step
-        if ($scope.bb.current_item.item_details && $scope.bb.current_item.item_details.questions) {
-            setAnswers();
-        }
-
-        if (company.service) {
-            $scope.bb.item_defaults.service = company.service.id;
-        }
-
-        var init_obj = {
-            company_id: company.id,
-            item_defaults: $scope.bb.item_defaults,
-            no_route: $scope.options.no_route
+            return map_ready_def.resolve(true);
         };
-        if (route) {
-            init_obj.first_page = route;
-        }
 
-        loader.setLoaded();
+        /***
+         * @ngdoc method
+         * @name filterByService
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Set the has_service property and the service object on all companies
+         * so companies can be filtered by service
+         */
+        var filterByService = function filterByService() {
+            var deferred = $q.defer();
+            if ($scope.bb.selected_service.$has('all_children')) {
+                $scope.bb.selected_service.$get('all_children').then(function (resource) {
+                    return resource.$get('services').then(function (services) {
+                        var service = void 0;
+                        var company_ids = _.map(services, function (service) {
+                            return service.company_id;
+                        });
 
-        return $scope.initWidget(init_obj);
-    };
-
-    var setAnswers = function setAnswers() {
-        var answers = {};
-        var _iteratorNormalCompletion7 = true;
-        var _didIteratorError7 = false;
-        var _iteratorError7 = undefined;
-
-        try {
-            for (var _iterator7 = Array.from($scope.bb.current_item.item_details.questions)[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-                var q = _step7.value;
-
-                answers['q_' + q.name] = q.answer;
+                        return Array.from($scope.companies).map(function (company) {
+                            return company.has_service = _.contains(company_ids, company.id), service = _.find(services, function (service) {
+                                return service.company_id === company.id;
+                            }), company.service = service, deferred.resolve();
+                        });
+                    });
+                });
+            } else {
+                deferred.resolve();
             }
-        } catch (err) {
-            _didIteratorError7 = true;
-            _iteratorError7 = err;
-        } finally {
+            return deferred.promise;
+        };
+
+        /***
+         * @ngdoc method
+         * @name $scope.filterByService
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Set $scope.shownMarkers to include / exclude
+         * companies without the selected service
+         */
+        $scope.filterByService = function () {
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
             try {
-                if (!_iteratorNormalCompletion7 && _iterator7.return) {
-                    _iterator7.return();
+
+                for (var _iterator2 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var marker = _step2.value;
+
+                    marker.setMap(null);
                 }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
             } finally {
-                if (_didIteratorError7) {
-                    throw _iteratorError7;
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
                 }
             }
+
+            if ($scope.options && $scope.filter_by_service) {
+                $scope.shownMarkers = $scope.shown_markers_with_services;
+            } else {
+                $scope.shownMarkers = $scope.shown_markers;
+            }
+
+            return $timeout(function () {
+                return setMarkers();
+            });
+        };
+
+        var mapInit = function mapInit() {
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
+
+            try {
+                for (var _iterator3 = Array.from($scope.companies)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var comp = _step3.value;
+
+                    if (comp.address && comp.address.lat && comp.address.long) {
+                        var latlong = new google.maps.LatLng(comp.address.lat, comp.address.long);
+                        var marker = new google.maps.Marker({
+                            map: $scope.myMap,
+                            position: latlong,
+                            visible: $scope.showAllMarkers,
+                            icon: defaultPin
+                        });
+                        marker.company = comp;
+                        if (!$scope.hide_not_live_stores || !!comp.live) {
+                            $scope.mapMarkers.push(marker);
+                        }
+                    }
+                }
+            } catch (err) {
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
+                    }
+                } finally {
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
+                    }
+                }
+            }
+
+            $timeout(function () {
+                $scope.myMap.fitBounds($scope.mapBounds);
+                if ($scope.options.default_zoom) {
+                    $scope.myMap.setZoom($scope.default_zoom);
+                }
+                if ($scope.bb.current_item.service && $scope.options && $scope.filter_by_service) {
+                    return loader.setLoaded();
+                }
+            });
+            return checkDataStore();
+        };
+
+        /***
+         * @ngdoc method
+         * @name loadMap
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Set the center, zoom and show the closest markers on the Map
+         *
+         */
+        var loadMap = function loadMap() {
+            $scope.myMap.setCenter($scope.loc);
+            if ($scope.options.default_zoom) {
+                $scope.myMap.setZoom($scope.default_zoom);
+            }
+            $scope.showClosestMarkers($scope.loc);
+            return;
+        };
+
+        /***
+         * @ngdoc method
+         * @name checkDataStore
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * If the user has clicked back to the map then display it.
+         */
+        var checkDataStore = function checkDataStore() {
+            if ($scope.selectedStore) {
+                loader.notLoaded();
+                if ($scope.search_prms) {
+                    $scope.searchAddress($scope.search_prms);
+                } else {
+                    $scope.geolocate();
+                }
+                return google.maps.event.addListenerOnce($scope.myMap, 'idle', function () {
+                    return _.each($scope.mapMarkers, function (marker) {
+                        if ($scope.selectedStore.id === marker.company.id) {
+                            return google.maps.event.trigger(marker, 'click');
+                        }
+                    });
+                });
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name title
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Create title for the map selection step
+         */
+        $scope.title = function () {
+            var p1 = void 0;
+            var ci = $scope.bb.current_item;
+            if (ci.category && ci.category.description) {
+                p1 = ci.category.description;
+            } else {
+                p1 = $scope.bb.company.extra.department;
+            }
+
+            return p1 + ' - ' + $scope.$eval('getCurrentStepTitle()');
+        };
+
+        function setPiwik(title) {
+            var category = "Map";
+            bbAnalyticsPiwik.push(['trackEvent', [category], title]);
         }
 
-        if (!_.isEmpty(answers)) {
-            return $scope.bb.item_defaults.answers = answers;
-        }
-    };
+        /***
+         * @ngdoc method
+         * @name searchAddress
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Search address in according of prms parameter
+         *
+         * @param {object} prms The parameters of the address
+         */
+        $scope.searchAddress = function (prms) {
 
-    /***
-     * @ngdoc method
-     * @name roundNumberUp
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Calculate the round number up
-     *
-     * @param {integer} num The number of places
-     * @param {object} places The places
-     */
-    $scope.roundNumberUp = function (num, places) {
-        return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
-    };
+            if (bbAnalyticsPiwik.isEnabled()) setPiwik('Search');
 
-    /***
-     * @ngdoc method
-     * @name geolocate
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Get geolocation information
-     */
-    $scope.geolocate = function () {
-        var loadMapOnGeolocate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+            // if a reverse geocode has been performed and the address
+            // is no different to one the entered, abort the search
+            if ($scope.loadMapOnGeolocate && $scope.reverse_geocode_address && $scope.reverse_geocode_address === $scope.address) {
+                return false;
+            }
 
-        if (!navigator.geolocation || $scope.reverse_geocode_address && $scope.reverse_geocode_address === $scope.address) {
-            return false;
-        }
+            loader.notLoaded();
 
-        $scope.loadMapOnGeolocate = loadMapOnGeolocate;
+            $scope.loadMapOnGeolocate = true;
 
-        loader.notLoaded();
+            delete $scope.geocoder_result;
+            if (!prms) {
+                prms = {};
+            }
+            $scope.search_prms = prms;
+            $scope.map_init.then(function () {
+                var address = $scope.address;
 
-        return webshim.ready('geolocation', function () {
-            // set timeout as 5 seconds and max age as 1 hour
-            var options = { timeout: 5000, maximumAge: 3600000 };
-            return navigator.geolocation.getCurrentPosition(reverseGeocode, geolocateFail, options);
-        });
-    };
+                if (prms.address) {
+                    var _prms = prms;
+                    address = _prms.address;
+                }
 
-    /***
-     * @ngdoc method
-     * @name geolocateFail
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Geolocation fail and display an error message
-     *
-     * @param {object} error The error
-     */
-    var geolocateFail = function geolocateFail(error) {
-        switch (error.code) {
-            // if the geocode failed because the position was unavailable or the request timed out, raise an alert
-            case 2:
-            case 3:
-                loader.setLoaded();
-                AlertService.raise('GEOLOCATION_ERROR');
-                break;
-            default:
-                loader.setLoaded();
-        }
-        return $scope.$apply();
-    };
+                if (address) {
+                    var req = {
+                        address: address
+                    };
+                    if (prms.region) {
+                        req.region = prms.region;
+                    }
+                    if (prms.componentRestrictions) {
+                        req.componentRestrictions = prms.componentRestrictions;
+                    }
 
-    /***
-     * @ngdoc method
-     * @name reverseGeocode
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Reverse geocode in according of position parameter
-     *
-     * @param {object} positon The postion get latitude and longitude from google maps api
-     */
-    var reverseGeocode = function reverseGeocode(position) {
-        var lat = parseFloat(position.coords.latitude);
-        var long = parseFloat(position.coords.longitude);
-        var latlng = new google.maps.LatLng(lat, long);
+                    if (prms.bounds) {
+                        var sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
+                        var ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
+                        req.bounds = new google.maps.LatLngBounds(sw, ne);
+                    }
 
-        return new google.maps.Geocoder().geocode({ 'latLng': latlng }, function (results, status) {
-            if (results.length > 0 && status === 'OK') {
-                $scope.geocoder_result = results[0];
+                    return new google.maps.Geocoder().geocode(req, function (results, status) {
 
-                var _iteratorNormalCompletion8 = true;
-                var _didIteratorError8 = false;
-                var _iteratorError8 = undefined;
+                        if (results.length > 0 && status === 'OK') {
+                            $scope.geocoder_result = results[0];
+                        }
+
+                        if (!$scope.geocoder_result || $scope.geocoder_result && $scope.geocoder_result.partial_match) {
+                            searchPlaces(req);
+                        } else if ($scope.geocoder_result) {
+                            searchSuccess($scope.geocoder_result);
+                        } else {
+                            searchFailed();
+                        }
+                        loader.setLoaded();
+                    });
+                }
+            });
+
+            return;
+        };
+
+        /***
+         * @ngdoc method
+         * @name searchPlaces
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Search places in according of prms parameter
+         *
+         * @param {object} prms The parameters of the places
+         */
+        var searchPlaces = function searchPlaces(prms) {
+
+            var req = {
+                query: prms.address,
+                types: ['shopping_mall', 'store', 'embassy'] // narrow place types to improve results
+            };
+
+            if (prms.bounds) {
+                req.bounds = prms.bounds;
+            }
+
+            var service = new google.maps.places.PlacesService($scope.myMap);
+            return service.textSearch(req, function (results, status) {
+                if (results.length > 0 && status === 'OK') {
+                    searchSuccess(results[0]);
+                } else if ($scope.geocoder_result) {
+                    searchSuccess($scope.geocoder_result);
+                } else {
+                    searchFailed();
+                }
+                return;
+            });
+        };
+
+        /***
+         * @ngdoc method
+         * @name searchSuccess
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Search has been succeeded, and return
+         *
+         * @param {object} result The result of the search
+         */
+        var searchSuccess = function searchSuccess(result) {
+            AlertService.clear();
+            $scope.search_failed = false;
+            $scope.loc = result.geometry.location;
+            $scope.formatted_address = result.formatted_address;
+            if ($scope.loadMapOnGeolocate) {
+                loadMap();
+            }
+            return $rootScope.$broadcast("map:search_success");
+        };
+
+        /***
+         * @ngdoc method
+         * @name searchFailed
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Search failed and displayed an error
+         */
+        var searchFailed = function searchFailed() {
+            $scope.search_failed = true;
+            AlertService.raise('LOCATION_NOT_FOUND');
+            // need to call apply to update bindings as geocode callback is outside angular library
+            return $rootScope.$apply();
+        };
+
+        /***
+         * @ngdoc method
+         * @name validateAddress
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Validate the address using form
+         *
+         * @param {object} form The form where address has been validate
+         */
+        $scope.validateAddress = function (form) {
+            if (!form) {
+                return false;
+            }
+            if (form.$error.required) {
+                AlertService.clear();
+                AlertService.raise('MISSING_LOCATION');
+                return false;
+            } else {
+                return true;
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name showClosestMarkers
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Display the closest markers
+         *
+         * @param {Object} centre The map centre
+         */
+        $scope.showClosestMarkers = function (centre) {
+
+            var distances = [];
+            var distances_with_services = [];
+
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
+
+            try {
+                for (var _iterator4 = Array.from($scope.mapMarkers)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var marker = _step4.value;
+
+
+                    var map_centre = {
+                        lat: centre.lat(),
+                        long: centre.lng()
+                    };
+
+                    var marker_position = {
+                        lat: marker.position.lat(),
+                        long: marker.position.lng()
+                    };
+
+                    marker.distance = GeolocationService.haversine(map_centre, marker_position);
+
+                    if (!$scope.showAllMarkers) {
+                        marker.setVisible(false);
+                    }
+
+                    if (marker.distance < $scope.range_limit) {
+                        distances.push(marker);
+                        if (marker.company.has_service) {
+                            distances_with_services.push(marker);
+                        }
+                    }
+                }
+            } catch (err) {
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                        _iterator4.return();
+                    }
+                } finally {
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
+                    }
+                }
+            }
+
+            distances.sort(function (a, b) {
+                return a.distance - b.distance;
+            });
+
+            distances_with_services.sort(function (a, b) {
+                return a.distance - b.distance;
+            });
+
+            $scope.setShownMarkers(distances, distances_with_services);
+
+            if ($scope.shownMarkers.length != 0) {
+                $timeout(function () {
+                    return setMarkers();
+                });
+            }
+            return;
+        };
+
+        /***
+         * @ngdoc method
+         * @name setShownMarkers
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Set the shownMarkers on scope
+         *
+         * @param {array} distances Markers with property distance
+         * @param {array} distances_with_services Markers with property distance and support the pre-selected service
+         */
+        $scope.setShownMarkers = function (distances, distances_with_services) {
+            $scope.shown_markers = distances.slice(0, $scope.num_search_results);
+            $scope.shown_markers_with_services = distances_with_services.slice(0, $scope.num_search_results);
+
+            if ($scope.options && $scope.filter_by_service && $scope.shown_markers_with_services.length != 0) {
+                $scope.shownMarkers = $scope.shown_markers_with_services;
+            } else {
+                $scope.shownMarkers = $scope.shown_markers;
+            }
+        };
+
+        var setMarkers = function setMarkers() {
+
+            var latlong = $scope.loc;
+
+            var localBounds = new google.maps.LatLngBounds();
+            localBounds.extend(latlong);
+            var index = 1;
+
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
+
+            try {
+                for (var _iterator5 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var marker = _step5.value;
+
+                    if ($scope.numberedPin) {
+                        var iconPath = $window.sprintf($scope.numberedPin, index);
+                        marker.setIcon(iconPath);
+                    }
+
+                    marker.setVisible(true);
+                    marker.setMap($scope.myMap);
+                    localBounds.extend(marker.position);
+                    index += 1;
+                }
+            } catch (err) {
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                        _iterator5.return();
+                    }
+                } finally {
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
+                    }
+                }
+            }
+
+            $scope.$emit('map:shown_markers_updated', $scope.shownMarkers);
+
+            google.maps.event.trigger($scope.myMap, 'resize');
+            $scope.myMap.fitBounds(localBounds);
+            return openDefaultMarker();
+        };
+
+        var openDefaultMarker = function openDefaultMarker() {
+
+            if ($scope.options && $scope.options.no_default_location_details) {
+                return;
+            }
+
+            var open_marker_index = 0;
+            var open_marker = _.find($scope.shownMarkers, function (obj) {
+                open_marker_index++;
+                return obj.company.id === $scope.bb.current_item.company.id;
+            });
+            if (open_marker) {
+                open_marker_index--;
+            } else {
+                open_marker_index = 0;
+            }
+            $scope.shownMarkers[open_marker_index].is_open = true;
+            return $scope.openMarkerInfo($scope.shownMarkers[open_marker_index]);
+        };
+
+        /***
+         * @ngdoc method
+         * @name openMarkerInfo
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Display marker information on the map
+         *
+         * @param {object} marker The marker
+         */
+        $scope.openMarkerInfo = function (marker) {
+            return $timeout(function () {
+
+                $scope.currentMarker = marker;
+                $scope.myMap.setCenter(marker.position);
+                $scope.myInfoWindow.open($scope.myMap, marker);
+                var _iteratorNormalCompletion6 = true;
+                var _didIteratorError6 = false;
+                var _iteratorError6 = undefined;
 
                 try {
-                    for (var _iterator8 = Array.from($scope.geocoder_result.address_components)[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-                        var ac = _step8.value;
+                    for (var _iterator6 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                        var shown_marker = _step6.value;
 
-                        if (ac.types.indexOf("route") >= 0) {
-                            $scope.reverse_geocode_address = ac.long_name;
+                        if (shown_marker.company.id === marker.company.id) {
+                            shown_marker.is_open = true;
                         }
-                        if (ac.types.indexOf("locality") >= 0) {
-                            $scope.reverse_geocode_address += ', ' + ac.long_name;
-                        }
-                        $scope.address = $scope.reverse_geocode_address;
                     }
                 } catch (err) {
-                    _didIteratorError8 = true;
-                    _iteratorError8 = err;
+                    _didIteratorError6 = true;
+                    _iteratorError6 = err;
                 } finally {
                     try {
-                        if (!_iteratorNormalCompletion8 && _iterator8.return) {
-                            _iterator8.return();
+                        if (!_iteratorNormalCompletion6 && _iterator6.return) {
+                            _iterator6.return();
                         }
                     } finally {
-                        if (_didIteratorError8) {
-                            throw _iteratorError8;
+                        if (_didIteratorError6) {
+                            throw _iteratorError6;
                         }
                     }
                 }
 
-                searchSuccess($scope.geocoder_result);
+                return $scope.shownMarkers;
+            }, 250);
+        };
+
+        /***
+         * @ngdoc method
+         * @name selectItem
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Select an item from map
+         *
+         * @param {array} item The Map or BookableItem to select
+         * @param {string=} route A specific route to load
+         */
+        $scope.selectItem = function (company, route) {
+            if (!$scope.$debounce(1000)) {
+                return;
             }
-            return $timeout(function () {
-                return loader.setLoaded();
+
+            if (!company) {
+                AlertService.warning(ErrorService.getError('STORE_NOT_SELECTED'));
+                return;
+            } else if (!company.id) {
+                AlertService.warning(ErrorService.getError('STORE_NOT_SELECTED'));
+                $log.warn('valid company object not found');
+                return;
+            }
+
+            loader.notLoaded();
+
+            // if the selected store changes, emit an event. the form data store uses
+            // this to clear data, but it can be used to action anything.
+            if ($scope.selectedStore && $scope.selectedStore.id !== company.id) {
+                $scope.$emit('change:storeLocation');
+            }
+
+            $scope.selectedStore = company;
+
+            // Add answers object to the item_defaults if questions have already been asked before the map step
+            if ($scope.bb.current_item.item_details && $scope.bb.current_item.item_details.questions) {
+                setAnswers();
+            }
+
+            if (company.service) {
+                $scope.bb.item_defaults.service = company.service.id;
+            }
+
+            var init_obj = {
+                company_id: company.id,
+                item_defaults: $scope.bb.item_defaults,
+                no_route: $scope.options.no_route
+            };
+            if (route) {
+                init_obj.first_page = route;
+            }
+
+            loader.setLoaded();
+
+            return $scope.initWidget(init_obj);
+        };
+
+        var setAnswers = function setAnswers() {
+            var answers = {};
+            var _iteratorNormalCompletion7 = true;
+            var _didIteratorError7 = false;
+            var _iteratorError7 = undefined;
+
+            try {
+                for (var _iterator7 = Array.from($scope.bb.current_item.item_details.questions)[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+                    var q = _step7.value;
+
+                    answers['q_' + q.name] = q.answer;
+                }
+            } catch (err) {
+                _didIteratorError7 = true;
+                _iteratorError7 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion7 && _iterator7.return) {
+                        _iterator7.return();
+                    }
+                } finally {
+                    if (_didIteratorError7) {
+                        throw _iteratorError7;
+                    }
+                }
+            }
+
+            if (!_.isEmpty(answers)) {
+                return $scope.bb.item_defaults.answers = answers;
+            }
+        };
+
+        /***
+         * @ngdoc method
+         * @name roundNumberUp
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Calculate the round number up
+         *
+         * @param {integer} num The number of places
+         * @param {object} places The places
+         */
+        $scope.roundNumberUp = function (num, places) {
+            return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
+        };
+
+        /***
+         * @ngdoc method
+         * @name geolocate
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Get geolocation information
+         */
+        $scope.geolocate = function () {
+            var loadMapOnGeolocate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+
+
+            if (bbAnalyticsPiwik.isEnabled()) setPiwik('Geolocate');
+
+            if (!navigator.geolocation || $scope.reverse_geocode_address && $scope.reverse_geocode_address === $scope.address) {
+                return false;
+            }
+
+            $scope.loadMapOnGeolocate = loadMapOnGeolocate;
+
+            loader.notLoaded();
+
+            return webshim.ready('geolocation', function () {
+                // set timeout as 5 seconds and max age as 1 hour
+                var options = {
+                    timeout: 5000,
+                    maximumAge: 3600000
+                };
+                return navigator.geolocation.getCurrentPosition(reverseGeocode, geolocateFail, options);
             });
+        };
+
+        /***
+         * @ngdoc method
+         * @name geolocateFail
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Geolocation fail and display an error message
+         *
+         * @param {object} error The error
+         */
+        var geolocateFail = function geolocateFail(error) {
+            switch (error.code) {
+                // if the geocode failed because the position was unavailable or the request timed out, raise an alert
+                case 2:
+                case 3:
+                    loader.setLoaded();
+                    AlertService.raise('GEOLOCATION_ERROR');
+                    break;
+                default:
+                    loader.setLoaded();
+            }
+            return $scope.$apply();
+        };
+
+        /***
+         * @ngdoc method
+         * @name reverseGeocode
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Reverse geocode in according of position parameter
+         *
+         * @param {object} positon The postion get latitude and longitude from google maps api
+         */
+        var reverseGeocode = function reverseGeocode(position) {
+            var lat = parseFloat(position.coords.latitude);
+            var long = parseFloat(position.coords.longitude);
+            var latlng = new google.maps.LatLng(lat, long);
+
+            return new google.maps.Geocoder().geocode({
+                'latLng': latlng
+            }, function (results, status) {
+                if (results.length > 0 && status === 'OK') {
+                    $scope.geocoder_result = results[0];
+
+                    var _iteratorNormalCompletion8 = true;
+                    var _didIteratorError8 = false;
+                    var _iteratorError8 = undefined;
+
+                    try {
+                        for (var _iterator8 = Array.from($scope.geocoder_result.address_components)[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+                            var ac = _step8.value;
+
+                            if (ac.types.indexOf("route") >= 0) {
+                                $scope.reverse_geocode_address = ac.long_name;
+                            }
+                            if (ac.types.indexOf("locality") >= 0) {
+                                $scope.reverse_geocode_address += ', ' + ac.long_name;
+                            }
+                            $scope.address = $scope.reverse_geocode_address;
+                        }
+                    } catch (err) {
+                        _didIteratorError8 = true;
+                        _iteratorError8 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion8 && _iterator8.return) {
+                                _iterator8.return();
+                            }
+                        } finally {
+                            if (_didIteratorError8) {
+                                throw _iteratorError8;
+                            }
+                        }
+                    }
+
+                    searchSuccess($scope.geocoder_result);
+                }
+                return $timeout(function () {
+                    return loader.setLoaded();
+                });
+            });
+        };
+
+        /***
+         * @ngdoc method
+         * @name increaseRange
+         * @methodOf BB.Directives:bbMap
+         * @description
+         * Increase range, the range limit is infinity
+         */
+        $scope.increaseRange = function () {
+            $scope.range_limit = Infinity;
+            return $scope.searchAddress($scope.search_prms);
+        };
+
+        // look for change in display size to determine if the map needs to be refreshed
+        $scope.$watch('display.xs', function (new_value, old_value) {
+            if (new_value !== old_value && $scope.loc) {
+                $scope.myInfoWindow.close();
+                loadMap();
+                return;
+            }
         });
-    };
 
-    /***
-     * @ngdoc method
-     * @name increaseRange
-     * @methodOf BB.Directives:bbMap
-     * @description
-     * Increase range, the range limit is infinity
-     */
-    $scope.increaseRange = function () {
-        $scope.range_limit = Infinity;
-        return $scope.searchAddress($scope.search_prms);
-    };
-
-    // look for change in display size to determine if the map needs to be refreshed
-    $scope.$watch('display.xs', function (new_value, old_value) {
-        if (new_value !== old_value && $scope.loc) {
-            $scope.myInfoWindow.close();
-            loadMap();
-            return;
-        }
-    });
-
-    return $rootScope.$on('widget:restart', function () {
-        $scope.loc = null;
-        $scope.reverse_geocode_address = null;
-        return $scope.address = null;
-    });
-});
+        return $rootScope.$on('widget:restart', function () {
+            $scope.loc = null;
+            $scope.reverse_geocode_address = null;
+            return $scope.address = null;
+        });
+    }
+})(angular);
 'use strict';
 
 /***
@@ -36275,7 +36420,7 @@ angular.module('BB.Directives').directive('bbTimeRangeStacked', function () {
 });
 'use strict';
 
-angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService) {
+angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $element, $attrs, $rootScope, $q, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService, $window, bbAnalyticsPiwik) {
 
     // store the form data for the following scope properties
     var currentPostcode = $scope.bb.postcode;
@@ -36321,7 +36466,12 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
             $scope.time_range_length = $scope.options.time_range_length;
         } else {
             var calculateDayNum = function calculateDayNum() {
-                var cal_days = { lg: 7, md: 5, sm: 3, xs: 1 };
+                var cal_days = {
+                    lg: 7,
+                    md: 5,
+                    sm: 3,
+                    xs: 1
+                };
 
                 var timeRange = 7;
 
@@ -36458,7 +36608,9 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
                 var difference = maxDate.startOf('day').diff(today.startOf('day'), 'days', true);
                 var maxDateDuration = moment.duration(difference, 'days').humanize();
                 // store it on scope in a form to support translations
-                $scope.maxDateDurationObj = { maxDateDuration: maxDateDuration };
+                $scope.maxDateDurationObj = {
+                    maxDateDuration: maxDateDuration
+                };
             }
 
             // if the selected day is before the services min_advance_datetime, adjust the time range
@@ -36499,6 +36651,14 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
         return $scope.loadData();
     });
 
+    function setPiwik(amount) {
+        var category = "Calendar";
+        var title = "Load Next Week";
+        if (amount < 0) {
+            title = "Load Previous Week";
+        }
+        bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+    }
     /***
      * @ngdoc method
      * @name add
@@ -36510,6 +36670,9 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
      * @param {object} amount The amount of the days
      */
     $scope.add = function (type, amount) {
+
+        if (bbAnalyticsPiwik.isEnabled()) setPiwik(amount);
+
         if (amount > 0) {
             $element.removeClass('subtract');
             $element.addClass('add');
@@ -36672,7 +36835,9 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
 
             if (slot.datetime) {
                 $scope.setLastSelectedDate(slot.datetime);
-                $scope.bb.current_item.setDate({ date: slot.datetime });
+                $scope.bb.current_item.setDate({
+                    date: slot.datetime
+                });
             } else if (day) {
                 $scope.setLastSelectedDate(day.date);
                 $scope.bb.current_item.setDate(day);
@@ -36710,7 +36875,9 @@ angular.module('BB.Controllers').controller('TimeRangeList', function ($scope, $
 
             if (slot.datetime) {
                 $scope.setLastSelectedDate(slot.datetime);
-                current_item.setDate({ date: slot.datetime.clone().tz($scope.bb.company.timezone) });
+                current_item.setDate({
+                    date: slot.datetime.clone().tz($scope.bb.company.timezone)
+                });
             } else if (day) {
                 $scope.setLastSelectedDate(day.date);
                 current_item.setDate(day);
