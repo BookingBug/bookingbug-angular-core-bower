@@ -19645,2298 +19645,6 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
 });
 'use strict';
 
-(function () {
-
-    'use strict';
-
-    angular.module('BB.Controllers').controller('BBCtrl', BBCtrl);
-
-    function BBCtrl(routeStates, $scope, $rootScope, QueryStringService, LoadingService, viewportSize, bbWidgetBasket, bbWidgetPage, bbWidgetStep, bbWidgetInit, bbWidgetUtilities) {
-
-        bbWidgetBasket.setScope($scope);
-        bbWidgetPage.setScope($scope);
-        bbWidgetStep.setScope($scope);
-        bbWidgetInit.setScope($scope);
-        bbWidgetUtilities.setScope($scope);
-
-        this.$scope = $scope;
-
-        $scope.cid = "BBCtrl";
-        $scope.qs = QueryStringService;
-        $scope.company_api_path = '/api/v1/company/{company_id}{?embed,category_id}';
-        $scope.company_admin_api_path = '/api/v1/admin/{company_id}/company{?embed,category_id}';
-        $rootScope.Route = $scope.Route = routeStates;
-
-        this.$onInit = function () {
-            //Initialization
-            bbWidgetInit.initializeBBWidget();
-            $scope.initWidget = bbWidgetInit.initWidget;
-            //Steps
-            $scope.checkStepTitle = bbWidgetStep.checkStepTitle;
-            $scope.getCurrentStepTitle = bbWidgetStep.getCurrentStepTitle;
-            $scope.loadPreviousStep = bbWidgetStep.loadPreviousStep;
-            $scope.loadStep = bbWidgetStep.loadStep;
-            $scope.loadStepByPageName = bbWidgetStep.loadStepByPageName;
-            $scope.reset = bbWidgetStep.reset;
-            $scope.restart = bbWidgetStep.restart;
-            $scope.setLastSelectedDate = bbWidgetStep.setLastSelectedDate;
-            $scope.setStepTitle = bbWidgetStep.setStepTitle;
-            $scope.skipThisStep = bbWidgetStep.skipThisStep;
-            //Pages
-            $scope.clearPage = bbWidgetPage.clearPage;
-            $scope.decideNextPage = bbWidgetPage.decideNextPage;
-            $scope.hidePage = bbWidgetPage.hidePage;
-            $scope.isLoadingPage = bbWidgetPage.isLoadingPage;
-            $scope.jumpToPage = bbWidgetPage.jumpToPage;
-            $scope.setLoadingPage = bbWidgetPage.setLoadingPage;
-            $scope.setPageLoaded = bbWidgetPage.setPageLoaded;
-            $scope.setPageRoute = bbWidgetPage.setPageRoute;
-            $scope.showPage = bbWidgetPage.showPage;
-            //Basket
-            $scope.addItemToBasket = bbWidgetBasket.addItemToBasket;
-            $scope.clearBasketItem = bbWidgetBasket.clearBasketItem;
-            $scope.deleteBasketItem = bbWidgetBasket.deleteBasketItem;
-            $scope.deleteBasketItems = bbWidgetBasket.deleteBasketItems;
-            $scope.emptyBasket = bbWidgetBasket.emptyBasket;
-            $scope.moveToBasket = bbWidgetBasket.moveToBasket;
-            $scope.quickEmptybasket = bbWidgetBasket.quickEmptybasket;
-            $scope.setBasket = bbWidgetBasket.setBasket;
-            $scope.setBasketItem = bbWidgetBasket.setBasketItem;
-            $scope.updateBasket = bbWidgetBasket.updateBasket;
-            $scope.setUsingBasket = bbWidgetBasket.setUsingBasket;
-
-            $scope.setClient = bbWidgetInit.setClient;
-            $scope.clearClient = bbWidgetInit.clearClient;
-            $scope.setCompany = bbWidgetInit.setCompany;
-            $scope.setAffiliate = bbWidgetInit.setAffiliate;
-
-            $scope.isAdmin = bbWidgetUtilities.isAdmin;
-            $scope.isAdminIFrame = bbWidgetUtilities.isAdminIFrame;
-            $scope.base64encode = bbWidgetUtilities.base64encode;
-            $scope.$debounce = bbWidgetUtilities.$debounce;
-            $scope.parseDate = moment;
-            $scope.supportsTouch = bbWidgetUtilities.supportsTouch;
-            $scope.scrollTo = bbWidgetUtilities.scrollTo;
-            $scope.redirectTo = bbWidgetUtilities.redirectTo;
-            $scope.areScopesLoaded = LoadingService.areScopesLoaded;
-
-            $scope.broadcastItemUpdate = bbWidgetUtilities.broadcastItemUpdate;
-            $scope.getPartial = bbWidgetUtilities.getPartial;
-            $scope.getUrlParam = bbWidgetUtilities.getUrlParam;
-            $scope.setLoaded = LoadingService.setLoaded;
-            $scope.setLoadedAndShowError = LoadingService.setLoadedAndShowError;
-            $scope.isMemberLoggedIn = bbWidgetUtilities.isMemberLoggedIn;
-            $scope.logout = bbWidgetUtilities.logout;
-            $scope.notLoaded = LoadingService.notLoaded;
-            $scope.reloadDashboard = bbWidgetUtilities.reloadDashboard;
-            $scope.setReadyToCheckout = bbWidgetBasket.setReadyToCheckout;
-            $scope.setRoute = bbWidgetUtilities.setRoute;
-
-            $scope.showCheckout = bbWidgetBasket.showCheckout;
-            $rootScope.$on('show:loader', bbWidgetUtilities.showLoaderHandler);
-            $rootScope.$on('hide:loader', bbWidgetUtilities.hideLoaderHandler);
-            $scope.$on('$locationChangeStart', bbWidgetUtilities.locationChangeStartHandler);
-        };
-
-        this.$postLink = function () {
-            viewportSize.init();
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    /**
-     * @ngdoc directive
-     * @name BB.Directives:bbWidget
-     * @restrict A
-     * @scope
-     *   client: '=?'
-     *   apiUrl: '@?'
-     *   useParent:'='
-     * @description
-     *
-     * Loads a list of widgets for the currently in scope company
-     *
-     * <pre>
-     * restrict: 'A'
-     * scope:
-     *   client: '=?'
-     *   apiUrl: '@?'
-     *   useParent:'='
-     * transclude: true
-     * </pre>
-     *
-     * @param {hash} bbWidget A hash of options
-     * @property {string} pusher The pusher
-     * @property {string} pusher_channel The pusher channel
-     * @property {string} init_params Initialization of basic parameters
-     */
-
-    angular.module('BB.Directives').directive('bbWidget', BBWidget);
-
-    function BBWidget($http, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope, AppService) {
-
-        /**
-         * @ngdoc method
-         * @name getTemplate
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Get template
-         *
-         * @param {object} template The template
-         */
-        var getTemplate = function getTemplate(template) {
-            var partial = template ? template : 'main';
-            return $templateCache.get(partial + '.html');
-        };
-
-        /**
-         * @ngdoc method
-         * @name updatePartials
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Update partials
-         *
-         * @param {object} prms The parameter
-         */
-        var updatePartials = function updatePartials(scope, element, prms) {
-            var i, j, len, ref;
-            ref = element.children();
-            for (j = 0, len = ref.length; j < len; j++) {
-                i = ref[j];
-                if ($bbug(i).hasClass('custom_partial')) {
-                    $bbug(i).remove();
-                }
-            }
-            return appendCustomPartials(scope, element, prms).then(function () {
-                return scope.$broadcast('refreshPage');
-            });
-        };
-
-        /**
-         * @ngdoc method
-         * @name setupPusher
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Push setup
-         *
-         * @param {object} prms The parameter
-         */
-        var setupPusher = function setupPusher(scope, element, prms) {
-            return $timeout(function () {
-                scope.pusher = new Pusher('c8d8cea659cc46060608');
-                scope.pusher_channel = scope.pusher.subscribe("widget_" + prms.design_id);
-                return scope.pusher_channel.bind('update', function (data) {
-                    return updatePartials(scope, element, prms);
-                });
-            });
-        };
-
-        /**
-         * @ngdoc method
-         * @name appendCustomPartials
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Appent custom partials
-         *
-         * @param {object} prms The parameter
-         */
-        var appendCustomPartials = function appendCustomPartials(scope, element, prms) {
-            var defer;
-            defer = $q.defer();
-            $http.get(prms.custom_partial_url).then(function (custom_templates) {
-                return $compile(custom_templates.data)(scope, function (custom, scope) {
-                    var non_style, style, tag;
-                    custom.addClass('custom_partial');
-                    style = function () {
-                        var j, len, results;
-                        results = [];
-                        for (j = 0, len = custom.length; j < len; j++) {
-                            tag = custom[j];
-                            if (tag.tagName === "STYLE") {
-                                results.push(tag);
-                            }
-                        }
-                        return results;
-                    }();
-                    non_style = function () {
-                        var j, len, results;
-                        results = [];
-                        for (j = 0, len = custom.length; j < len; j++) {
-                            tag = custom[j];
-                            if (tag.tagName !== "STYLE") {
-                                results.push(tag);
-                            }
-                        }
-                        return results;
-                    }();
-                    $bbug("#widget_" + prms.design_id).html(non_style);
-                    element.append(style);
-                    scope.bb.path_setup = true;
-                    return defer.resolve(style);
-                });
-            });
-            return defer.promise;
-        };
-
-        /**
-         * @ngdoc method
-         * @name renderTemplate
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Render template
-         *
-         * @param {object} design_mode The design mode
-         * @param {object} template The template
-         */
-        var renderTemplate = function renderTemplate(scope, element, design_mode, template) {
-            return $q.when(getTemplate(template)).then(function (template) {
-                element.html(template).show();
-                if (design_mode) {
-                    element.append('<style widget_css scoped></style>');
-                }
-                return $compile(element.contents())(scope);
-            });
-        };
-        var link = function link(scope, element, attrs, controller, transclude) {
-            var evaluator, init_params, _notInModal;
-            if (attrs.member != null) {
-                scope.client = attrs.member;
-            }
-            evaluator = scope;
-            if (scope.useParent && scope.$parent != null) {
-                evaluator = scope.$parent;
-            }
-            init_params = evaluator.$eval(attrs.bbWidget);
-            scope.initWidget(init_params);
-            $rootScope.widget_started.then(function (_this) {
-                return function () {
-                    var prms;
-                    prms = scope.bb;
-                    if (prms.custom_partial_url) {
-                        prms.design_id = prms.custom_partial_url.match(/^.*\/(.*?)$/)[1];
-                        $bbug("[ng-app='BB']").append("<div id='widget_" + prms.design_id + "'></div>");
-                    }
-                    if (scope.bb.partial_url) {
-                        if (init_params.partial_url) {
-                            AppConfig['partial_url'] = init_params.partial_url;
-                        } else {
-                            AppConfig['partial_url'] = scope.bb.partial_url;
-                        }
-                    }
-                    return transclude(scope, function (clone) {
-                        scope.has_content = clone.length > 1 || clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText));
-                        if (!scope.has_content) {
-                            if (prms.custom_partial_url) {
-                                appendCustomPartials(scope, element, prms).then(function (style) {
-                                    return $q.when(getTemplate()).then(function (template) {
-                                        element.html(template).show();
-                                        $compile(element.contents())(scope);
-                                        element.append(style);
-                                        if (prms.update_design) {
-                                            return setupPusher(scope, element, prms);
-                                        }
-                                    });
-                                });
-                            } else if (prms.template) {
-                                renderTemplate(scope, element, prms.design_mode, prms.template);
-                            } else {
-                                renderTemplate(scope, element, prms.design_mode);
-                            }
-                            return scope.$on('refreshPage', function () {
-                                return renderTemplate(scope, element, prms.design_mode, prms.template);
-                            });
-                        } else if (prms.custom_partial_url) {
-                            appendCustomPartials(scope, element, prms);
-                            if (prms.update_design) {
-                                setupPusher(scope, element, prms);
-                            }
-                            return scope.$on('refreshPage', function () {
-                                return scope.showPage(scope.bb.current_page);
-                            });
-                        } else {
-                            element.html(clone).show();
-                            if (prms.design_mode) {
-                                return element.append('<style widget_css scoped></style>');
-                            }
-                        }
-                    });
-                };
-            }(this));
-            _notInModal = function notInModal(p) {
-                if (p.length === 0 || p[0].attributes === void 0) {
-                    return true;
-                } else if (p[0].attributes['uib-modal-window'] !== void 0) {
-                    return false;
-                } else {
-                    if (p.parent().length === 0) {
-                        return true;
-                    } else {
-                        return _notInModal(p.parent());
-                    }
-                }
-            };
-            scope.$watch(function () {
-                return AppService.isModalOpen();
-            }, function (modalOpen) {
-                return scope.coveredByModal = modalOpen && _notInModal(element.parent());
-            });
-        };
-
-        return {
-            restrict: 'A',
-            scope: {
-                client: '=?',
-                apiUrl: '@?',
-                useParent: '='
-            },
-            transclude: true,
-            controller: 'BBCtrl',
-            controllerAs: '$bbCtrl',
-            link: link
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    /*
-     * @ngdoc service
-     * @name BB.Models:BBWidget
-     *
-     * @description
-     * Representation of an BBWidget Object
-     *
-     * @property {integer} uid The unique id of the widget
-     * @property {string} page_suffix Widget page suffix
-     * @property {array} steps The widget steps
-     * @property {array} allSteps The all steps of the widget
-     * @property {object} item_defaults Widget defaults item
-     * @property {boolean} Checks if widget using basket or not
-     * @property {boolean} confirmCheckout Checks if widget confirm is checkout or not
-     * @property {boolean} isAdm,in Verify if user is admin
-     * @property {string} payment_status The payment status
-     */
-
-    angular.module('BB.Models').service('BBWidget', BBWidget);
-
-    function BBWidget($q, BBModel, $urlMatcherFactory, $location, BreadcrumbService, PathHelper, GeneralOptions, $translate) {
-
-        function Widget() {
-            this.uid = _.uniqueId('bbwidget_');
-            this.page_suffix = "";
-            this.steps = [];
-            this.allSteps = [];
-            this.item_defaults = {};
-            this.usingBasket = false;
-            this.confirmCheckout = false;
-            this.isAdmin = false;
-            this.payment_status = null;
-        }
-
-        Widget.prototype.pageURL = function (route) {
-            return route + '.html';
-        };
-        Widget.prototype.updateRoute = function (page) {
-            var company, date, event, event_group, pattern, prms, service_name, time, url;
-            if (!this.routeFormat) {
-                return;
-            }
-            page || (page = this.current_page);
-            pattern = $urlMatcherFactory.compile(this.routeFormat);
-            service_name = "-";
-            event_group = "-";
-            event = "-";
-            if (this.current_item) {
-                if (this.current_item.service) {
-                    service_name = this.convertToDashSnakeCase(this.current_item.service.name);
-                }
-                if (this.current_item.event_group) {
-                    event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
-                }
-                if (this.current_item.event) {
-                    event = this.current_item.event.id;
-                }
-                if (this.current_item.date) {
-                    date = this.current_item.date.date;
-                }
-                if (date && moment.isMoment(date)) {
-                    date = date.toISODate();
-                }
-                if (this.current_item.time) {
-                    time = this.current_item.time.time;
-                }
-                if (this.current_item.company) {
-                    company = this.convertToDashSnakeCase(this.current_item.company.name);
-                } else {
-                    console.log('%c bb_warning: Make sure you are using a valid company_id', 'background: #c0392b; color: #fff');
-                }
-            }
-            if (this.route_values) {
-                prms = angular.copy(this.route_values);
-            }
-            prms || (prms = {});
-            angular.extend(prms, {
-                page: page,
-                company: company,
-                service: service_name,
-                event_group: event_group,
-                date: date,
-                time: time,
-                event: event
-            });
-            url = pattern.format(prms);
-            url = url.replace(/\/+$/, "");
-            $location.path(url);
-            this.routing = true;
-            return url;
-        };
-        Widget.prototype.setRouteFormat = function (route) {
-            var match;
-            this.routeFormat = route;
-            if (!this.routeFormat) {
-                return;
-            }
-            this.routing = true;
-            match = PathHelper.matchRouteToPath(this.routeFormat);
-            if (match) {
-                if (match.company) {
-                    this.item_defaults.company = decodeURIComponent(match.company);
-                }
-                if (match.service && match.service !== "-") {
-                    this.item_defaults.service = decodeURIComponent(match.service);
-                }
-                if (match.event_group && match.event_group !== "-") {
-                    this.item_defaults.event_group = match.event_group;
-                }
-                if (match.event && match.event !== "-") {
-                    this.item_defaults.event = decodeURIComponent(match.event);
-                }
-                if (match.person) {
-                    this.item_defaults.person = decodeURIComponent(match.person);
-                }
-                if (match.resource) {
-                    this.item_defaults.resource = decodeURIComponent(match.resource);
-                }
-                if (match.resources) {
-                    this.item_defaults.resources = decodeURIComponent(match.resoures);
-                }
-                if (match.date) {
-                    this.item_defaults.date = match.date;
-                }
-                if (match.time) {
-                    this.item_defaults.time = parseInt(match.time);
-                }
-                return this.route_matches = match;
-            }
-        };
-        Widget.prototype.matchURLToStep = function () {
-            var page, step;
-            page = PathHelper.matchRouteToPath(this.routeFormat, 'page');
-            step = _.findWhere(this.allSteps, {
-                page: page
-            });
-            if (step) {
-                return step.number;
-            } else {
-                return null;
-            }
-        };
-        Widget.prototype.convertToDashSnakeCase = function (str) {
-            str = str.toLowerCase();
-            str = $.trim(str);
-            str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
-            str = str.replace(/\s{2,}/g, ' ');
-            str = str.replace(/\s/g, '-');
-            return str;
-        };
-        Widget.prototype.recordCurrentPage = function () {
-            var j, k, l, len, len1, len2, match, ref, ref1, ref2, setDocumentTitle, step, title;
-            setDocumentTitle = function setDocumentTitle(title) {
-                if (GeneralOptions.update_document_title && title) {
-                    return document.title = $translate.instant(title);
-                }
-            };
-            if (!this.current_step) {
-                this.current_step = 0;
-            }
-            match = false;
-            if (this.allSteps) {
-                ref = this.allSteps;
-                for (j = 0, len = ref.length; j < len; j++) {
-                    step = ref[j];
-                    if (step.page === this.current_page) {
-                        this.current_step = step.number;
-                        setDocumentTitle(step.title);
-                        match = true;
-                    }
-                }
-            }
-            if (!match) {
-                ref1 = this.steps;
-                for (k = 0, len1 = ref1.length; k < len1; k++) {
-                    step = ref1[k];
-                    if (step && step.page === this.current_page) {
-                        this.current_step = step.number;
-                        setDocumentTitle(step.title);
-                        match = true;
-                    }
-                }
-            }
-            if (!match) {
-                this.current_step += 1;
-            }
-            title = "";
-            if (this.allSteps) {
-                ref2 = this.allSteps;
-                for (l = 0, len2 = ref2.length; l < len2; l++) {
-                    step = ref2[l];
-                    step.active = false;
-                    step.passed = step.number < this.current_step;
-                }
-                if (this.allSteps[this.current_step - 1]) {
-                    this.allSteps[this.current_step - 1].active = true;
-                    title = this.allSteps[this.current_step - 1].title;
-                }
-            }
-            return this.recordStep(this.current_step, title);
-        };
-        Widget.prototype.recordStep = function (step_number, title) {
-            var j, len, ref, step;
-            this.steps[step_number - 1] = {
-                url: this.updateRoute(this.current_page),
-                current_item: this.current_item.getStep(),
-                page: this.current_page,
-                number: step_number,
-                title: title,
-                stacked_length: this.stacked_items.length
-            };
-            BreadcrumbService.setCurrentStep(step_number);
-            ref = this.steps;
-            for (j = 0, len = ref.length; j < len; j++) {
-                step = ref[j];
-                if (step) {
-                    step.passed = step.number < this.current_step;
-                    step.active = step.number === this.current_step;
-                }
-                if (step && step.number === step_number) {
-                    this.calculatePercentageComplete(step.number);
-                }
-            }
-            if (this.allSteps && this.allSteps.length === step_number || this.current_page === 'checkout') {
-                return this.last_step_reached = true;
-            } else {
-                return this.last_step_reached = false;
-            }
-        };
-        Widget.prototype.calculatePercentageComplete = function (step_number) {
-            return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
-        };
-        Widget.prototype.setRoute = function (rdata) {
-            var i, j, k, len, len1, ref, route, step;
-            this.allSteps.length = 0;
-            this.nextSteps = {};
-            if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
-                this.firstStep = rdata[0].page;
-            }
-            for (i = j = 0, len = rdata.length; j < len; i = ++j) {
-                step = rdata[i];
-                if (step.disable_breadcrumbs) {
-                    this.disableGoingBackAtStep = i + 1;
-                }
-                if (rdata[i + 1]) {
-                    this.nextSteps[step.page] = rdata[i + 1].page;
-                }
-                this.allSteps.push({
-                    number: i + 1,
-                    title: step.title,
-                    page: step.page
-                });
-                if (step.when) {
-                    this.routeSteps || (this.routeSteps = {});
-                    ref = step.when;
-                    for (k = 0, len1 = ref.length; k < len1; k++) {
-                        route = ref[k];
-                        this.routeSteps[route] = step.page;
-                    }
-                }
-            }
-            if (this.$wait_for_routing) {
-                return this.$wait_for_routing.resolve();
-            }
-        };
-        Widget.prototype.waitForRoutes = function () {
-            if (!this.$wait_for_routing) {
-                return this.$wait_for_routing = $q.defer();
-            }
-        };
-        Widget.prototype.stackItem = function (item) {
-            this.stacked_items.push(item);
-            this.sortStackedItems();
-            if (this.stacked_items.length === 1) {
-                return this.current_item = item;
-            }
-        };
-        Widget.prototype.setStackedItems = function (items) {
-            this.stacked_items = items;
-            return this.sortStackedItems();
-        };
-        Widget.prototype.sortStackedItems = function () {
-            var arr, item, j, len, ref;
-            arr = [];
-            ref = this.stacked_items;
-            for (j = 0, len = ref.length; j < len; j++) {
-                item = ref[j];
-                arr = arr.concat(item.promises);
-            }
-            return $q.all(arr)['finally'](function (_this) {
-                return function () {
-                    return _this.stacked_items = _this.stacked_items.sort(function (a, b) {
-                        var ref1, ref2;
-                        if (a.time && b.time) {
-                            return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
-                                1: -1
-                            };
-                        } else if (a.service.category && !b.service.category) {
-                            return 1;
-                        } else if (b.service.category && !a.service.category) {
-                            return -1;
-                        } else if (!b.service.category && !a.service.category) {
-                            return 1;
-                        } else {
-                            return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
-                                1: -1
-                            };
-                        }
-                    });
-                };
-            }(this));
-        };
-        Widget.prototype.deleteStackedItem = function (item) {
-            if (item && item.id) {
-                BBModel.Basket.$deleteItem(item, this.company, {
-                    bb: this
-                });
-            }
-            return this.stacked_items = this.stacked_items.filter(function (i) {
-                return i !== item;
-            });
-        };
-        Widget.prototype.removeItemFromStack = function (item) {
-            return this.stacked_items = this.stacked_items.filter(function (i) {
-                return i !== item;
-            });
-        };
-        Widget.prototype.deleteStackedItemByService = function (item) {
-            var i, j, len, ref;
-            ref = this.stacked_items;
-            for (j = 0, len = ref.length; j < len; j++) {
-                i = ref[j];
-                if (i && i.service && i.service.self === item.self && i.id) {
-                    BBModel.Basket.$deleteItem(i, this.company, {
-                        bb: this
-                    });
-                }
-            }
-            return this.stacked_items = this.stacked_items.filter(function (i) {
-                return i && i.service && i.service.self !== item.self;
-            });
-        };
-        Widget.prototype.emptyStackedItems = function () {
-            return this.stacked_items = [];
-        };
-        Widget.prototype.pushStackToBasket = function () {
-            var i, j, len, ref;
-            this.basket || (this.basket = new BBModel.Basket(null, this));
-            ref = this.stacked_items;
-            for (j = 0, len = ref.length; j < len; j++) {
-                i = ref[j];
-                this.basket.addItem(i);
-            }
-            return this.emptyStackedItems();
-        };
-        Widget.prototype.totalStackedItemsDuration = function () {
-            var duration, item, j, len, ref;
-            duration = 0;
-            ref = this.stacked_items;
-            for (j = 0, len = ref.length; j < len; j++) {
-                item = ref[j];
-                if (item.service && item.service.listed_duration) {
-                    duration += item.service.listed_duration;
-                }
-            }
-            return duration;
-        };
-        Widget.prototype.clearStackedItemsDateTime = function () {
-            var item, j, len, ref, results;
-            ref = this.stacked_items;
-            results = [];
-            for (j = 0, len = ref.length; j < len; j++) {
-                item = ref[j];
-                results.push(item.clearDateTime());
-            }
-            return results;
-        };
-        Widget.prototype.clearAddress = function () {
-            delete this.address1;
-            delete this.address2;
-            delete this.address3;
-            delete this.address4;
-            return delete this.address5;
-        };
-
-        return Widget;
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    angular.module('BB.Services').service('bbWidgetBasket', BBWidgetBasket);
-
-    function BBWidgetBasket($q, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal, bbWidgetUtilities, ErrorService, LoginService) {
-
-        var $scope = null;
-        var setScope = function setScope($s) {
-            $scope = $s;
-        };
-        var guardScope = function guardScope() {
-            if ($scope === null) {
-                throw new Error('please provide scope');
-            }
-        };
-        var deleteBasketItems = function deleteBasketItems(items) {
-            guardScope();
-            var item, j, len, results;
-            results = [];
-            for (j = 0, len = items.length; j < len; j++) {
-                item = items[j];
-                results.push(BBModel.Basket.$deleteItem(item, $scope.bb.company, {
-                    bb: $scope.bb
-                }).then(function (basket) {
-                    return setBasket(basket);
-                }));
-            }
-            return results;
-        };
-        var setBasketItem = function setBasketItem(item) {
-            guardScope();
-            return $scope.bb.current_item = item;
-        };
-        var clearBasketItem = function clearBasketItem() {
-            guardScope();
-            var def;
-            def = $q.defer();
-            $scope.bb.current_item = new BBModel.BasketItem(null, $scope.bb);
-            if ($scope.bb.default_setup_promises) {
-                $q.all($scope.bb.default_setup_promises)["finally"](function () {
-                    $scope.bb.current_item.setDefaults($scope.bb.item_defaults);
-                    return $q.all($scope.bb.current_item.promises)["finally"](function () {
-                        return def.resolve();
-                    });
-                });
-            } else {
-                $scope.bb.current_item.setDefaults({});
-                def.resolve();
-            }
-            return def.promise;
-        };
-        var setBasket = function setBasket(basket) {
-            guardScope();
-            $scope.bb.basket = basket;
-            $scope.basket = basket;
-            $scope.bb.basket.company_id = $scope.bb.company_id;
-            if ($scope.bb.stacked_items) {
-                return $scope.bb.setStackedItems(basket.timeItems());
-            }
-        };
-        var updateBasket = function updateBasket() {
-            guardScope();
-            var add_defer, current_item_ref, params;
-            current_item_ref = $scope.bb.current_item.ref;
-            add_defer = $q.defer();
-            params = {
-                member_id: $scope.client.id,
-                member: $scope.client,
-                items: $scope.bb.basket.items,
-                bb: $scope.bb
-            };
-            BBModel.Basket.$updateBasket($scope.bb.company, params).then(function (basket) {
-                var current_item, item, j, len, ref;
-                ref = basket.items;
-                for (j = 0, len = ref.length; j < len; j++) {
-                    item = ref[j];
-                    item.storeDefaults($scope.bb.item_defaults);
-                }
-                halClient.clearCache("time_data");
-                halClient.clearCache("events");
-                basket.setSettings($scope.bb.basket.settings);
-                setBasket(basket);
-                current_item = _.find(basket.items, function (item) {
-                    return item.ref === current_item_ref;
-                });
-                if (!current_item) {
-                    current_item = _.last(basket.items);
-                }
-                $scope.bb.current_item = current_item;
-                if (!$scope.bb.current_item) {
-                    return clearBasketItem().then(function () {
-                        return add_defer.resolve(basket);
-                    });
-                } else {
-                    return add_defer.resolve(basket);
-                }
-            }, function (err) {
-                var error_modal;
-                add_defer.reject(err);
-                if (err.status === 409) {
-                    halClient.clearCache("time_data");
-                    halClient.clearCache("events");
-                    $scope.bb.current_item.person = null;
-                    error_modal = $uibModal.open({
-                        templateUrl: bbWidgetUtilities.getPartial('_error_modal'),
-                        controller: function controller($scope, $uibModalInstance) {
-                            $scope.message = ErrorService.getError('ITEM_NO_LONGER_AVAILABLE').msg;
-                            return $scope.ok = function () {
-                                return $uibModalInstance.close();
-                            };
-                        }
-                    });
-                    return error_modal.result["finally"](function () {
-                        if ($scope.bb.on_conflict) {
-                            return $scope.$eval($scope.bb.on_conflict);
-                        } else {
-                            if ($scope.bb.nextSteps) {
-                                if (!bbWidgetPage.setPageRoute($rootScope.Route.Date) && !bbWidgetPage.setPageRoute($rootScope.Route.Event)) {
-                                    return bbWidgetStep.loadPreviousStep();
-                                }
-                            } else {
-                                return bbWidgetPage.decideNextPage();
-                            }
-                        }
-                    });
-                }
-            });
-            return add_defer.promise;
-        };
-        var deleteBasketItem = function deleteBasketItem(item) {
-            guardScope();
-            return BBModel.Basket.$deleteItem(item, $scope.bb.company, {
-                bb: $scope.bb
-            }).then(function (basket) {
-                return setBasket(basket);
-            });
-        };
-        var emptyBasket = function emptyBasket() {
-            guardScope();
-            var defer;
-            defer = $q.defer();
-            if (!$scope.bb.basket.items || $scope.bb.basket.items && $scope.bb.basket.items.length === 0) {
-                defer.resolve();
-            } else {
-                BBModel.Basket.$empty($scope.bb).then(function (basket) {
-                    if ($scope.bb.current_item.id) {
-                        delete $scope.bb.current_item.id;
-                    }
-                    setBasket(basket);
-                    return defer.resolve();
-                }, function (err) {
-                    return defer.reject();
-                });
-            }
-            return defer.promise;
-        };
-        var addItemToBasket = function addItemToBasket() {
-            guardScope();
-            var add_defer;
-            add_defer = $q.defer();
-            if (!$scope.bb.current_item.submitted && !$scope.bb.moving_booking) {
-                moveToBasket();
-                $scope.bb.current_item.submitted = updateBasket();
-                $scope.bb.current_item.submitted.then(function (basket) {
-                    return add_defer.resolve(basket);
-                }, function (err) {
-                    if (err.status === 409) {
-                        $scope.bb.current_item.person = null;
-                        $scope.bb.current_item.resource = null;
-                        $scope.bb.current_item.setTime(null);
-                        if ($scope.bb.current_item.service) {
-                            $scope.bb.current_item.setService($scope.bb.current_item.service);
-                        }
-                    }
-                    $scope.bb.current_item.submitted = null;
-                    return add_defer.reject(err);
-                });
-            } else if ($scope.bb.current_item.submitted) {
-                return $scope.bb.current_item.submitted;
-            } else {
-                add_defer.resolve();
-            }
-            return add_defer.promise;
-        };
-        var moveToBasket = function moveToBasket() {
-            guardScope();
-            return $scope.bb.basket.addItem($scope.bb.current_item);
-        };
-        var quickEmptybasket = function quickEmptybasket(options) {
-            guardScope();
-            var def, preserve_stacked_items;
-            preserve_stacked_items = options && options.preserve_stacked_items ? true : false;
-            if (!preserve_stacked_items) {
-                $scope.bb.stacked_items = [];
-                setBasket(new BBModel.Basket(null, $scope.bb));
-                return clearBasketItem();
-            } else {
-                $scope.bb.basket = new BBModel.Basket(null, $scope.bb);
-                $scope.basket = $scope.bb.basket;
-                $scope.bb.basket.company_id = $scope.bb.company_id;
-                def = $q.defer();
-                def.resolve();
-                return def.promise;
-            }
-        };
-        var restoreBasket = function restoreBasket() {
-            guardScope();
-            var restore_basket_defer;
-            restore_basket_defer = $q.defer();
-            quickEmptybasket().then(function () {
-                var auth_token, href, params, status, uri;
-                auth_token = $localStorage.getItem('auth_token') || $sessionStorage.getItem('auth_token');
-                href = $scope.bb.api_url + '/api/v1/status{?company_id,affiliate_id,clear_baskets,clear_member}';
-                params = {
-                    company_id: $scope.bb.company_id,
-                    affiliate_id: $scope.bb.affiliate_id,
-                    clear_baskets: $scope.bb.clear_basket ? '1' : null,
-                    clear_member: $scope.bb.clear_member ? '1' : null
-                };
-                uri = new UriTemplate(href).fillFromObject(params);
-                status = halClient.$get(uri, {
-                    "auth_token": auth_token,
-                    "no_cache": true
-                });
-                return status.then(function (_this) {
-                    return function (res) {
-                        if (res.$has('client')) {
-                            res.$get('client').then(function (client) {
-                                if (!$scope.client || $scope.client && !$scope.client.valid()) {
-                                    return $scope.client = new BBModel.Client(client);
-                                }
-                            });
-                        }
-                        if (res.$has('member')) {
-                            res.$get('member').then(function (member) {
-                                if (member.client_type !== 'Contact') {
-                                    member = LoginService.setLogin(member);
-                                    return $scope.setClient(member);
-                                }
-                            });
-                        }
-                        if ($scope.bb.clear_basket) {
-                            return restore_basket_defer.resolve();
-                        } else {
-                            if (res.$has('baskets')) {
-                                return res.$get('baskets').then(function (baskets) {
-                                    var basket;
-                                    basket = _.find(baskets, function (b) {
-                                        return parseInt(b.company_id) === $scope.bb.company_id;
-                                    });
-                                    if (basket) {
-                                        basket = new BBModel.Basket(basket, $scope.bb);
-                                        return basket.$get('items').then(function (items) {
-                                            var i, j, len, promises;
-                                            items = function () {
-                                                var j, len, results;
-                                                results = [];
-                                                for (j = 0, len = items.length; j < len; j++) {
-                                                    i = items[j];
-                                                    results.push(new BBModel.BasketItem(i));
-                                                }
-                                                return results;
-                                            }();
-                                            for (j = 0, len = items.length; j < len; j++) {
-                                                i = items[j];
-                                                basket.addItem(i);
-                                            }
-                                            setBasket(basket);
-                                            promises = [].concat.apply([], function () {
-                                                var l, len1, results;
-                                                results = [];
-                                                for (l = 0, len1 = items.length; l < len1; l++) {
-                                                    i = items[l];
-                                                    results.push(i.promises);
-                                                }
-                                                return results;
-                                            }());
-                                            return $q.all(promises).then(function () {
-                                                if (basket.items.length > 0) {
-                                                    $scope.bb.current_item = basket.items[0];
-                                                }
-                                                return restore_basket_defer.resolve();
-                                            });
-                                        });
-                                    } else {
-                                        return restore_basket_defer.resolve();
-                                    }
-                                });
-                            } else {
-                                return restore_basket_defer.resolve();
-                            }
-                        }
-                    };
-                }(this), function (err) {
-                    return restore_basket_defer.resolve();
-                });
-            });
-            return restore_basket_defer.promise;
-        };
-        var setUsingBasket = function setUsingBasket(usingBasket) {
-            return $scope.bb.usingBasket = usingBasket;
-        };
-        var showCheckout = function showCheckout() {
-            guardScope();
-            return $scope.bb.current_item.ready;
-        };
-        var setReadyToCheckout = function setReadyToCheckout(ready) {
-            guardScope();
-            return $scope.bb.confirmCheckout = ready;
-        };
-
-        return {
-            setScope: setScope,
-            deleteBasketItems: deleteBasketItems,
-            setBasketItem: setBasketItem,
-            clearBasketItem: clearBasketItem,
-            setBasket: setBasket,
-            updateBasket: updateBasket,
-            deleteBasketItem: deleteBasketItem,
-            emptyBasket: emptyBasket,
-            addItemToBasket: addItemToBasket,
-            moveToBasket: moveToBasket,
-            quickEmptybasket: quickEmptybasket,
-            restoreBasket: restoreBasket,
-            setUsingBasket: setUsingBasket,
-            showCheckout: showCheckout,
-            setReadyToCheckout: setReadyToCheckout
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    angular.module('BB.Services').service('bbWidgetInit', BBWidgetInit);
-
-    function BBWidgetInit($rootScope, $sessionStorage, $q, $sniffer, QueryStringService, halClient, BBModel, UriTemplate, PurchaseService, $window, SSOService, bbWidgetBasket, CompanyStoreService, $bbug, bbWidgetPage, LoadingService, BBWidget, AppConfig, $location) {
-
-        var connectionStarted, isFirstCall, widgetStarted;
-        var $scope = null;
-        var setScope = function setScope($s) {
-            $scope = $s;
-            reinitialise();
-        };
-        var reinitialise = function reinitialise() {
-            isFirstCall = true;
-            widgetStarted = $q.defer();
-            $rootScope.widget_started = widgetStarted.promise;
-        };
-        var guardScope = function guardScope() {
-            if ($scope === null) {
-                throw new Error('please provide scope');
-            }
-        };
-        var initWidget = function (prms) {
-            guardScope();
-            var url;
-            if (prms == null) {
-                prms = {};
-            }
-            this.$init_prms = prms;
-            connectionStarted = $q.defer();
-            $rootScope.connection_started = connectionStarted.promise;
-            if (($sniffer.webkit && $sniffer.webkit < 537 || $sniffer.msie && $sniffer.msie <= 9) && isFirstCall) {
-                if ($scope.bb.api_url) {
-                    url = document.createElement('a');
-                    url.href = $scope.bb.api_url;
-                    if (url.host === '' || url.host === $location.host() || url.host === $location.host() + ":" + $location.port()) {
-                        initWidget2();
-                        return;
-                    }
-                }
-                if ($rootScope.iframe_proxy_ready) {
-                    initWidget2();
-                } else {
-                    $scope.$on('iframe_proxy_ready', function (event, args) {
-                        if (args.iframe_proxy_ready) {
-                            return initWidget2();
-                        }
-                    });
-                }
-            } else {
-                initWidget2();
-            }
-        }.bind(this);
-        var initWidget2 = function () {
-            guardScope();
-            var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, options, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
-
-            $scope.init_widget_started = true;
-            prms = this.$init_prms;
-            if (prms.query) {
-                ref = prms.query;
-                for (k in ref) {
-                    v = ref[k];
-                    prms[k] = QueryStringService(v);
-                }
-            }
-            if (prms.custom_partial_url) {
-                $scope.bb.custom_partial_url = prms.custom_partial_url;
-                $scope.bb.partial_id = prms.custom_partial_url.substring(prms.custom_partial_url.lastIndexOf("/") + 1);
-                if (prms.update_design) {
-                    $scope.bb.update_design = prms.update_design;
-                }
-            } else if (prms.design_mode) {
-                $scope.bb.design_mode = prms.design_mode;
-            }
-            company_id = $scope.bb.company_id;
-            if (prms.company_id) {
-                company_id = prms.company_id;
-            }
-            if (prms.affiliate_id) {
-                $scope.bb.affiliate_id = prms.affiliate_id;
-                $rootScope.affiliate_id = prms.affiliate_id;
-            }
-            if (prms.api_url) {
-                $scope.bb.api_url = prms.api_url;
-            }
-            if (prms.partial_url) {
-                $scope.bb.partial_url = prms.partial_url;
-            }
-            if (prms.page_suffix) {
-                $scope.bb.page_suffix = prms.page_suffix;
-            }
-            if (prms.admin) {
-                $scope.bb.isAdmin = prms.admin;
-            }
-            if (prms.auth_token) {
-                $sessionStorage.setItem("auth_token", prms.auth_token);
-            }
-            $scope.bb.app_id = 1;
-            $scope.bb.app_key = 1;
-            $scope.bb.clear_basket = true;
-            if (prms.basket) {
-                $scope.bb.clear_basket = false;
-            }
-            if (prms.clear_basket === false) {
-                $scope.bb.clear_basket = false;
-            }
-            if ($window.bb_setup || prms.client) {
-                prms.clear_member || (prms.clear_member = true);
-            }
-            $scope.bb.client_defaults = prms.client || {};
-            if (prms.client_defaults) {
-                if (prms.client_defaults.membership_ref) {
-                    $scope.bb.client_defaults.membership_ref = prms.client_defaults.membership_ref;
-                }
-            }
-            if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
-                match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
-                if (match) {
-                    $scope.bb.client_defaults.first_name = match[1];
-                    if (match[2] != null) {
-                        $scope.bb.client_defaults.last_name = match[2];
-                    }
-                }
-            }
-            if (prms.clear_member) {
-                $scope.bb.clear_member = prms.clear_member;
-                $sessionStorage.removeItem('login');
-            }
-            if (prms.app_id) {
-                $scope.bb.app_id = prms.app_id;
-            }
-            if (prms.app_key) {
-                $scope.bb.app_key = prms.app_key;
-            }
-            if (prms.on_conflict) {
-                $scope.bb.on_conflict = prms.on_conflict;
-            }
-            if (prms.item_defaults) {
-                $scope.bb.original_item_defaults = prms.item_defaults;
-                $scope.bb.item_defaults = angular.copy($scope.bb.original_item_defaults);
-            } else if ($scope.bb.original_item_defaults) {
-                $scope.bb.item_defaults = angular.copy($scope.bb.original_item_defaults);
-            }
-            if ($scope.bb.selected_service && $scope.bb.selected_service.company_id === company_id) {
-                $scope.bb.item_defaults.service = $scope.bb.selected_service.id;
-            }
-            if (prms.route_format) {
-                $scope.bb.setRouteFormat(prms.route_format);
-                if ($scope.bb_route_init) {
-                    $scope.bb_route_init();
-                }
-            }
-            if (prms.hide === true) {
-                $scope.hide_page = true;
-            } else {
-                $scope.hide_page = false;
-            }
-            if (prms.from_datetime) {
-                $scope.bb.from_datetime = prms.from_datetime;
-            }
-            if (prms.to_datetime) {
-                $scope.bb.to_datetime = prms.to_datetime;
-            }
-            if (prms.min_date) {
-                $scope.bb.min_date = prms.min_date;
-            }
-            if (prms.max_date) {
-                $scope.bb.max_date = prms.max_date;
-            }
-            if (prms.hide_block) {
-                $scope.bb.hide_block = prms.hide_block;
-            }
-            if (!prms.custom_partial_url) {
-                $scope.bb.path_setup = true;
-            }
-            if (prms.extra_setup) {
-                $scope.bb.extra_setup = prms.extra_setup;
-                if (prms.extra_setup.step) {
-                    $scope.bb.starting_step_number = parseInt(prms.extra_setup.step);
-                }
-                if (prms.extra_setup.return_url) {
-                    $scope.bb.return_url = prms.extra_setup.return_url;
-                }
-                if (prms.extra_setup.destination) {
-                    $scope.bb.destination = prms.extra_setup.destination;
-                }
-            }
-            if (prms.booking_settings) {
-                $scope.bb.booking_settings = prms.booking_settings;
-            }
-            if (prms.template) {
-                $scope.bb.template = prms.template;
-            }
-            if (prms.login_required) {
-                $scope.bb.login_required = true;
-            }
-            if (prms.private_note) {
-                $scope.bb.private_note = prms.private_note;
-            }
-            if (prms.qudini_booking_id) {
-                $scope.bb.qudini_booking_id = prms.qudini_booking_id;
-            }
-            this.waiting_for_conn_started_def = $q.defer();
-            $scope.waiting_for_conn_started = this.waiting_for_conn_started_def.promise;
-            if (company_id || $scope.bb.affiliate_id) {
-                $scope.waiting_for_conn_started = $rootScope.connection_started;
-            } else {
-                this.waiting_for_conn_started_def.resolve();
-            }
-            widgetStarted.resolve();
-            setup_promises2 = [];
-            setup_promises = [];
-            if ($scope.bb.affiliate_id) {
-                aff_promise = halClient.$get($scope.bb.api_url + '/api/v1/affiliates/' + $scope.bb.affiliate_id);
-                setup_promises.push(aff_promise);
-                aff_promise.then(function (affiliate) {
-                    var comp_p, comp_promise;
-                    if ($scope.bb.$wait_for_routing) {
-                        setup_promises2.push($scope.bb.$wait_for_routing.promise);
-                    }
-                    setAffiliate(new BBModel.Affiliate(affiliate));
-                    $scope.bb.item_defaults.affiliate = $scope.affiliate;
-                    if (prms.company_ref) {
-                        comp_p = $q.defer();
-                        comp_promise = $scope.affiliate.getCompanyByRef(prms.company_ref);
-                        setup_promises2.push(comp_p.promise);
-                        return comp_promise.then(function (company) {
-                            return setCompany(company, prms.keep_basket).then(function (val) {
-                                return comp_p.resolve(val);
-                            }, function (err) {
-                                return comp_p.reject(err);
-                            });
-                        }, function (err) {
-                            return comp_p.reject(err);
-                        });
-                    }
-                });
-            }
-            if (company_id) {
-                if (prms.embed) {
-                    embed_params = prms.embed;
-                }
-                embed_params || (embed_params = null);
-                comp_category_id = null;
-                if ($scope.bb.item_defaults.category != null) {
-                    if ($scope.bb.item_defaults.category.id != null) {
-                        comp_category_id = $scope.bb.item_defaults.category.id;
-                    } else {
-                        comp_category_id = $scope.bb.item_defaults.category;
-                    }
-                }
-                comp_def = $q.defer();
-                comp_promise = comp_def.promise;
-                options = {};
-                if ($sessionStorage.getItem('auth_token')) {
-                    options.auth_token = $sessionStorage.getItem('auth_token');
-                }
-                if ($scope.bb.isAdmin) {
-                    comp_url = new UriTemplate($scope.bb.api_url + $scope.company_admin_api_path).fillFromObject({
-                        company_id: company_id,
-                        category_id: comp_category_id,
-                        embed: embed_params
-                    });
-                    halClient.$get(comp_url, options).then(function (company) {
-                        return comp_def.resolve(company);
-                    }, function (err) {
-                        comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
-                            company_id: company_id,
-                            category_id: comp_category_id,
-                            embed: embed_params
-                        });
-                        return halClient.$get(comp_url, options).then(function (company) {
-                            return comp_def.resolve(company);
-                        }, function (err) {
-                            return comp_def.reject(err);
-                        });
-                    });
-                } else {
-                    comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
-                        company_id: company_id,
-                        category_id: comp_category_id,
-                        embed: embed_params
-                    });
-                    halClient.$get(comp_url, options).then(function (company) {
-                        if (company) {
-                            return comp_def.resolve(company);
-                        } else {
-                            return comp_def.reject("Invalid company ID " + company_id);
-                        }
-                    }, function (err) {
-                        return comp_def.reject(err);
-                    });
-                }
-                setup_promises.push(comp_promise);
-                comp_promise.then(function (company) {
-                    var child, comp, cprom, parent_company;
-                    if ($scope.bb.$wait_for_routing) {
-                        setup_promises2.push($scope.bb.$wait_for_routing.promise);
-                    }
-                    comp = new BBModel.Company(company);
-                    cprom = $q.defer();
-                    setup_promises2.push(cprom.promise);
-                    child = null;
-                    if (comp.companies && $scope.bb.item_defaults.company) {
-                        child = comp.findChildCompany($scope.bb.item_defaults.company);
-                    }
-                    if (child) {
-                        parent_company = comp;
-                        return halClient.$get($scope.bb.api_url + '/api/v1/company/' + child.id).then(function (company) {
-                            comp = new BBModel.Company(company);
-                            setupDefaults(comp.id);
-                            $scope.bb.parent_company = parent_company;
-                            return setCompany(comp, prms.keep_basket).then(function () {
-                                return cprom.resolve();
-                            }, function (err) {
-                                return cprom.reject();
-                            });
-                        }, function (err) {
-                            return cprom.reject();
-                        });
-                    } else {
-                        setupDefaults(comp.id);
-                        return setCompany(comp, prms.keep_basket).then(function () {
-                            return cprom.resolve();
-                        }, function (err) {
-                            return cprom.reject();
-                        });
-                    }
-                });
-                if (prms.member_sso) {
-                    params = {
-                        company_id: company_id,
-                        root: $scope.bb.api_url,
-                        member_sso: prms.member_sso
-                    };
-                    sso_member_login = SSOService.memberLogin(params).then(function (client) {
-                        return setClient(client);
-                    });
-                    setup_promises.push(sso_member_login);
-                }
-                if (prms.admin_sso) {
-                    params = {
-                        company_id: prms.parent_company_id ? prms.parent_company_id : company_id,
-                        root: $scope.bb.api_url,
-                        admin_sso: prms.admin_sso
-                    };
-                    sso_admin_login = SSOService.adminLogin(params).then(function (admin) {
-                        return $scope.bb.admin = admin;
-                    });
-                    setup_promises.push(sso_admin_login);
-                }
-                if ($scope.bb.item_defaults && $scope.bb.item_defaults.purchase_total_long_id) {
-                    total_id = $scope.bb.item_defaults.purchase_total_long_id;
-                } else {
-                    total_id = QueryStringService('total_id');
-                }
-                if (total_id) {
-                    params = {
-                        purchase_id: total_id,
-                        url_root: $scope.bb.api_url
-                    };
-                    get_total = PurchaseService.query(params).then(function (total) {
-                        $scope.bb.total = total;
-                        if (total.paid > 0) {
-                            return $scope.bb.payment_status = 'complete';
-                        }
-                    });
-                    setup_promises.push(get_total);
-                }
-            }
-            $scope.isLoaded = false;
-            return $q.all(setup_promises).then(function () {
-                return $q.all(setup_promises2).then(function () {
-                    var base, clear_prom, def_clear;
-                    if (!$scope.bb.basket) {
-                        (base = $scope.bb).basket || (base.basket = new BBModel.Basket(null, $scope.bb));
-                    }
-                    if (!$scope.client) {
-                        clearClient();
-                    }
-                    def_clear = $q.defer();
-                    clear_prom = def_clear.promise;
-                    if (!$scope.bb.current_item) {
-                        clear_prom = bbWidgetBasket.clearBasketItem();
-                    } else {
-                        def_clear.resolve();
-                    }
-                    return clear_prom.then(function () {
-                        var page;
-                        if (!$scope.client_details) {
-                            $scope.client_details = new BBModel.ClientDetails();
-                        }
-                        if (!$scope.bb.stacked_items) {
-                            $scope.bb.stacked_items = [];
-                        }
-                        if ($scope.bb.company || $scope.bb.affiliate) {
-                            connectionStarted.resolve();
-                            $scope.done_starting = true;
-                            if (!prms.no_route) {
-                                page = null;
-                                if (isFirstCall && $bbug.isEmptyObject($scope.bb.routeSteps)) {
-                                    page = $scope.bb.firstStep;
-                                }
-                                if (prms.first_page) {
-                                    page = prms.first_page;
-                                }
-                                isFirstCall = false;
-                                return bbWidgetPage.decideNextPage(page);
-                            }
-                        }
-                        $scope.isLoaded = true;
-                    });
-                }, function (err) {
-                    connectionStarted.reject("Failed to start widget");
-                    return LoadingService.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-                });
-            }, function (err) {
-                connectionStarted.reject("Failed to start widget");
-                return LoadingService.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
-            });
-        }.bind(this);
-        var setupDefaults = function setupDefaults(company_id) {
-            guardScope();
-            var category, clinic, def, event, event_chain, event_group, k, person, ref, resource, service, v;
-            def = $q.defer();
-            if (isFirstCall || $scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id) {
-                $scope.bb.orginal_company_id = company_id;
-                $scope.bb.default_setup_promises = [];
-                if ($scope.bb.item_defaults.query) {
-                    ref = $scope.bb.item_defaults.query;
-                    for (k in ref) {
-                        v = ref[k];
-                        $scope.bb.item_defaults[k] = QueryStringService(v);
-                    }
-                }
-                if ($scope.bb.item_defaults.resource) {
-                    if ($scope.bb.isAdmin) {
-                        resource = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
-                    } else {
-                        resource = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
-                    }
-                    $scope.bb.default_setup_promises.push(resource);
-                    resource.then(function (res) {
-                        return $scope.bb.item_defaults.resource = new BBModel.Resource(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.person) {
-                    if ($scope.bb.isAdmin) {
-                        person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/' + $scope.bb.item_defaults.person);
-                    } else {
-                        person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/' + $scope.bb.item_defaults.person);
-                    }
-                    $scope.bb.default_setup_promises.push(person);
-                    person.then(function (res) {
-                        return $scope.bb.item_defaults.person = new BBModel.Person(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.person_ref) {
-                    if ($scope.bb.isAdmin) {
-                        person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
-                    } else {
-                        person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
-                    }
-                    $scope.bb.default_setup_promises.push(person);
-                    person.then(function (res) {
-                        return $scope.bb.item_defaults.person = new BBModel.Person(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.service) {
-                    if ($scope.bb.isAdmin) {
-                        service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services/' + $scope.bb.item_defaults.service);
-                    } else {
-                        service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services/' + $scope.bb.item_defaults.service);
-                    }
-                    $scope.bb.default_setup_promises.push(service);
-                    service.then(function (res) {
-                        return $scope.bb.item_defaults.service = new BBModel.Service(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.service_ref) {
-                    if ($scope.bb.isAdmin) {
-                        service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
-                    } else {
-                        service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
-                    }
-                    $scope.bb.default_setup_promises.push(service);
-                    service.then(function (res) {
-                        return $scope.bb.item_defaults.service = new BBModel.Service(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.event_group) {
-                    if ($scope.bb.isAdmin) {
-                        event_group = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
-                    } else {
-                        event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
-                    }
-                    $scope.bb.default_setup_promises.push(event_group);
-                    event_group.then(function (res) {
-                        return $scope.bb.item_defaults.event_group = new BBModel.EventGroup(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.event) {
-                    if ($scope.bb.isAdmin) {
-                        event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain + '/events/' + $scope.bb.item_defaults.event);
-                    } else {
-                        event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
-                    }
-                    $scope.bb.default_setup_promises.push(event);
-                    event.then(function (res) {
-                        return $scope.bb.item_defaults.event = new BBModel.Event(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.event_chain) {
-                    if ($scope.bb.isAdmin) {
-                        event_chain = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
-                    } else {
-                        event_chain = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
-                    }
-                    $scope.bb.default_setup_promises.push(event_chain);
-                    event_chain.then(function (res) {
-                        return $scope.bb.item_defaults.event_chain = new BBModel.EventChain(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.category) {
-                    category = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/categories/' + $scope.bb.item_defaults.category);
-                    $scope.bb.default_setup_promises.push(category);
-                    category.then(function (res) {
-                        return $scope.bb.item_defaults.category = new BBModel.Category(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.clinic) {
-                    clinic = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/clinics/' + $scope.bb.item_defaults.clinic);
-                    $scope.bb.default_setup_promises.push(clinic);
-                    clinic.then(function (res) {
-                        return $scope.bb.item_defaults.clinic = new BBModel.Clinic(res);
-                    });
-                }
-                if ($scope.bb.item_defaults.duration) {
-                    $scope.bb.item_defaults.duration = parseInt($scope.bb.item_defaults.duration);
-                }
-                $q.all($scope.bb.default_setup_promises)['finally'](function () {
-                    return def.resolve();
-                });
-            } else {
-                def.resolve();
-            }
-            return def.promise;
-        };
-        var setAffiliate = function setAffiliate(affiliate) {
-            guardScope();
-            $scope.bb.affiliate_id = affiliate.id;
-            $scope.bb.affiliate = affiliate;
-            $scope.affiliate = affiliate;
-            return $scope.affiliate_id = affiliate.id;
-        };
-        var setCompany = function setCompany(company, keep_basket) {
-            guardScope();
-            var defer;
-            defer = $q.defer();
-            $scope.bb.company_id = company.id;
-            $scope.bb.company = company;
-            $scope.bb.item_defaults.company = $scope.bb.company;
-            if (company.$has('settings')) {
-                company.getSettings().then(function (settings) {
-                    $scope.bb.company_settings = settings;
-                    setActiveCompany(company, settings);
-                    if ($scope.bb.company_settings.merge_resources) {
-                        $scope.bb.item_defaults.merge_resources = true;
-                    }
-                    if ($scope.bb.company_settings.merge_people) {
-                        $scope.bb.item_defaults.merge_people = true;
-                    }
-                    $rootScope.bb_currency = $scope.bb.company_settings.currency;
-                    $scope.bb.currency = $scope.bb.company_settings.currency;
-                    $scope.bb.has_prices = $scope.bb.company_settings.has_prices;
-                    if (!$scope.bb.basket || $scope.bb.basket.company_id !== $scope.bb.company_id && !keep_basket) {
-                        return bbWidgetBasket.restoreBasket().then(function () {
-                            defer.resolve();
-                            return $scope.$emit('company:setup');
-                        });
-                    } else {
-                        defer.resolve();
-                        return $scope.$emit('company:setup');
-                    }
-                });
-            } else {
-                if (!$scope.bb.basket || $scope.bb.basket.company_id !== $scope.bb.company_id && !keep_basket) {
-                    bbWidgetBasket.restoreBasket().then(function () {
-                        defer.resolve();
-                        return $scope.$emit('company:setup');
-                    });
-                } else {
-                    defer.resolve();
-                    $scope.$emit('company:setup');
-                }
-                setActiveCompany(company);
-            }
-            return defer.promise;
-        };
-        var setClient = function setClient(client) {
-            guardScope();
-            $scope.client = client;
-            if (client.postcode && !$scope.bb.postcode) {
-                return $scope.bb.postcode = client.postcode;
-            }
-        };
-        var clearClient = function clearClient() {
-            guardScope();
-            $scope.client = new BBModel.Client();
-            if ($window.bb_setup) {
-                $scope.client.setDefaults($window.bb_setup);
-            }
-            if ($scope.bb.client_defaults) {
-                return $scope.client.setDefaults($scope.bb.client_defaults);
-            }
-        };
-        var setActiveCompany = function setActiveCompany(company, settings) {
-            guardScope();
-            CompanyStoreService.currency_code = !settings ? company.currency_code : settings.currency;
-            CompanyStoreService.time_zone = company.timezone;
-            CompanyStoreService.country_code = company.country_code;
-            return CompanyStoreService.settings = settings;
-        };
-        var initializeBBWidget = function initializeBBWidget() {
-            guardScope();
-            $scope.bb = new BBWidget();
-            AppConfig.uid = $scope.bb.uid;
-            $scope.bb.stacked_items = [];
-            $scope.bb.company_set = $scope.bb.company_id != null;
-            $scope.recordStep = $scope.bb.recordStep;
-            determineBBApiUrl();
-        };
-        var determineBBApiUrl = function determineBBApiUrl() {
-            guardScope();
-            var base, base1;
-            if ($scope.apiUrl) {
-                $scope.bb || ($scope.bb = {});
-                $scope.bb.api_url = $scope.apiUrl;
-            }
-            if ($rootScope.bb && $rootScope.bb.api_url) {
-                $scope.bb.api_url = $rootScope.bb.api_url;
-                if (!$rootScope.bb.partial_url) {
-                    $scope.bb.partial_url = "";
-                } else {
-                    $scope.bb.partial_url = $rootScope.bb.partial_url;
-                }
-            }
-            if ($location.port() !== 80 && $location.port() !== 443) {
-                (base = $scope.bb).api_url || (base.api_url = $location.protocol() + "://" + $location.host() + ":" + $location.port());
-            } else {
-                (base1 = $scope.bb).api_url || (base1.api_url = $location.protocol() + "://" + $location.host());
-            }
-        };
-
-        return {
-            clearClient: clearClient,
-            initWidget: initWidget,
-            setAffiliate: setAffiliate,
-            setActiveCompany: setActiveCompany,
-            setCompany: setCompany,
-            setClient: setClient,
-            setScope: setScope,
-            initializeBBWidget: initializeBBWidget,
-            determineBBApiUrl: determineBBApiUrl
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    angular.module('BB').service('bbWidgetPage', BBWidgetPage);
-
-    function BBWidgetPage(AlertService, BBModel, LoadingService, LoginService, $rootScope, $sce, $analytics) {
-
-        var $scope = null;
-        var setScope = function setScope($s) {
-            $scope = $s;
-        };
-        var guardScope = function guardScope() {
-            if ($scope === null) {
-                throw new Error('please set scope');
-            }
-        };
-        var clearPage = function clearPage() {
-            guardScope();
-            return $scope.bb_main = "";
-        };
-        var hidePage = function hidePage() {
-            guardScope();
-            return $scope.hide_page = true;
-        };
-        var jumpToPage = function jumpToPage(route) {
-            guardScope();
-            $scope.current_page = route;
-            $scope.jumped = true;
-            return $scope.bb_main = $sce.trustAsResourceUrl($scope.partial_url + route + $scope.page_suffix);
-        };
-        var setLoadingPage = function setLoadingPage(val) {
-            guardScope();
-            return $scope.loading_page = val;
-        };
-        var isLoadingPage = function isLoadingPage() {
-            guardScope();
-            return $scope.loading_page;
-        };
-        var setPageRoute = function setPageRoute(route) {
-            guardScope();
-            $scope.bb.current_page_route = route;
-            if ($scope.bb.routeSteps && $scope.bb.routeSteps[route]) {
-                showPage($scope.bb.routeSteps[route]);
-                return true;
-            }
-            return false;
-        };
-        var showPage = function showPage(route, dont_record_page) {
-            guardScope();
-            $scope.bb.updateRoute(route);
-            $scope.jumped = false;
-            if (isLoadingPage()) {
-                return;
-            }
-            setLoadingPage(true);
-            if ($scope.bb.current_page === route) {
-                $scope.bb_main = "";
-                setTimeout(function () {
-                    $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
-                    return $scope.$apply();
-                }, 0);
-            } else {
-                AlertService.clear();
-                $scope.bb.current_page = route;
-                if (!dont_record_page) {
-                    $scope.bb.recordCurrentPage();
-                }
-                LoadingService.notLoaded($scope);
-                $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
-            }
-            $analytics.pageTrack($scope.bb.current_page);
-            return $rootScope.$broadcast("page:loaded");
-        };
-        var setPageLoaded = function setPageLoaded() {
-            return LoadingService.setLoaded($scope);
-        };
-        var decideNextPage = function decideNextPage(route) {
-            guardScope();
-            if (route) {
-                if (route === 'none') {
-                    return;
-                } else {
-                    if ($scope.bb.total && $scope.bb.payment_status === 'complete') {
-                        if (setPageRoute($rootScope.Route.Confirmation)) {
-                            return;
-                        }
-                        return showPage('confirmation');
-                    } else {
-                        return showPage(route);
-                    }
-                }
-            }
-            if ($scope.bb.nextSteps && $scope.bb.current_page && $scope.bb.nextSteps[$scope.bb.current_page] && !$scope.bb.routeSteps) {
-                return showPage($scope.bb.nextSteps[$scope.bb.current_page]);
-            }
-            if (!$scope.client.valid() && LoginService.isLoggedIn()) {
-                $scope.client = new BBModel.Client(LoginService.member()._data);
-            }
-            if ($scope.bb.company && $scope.bb.company.companies || !$scope.bb.company && $scope.affiliate) {
-                if (setPageRoute($rootScope.Route.Company)) {
-                    return;
-                }
-                return showPage('company_list');
-            } else if ($scope.bb.total && $scope.bb.payment_status === "complete") {
-                if (setPageRoute($rootScope.Route.Confirmation)) {
-                    return;
-                }
-                return showPage('confirmation');
-            } else if ($scope.bb.total && $scope.bb.payment_status === "pending") {
-                return showPage('payment');
-            } else if ($scope.bb.company.$has('event_groups') && !$scope.bb.current_item.event_group && !$scope.bb.current_item.service && !$scope.bb.current_item.product && !$scope.bb.current_item.deal || $scope.bb.company.$has('events') && $scope.bb.current_item.event_group && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
-                if (setPageRoute($rootScope.Route.Event)) {
-                    return;
-                }
-                return showPage('event_list');
-            } else if ($scope.bb.company.$has('events') && $scope.bb.current_item.event && !$scope.bb.current_item.num_book && (!$scope.bb.current_item.tickets || !$scope.bb.current_item.tickets.qty) && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
-                return showPage('event');
-            } else if ($scope.bb.company.$has('services') && !$scope.bb.current_item.service && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
-                if (setPageRoute($rootScope.Route.Service)) {
-                    return;
-                }
-                return showPage('service_list');
-            } else if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
-                if (setPageRoute($rootScope.Route.Resource)) {
-                    return;
-                }
-                return showPage('resource_list');
-            } else if ($scope.bb.company.$has('people') && !$scope.bb.current_item.person && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
-                if (setPageRoute($rootScope.Route.Person)) {
-                    return;
-                }
-                return showPage('person_list');
-            } else if (!$scope.bb.current_item.duration && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
-                if (setPageRoute($rootScope.Route.Duration)) {
-                    return;
-                }
-                return showPage('duration_list');
-            } else if ($scope.bb.current_item.days_link && !$scope.bb.current_item.date && $scope.bb.current_item.event == null && !$scope.bb.current_item.deal) {
-                if ($scope.bb.company.$has('availability_slots')) {
-                    if (setPageRoute($rootScope.Route.Slot)) {
-                        return;
-                    }
-                    return showPage('slot_list');
-                } else {
-                    if (setPageRoute($rootScope.Route.Date)) {
-                        return;
-                    }
-                    return showPage('calendar');
-                }
-            } else if ($scope.bb.current_item.days_link && !$scope.bb.current_item.time && $scope.bb.current_item.event == null && (!$scope.bb.current_item.service || $scope.bb.current_item.service.duration_unit !== 'day') && !$scope.bb.current_item.deal) {
-                if (setPageRoute($rootScope.Route.Time)) {
-                    return;
-                }
-                return showPage('time');
-            } else if ($scope.bb.moving_booking && (!$scope.bb.current_item.ready || !$scope.bb.current_item.move_done)) {
-                return showPage('check_move');
-            } else if (!$scope.client.valid()) {
-                if (setPageRoute($rootScope.Route.Client)) {
-                    return;
-                }
-                return showPage('client');
-            } else if ($scope.bb.current_item.item_details && $scope.bb.current_item.item_details.hasQuestions && !$scope.bb.current_item.asked_questions) {
-                if (setPageRoute($rootScope.Route.Questions)) {
-                    return;
-                }
-                return showPage('check_items');
-            } else if ($scope.bb.moving_booking && $scope.bb.basket.itemsReady()) {
-                return showPage('purchase');
-            } else if (!$scope.bb.basket.readyToCheckout()) {
-                if (setPageRoute($rootScope.Route.Summary)) {
-                    return;
-                }
-                return showPage('basket_summary');
-            } else if ($scope.bb.usingBasket && (!$scope.bb.confirmCheckout || $scope.bb.company_settings.has_vouchers || $scope.bb.company.$has('coupon'))) {
-                if (setPageRoute($rootScope.Route.Basket)) {
-                    return;
-                }
-                return showPage('basket');
-            } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null && !$scope.bb.basket.waiting_for_checkout) {
-                if (setPageRoute($rootScope.Route.Checkout)) {
-                    return;
-                }
-                return showPage('checkout');
-            } else if ($scope.bb.payment_status === "complete") {
-                if (setPageRoute($rootScope.Route.Confirmation)) {
-                    return;
-                }
-                return showPage('confirmation');
-            }
-        };
-        return {
-            clearPage: clearPage,
-            decideNextPage: decideNextPage,
-            hidePage: hidePage,
-            isLoadingPage: isLoadingPage,
-            jumpToPage: jumpToPage,
-            setLoadingPage: setLoadingPage,
-            setPageLoaded: setPageLoaded,
-            setPageRoute: setPageRoute,
-            setScope: setScope,
-            showPage: showPage
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    angular.module('BB').service('bbWidgetStep', BBWidgetStep);
-
-    function BBWidgetStep(BBModel, LoginService, $rootScope, bbWidgetPage, $window, bbAnalyticsPiwik) {
-
-        var $scope = null;
-
-        var setScope = function setScope($s) {
-            $scope = $s;
-        };
-        var guardScope = function guardScope() {
-            if ($scope === null) {
-                throw new Error('please set scope');
-            }
-        };
-        var setStepTitle = function setStepTitle(title) {
-            guardScope();
-            return $scope.bb.steps[$scope.bb.current_step - 1].title = title;
-        };
-        var checkStepTitle = function checkStepTitle(title) {
-            guardScope();
-            if ($scope.bb.steps[$scope.bb.current_step - 1] && !$scope.bb.steps[$scope.bb.current_step - 1].title) {
-                return setStepTitle(title);
-            }
-        };
-        var getCurrentStepTitle = function getCurrentStepTitle() {
-            var steps;
-            guardScope();
-            steps = $scope.bb.steps;
-            if (!_.compact(steps).length || steps.length === 1 && steps[0].number !== $scope.bb.current_step) {
-                steps = $scope.bb.allSteps;
-            }
-            if ($scope.bb.current_step) {
-                return steps[$scope.bb.current_step - 1].title;
-            }
-        };
-        var loadStep = function loadStep(stepClickedNumber) {
-            guardScope();
-            if (stepClickedNumber === $scope.bb.current_step) {
-                return;
-            }
-            $scope.bb.calculatePercentageComplete(stepClickedNumber);
-            var stepClickedPlusOne = $scope.bb.steps[stepClickedNumber];
-            var stepClicked = $scope.bb.steps[stepClickedNumber - 1];
-
-            if (stepClickedPlusOne && !stepClicked) {
-                stepClicked = stepClickedPlusOne;
-            }
-
-            if (!stepClickedPlusOne) {
-                stepClickedPlusOne = stepClicked;
-            }
-            if (stepClickedPlusOne && !$scope.bb.last_step_reached) {
-                if (!stepClickedPlusOne.stacked_length || stepClickedPlusOne.stacked_length === 0) {
-                    $scope.bb.stacked_items = [];
-                }
-                $scope.bb.current_item.loadStep(stepClickedPlusOne.current_item);
-                if ($scope.bb.steps.length > 1) {
-                    $scope.bb.steps.splice(stepClickedNumber, $scope.bb.steps.length - stepClickedNumber);
-                }
-                $scope.bb.current_step = stepClickedNumber;
-                bbWidgetPage.showPage(stepClicked.page, true);
-            }
-            if ($scope.bb.allSteps) {
-
-                $scope.bb.allSteps.map(function (step) {
-                    step.active = false;
-                    step.passed = step.number < $scope.bb.current_step;
-                });
-
-                if ($scope.bb.allSteps[$scope.bb.current_step - 1]) {
-                    return $scope.bb.allSteps[$scope.bb.current_step - 1].active = true;
-                }
-            }
-        };
-
-        function setPiwik() {
-            var category = $scope.bb.current_page;
-            var title = "Load Previous Step";
-            bbAnalyticsPiwik.push(['trackEvent', [category], title]);
-        }
-
-        /**
-         * @ngdoc method
-         * @name loadPreviousStep
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Loads the previous unskipped step
-         *
-         * @param {integer} steps_to_go_back: The number of steps to go back
-         * @param {string} caller: The method that called this function
-         */
-        var loadPreviousStep = function loadPreviousStep(caller) {
-
-            if (bbAnalyticsPiwik.isEnabled()) setPiwik();
-
-            var last_step, pages_to_remove_from_history, past_steps, step_to_load;
-            guardScope();
-            past_steps = _.reject($scope.bb.steps, function (s) {
-                return s.number >= $scope.bb.current_step;
-            });
-            step_to_load = 0;
-            while (past_steps[0]) {
-                last_step = past_steps.pop();
-                if (!last_step) {
-                    break;
-                }
-                if (!last_step.skipped) {
-                    step_to_load = last_step.number;
-                    break;
-                }
-            }
-            if ($scope.bb.routeFormat) {
-                pages_to_remove_from_history = step_to_load === 0 ? $scope.bb.current_step + 1 : $scope.bb.current_step - step_to_load;
-                if (caller === "locationChangeStart") {
-                    pages_to_remove_from_history--;
-                }
-                if (pages_to_remove_from_history > 0) {
-                    window.history.go(pages_to_remove_from_history * -1);
-                }
-            }
-            if (step_to_load > 0) {
-                return loadStep(step_to_load);
-            }
-        };
-        var loadStepByPageName = function loadStepByPageName(page_name) {
-            var i, len, ref, step;
-            guardScope();
-            ref = $scope.bb.allSteps;
-            for (i = 0, len = ref.length; i < len; i++) {
-                step = ref[i];
-                if (step.page === page_name) {
-                    return loadStep(step.number);
-                }
-            }
-            return loadStep(1);
-        };
-        var reset = function reset() {
-            guardScope();
-            $rootScope.$broadcast('clear:formData');
-            $rootScope.$broadcast('widget:restart');
-            setLastSelectedDate(null);
-            if (!LoginService.isLoggedIn()) {
-                $scope.client = new BBModel.Client();
-            }
-            $scope.bb.last_step_reached = false;
-            return $scope.bb.steps.splice(1);
-        };
-        var restart = function restart() {
-            guardScope();
-            reset();
-            return loadStep(1);
-        };
-        var setLastSelectedDate = function setLastSelectedDate(date) {
-            guardScope();
-            return $scope.last_selected_date = date;
-        };
-
-        /**
-         * @ngdoc method
-         * @name skipThisStep
-         * @methodOf BB.Directives:bbWidget
-         * @description
-         * Marks the current step as skipped
-         */
-        var skipThisStep = function skipThisStep() {
-            if ($scope.bb.steps[$scope.bb.steps.length - 1]) {
-                return $scope.bb.steps[$scope.bb.steps.length - 1].skipped = true;
-            }
-        };
-
-        return {
-            checkStepTitle: checkStepTitle,
-            getCurrentStepTitle: getCurrentStepTitle,
-            loadPreviousStep: loadPreviousStep,
-            loadStep: loadStep,
-            loadStepByPageName: loadStepByPageName,
-            reset: reset,
-            restart: restart,
-            setLastSelectedDate: setLastSelectedDate,
-            setScope: setScope,
-            setStepTitle: setStepTitle,
-            skipThisStep: skipThisStep
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    angular.module('BB.Services').service('bbWidgetUtilities', BBWidgetUtilities);
-
-    function BBWidgetUtilities($window, BBModel, bbWidgetPage, bbWidgetStep, AppService, $timeout, LoginService) {
-
-        var $scope = null;
-        var setScope = function setScope($s) {
-            $scope = $s;
-        };
-
-        var isAdmin = function isAdmin() {
-            return $scope.bb.isAdmin;
-        };
-        var showLoaderHandler = function showLoaderHandler() {
-            $scope.loading = true;
-        };
-        var hideLoaderHandler = function hideLoaderHandler() {
-            $scope.loading = false;
-        };
-        var locationChangeStartHandler = function locationChangeStartHandler(angular_event, new_url, old_url) {
-            var step_number;
-            if (!$scope.bb.routeFormat) {
-                return;
-            }
-            if (!$scope.bb.routing || AppService.isModalOpen()) {
-                step_number = $scope.bb.matchURLToStep();
-                if (step_number > $scope.bb.current_step) {
-                    bbWidgetStep.loadStep(step_number);
-                } else if (step_number < $scope.bb.current_step) {
-                    bbWidgetStep.loadPreviousStep('locationChangeStart');
-                }
-            }
-            $scope.bb.routing = false;
-        };
-        var getPartial = function getPartial(file) {
-            return $scope.bb.pageURL(file);
-        };
-        var logout = function logout(route) {
-            if ($scope.client && $scope.client.valid()) {
-                return LoginService.logout({
-                    root: $scope.bb.api_url
-                }).then(function () {
-                    $scope.client = new BBModel.Client();
-                    return bbWidgetPage.decideNextPage(route);
-                });
-            } else if ($scope.member) {
-                return LoginService.logout({
-                    root: $scope.bb.api_url
-                }).then(function () {
-                    $scope.member = new BBModel.Member.Member();
-                    return bbWidgetPage.decideNextPage(route);
-                });
-            }
-        };
-        var setRoute = function setRoute(rdata) {
-            return $scope.bb.setRoute(rdata);
-        };
-        var getUrlParam = function getUrlParam(param) {
-            return $window.getURIparam(param);
-        };
-        var base64encode = function base64encode(param) {
-            return $window.btoa(param);
-        };
-        var broadcastItemUpdate = function broadcastItemUpdate() {
-            return $scope.$broadcast("currentItemUpdate", $scope.bb.current_item);
-        };
-        var isAdminIFrame = function isAdminIFrame() {
-            var location;
-            if (!$scope.bb.isAdmin) {
-                return false;
-            }
-            try {
-                location = $window.parent.location.href;
-                if (location && $window.parent.reload_dashboard) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } catch (_error) {
-                return false;
-            }
-        };
-        var reloadDashboard = function reloadDashboard() {
-            return $window.parent.reload_dashboard();
-        };
-        var $debounce = function $debounce(tim) {
-            if ($scope._debouncing) {
-                return false;
-            }
-            tim || (tim = 100);
-            $scope._debouncing = true;
-            return $timeout(function () {
-                return $scope._debouncing = false;
-            }, tim);
-        };
-        var supportsTouch = function supportsTouch() {
-            return Modernizr.touch;
-        };
-        var isMemberLoggedIn = function isMemberLoggedIn() {
-            return LoginService.isLoggedIn();
-        };
-        var scrollTo = function scrollTo(id) {
-            $location.hash(id);
-            return $anchorScroll();
-        };
-        var redirectTo = function redirectTo(url) {
-            return $window.location.href = url;
-        };
-
-        return {
-            setScope: setScope,
-            isAdmin: isAdmin,
-            showLoaderHandler: showLoaderHandler,
-            hideLoaderHandler: hideLoaderHandler,
-            locationChangeStartHandler: locationChangeStartHandler,
-            getPartial: getPartial,
-            logout: logout,
-            setRoute: setRoute,
-            getUrlParam: getUrlParam,
-            base64encode: base64encode,
-            broadcastItemUpdate: broadcastItemUpdate,
-            isAdminIFrame: isAdminIFrame,
-            reloadDashboard: reloadDashboard,
-            $debounce: $debounce,
-            supportsTouch: supportsTouch,
-            isMemberLoggedIn: isMemberLoggedIn,
-            scrollTo: scrollTo,
-            redirectTo: redirectTo
-        };
-    }
-})();
-'use strict';
-
 angular.module('BB.Directives').directive('bbApiUrl', function ($rootScope, $compile, $sniffer, $timeout, $window, $location) {
     return {
         restrict: 'A',
@@ -37823,3 +35531,2295 @@ angular.module('BB.Directives').directive('bbTotal', function () {
         controller: 'Total'
     };
 });
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    angular.module('BB.Controllers').controller('BBCtrl', BBCtrl);
+
+    function BBCtrl(routeStates, $scope, $rootScope, QueryStringService, LoadingService, viewportSize, bbWidgetBasket, bbWidgetPage, bbWidgetStep, bbWidgetInit, bbWidgetUtilities) {
+
+        bbWidgetBasket.setScope($scope);
+        bbWidgetPage.setScope($scope);
+        bbWidgetStep.setScope($scope);
+        bbWidgetInit.setScope($scope);
+        bbWidgetUtilities.setScope($scope);
+
+        this.$scope = $scope;
+
+        $scope.cid = "BBCtrl";
+        $scope.qs = QueryStringService;
+        $scope.company_api_path = '/api/v1/company/{company_id}{?embed,category_id}';
+        $scope.company_admin_api_path = '/api/v1/admin/{company_id}/company{?embed,category_id}';
+        $rootScope.Route = $scope.Route = routeStates;
+
+        this.$onInit = function () {
+            //Initialization
+            bbWidgetInit.initializeBBWidget();
+            $scope.initWidget = bbWidgetInit.initWidget;
+            //Steps
+            $scope.checkStepTitle = bbWidgetStep.checkStepTitle;
+            $scope.getCurrentStepTitle = bbWidgetStep.getCurrentStepTitle;
+            $scope.loadPreviousStep = bbWidgetStep.loadPreviousStep;
+            $scope.loadStep = bbWidgetStep.loadStep;
+            $scope.loadStepByPageName = bbWidgetStep.loadStepByPageName;
+            $scope.reset = bbWidgetStep.reset;
+            $scope.restart = bbWidgetStep.restart;
+            $scope.setLastSelectedDate = bbWidgetStep.setLastSelectedDate;
+            $scope.setStepTitle = bbWidgetStep.setStepTitle;
+            $scope.skipThisStep = bbWidgetStep.skipThisStep;
+            //Pages
+            $scope.clearPage = bbWidgetPage.clearPage;
+            $scope.decideNextPage = bbWidgetPage.decideNextPage;
+            $scope.hidePage = bbWidgetPage.hidePage;
+            $scope.isLoadingPage = bbWidgetPage.isLoadingPage;
+            $scope.jumpToPage = bbWidgetPage.jumpToPage;
+            $scope.setLoadingPage = bbWidgetPage.setLoadingPage;
+            $scope.setPageLoaded = bbWidgetPage.setPageLoaded;
+            $scope.setPageRoute = bbWidgetPage.setPageRoute;
+            $scope.showPage = bbWidgetPage.showPage;
+            //Basket
+            $scope.addItemToBasket = bbWidgetBasket.addItemToBasket;
+            $scope.clearBasketItem = bbWidgetBasket.clearBasketItem;
+            $scope.deleteBasketItem = bbWidgetBasket.deleteBasketItem;
+            $scope.deleteBasketItems = bbWidgetBasket.deleteBasketItems;
+            $scope.emptyBasket = bbWidgetBasket.emptyBasket;
+            $scope.moveToBasket = bbWidgetBasket.moveToBasket;
+            $scope.quickEmptybasket = bbWidgetBasket.quickEmptybasket;
+            $scope.setBasket = bbWidgetBasket.setBasket;
+            $scope.setBasketItem = bbWidgetBasket.setBasketItem;
+            $scope.updateBasket = bbWidgetBasket.updateBasket;
+            $scope.setUsingBasket = bbWidgetBasket.setUsingBasket;
+
+            $scope.setClient = bbWidgetInit.setClient;
+            $scope.clearClient = bbWidgetInit.clearClient;
+            $scope.setCompany = bbWidgetInit.setCompany;
+            $scope.setAffiliate = bbWidgetInit.setAffiliate;
+
+            $scope.isAdmin = bbWidgetUtilities.isAdmin;
+            $scope.isAdminIFrame = bbWidgetUtilities.isAdminIFrame;
+            $scope.base64encode = bbWidgetUtilities.base64encode;
+            $scope.$debounce = bbWidgetUtilities.$debounce;
+            $scope.parseDate = moment;
+            $scope.supportsTouch = bbWidgetUtilities.supportsTouch;
+            $scope.scrollTo = bbWidgetUtilities.scrollTo;
+            $scope.redirectTo = bbWidgetUtilities.redirectTo;
+            $scope.areScopesLoaded = LoadingService.areScopesLoaded;
+
+            $scope.broadcastItemUpdate = bbWidgetUtilities.broadcastItemUpdate;
+            $scope.getPartial = bbWidgetUtilities.getPartial;
+            $scope.getUrlParam = bbWidgetUtilities.getUrlParam;
+            $scope.setLoaded = LoadingService.setLoaded;
+            $scope.setLoadedAndShowError = LoadingService.setLoadedAndShowError;
+            $scope.isMemberLoggedIn = bbWidgetUtilities.isMemberLoggedIn;
+            $scope.logout = bbWidgetUtilities.logout;
+            $scope.notLoaded = LoadingService.notLoaded;
+            $scope.reloadDashboard = bbWidgetUtilities.reloadDashboard;
+            $scope.setReadyToCheckout = bbWidgetBasket.setReadyToCheckout;
+            $scope.setRoute = bbWidgetUtilities.setRoute;
+
+            $scope.showCheckout = bbWidgetBasket.showCheckout;
+            $rootScope.$on('show:loader', bbWidgetUtilities.showLoaderHandler);
+            $rootScope.$on('hide:loader', bbWidgetUtilities.hideLoaderHandler);
+            $scope.$on('$locationChangeStart', bbWidgetUtilities.locationChangeStartHandler);
+        };
+
+        this.$postLink = function () {
+            viewportSize.init();
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    /**
+     * @ngdoc directive
+     * @name BB.Directives:bbWidget
+     * @restrict A
+     * @scope
+     *   client: '=?'
+     *   apiUrl: '@?'
+     *   useParent:'='
+     * @description
+     *
+     * Loads a list of widgets for the currently in scope company
+     *
+     * <pre>
+     * restrict: 'A'
+     * scope:
+     *   client: '=?'
+     *   apiUrl: '@?'
+     *   useParent:'='
+     * transclude: true
+     * </pre>
+     *
+     * @param {hash} bbWidget A hash of options
+     * @property {string} pusher The pusher
+     * @property {string} pusher_channel The pusher channel
+     * @property {string} init_params Initialization of basic parameters
+     */
+
+    angular.module('BB.Directives').directive('bbWidget', BBWidget);
+
+    function BBWidget($http, $templateCache, $compile, $q, AppConfig, $timeout, $bbug, $rootScope, AppService) {
+
+        /**
+         * @ngdoc method
+         * @name getTemplate
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Get template
+         *
+         * @param {object} template The template
+         */
+        var getTemplate = function getTemplate(template) {
+            var partial = template ? template : 'main';
+            return $templateCache.get(partial + '.html');
+        };
+
+        /**
+         * @ngdoc method
+         * @name updatePartials
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Update partials
+         *
+         * @param {object} prms The parameter
+         */
+        var updatePartials = function updatePartials(scope, element, prms) {
+            var i, j, len, ref;
+            ref = element.children();
+            for (j = 0, len = ref.length; j < len; j++) {
+                i = ref[j];
+                if ($bbug(i).hasClass('custom_partial')) {
+                    $bbug(i).remove();
+                }
+            }
+            return appendCustomPartials(scope, element, prms).then(function () {
+                return scope.$broadcast('refreshPage');
+            });
+        };
+
+        /**
+         * @ngdoc method
+         * @name setupPusher
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Push setup
+         *
+         * @param {object} prms The parameter
+         */
+        var setupPusher = function setupPusher(scope, element, prms) {
+            return $timeout(function () {
+                scope.pusher = new Pusher('c8d8cea659cc46060608');
+                scope.pusher_channel = scope.pusher.subscribe("widget_" + prms.design_id);
+                return scope.pusher_channel.bind('update', function (data) {
+                    return updatePartials(scope, element, prms);
+                });
+            });
+        };
+
+        /**
+         * @ngdoc method
+         * @name appendCustomPartials
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Appent custom partials
+         *
+         * @param {object} prms The parameter
+         */
+        var appendCustomPartials = function appendCustomPartials(scope, element, prms) {
+            var defer;
+            defer = $q.defer();
+            $http.get(prms.custom_partial_url).then(function (custom_templates) {
+                return $compile(custom_templates.data)(scope, function (custom, scope) {
+                    var non_style, style, tag;
+                    custom.addClass('custom_partial');
+                    style = function () {
+                        var j, len, results;
+                        results = [];
+                        for (j = 0, len = custom.length; j < len; j++) {
+                            tag = custom[j];
+                            if (tag.tagName === "STYLE") {
+                                results.push(tag);
+                            }
+                        }
+                        return results;
+                    }();
+                    non_style = function () {
+                        var j, len, results;
+                        results = [];
+                        for (j = 0, len = custom.length; j < len; j++) {
+                            tag = custom[j];
+                            if (tag.tagName !== "STYLE") {
+                                results.push(tag);
+                            }
+                        }
+                        return results;
+                    }();
+                    $bbug("#widget_" + prms.design_id).html(non_style);
+                    element.append(style);
+                    scope.bb.path_setup = true;
+                    return defer.resolve(style);
+                });
+            });
+            return defer.promise;
+        };
+
+        /**
+         * @ngdoc method
+         * @name renderTemplate
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Render template
+         *
+         * @param {object} design_mode The design mode
+         * @param {object} template The template
+         */
+        var renderTemplate = function renderTemplate(scope, element, design_mode, template) {
+            return $q.when(getTemplate(template)).then(function (template) {
+                element.html(template).show();
+                if (design_mode) {
+                    element.append('<style widget_css scoped></style>');
+                }
+                return $compile(element.contents())(scope);
+            });
+        };
+        var link = function link(scope, element, attrs, controller, transclude) {
+            var evaluator, init_params, _notInModal;
+            if (attrs.member != null) {
+                scope.client = attrs.member;
+            }
+            evaluator = scope;
+            if (scope.useParent && scope.$parent != null) {
+                evaluator = scope.$parent;
+            }
+            init_params = evaluator.$eval(attrs.bbWidget);
+            scope.initWidget(init_params);
+            $rootScope.widget_started.then(function (_this) {
+                return function () {
+                    var prms;
+                    prms = scope.bb;
+                    if (prms.custom_partial_url) {
+                        prms.design_id = prms.custom_partial_url.match(/^.*\/(.*?)$/)[1];
+                        $bbug("[ng-app='BB']").append("<div id='widget_" + prms.design_id + "'></div>");
+                    }
+                    if (scope.bb.partial_url) {
+                        if (init_params.partial_url) {
+                            AppConfig['partial_url'] = init_params.partial_url;
+                        } else {
+                            AppConfig['partial_url'] = scope.bb.partial_url;
+                        }
+                    }
+                    return transclude(scope, function (clone) {
+                        scope.has_content = clone.length > 1 || clone.length === 1 && (!clone[0].wholeText || /\S/.test(clone[0].wholeText));
+                        if (!scope.has_content) {
+                            if (prms.custom_partial_url) {
+                                appendCustomPartials(scope, element, prms).then(function (style) {
+                                    return $q.when(getTemplate()).then(function (template) {
+                                        element.html(template).show();
+                                        $compile(element.contents())(scope);
+                                        element.append(style);
+                                        if (prms.update_design) {
+                                            return setupPusher(scope, element, prms);
+                                        }
+                                    });
+                                });
+                            } else if (prms.template) {
+                                renderTemplate(scope, element, prms.design_mode, prms.template);
+                            } else {
+                                renderTemplate(scope, element, prms.design_mode);
+                            }
+                            return scope.$on('refreshPage', function () {
+                                return renderTemplate(scope, element, prms.design_mode, prms.template);
+                            });
+                        } else if (prms.custom_partial_url) {
+                            appendCustomPartials(scope, element, prms);
+                            if (prms.update_design) {
+                                setupPusher(scope, element, prms);
+                            }
+                            return scope.$on('refreshPage', function () {
+                                return scope.showPage(scope.bb.current_page);
+                            });
+                        } else {
+                            element.html(clone).show();
+                            if (prms.design_mode) {
+                                return element.append('<style widget_css scoped></style>');
+                            }
+                        }
+                    });
+                };
+            }(this));
+            _notInModal = function notInModal(p) {
+                if (p.length === 0 || p[0].attributes === void 0) {
+                    return true;
+                } else if (p[0].attributes['uib-modal-window'] !== void 0) {
+                    return false;
+                } else {
+                    if (p.parent().length === 0) {
+                        return true;
+                    } else {
+                        return _notInModal(p.parent());
+                    }
+                }
+            };
+            scope.$watch(function () {
+                return AppService.isModalOpen();
+            }, function (modalOpen) {
+                return scope.coveredByModal = modalOpen && _notInModal(element.parent());
+            });
+        };
+
+        return {
+            restrict: 'A',
+            scope: {
+                client: '=?',
+                apiUrl: '@?',
+                useParent: '='
+            },
+            transclude: true,
+            controller: 'BBCtrl',
+            controllerAs: '$bbCtrl',
+            link: link
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    /*
+     * @ngdoc service
+     * @name BB.Models:BBWidget
+     *
+     * @description
+     * Representation of an BBWidget Object
+     *
+     * @property {integer} uid The unique id of the widget
+     * @property {string} page_suffix Widget page suffix
+     * @property {array} steps The widget steps
+     * @property {array} allSteps The all steps of the widget
+     * @property {object} item_defaults Widget defaults item
+     * @property {boolean} Checks if widget using basket or not
+     * @property {boolean} confirmCheckout Checks if widget confirm is checkout or not
+     * @property {boolean} isAdm,in Verify if user is admin
+     * @property {string} payment_status The payment status
+     */
+
+    angular.module('BB.Models').service('BBWidget', BBWidget);
+
+    function BBWidget($q, BBModel, $urlMatcherFactory, $location, BreadcrumbService, PathHelper, GeneralOptions, $translate) {
+
+        function Widget() {
+            this.uid = _.uniqueId('bbwidget_');
+            this.page_suffix = "";
+            this.steps = [];
+            this.allSteps = [];
+            this.item_defaults = {};
+            this.usingBasket = false;
+            this.confirmCheckout = false;
+            this.isAdmin = false;
+            this.payment_status = null;
+        }
+
+        Widget.prototype.pageURL = function (route) {
+            return route + '.html';
+        };
+        Widget.prototype.updateRoute = function (page) {
+            var company, date, event, event_group, pattern, prms, service_name, time, url;
+            if (!this.routeFormat) {
+                return;
+            }
+            page || (page = this.current_page);
+            pattern = $urlMatcherFactory.compile(this.routeFormat);
+            service_name = "-";
+            event_group = "-";
+            event = "-";
+            if (this.current_item) {
+                if (this.current_item.service) {
+                    service_name = this.convertToDashSnakeCase(this.current_item.service.name);
+                }
+                if (this.current_item.event_group) {
+                    event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
+                }
+                if (this.current_item.event) {
+                    event = this.current_item.event.id;
+                }
+                if (this.current_item.date) {
+                    date = this.current_item.date.date;
+                }
+                if (date && moment.isMoment(date)) {
+                    date = date.toISODate();
+                }
+                if (this.current_item.time) {
+                    time = this.current_item.time.time;
+                }
+                if (this.current_item.company) {
+                    company = this.convertToDashSnakeCase(this.current_item.company.name);
+                } else {
+                    console.log('%c bb_warning: Make sure you are using a valid company_id', 'background: #c0392b; color: #fff');
+                }
+            }
+            if (this.route_values) {
+                prms = angular.copy(this.route_values);
+            }
+            prms || (prms = {});
+            angular.extend(prms, {
+                page: page,
+                company: company,
+                service: service_name,
+                event_group: event_group,
+                date: date,
+                time: time,
+                event: event
+            });
+            url = pattern.format(prms);
+            url = url.replace(/\/+$/, "");
+            $location.path(url);
+            this.routing = true;
+            return url;
+        };
+        Widget.prototype.setRouteFormat = function (route) {
+            var match;
+            this.routeFormat = route;
+            if (!this.routeFormat) {
+                return;
+            }
+            this.routing = true;
+            match = PathHelper.matchRouteToPath(this.routeFormat);
+            if (match) {
+                if (match.company) {
+                    this.item_defaults.company = decodeURIComponent(match.company);
+                }
+                if (match.service && match.service !== "-") {
+                    this.item_defaults.service = decodeURIComponent(match.service);
+                }
+                if (match.event_group && match.event_group !== "-") {
+                    this.item_defaults.event_group = match.event_group;
+                }
+                if (match.event && match.event !== "-") {
+                    this.item_defaults.event = decodeURIComponent(match.event);
+                }
+                if (match.person) {
+                    this.item_defaults.person = decodeURIComponent(match.person);
+                }
+                if (match.resource) {
+                    this.item_defaults.resource = decodeURIComponent(match.resource);
+                }
+                if (match.resources) {
+                    this.item_defaults.resources = decodeURIComponent(match.resoures);
+                }
+                if (match.date) {
+                    this.item_defaults.date = match.date;
+                }
+                if (match.time) {
+                    this.item_defaults.time = parseInt(match.time);
+                }
+                return this.route_matches = match;
+            }
+        };
+        Widget.prototype.matchURLToStep = function () {
+            var page, step;
+            page = PathHelper.matchRouteToPath(this.routeFormat, 'page');
+            step = _.findWhere(this.allSteps, {
+                page: page
+            });
+            if (step) {
+                return step.number;
+            } else {
+                return null;
+            }
+        };
+        Widget.prototype.convertToDashSnakeCase = function (str) {
+            str = str.toLowerCase();
+            str = $.trim(str);
+            str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
+            str = str.replace(/\s{2,}/g, ' ');
+            str = str.replace(/\s/g, '-');
+            return str;
+        };
+        Widget.prototype.recordCurrentPage = function () {
+            var j, k, l, len, len1, len2, match, ref, ref1, ref2, setDocumentTitle, step, title;
+            setDocumentTitle = function setDocumentTitle(title) {
+                if (GeneralOptions.update_document_title && title) {
+                    return document.title = $translate.instant(title);
+                }
+            };
+            if (!this.current_step) {
+                this.current_step = 0;
+            }
+            match = false;
+            if (this.allSteps) {
+                ref = this.allSteps;
+                for (j = 0, len = ref.length; j < len; j++) {
+                    step = ref[j];
+                    if (step.page === this.current_page) {
+                        this.current_step = step.number;
+                        setDocumentTitle(step.title);
+                        match = true;
+                    }
+                }
+            }
+            if (!match) {
+                ref1 = this.steps;
+                for (k = 0, len1 = ref1.length; k < len1; k++) {
+                    step = ref1[k];
+                    if (step && step.page === this.current_page) {
+                        this.current_step = step.number;
+                        setDocumentTitle(step.title);
+                        match = true;
+                    }
+                }
+            }
+            if (!match) {
+                this.current_step += 1;
+            }
+            title = "";
+            if (this.allSteps) {
+                ref2 = this.allSteps;
+                for (l = 0, len2 = ref2.length; l < len2; l++) {
+                    step = ref2[l];
+                    step.active = false;
+                    step.passed = step.number < this.current_step;
+                }
+                if (this.allSteps[this.current_step - 1]) {
+                    this.allSteps[this.current_step - 1].active = true;
+                    title = this.allSteps[this.current_step - 1].title;
+                }
+            }
+            return this.recordStep(this.current_step, title);
+        };
+        Widget.prototype.recordStep = function (step_number, title) {
+            var j, len, ref, step;
+            this.steps[step_number - 1] = {
+                url: this.updateRoute(this.current_page),
+                current_item: this.current_item.getStep(),
+                page: this.current_page,
+                number: step_number,
+                title: title,
+                stacked_length: this.stacked_items.length
+            };
+            BreadcrumbService.setCurrentStep(step_number);
+            ref = this.steps;
+            for (j = 0, len = ref.length; j < len; j++) {
+                step = ref[j];
+                if (step) {
+                    step.passed = step.number < this.current_step;
+                    step.active = step.number === this.current_step;
+                }
+                if (step && step.number === step_number) {
+                    this.calculatePercentageComplete(step.number);
+                }
+            }
+            if (this.allSteps && this.allSteps.length === step_number || this.current_page === 'checkout') {
+                return this.last_step_reached = true;
+            } else {
+                return this.last_step_reached = false;
+            }
+        };
+        Widget.prototype.calculatePercentageComplete = function (step_number) {
+            return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
+        };
+        Widget.prototype.setRoute = function (rdata) {
+            var i, j, k, len, len1, ref, route, step;
+            this.allSteps.length = 0;
+            this.nextSteps = {};
+            if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
+                this.firstStep = rdata[0].page;
+            }
+            for (i = j = 0, len = rdata.length; j < len; i = ++j) {
+                step = rdata[i];
+                if (step.disable_breadcrumbs) {
+                    this.disableGoingBackAtStep = i + 1;
+                }
+                if (rdata[i + 1]) {
+                    this.nextSteps[step.page] = rdata[i + 1].page;
+                }
+                this.allSteps.push({
+                    number: i + 1,
+                    title: step.title,
+                    page: step.page
+                });
+                if (step.when) {
+                    this.routeSteps || (this.routeSteps = {});
+                    ref = step.when;
+                    for (k = 0, len1 = ref.length; k < len1; k++) {
+                        route = ref[k];
+                        this.routeSteps[route] = step.page;
+                    }
+                }
+            }
+            if (this.$wait_for_routing) {
+                return this.$wait_for_routing.resolve();
+            }
+        };
+        Widget.prototype.waitForRoutes = function () {
+            if (!this.$wait_for_routing) {
+                return this.$wait_for_routing = $q.defer();
+            }
+        };
+        Widget.prototype.stackItem = function (item) {
+            this.stacked_items.push(item);
+            this.sortStackedItems();
+            if (this.stacked_items.length === 1) {
+                return this.current_item = item;
+            }
+        };
+        Widget.prototype.setStackedItems = function (items) {
+            this.stacked_items = items;
+            return this.sortStackedItems();
+        };
+        Widget.prototype.sortStackedItems = function () {
+            var arr, item, j, len, ref;
+            arr = [];
+            ref = this.stacked_items;
+            for (j = 0, len = ref.length; j < len; j++) {
+                item = ref[j];
+                arr = arr.concat(item.promises);
+            }
+            return $q.all(arr)['finally'](function (_this) {
+                return function () {
+                    return _this.stacked_items = _this.stacked_items.sort(function (a, b) {
+                        var ref1, ref2;
+                        if (a.time && b.time) {
+                            return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
+                                1: -1
+                            };
+                        } else if (a.service.category && !b.service.category) {
+                            return 1;
+                        } else if (b.service.category && !a.service.category) {
+                            return -1;
+                        } else if (!b.service.category && !a.service.category) {
+                            return 1;
+                        } else {
+                            return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
+                                1: -1
+                            };
+                        }
+                    });
+                };
+            }(this));
+        };
+        Widget.prototype.deleteStackedItem = function (item) {
+            if (item && item.id) {
+                BBModel.Basket.$deleteItem(item, this.company, {
+                    bb: this
+                });
+            }
+            return this.stacked_items = this.stacked_items.filter(function (i) {
+                return i !== item;
+            });
+        };
+        Widget.prototype.removeItemFromStack = function (item) {
+            return this.stacked_items = this.stacked_items.filter(function (i) {
+                return i !== item;
+            });
+        };
+        Widget.prototype.deleteStackedItemByService = function (item) {
+            var i, j, len, ref;
+            ref = this.stacked_items;
+            for (j = 0, len = ref.length; j < len; j++) {
+                i = ref[j];
+                if (i && i.service && i.service.self === item.self && i.id) {
+                    BBModel.Basket.$deleteItem(i, this.company, {
+                        bb: this
+                    });
+                }
+            }
+            return this.stacked_items = this.stacked_items.filter(function (i) {
+                return i && i.service && i.service.self !== item.self;
+            });
+        };
+        Widget.prototype.emptyStackedItems = function () {
+            return this.stacked_items = [];
+        };
+        Widget.prototype.pushStackToBasket = function () {
+            var i, j, len, ref;
+            this.basket || (this.basket = new BBModel.Basket(null, this));
+            ref = this.stacked_items;
+            for (j = 0, len = ref.length; j < len; j++) {
+                i = ref[j];
+                this.basket.addItem(i);
+            }
+            return this.emptyStackedItems();
+        };
+        Widget.prototype.totalStackedItemsDuration = function () {
+            var duration, item, j, len, ref;
+            duration = 0;
+            ref = this.stacked_items;
+            for (j = 0, len = ref.length; j < len; j++) {
+                item = ref[j];
+                if (item.service && item.service.listed_duration) {
+                    duration += item.service.listed_duration;
+                }
+            }
+            return duration;
+        };
+        Widget.prototype.clearStackedItemsDateTime = function () {
+            var item, j, len, ref, results;
+            ref = this.stacked_items;
+            results = [];
+            for (j = 0, len = ref.length; j < len; j++) {
+                item = ref[j];
+                results.push(item.clearDateTime());
+            }
+            return results;
+        };
+        Widget.prototype.clearAddress = function () {
+            delete this.address1;
+            delete this.address2;
+            delete this.address3;
+            delete this.address4;
+            return delete this.address5;
+        };
+
+        return Widget;
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    angular.module('BB.Services').service('bbWidgetBasket', BBWidgetBasket);
+
+    function BBWidgetBasket($q, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal, bbWidgetUtilities, ErrorService, LoginService) {
+
+        var $scope = null;
+        var setScope = function setScope($s) {
+            $scope = $s;
+        };
+        var guardScope = function guardScope() {
+            if ($scope === null) {
+                throw new Error('please provide scope');
+            }
+        };
+        var deleteBasketItems = function deleteBasketItems(items) {
+            guardScope();
+            var item, j, len, results;
+            results = [];
+            for (j = 0, len = items.length; j < len; j++) {
+                item = items[j];
+                results.push(BBModel.Basket.$deleteItem(item, $scope.bb.company, {
+                    bb: $scope.bb
+                }).then(function (basket) {
+                    return setBasket(basket);
+                }));
+            }
+            return results;
+        };
+        var setBasketItem = function setBasketItem(item) {
+            guardScope();
+            return $scope.bb.current_item = item;
+        };
+        var clearBasketItem = function clearBasketItem() {
+            guardScope();
+            var def;
+            def = $q.defer();
+            $scope.bb.current_item = new BBModel.BasketItem(null, $scope.bb);
+            if ($scope.bb.default_setup_promises) {
+                $q.all($scope.bb.default_setup_promises)["finally"](function () {
+                    $scope.bb.current_item.setDefaults($scope.bb.item_defaults);
+                    return $q.all($scope.bb.current_item.promises)["finally"](function () {
+                        return def.resolve();
+                    });
+                });
+            } else {
+                $scope.bb.current_item.setDefaults({});
+                def.resolve();
+            }
+            return def.promise;
+        };
+        var setBasket = function setBasket(basket) {
+            guardScope();
+            $scope.bb.basket = basket;
+            $scope.basket = basket;
+            $scope.bb.basket.company_id = $scope.bb.company_id;
+            if ($scope.bb.stacked_items) {
+                return $scope.bb.setStackedItems(basket.timeItems());
+            }
+        };
+        var updateBasket = function updateBasket() {
+            guardScope();
+            var add_defer, current_item_ref, params;
+            current_item_ref = $scope.bb.current_item.ref;
+            add_defer = $q.defer();
+            params = {
+                member_id: $scope.client.id,
+                member: $scope.client,
+                items: $scope.bb.basket.items,
+                bb: $scope.bb
+            };
+            BBModel.Basket.$updateBasket($scope.bb.company, params).then(function (basket) {
+                var current_item, item, j, len, ref;
+                ref = basket.items;
+                for (j = 0, len = ref.length; j < len; j++) {
+                    item = ref[j];
+                    item.storeDefaults($scope.bb.item_defaults);
+                }
+                halClient.clearCache("time_data");
+                halClient.clearCache("events");
+                basket.setSettings($scope.bb.basket.settings);
+                setBasket(basket);
+                current_item = _.find(basket.items, function (item) {
+                    return item.ref === current_item_ref;
+                });
+                if (!current_item) {
+                    current_item = _.last(basket.items);
+                }
+                $scope.bb.current_item = current_item;
+                if (!$scope.bb.current_item) {
+                    return clearBasketItem().then(function () {
+                        return add_defer.resolve(basket);
+                    });
+                } else {
+                    return add_defer.resolve(basket);
+                }
+            }, function (err) {
+                var error_modal;
+                add_defer.reject(err);
+                if (err.status === 409) {
+                    halClient.clearCache("time_data");
+                    halClient.clearCache("events");
+                    $scope.bb.current_item.person = null;
+                    error_modal = $uibModal.open({
+                        templateUrl: bbWidgetUtilities.getPartial('_error_modal'),
+                        controller: function controller($scope, $uibModalInstance) {
+                            $scope.message = ErrorService.getError('ITEM_NO_LONGER_AVAILABLE').msg;
+                            return $scope.ok = function () {
+                                return $uibModalInstance.close();
+                            };
+                        }
+                    });
+                    return error_modal.result["finally"](function () {
+                        if ($scope.bb.on_conflict) {
+                            return $scope.$eval($scope.bb.on_conflict);
+                        } else {
+                            if ($scope.bb.nextSteps) {
+                                if (!bbWidgetPage.setPageRoute($rootScope.Route.Date) && !bbWidgetPage.setPageRoute($rootScope.Route.Event)) {
+                                    return bbWidgetStep.loadPreviousStep();
+                                }
+                            } else {
+                                return bbWidgetPage.decideNextPage();
+                            }
+                        }
+                    });
+                }
+            });
+            return add_defer.promise;
+        };
+        var deleteBasketItem = function deleteBasketItem(item) {
+            guardScope();
+            return BBModel.Basket.$deleteItem(item, $scope.bb.company, {
+                bb: $scope.bb
+            }).then(function (basket) {
+                return setBasket(basket);
+            });
+        };
+        var emptyBasket = function emptyBasket() {
+            guardScope();
+            var defer;
+            defer = $q.defer();
+            if (!$scope.bb.basket.items || $scope.bb.basket.items && $scope.bb.basket.items.length === 0) {
+                defer.resolve();
+            } else {
+                BBModel.Basket.$empty($scope.bb).then(function (basket) {
+                    if ($scope.bb.current_item.id) {
+                        delete $scope.bb.current_item.id;
+                    }
+                    setBasket(basket);
+                    return defer.resolve();
+                }, function (err) {
+                    return defer.reject();
+                });
+            }
+            return defer.promise;
+        };
+        var addItemToBasket = function addItemToBasket() {
+            guardScope();
+            var add_defer;
+            add_defer = $q.defer();
+            if (!$scope.bb.current_item.submitted && !$scope.bb.moving_booking) {
+                moveToBasket();
+                $scope.bb.current_item.submitted = updateBasket();
+                $scope.bb.current_item.submitted.then(function (basket) {
+                    return add_defer.resolve(basket);
+                }, function (err) {
+                    if (err.status === 409) {
+                        $scope.bb.current_item.person = null;
+                        $scope.bb.current_item.resource = null;
+                        $scope.bb.current_item.setTime(null);
+                        if ($scope.bb.current_item.service) {
+                            $scope.bb.current_item.setService($scope.bb.current_item.service);
+                        }
+                    }
+                    $scope.bb.current_item.submitted = null;
+                    return add_defer.reject(err);
+                });
+            } else if ($scope.bb.current_item.submitted) {
+                return $scope.bb.current_item.submitted;
+            } else {
+                add_defer.resolve();
+            }
+            return add_defer.promise;
+        };
+        var moveToBasket = function moveToBasket() {
+            guardScope();
+            return $scope.bb.basket.addItem($scope.bb.current_item);
+        };
+        var quickEmptybasket = function quickEmptybasket(options) {
+            guardScope();
+            var def, preserve_stacked_items;
+            preserve_stacked_items = options && options.preserve_stacked_items ? true : false;
+            if (!preserve_stacked_items) {
+                $scope.bb.stacked_items = [];
+                setBasket(new BBModel.Basket(null, $scope.bb));
+                return clearBasketItem();
+            } else {
+                $scope.bb.basket = new BBModel.Basket(null, $scope.bb);
+                $scope.basket = $scope.bb.basket;
+                $scope.bb.basket.company_id = $scope.bb.company_id;
+                def = $q.defer();
+                def.resolve();
+                return def.promise;
+            }
+        };
+        var restoreBasket = function restoreBasket() {
+            guardScope();
+            var restore_basket_defer;
+            restore_basket_defer = $q.defer();
+            quickEmptybasket().then(function () {
+                var auth_token, href, params, status, uri;
+                auth_token = $localStorage.getItem('auth_token') || $sessionStorage.getItem('auth_token');
+                href = $scope.bb.api_url + '/api/v1/status{?company_id,affiliate_id,clear_baskets,clear_member}';
+                params = {
+                    company_id: $scope.bb.company_id,
+                    affiliate_id: $scope.bb.affiliate_id,
+                    clear_baskets: $scope.bb.clear_basket ? '1' : null,
+                    clear_member: $scope.bb.clear_member ? '1' : null
+                };
+                uri = new UriTemplate(href).fillFromObject(params);
+                status = halClient.$get(uri, {
+                    "auth_token": auth_token,
+                    "no_cache": true
+                });
+                return status.then(function (_this) {
+                    return function (res) {
+                        if (res.$has('client')) {
+                            res.$get('client').then(function (client) {
+                                if (!$scope.client || $scope.client && !$scope.client.valid()) {
+                                    return $scope.client = new BBModel.Client(client);
+                                }
+                            });
+                        }
+                        if (res.$has('member')) {
+                            res.$get('member').then(function (member) {
+                                if (member.client_type !== 'Contact') {
+                                    member = LoginService.setLogin(member);
+                                    return $scope.setClient(member);
+                                }
+                            });
+                        }
+                        if ($scope.bb.clear_basket) {
+                            return restore_basket_defer.resolve();
+                        } else {
+                            if (res.$has('baskets')) {
+                                return res.$get('baskets').then(function (baskets) {
+                                    var basket;
+                                    basket = _.find(baskets, function (b) {
+                                        return parseInt(b.company_id) === $scope.bb.company_id;
+                                    });
+                                    if (basket) {
+                                        basket = new BBModel.Basket(basket, $scope.bb);
+                                        return basket.$get('items').then(function (items) {
+                                            var i, j, len, promises;
+                                            items = function () {
+                                                var j, len, results;
+                                                results = [];
+                                                for (j = 0, len = items.length; j < len; j++) {
+                                                    i = items[j];
+                                                    results.push(new BBModel.BasketItem(i));
+                                                }
+                                                return results;
+                                            }();
+                                            for (j = 0, len = items.length; j < len; j++) {
+                                                i = items[j];
+                                                basket.addItem(i);
+                                            }
+                                            setBasket(basket);
+                                            promises = [].concat.apply([], function () {
+                                                var l, len1, results;
+                                                results = [];
+                                                for (l = 0, len1 = items.length; l < len1; l++) {
+                                                    i = items[l];
+                                                    results.push(i.promises);
+                                                }
+                                                return results;
+                                            }());
+                                            return $q.all(promises).then(function () {
+                                                if (basket.items.length > 0) {
+                                                    $scope.bb.current_item = basket.items[0];
+                                                }
+                                                return restore_basket_defer.resolve();
+                                            });
+                                        });
+                                    } else {
+                                        return restore_basket_defer.resolve();
+                                    }
+                                });
+                            } else {
+                                return restore_basket_defer.resolve();
+                            }
+                        }
+                    };
+                }(this), function (err) {
+                    return restore_basket_defer.resolve();
+                });
+            });
+            return restore_basket_defer.promise;
+        };
+        var setUsingBasket = function setUsingBasket(usingBasket) {
+            return $scope.bb.usingBasket = usingBasket;
+        };
+        var showCheckout = function showCheckout() {
+            guardScope();
+            return $scope.bb.current_item.ready;
+        };
+        var setReadyToCheckout = function setReadyToCheckout(ready) {
+            guardScope();
+            return $scope.bb.confirmCheckout = ready;
+        };
+
+        return {
+            setScope: setScope,
+            deleteBasketItems: deleteBasketItems,
+            setBasketItem: setBasketItem,
+            clearBasketItem: clearBasketItem,
+            setBasket: setBasket,
+            updateBasket: updateBasket,
+            deleteBasketItem: deleteBasketItem,
+            emptyBasket: emptyBasket,
+            addItemToBasket: addItemToBasket,
+            moveToBasket: moveToBasket,
+            quickEmptybasket: quickEmptybasket,
+            restoreBasket: restoreBasket,
+            setUsingBasket: setUsingBasket,
+            showCheckout: showCheckout,
+            setReadyToCheckout: setReadyToCheckout
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    angular.module('BB.Services').service('bbWidgetInit', BBWidgetInit);
+
+    function BBWidgetInit($rootScope, $sessionStorage, $q, $sniffer, QueryStringService, halClient, BBModel, UriTemplate, PurchaseService, $window, SSOService, bbWidgetBasket, CompanyStoreService, $bbug, bbWidgetPage, LoadingService, BBWidget, AppConfig, $location) {
+
+        var connectionStarted, isFirstCall, widgetStarted;
+        var $scope = null;
+        var setScope = function setScope($s) {
+            $scope = $s;
+            reinitialise();
+        };
+        var reinitialise = function reinitialise() {
+            isFirstCall = true;
+            widgetStarted = $q.defer();
+            $rootScope.widget_started = widgetStarted.promise;
+        };
+        var guardScope = function guardScope() {
+            if ($scope === null) {
+                throw new Error('please provide scope');
+            }
+        };
+        var initWidget = function (prms) {
+            guardScope();
+            var url;
+            if (prms == null) {
+                prms = {};
+            }
+            this.$init_prms = prms;
+            connectionStarted = $q.defer();
+            $rootScope.connection_started = connectionStarted.promise;
+            if (($sniffer.webkit && $sniffer.webkit < 537 || $sniffer.msie && $sniffer.msie <= 9) && isFirstCall) {
+                if ($scope.bb.api_url) {
+                    url = document.createElement('a');
+                    url.href = $scope.bb.api_url;
+                    if (url.host === '' || url.host === $location.host() || url.host === $location.host() + ":" + $location.port()) {
+                        initWidget2();
+                        return;
+                    }
+                }
+                if ($rootScope.iframe_proxy_ready) {
+                    initWidget2();
+                } else {
+                    $scope.$on('iframe_proxy_ready', function (event, args) {
+                        if (args.iframe_proxy_ready) {
+                            return initWidget2();
+                        }
+                    });
+                }
+            } else {
+                initWidget2();
+            }
+        }.bind(this);
+        var initWidget2 = function () {
+            guardScope();
+            var aff_promise, comp_category_id, comp_def, comp_promise, comp_url, company_id, embed_params, get_total, k, match, options, params, prms, ref, setup_promises, setup_promises2, sso_admin_login, sso_member_login, total_id, v;
+
+            $scope.init_widget_started = true;
+            prms = this.$init_prms;
+            if (prms.query) {
+                ref = prms.query;
+                for (k in ref) {
+                    v = ref[k];
+                    prms[k] = QueryStringService(v);
+                }
+            }
+            if (prms.custom_partial_url) {
+                $scope.bb.custom_partial_url = prms.custom_partial_url;
+                $scope.bb.partial_id = prms.custom_partial_url.substring(prms.custom_partial_url.lastIndexOf("/") + 1);
+                if (prms.update_design) {
+                    $scope.bb.update_design = prms.update_design;
+                }
+            } else if (prms.design_mode) {
+                $scope.bb.design_mode = prms.design_mode;
+            }
+            company_id = $scope.bb.company_id;
+            if (prms.company_id) {
+                company_id = prms.company_id;
+            }
+            if (prms.affiliate_id) {
+                $scope.bb.affiliate_id = prms.affiliate_id;
+                $rootScope.affiliate_id = prms.affiliate_id;
+            }
+            if (prms.api_url) {
+                $scope.bb.api_url = prms.api_url;
+            }
+            if (prms.partial_url) {
+                $scope.bb.partial_url = prms.partial_url;
+            }
+            if (prms.page_suffix) {
+                $scope.bb.page_suffix = prms.page_suffix;
+            }
+            if (prms.admin) {
+                $scope.bb.isAdmin = prms.admin;
+            }
+            if (prms.auth_token) {
+                $sessionStorage.setItem("auth_token", prms.auth_token);
+            }
+            $scope.bb.app_id = 1;
+            $scope.bb.app_key = 1;
+            $scope.bb.clear_basket = true;
+            if (prms.basket) {
+                $scope.bb.clear_basket = false;
+            }
+            if (prms.clear_basket === false) {
+                $scope.bb.clear_basket = false;
+            }
+            if ($window.bb_setup || prms.client) {
+                prms.clear_member || (prms.clear_member = true);
+            }
+            $scope.bb.client_defaults = prms.client || {};
+            if (prms.client_defaults) {
+                if (prms.client_defaults.membership_ref) {
+                    $scope.bb.client_defaults.membership_ref = prms.client_defaults.membership_ref;
+                }
+            }
+            if ($scope.bb.client_defaults && $scope.bb.client_defaults.name) {
+                match = $scope.bb.client_defaults.name.match(/^(\S+)(?:\s(\S+))?/);
+                if (match) {
+                    $scope.bb.client_defaults.first_name = match[1];
+                    if (match[2] != null) {
+                        $scope.bb.client_defaults.last_name = match[2];
+                    }
+                }
+            }
+            if (prms.clear_member) {
+                $scope.bb.clear_member = prms.clear_member;
+                $sessionStorage.removeItem('login');
+            }
+            if (prms.app_id) {
+                $scope.bb.app_id = prms.app_id;
+            }
+            if (prms.app_key) {
+                $scope.bb.app_key = prms.app_key;
+            }
+            if (prms.on_conflict) {
+                $scope.bb.on_conflict = prms.on_conflict;
+            }
+            if (prms.item_defaults) {
+                $scope.bb.original_item_defaults = prms.item_defaults;
+                $scope.bb.item_defaults = angular.copy($scope.bb.original_item_defaults);
+            } else if ($scope.bb.original_item_defaults) {
+                $scope.bb.item_defaults = angular.copy($scope.bb.original_item_defaults);
+            }
+            if ($scope.bb.selected_service && $scope.bb.selected_service.company_id === company_id) {
+                $scope.bb.item_defaults.service = $scope.bb.selected_service.id;
+            }
+            if (prms.route_format) {
+                $scope.bb.setRouteFormat(prms.route_format);
+                if ($scope.bb_route_init) {
+                    $scope.bb_route_init();
+                }
+            }
+            if (prms.hide === true) {
+                $scope.hide_page = true;
+            } else {
+                $scope.hide_page = false;
+            }
+            if (prms.from_datetime) {
+                $scope.bb.from_datetime = prms.from_datetime;
+            }
+            if (prms.to_datetime) {
+                $scope.bb.to_datetime = prms.to_datetime;
+            }
+            if (prms.min_date) {
+                $scope.bb.min_date = prms.min_date;
+            }
+            if (prms.max_date) {
+                $scope.bb.max_date = prms.max_date;
+            }
+            if (prms.hide_block) {
+                $scope.bb.hide_block = prms.hide_block;
+            }
+            if (!prms.custom_partial_url) {
+                $scope.bb.path_setup = true;
+            }
+            if (prms.extra_setup) {
+                $scope.bb.extra_setup = prms.extra_setup;
+                if (prms.extra_setup.step) {
+                    $scope.bb.starting_step_number = parseInt(prms.extra_setup.step);
+                }
+                if (prms.extra_setup.return_url) {
+                    $scope.bb.return_url = prms.extra_setup.return_url;
+                }
+                if (prms.extra_setup.destination) {
+                    $scope.bb.destination = prms.extra_setup.destination;
+                }
+            }
+            if (prms.booking_settings) {
+                $scope.bb.booking_settings = prms.booking_settings;
+            }
+            if (prms.template) {
+                $scope.bb.template = prms.template;
+            }
+            if (prms.login_required) {
+                $scope.bb.login_required = true;
+            }
+            if (prms.private_note) {
+                $scope.bb.private_note = prms.private_note;
+            }
+            if (prms.qudini_booking_id) {
+                $scope.bb.qudini_booking_id = prms.qudini_booking_id;
+            }
+            this.waiting_for_conn_started_def = $q.defer();
+            $scope.waiting_for_conn_started = this.waiting_for_conn_started_def.promise;
+            if (company_id || $scope.bb.affiliate_id) {
+                $scope.waiting_for_conn_started = $rootScope.connection_started;
+            } else {
+                this.waiting_for_conn_started_def.resolve();
+            }
+            widgetStarted.resolve();
+            setup_promises2 = [];
+            setup_promises = [];
+            if ($scope.bb.affiliate_id) {
+                aff_promise = halClient.$get($scope.bb.api_url + '/api/v1/affiliates/' + $scope.bb.affiliate_id);
+                setup_promises.push(aff_promise);
+                aff_promise.then(function (affiliate) {
+                    var comp_p, comp_promise;
+                    if ($scope.bb.$wait_for_routing) {
+                        setup_promises2.push($scope.bb.$wait_for_routing.promise);
+                    }
+                    setAffiliate(new BBModel.Affiliate(affiliate));
+                    $scope.bb.item_defaults.affiliate = $scope.affiliate;
+                    if (prms.company_ref) {
+                        comp_p = $q.defer();
+                        comp_promise = $scope.affiliate.getCompanyByRef(prms.company_ref);
+                        setup_promises2.push(comp_p.promise);
+                        return comp_promise.then(function (company) {
+                            return setCompany(company, prms.keep_basket).then(function (val) {
+                                return comp_p.resolve(val);
+                            }, function (err) {
+                                return comp_p.reject(err);
+                            });
+                        }, function (err) {
+                            return comp_p.reject(err);
+                        });
+                    }
+                });
+            }
+            if (company_id) {
+                if (prms.embed) {
+                    embed_params = prms.embed;
+                }
+                embed_params || (embed_params = null);
+                comp_category_id = null;
+                if ($scope.bb.item_defaults.category != null) {
+                    if ($scope.bb.item_defaults.category.id != null) {
+                        comp_category_id = $scope.bb.item_defaults.category.id;
+                    } else {
+                        comp_category_id = $scope.bb.item_defaults.category;
+                    }
+                }
+                comp_def = $q.defer();
+                comp_promise = comp_def.promise;
+                options = {};
+                if ($sessionStorage.getItem('auth_token')) {
+                    options.auth_token = $sessionStorage.getItem('auth_token');
+                }
+                if ($scope.bb.isAdmin) {
+                    comp_url = new UriTemplate($scope.bb.api_url + $scope.company_admin_api_path).fillFromObject({
+                        company_id: company_id,
+                        category_id: comp_category_id,
+                        embed: embed_params
+                    });
+                    halClient.$get(comp_url, options).then(function (company) {
+                        return comp_def.resolve(company);
+                    }, function (err) {
+                        comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
+                            company_id: company_id,
+                            category_id: comp_category_id,
+                            embed: embed_params
+                        });
+                        return halClient.$get(comp_url, options).then(function (company) {
+                            return comp_def.resolve(company);
+                        }, function (err) {
+                            return comp_def.reject(err);
+                        });
+                    });
+                } else {
+                    comp_url = new UriTemplate($scope.bb.api_url + $scope.company_api_path).fillFromObject({
+                        company_id: company_id,
+                        category_id: comp_category_id,
+                        embed: embed_params
+                    });
+                    halClient.$get(comp_url, options).then(function (company) {
+                        if (company) {
+                            return comp_def.resolve(company);
+                        } else {
+                            return comp_def.reject("Invalid company ID " + company_id);
+                        }
+                    }, function (err) {
+                        return comp_def.reject(err);
+                    });
+                }
+                setup_promises.push(comp_promise);
+                comp_promise.then(function (company) {
+                    var child, comp, cprom, parent_company;
+                    if ($scope.bb.$wait_for_routing) {
+                        setup_promises2.push($scope.bb.$wait_for_routing.promise);
+                    }
+                    comp = new BBModel.Company(company);
+                    cprom = $q.defer();
+                    setup_promises2.push(cprom.promise);
+                    child = null;
+                    if (comp.companies && $scope.bb.item_defaults.company) {
+                        child = comp.findChildCompany($scope.bb.item_defaults.company);
+                    }
+                    if (child) {
+                        parent_company = comp;
+                        return halClient.$get($scope.bb.api_url + '/api/v1/company/' + child.id).then(function (company) {
+                            comp = new BBModel.Company(company);
+                            setupDefaults(comp.id);
+                            $scope.bb.parent_company = parent_company;
+                            return setCompany(comp, prms.keep_basket).then(function () {
+                                return cprom.resolve();
+                            }, function (err) {
+                                return cprom.reject();
+                            });
+                        }, function (err) {
+                            return cprom.reject();
+                        });
+                    } else {
+                        setupDefaults(comp.id);
+                        return setCompany(comp, prms.keep_basket).then(function () {
+                            return cprom.resolve();
+                        }, function (err) {
+                            return cprom.reject();
+                        });
+                    }
+                });
+                if (prms.member_sso) {
+                    params = {
+                        company_id: company_id,
+                        root: $scope.bb.api_url,
+                        member_sso: prms.member_sso
+                    };
+                    sso_member_login = SSOService.memberLogin(params).then(function (client) {
+                        return setClient(client);
+                    });
+                    setup_promises.push(sso_member_login);
+                }
+                if (prms.admin_sso) {
+                    params = {
+                        company_id: prms.parent_company_id ? prms.parent_company_id : company_id,
+                        root: $scope.bb.api_url,
+                        admin_sso: prms.admin_sso
+                    };
+                    sso_admin_login = SSOService.adminLogin(params).then(function (admin) {
+                        return $scope.bb.admin = admin;
+                    });
+                    setup_promises.push(sso_admin_login);
+                }
+                if ($scope.bb.item_defaults && $scope.bb.item_defaults.purchase_total_long_id) {
+                    total_id = $scope.bb.item_defaults.purchase_total_long_id;
+                } else {
+                    total_id = QueryStringService('total_id');
+                }
+                if (total_id) {
+                    params = {
+                        purchase_id: total_id,
+                        url_root: $scope.bb.api_url
+                    };
+                    get_total = PurchaseService.query(params).then(function (total) {
+                        $scope.bb.total = total;
+                        if (total.paid > 0) {
+                            return $scope.bb.payment_status = 'complete';
+                        }
+                    });
+                    setup_promises.push(get_total);
+                }
+            }
+            $scope.isLoaded = false;
+            return $q.all(setup_promises).then(function () {
+                return $q.all(setup_promises2).then(function () {
+                    var base, clear_prom, def_clear;
+                    if (!$scope.bb.basket) {
+                        (base = $scope.bb).basket || (base.basket = new BBModel.Basket(null, $scope.bb));
+                    }
+                    if (!$scope.client) {
+                        clearClient();
+                    }
+                    def_clear = $q.defer();
+                    clear_prom = def_clear.promise;
+                    if (!$scope.bb.current_item) {
+                        clear_prom = bbWidgetBasket.clearBasketItem();
+                    } else {
+                        def_clear.resolve();
+                    }
+                    return clear_prom.then(function () {
+                        var page;
+                        if (!$scope.client_details) {
+                            $scope.client_details = new BBModel.ClientDetails();
+                        }
+                        if (!$scope.bb.stacked_items) {
+                            $scope.bb.stacked_items = [];
+                        }
+                        if ($scope.bb.company || $scope.bb.affiliate) {
+                            connectionStarted.resolve();
+                            $scope.done_starting = true;
+                            if (!prms.no_route) {
+                                page = null;
+                                if (isFirstCall && $bbug.isEmptyObject($scope.bb.routeSteps)) {
+                                    page = $scope.bb.firstStep;
+                                }
+                                if (prms.first_page) {
+                                    page = prms.first_page;
+                                }
+                                isFirstCall = false;
+                                return bbWidgetPage.decideNextPage(page);
+                            }
+                        }
+                        $scope.isLoaded = true;
+                    });
+                }, function (err) {
+                    connectionStarted.reject("Failed to start widget");
+                    return LoadingService.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+                });
+            }, function (err) {
+                connectionStarted.reject("Failed to start widget");
+                return LoadingService.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+            });
+        }.bind(this);
+        var setupDefaults = function setupDefaults(company_id) {
+            guardScope();
+            var category, clinic, def, event, event_chain, event_group, k, person, ref, resource, service, v;
+            def = $q.defer();
+            if (isFirstCall || $scope.bb.orginal_company_id && $scope.bb.orginal_company_id !== company_id) {
+                $scope.bb.orginal_company_id = company_id;
+                $scope.bb.default_setup_promises = [];
+                if ($scope.bb.item_defaults.query) {
+                    ref = $scope.bb.item_defaults.query;
+                    for (k in ref) {
+                        v = ref[k];
+                        $scope.bb.item_defaults[k] = QueryStringService(v);
+                    }
+                }
+                if ($scope.bb.item_defaults.resource) {
+                    if ($scope.bb.isAdmin) {
+                        resource = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+                    } else {
+                        resource = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/resources/' + $scope.bb.item_defaults.resource);
+                    }
+                    $scope.bb.default_setup_promises.push(resource);
+                    resource.then(function (res) {
+                        return $scope.bb.item_defaults.resource = new BBModel.Resource(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.person) {
+                    if ($scope.bb.isAdmin) {
+                        person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+                    } else {
+                        person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/' + $scope.bb.item_defaults.person);
+                    }
+                    $scope.bb.default_setup_promises.push(person);
+                    person.then(function (res) {
+                        return $scope.bb.item_defaults.person = new BBModel.Person(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.person_ref) {
+                    if ($scope.bb.isAdmin) {
+                        person = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+                    } else {
+                        person = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/people/find_by_ref/' + $scope.bb.item_defaults.person_ref);
+                    }
+                    $scope.bb.default_setup_promises.push(person);
+                    person.then(function (res) {
+                        return $scope.bb.item_defaults.person = new BBModel.Person(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.service) {
+                    if ($scope.bb.isAdmin) {
+                        service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+                    } else {
+                        service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services/' + $scope.bb.item_defaults.service);
+                    }
+                    $scope.bb.default_setup_promises.push(service);
+                    service.then(function (res) {
+                        return $scope.bb.item_defaults.service = new BBModel.Service(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.service_ref) {
+                    if ($scope.bb.isAdmin) {
+                        service = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+                    } else {
+                        service = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/services?api_ref=' + $scope.bb.item_defaults.service_ref);
+                    }
+                    $scope.bb.default_setup_promises.push(service);
+                    service.then(function (res) {
+                        return $scope.bb.item_defaults.service = new BBModel.Service(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.event_group) {
+                    if ($scope.bb.isAdmin) {
+                        event_group = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+                    } else {
+                        event_group = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_groups/' + $scope.bb.item_defaults.event_group);
+                    }
+                    $scope.bb.default_setup_promises.push(event_group);
+                    event_group.then(function (res) {
+                        return $scope.bb.item_defaults.event_group = new BBModel.EventGroup(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.event) {
+                    if ($scope.bb.isAdmin) {
+                        event = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain + '/events/' + $scope.bb.item_defaults.event);
+                    } else {
+                        event = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/events/' + $scope.bb.item_defaults.event);
+                    }
+                    $scope.bb.default_setup_promises.push(event);
+                    event.then(function (res) {
+                        return $scope.bb.item_defaults.event = new BBModel.Event(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.event_chain) {
+                    if ($scope.bb.isAdmin) {
+                        event_chain = halClient.$get($scope.bb.api_url + '/api/v1/admin/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
+                    } else {
+                        event_chain = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/event_chains/' + $scope.bb.item_defaults.event_chain);
+                    }
+                    $scope.bb.default_setup_promises.push(event_chain);
+                    event_chain.then(function (res) {
+                        return $scope.bb.item_defaults.event_chain = new BBModel.EventChain(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.category) {
+                    category = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/categories/' + $scope.bb.item_defaults.category);
+                    $scope.bb.default_setup_promises.push(category);
+                    category.then(function (res) {
+                        return $scope.bb.item_defaults.category = new BBModel.Category(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.clinic) {
+                    clinic = halClient.$get($scope.bb.api_url + '/api/v1/' + company_id + '/clinics/' + $scope.bb.item_defaults.clinic);
+                    $scope.bb.default_setup_promises.push(clinic);
+                    clinic.then(function (res) {
+                        return $scope.bb.item_defaults.clinic = new BBModel.Clinic(res);
+                    });
+                }
+                if ($scope.bb.item_defaults.duration) {
+                    $scope.bb.item_defaults.duration = parseInt($scope.bb.item_defaults.duration);
+                }
+                $q.all($scope.bb.default_setup_promises)['finally'](function () {
+                    return def.resolve();
+                });
+            } else {
+                def.resolve();
+            }
+            return def.promise;
+        };
+        var setAffiliate = function setAffiliate(affiliate) {
+            guardScope();
+            $scope.bb.affiliate_id = affiliate.id;
+            $scope.bb.affiliate = affiliate;
+            $scope.affiliate = affiliate;
+            return $scope.affiliate_id = affiliate.id;
+        };
+        var setCompany = function setCompany(company, keep_basket) {
+            guardScope();
+            var defer;
+            defer = $q.defer();
+            $scope.bb.company_id = company.id;
+            $scope.bb.company = company;
+            $scope.bb.item_defaults.company = $scope.bb.company;
+            if (company.$has('settings')) {
+                company.getSettings().then(function (settings) {
+                    $scope.bb.company_settings = settings;
+                    setActiveCompany(company, settings);
+                    if ($scope.bb.company_settings.merge_resources) {
+                        $scope.bb.item_defaults.merge_resources = true;
+                    }
+                    if ($scope.bb.company_settings.merge_people) {
+                        $scope.bb.item_defaults.merge_people = true;
+                    }
+                    $rootScope.bb_currency = $scope.bb.company_settings.currency;
+                    $scope.bb.currency = $scope.bb.company_settings.currency;
+                    $scope.bb.has_prices = $scope.bb.company_settings.has_prices;
+                    if (!$scope.bb.basket || $scope.bb.basket.company_id !== $scope.bb.company_id && !keep_basket) {
+                        return bbWidgetBasket.restoreBasket().then(function () {
+                            defer.resolve();
+                            return $scope.$emit('company:setup');
+                        });
+                    } else {
+                        defer.resolve();
+                        return $scope.$emit('company:setup');
+                    }
+                });
+            } else {
+                if (!$scope.bb.basket || $scope.bb.basket.company_id !== $scope.bb.company_id && !keep_basket) {
+                    bbWidgetBasket.restoreBasket().then(function () {
+                        defer.resolve();
+                        return $scope.$emit('company:setup');
+                    });
+                } else {
+                    defer.resolve();
+                    $scope.$emit('company:setup');
+                }
+                setActiveCompany(company);
+            }
+            return defer.promise;
+        };
+        var setClient = function setClient(client) {
+            guardScope();
+            $scope.client = client;
+            if (client.postcode && !$scope.bb.postcode) {
+                return $scope.bb.postcode = client.postcode;
+            }
+        };
+        var clearClient = function clearClient() {
+            guardScope();
+            $scope.client = new BBModel.Client();
+            if ($window.bb_setup) {
+                $scope.client.setDefaults($window.bb_setup);
+            }
+            if ($scope.bb.client_defaults) {
+                return $scope.client.setDefaults($scope.bb.client_defaults);
+            }
+        };
+        var setActiveCompany = function setActiveCompany(company, settings) {
+            guardScope();
+            CompanyStoreService.currency_code = !settings ? company.currency_code : settings.currency;
+            CompanyStoreService.time_zone = company.timezone;
+            CompanyStoreService.country_code = company.country_code;
+            return CompanyStoreService.settings = settings;
+        };
+        var initializeBBWidget = function initializeBBWidget() {
+            guardScope();
+            $scope.bb = new BBWidget();
+            AppConfig.uid = $scope.bb.uid;
+            $scope.bb.stacked_items = [];
+            $scope.bb.company_set = $scope.bb.company_id != null;
+            $scope.recordStep = $scope.bb.recordStep;
+            determineBBApiUrl();
+        };
+        var determineBBApiUrl = function determineBBApiUrl() {
+            guardScope();
+            var base, base1;
+            if ($scope.apiUrl) {
+                $scope.bb || ($scope.bb = {});
+                $scope.bb.api_url = $scope.apiUrl;
+            }
+            if ($rootScope.bb && $rootScope.bb.api_url) {
+                $scope.bb.api_url = $rootScope.bb.api_url;
+                if (!$rootScope.bb.partial_url) {
+                    $scope.bb.partial_url = "";
+                } else {
+                    $scope.bb.partial_url = $rootScope.bb.partial_url;
+                }
+            }
+            if ($location.port() !== 80 && $location.port() !== 443) {
+                (base = $scope.bb).api_url || (base.api_url = $location.protocol() + "://" + $location.host() + ":" + $location.port());
+            } else {
+                (base1 = $scope.bb).api_url || (base1.api_url = $location.protocol() + "://" + $location.host());
+            }
+        };
+
+        return {
+            clearClient: clearClient,
+            initWidget: initWidget,
+            setAffiliate: setAffiliate,
+            setActiveCompany: setActiveCompany,
+            setCompany: setCompany,
+            setClient: setClient,
+            setScope: setScope,
+            initializeBBWidget: initializeBBWidget,
+            determineBBApiUrl: determineBBApiUrl
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    angular.module('BB').service('bbWidgetPage', BBWidgetPage);
+
+    function BBWidgetPage(AlertService, BBModel, LoadingService, LoginService, $rootScope, $sce, $analytics) {
+
+        var $scope = null;
+        var setScope = function setScope($s) {
+            $scope = $s;
+        };
+        var guardScope = function guardScope() {
+            if ($scope === null) {
+                throw new Error('please set scope');
+            }
+        };
+        var clearPage = function clearPage() {
+            guardScope();
+            return $scope.bb_main = "";
+        };
+        var hidePage = function hidePage() {
+            guardScope();
+            return $scope.hide_page = true;
+        };
+        var jumpToPage = function jumpToPage(route) {
+            guardScope();
+            $scope.current_page = route;
+            $scope.jumped = true;
+            return $scope.bb_main = $sce.trustAsResourceUrl($scope.partial_url + route + $scope.page_suffix);
+        };
+        var setLoadingPage = function setLoadingPage(val) {
+            guardScope();
+            return $scope.loading_page = val;
+        };
+        var isLoadingPage = function isLoadingPage() {
+            guardScope();
+            return $scope.loading_page;
+        };
+        var setPageRoute = function setPageRoute(route) {
+            guardScope();
+            $scope.bb.current_page_route = route;
+            if ($scope.bb.routeSteps && $scope.bb.routeSteps[route]) {
+                showPage($scope.bb.routeSteps[route]);
+                return true;
+            }
+            return false;
+        };
+        var showPage = function showPage(route, dont_record_page) {
+            guardScope();
+            $scope.bb.updateRoute(route);
+            $scope.jumped = false;
+            if (isLoadingPage()) {
+                return;
+            }
+            setLoadingPage(true);
+            if ($scope.bb.current_page === route) {
+                $scope.bb_main = "";
+                setTimeout(function () {
+                    $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
+                    return $scope.$apply();
+                }, 0);
+            } else {
+                AlertService.clear();
+                $scope.bb.current_page = route;
+                if (!dont_record_page) {
+                    $scope.bb.recordCurrentPage();
+                }
+                LoadingService.notLoaded($scope);
+                $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
+            }
+            $analytics.pageTrack($scope.bb.current_page);
+            return $rootScope.$broadcast("page:loaded");
+        };
+        var setPageLoaded = function setPageLoaded() {
+            return LoadingService.setLoaded($scope);
+        };
+        var decideNextPage = function decideNextPage(route) {
+            guardScope();
+            if (route) {
+                if (route === 'none') {
+                    return;
+                } else {
+                    if ($scope.bb.total && $scope.bb.payment_status === 'complete') {
+                        if (setPageRoute($rootScope.Route.Confirmation)) {
+                            return;
+                        }
+                        return showPage('confirmation');
+                    } else {
+                        return showPage(route);
+                    }
+                }
+            }
+            if ($scope.bb.nextSteps && $scope.bb.current_page && $scope.bb.nextSteps[$scope.bb.current_page] && !$scope.bb.routeSteps) {
+                return showPage($scope.bb.nextSteps[$scope.bb.current_page]);
+            }
+            if (!$scope.client.valid() && LoginService.isLoggedIn()) {
+                $scope.client = new BBModel.Client(LoginService.member()._data);
+            }
+            if ($scope.bb.company && $scope.bb.company.companies || !$scope.bb.company && $scope.affiliate) {
+                if (setPageRoute($rootScope.Route.Company)) {
+                    return;
+                }
+                return showPage('company_list');
+            } else if ($scope.bb.total && $scope.bb.payment_status === "complete") {
+                if (setPageRoute($rootScope.Route.Confirmation)) {
+                    return;
+                }
+                return showPage('confirmation');
+            } else if ($scope.bb.total && $scope.bb.payment_status === "pending") {
+                return showPage('payment');
+            } else if ($scope.bb.company.$has('event_groups') && !$scope.bb.current_item.event_group && !$scope.bb.current_item.service && !$scope.bb.current_item.product && !$scope.bb.current_item.deal || $scope.bb.company.$has('events') && $scope.bb.current_item.event_group && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
+                if (setPageRoute($rootScope.Route.Event)) {
+                    return;
+                }
+                return showPage('event_list');
+            } else if ($scope.bb.company.$has('events') && $scope.bb.current_item.event && !$scope.bb.current_item.num_book && (!$scope.bb.current_item.tickets || !$scope.bb.current_item.tickets.qty) && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
+                return showPage('event');
+            } else if ($scope.bb.company.$has('services') && !$scope.bb.current_item.service && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
+                if (setPageRoute($rootScope.Route.Service)) {
+                    return;
+                }
+                return showPage('service_list');
+            } else if ($scope.bb.company.$has('resources') && !$scope.bb.current_item.resource && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
+                if (setPageRoute($rootScope.Route.Resource)) {
+                    return;
+                }
+                return showPage('resource_list');
+            } else if ($scope.bb.company.$has('people') && !$scope.bb.current_item.person && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
+                if (setPageRoute($rootScope.Route.Person)) {
+                    return;
+                }
+                return showPage('person_list');
+            } else if (!$scope.bb.current_item.duration && $scope.bb.current_item.event == null && !$scope.bb.current_item.product && !$scope.bb.current_item.deal) {
+                if (setPageRoute($rootScope.Route.Duration)) {
+                    return;
+                }
+                return showPage('duration_list');
+            } else if ($scope.bb.current_item.days_link && !$scope.bb.current_item.date && $scope.bb.current_item.event == null && !$scope.bb.current_item.deal) {
+                if ($scope.bb.company.$has('availability_slots')) {
+                    if (setPageRoute($rootScope.Route.Slot)) {
+                        return;
+                    }
+                    return showPage('slot_list');
+                } else {
+                    if (setPageRoute($rootScope.Route.Date)) {
+                        return;
+                    }
+                    return showPage('calendar');
+                }
+            } else if ($scope.bb.current_item.days_link && !$scope.bb.current_item.time && $scope.bb.current_item.event == null && (!$scope.bb.current_item.service || $scope.bb.current_item.service.duration_unit !== 'day') && !$scope.bb.current_item.deal) {
+                if (setPageRoute($rootScope.Route.Time)) {
+                    return;
+                }
+                return showPage('time');
+            } else if ($scope.bb.moving_booking && (!$scope.bb.current_item.ready || !$scope.bb.current_item.move_done)) {
+                return showPage('check_move');
+            } else if (!$scope.client.valid()) {
+                if (setPageRoute($rootScope.Route.Client)) {
+                    return;
+                }
+                return showPage('client');
+            } else if ($scope.bb.current_item.item_details && $scope.bb.current_item.item_details.hasQuestions && !$scope.bb.current_item.asked_questions) {
+                if (setPageRoute($rootScope.Route.Questions)) {
+                    return;
+                }
+                return showPage('check_items');
+            } else if ($scope.bb.moving_booking && $scope.bb.basket.itemsReady()) {
+                return showPage('purchase');
+            } else if (!$scope.bb.basket.readyToCheckout()) {
+                if (setPageRoute($rootScope.Route.Summary)) {
+                    return;
+                }
+                return showPage('basket_summary');
+            } else if ($scope.bb.usingBasket && (!$scope.bb.confirmCheckout || $scope.bb.company_settings.has_vouchers || $scope.bb.company.$has('coupon'))) {
+                if (setPageRoute($rootScope.Route.Basket)) {
+                    return;
+                }
+                return showPage('basket');
+            } else if ($scope.bb.basket.readyToCheckout() && $scope.bb.payment_status === null && !$scope.bb.basket.waiting_for_checkout) {
+                if (setPageRoute($rootScope.Route.Checkout)) {
+                    return;
+                }
+                return showPage('checkout');
+            } else if ($scope.bb.payment_status === "complete") {
+                if (setPageRoute($rootScope.Route.Confirmation)) {
+                    return;
+                }
+                return showPage('confirmation');
+            }
+        };
+        return {
+            clearPage: clearPage,
+            decideNextPage: decideNextPage,
+            hidePage: hidePage,
+            isLoadingPage: isLoadingPage,
+            jumpToPage: jumpToPage,
+            setLoadingPage: setLoadingPage,
+            setPageLoaded: setPageLoaded,
+            setPageRoute: setPageRoute,
+            setScope: setScope,
+            showPage: showPage
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    angular.module('BB').service('bbWidgetStep', BBWidgetStep);
+
+    function BBWidgetStep(BBModel, LoginService, $rootScope, bbWidgetPage, $window, bbAnalyticsPiwik) {
+
+        var $scope = null;
+
+        var setScope = function setScope($s) {
+            $scope = $s;
+        };
+        var guardScope = function guardScope() {
+            if ($scope === null) {
+                throw new Error('please set scope');
+            }
+        };
+        var setStepTitle = function setStepTitle(title) {
+            guardScope();
+            return $scope.bb.steps[$scope.bb.current_step - 1].title = title;
+        };
+        var checkStepTitle = function checkStepTitle(title) {
+            guardScope();
+            if ($scope.bb.steps[$scope.bb.current_step - 1] && !$scope.bb.steps[$scope.bb.current_step - 1].title) {
+                return setStepTitle(title);
+            }
+        };
+        var getCurrentStepTitle = function getCurrentStepTitle() {
+            var steps;
+            guardScope();
+            steps = $scope.bb.steps;
+            if (!_.compact(steps).length || steps.length === 1 && steps[0].number !== $scope.bb.current_step) {
+                steps = $scope.bb.allSteps;
+            }
+            if ($scope.bb.current_step) {
+                return steps[$scope.bb.current_step - 1].title;
+            }
+        };
+        var loadStep = function loadStep(stepClickedNumber) {
+            guardScope();
+            if (stepClickedNumber === $scope.bb.current_step) {
+                return;
+            }
+            $scope.bb.calculatePercentageComplete(stepClickedNumber);
+            var stepClickedPlusOne = $scope.bb.steps[stepClickedNumber];
+            var stepClicked = $scope.bb.steps[stepClickedNumber - 1];
+
+            if (stepClickedPlusOne && !stepClicked) {
+                stepClicked = stepClickedPlusOne;
+            }
+
+            if (!stepClickedPlusOne) {
+                stepClickedPlusOne = stepClicked;
+            }
+            if (stepClickedPlusOne && !$scope.bb.last_step_reached) {
+                if (!stepClickedPlusOne.stacked_length || stepClickedPlusOne.stacked_length === 0) {
+                    $scope.bb.stacked_items = [];
+                }
+                $scope.bb.current_item.loadStep(stepClickedPlusOne.current_item);
+                if ($scope.bb.steps.length > 1) {
+                    $scope.bb.steps.splice(stepClickedNumber, $scope.bb.steps.length - stepClickedNumber);
+                }
+                $scope.bb.current_step = stepClickedNumber;
+                bbWidgetPage.showPage(stepClicked.page, true);
+            }
+            if ($scope.bb.allSteps) {
+
+                $scope.bb.allSteps.map(function (step) {
+                    step.active = false;
+                    step.passed = step.number < $scope.bb.current_step;
+                });
+
+                if ($scope.bb.allSteps[$scope.bb.current_step - 1]) {
+                    return $scope.bb.allSteps[$scope.bb.current_step - 1].active = true;
+                }
+            }
+        };
+
+        function setPiwik() {
+            var category = $scope.bb.current_page;
+            var title = "Load Previous Step";
+            bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+        }
+
+        /**
+         * @ngdoc method
+         * @name loadPreviousStep
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Loads the previous unskipped step
+         *
+         * @param {integer} steps_to_go_back: The number of steps to go back
+         * @param {string} caller: The method that called this function
+         */
+        var loadPreviousStep = function loadPreviousStep(caller) {
+
+            if (bbAnalyticsPiwik.isEnabled()) setPiwik();
+
+            var last_step, pages_to_remove_from_history, past_steps, step_to_load;
+            guardScope();
+            past_steps = _.reject($scope.bb.steps, function (s) {
+                return s.number >= $scope.bb.current_step;
+            });
+            step_to_load = 0;
+            while (past_steps[0]) {
+                last_step = past_steps.pop();
+                if (!last_step) {
+                    break;
+                }
+                if (!last_step.skipped) {
+                    step_to_load = last_step.number;
+                    break;
+                }
+            }
+            if ($scope.bb.routeFormat) {
+                pages_to_remove_from_history = step_to_load === 0 ? $scope.bb.current_step + 1 : $scope.bb.current_step - step_to_load;
+                if (caller === "locationChangeStart") {
+                    pages_to_remove_from_history--;
+                }
+                if (pages_to_remove_from_history > 0) {
+                    window.history.go(pages_to_remove_from_history * -1);
+                }
+            }
+            if (step_to_load > 0) {
+                return loadStep(step_to_load);
+            }
+        };
+        var loadStepByPageName = function loadStepByPageName(page_name) {
+            var i, len, ref, step;
+            guardScope();
+            ref = $scope.bb.allSteps;
+            for (i = 0, len = ref.length; i < len; i++) {
+                step = ref[i];
+                if (step.page === page_name) {
+                    return loadStep(step.number);
+                }
+            }
+            return loadStep(1);
+        };
+        var reset = function reset() {
+            guardScope();
+            $rootScope.$broadcast('clear:formData');
+            $rootScope.$broadcast('widget:restart');
+            setLastSelectedDate(null);
+            if (!LoginService.isLoggedIn()) {
+                $scope.client = new BBModel.Client();
+            }
+            $scope.bb.last_step_reached = false;
+            return $scope.bb.steps.splice(1);
+        };
+        var restart = function restart() {
+            guardScope();
+            reset();
+            return loadStep(1);
+        };
+        var setLastSelectedDate = function setLastSelectedDate(date) {
+            guardScope();
+            return $scope.last_selected_date = date;
+        };
+
+        /**
+         * @ngdoc method
+         * @name skipThisStep
+         * @methodOf BB.Directives:bbWidget
+         * @description
+         * Marks the current step as skipped
+         */
+        var skipThisStep = function skipThisStep() {
+            if ($scope.bb.steps[$scope.bb.steps.length - 1]) {
+                return $scope.bb.steps[$scope.bb.steps.length - 1].skipped = true;
+            }
+        };
+
+        return {
+            checkStepTitle: checkStepTitle,
+            getCurrentStepTitle: getCurrentStepTitle,
+            loadPreviousStep: loadPreviousStep,
+            loadStep: loadStep,
+            loadStepByPageName: loadStepByPageName,
+            reset: reset,
+            restart: restart,
+            setLastSelectedDate: setLastSelectedDate,
+            setScope: setScope,
+            setStepTitle: setStepTitle,
+            skipThisStep: skipThisStep
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    angular.module('BB.Services').service('bbWidgetUtilities', BBWidgetUtilities);
+
+    function BBWidgetUtilities($window, BBModel, bbWidgetPage, bbWidgetStep, AppService, $timeout, LoginService) {
+
+        var $scope = null;
+        var setScope = function setScope($s) {
+            $scope = $s;
+        };
+
+        var isAdmin = function isAdmin() {
+            return $scope.bb.isAdmin;
+        };
+        var showLoaderHandler = function showLoaderHandler() {
+            $scope.loading = true;
+        };
+        var hideLoaderHandler = function hideLoaderHandler() {
+            $scope.loading = false;
+        };
+        var locationChangeStartHandler = function locationChangeStartHandler(angular_event, new_url, old_url) {
+            var step_number;
+            if (!$scope.bb.routeFormat) {
+                return;
+            }
+            if (!$scope.bb.routing || AppService.isModalOpen()) {
+                step_number = $scope.bb.matchURLToStep();
+                if (step_number > $scope.bb.current_step) {
+                    bbWidgetStep.loadStep(step_number);
+                } else if (step_number < $scope.bb.current_step) {
+                    bbWidgetStep.loadPreviousStep('locationChangeStart');
+                }
+            }
+            $scope.bb.routing = false;
+        };
+        var getPartial = function getPartial(file) {
+            return $scope.bb.pageURL(file);
+        };
+        var logout = function logout(route) {
+            if ($scope.client && $scope.client.valid()) {
+                return LoginService.logout({
+                    root: $scope.bb.api_url
+                }).then(function () {
+                    $scope.client = new BBModel.Client();
+                    return bbWidgetPage.decideNextPage(route);
+                });
+            } else if ($scope.member) {
+                return LoginService.logout({
+                    root: $scope.bb.api_url
+                }).then(function () {
+                    $scope.member = new BBModel.Member.Member();
+                    return bbWidgetPage.decideNextPage(route);
+                });
+            }
+        };
+        var setRoute = function setRoute(rdata) {
+            return $scope.bb.setRoute(rdata);
+        };
+        var getUrlParam = function getUrlParam(param) {
+            return $window.getURIparam(param);
+        };
+        var base64encode = function base64encode(param) {
+            return $window.btoa(param);
+        };
+        var broadcastItemUpdate = function broadcastItemUpdate() {
+            return $scope.$broadcast("currentItemUpdate", $scope.bb.current_item);
+        };
+        var isAdminIFrame = function isAdminIFrame() {
+            var location;
+            if (!$scope.bb.isAdmin) {
+                return false;
+            }
+            try {
+                location = $window.parent.location.href;
+                if (location && $window.parent.reload_dashboard) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (_error) {
+                return false;
+            }
+        };
+        var reloadDashboard = function reloadDashboard() {
+            return $window.parent.reload_dashboard();
+        };
+        var $debounce = function $debounce(tim) {
+            if ($scope._debouncing) {
+                return false;
+            }
+            tim || (tim = 100);
+            $scope._debouncing = true;
+            return $timeout(function () {
+                return $scope._debouncing = false;
+            }, tim);
+        };
+        var supportsTouch = function supportsTouch() {
+            return Modernizr.touch;
+        };
+        var isMemberLoggedIn = function isMemberLoggedIn() {
+            return LoginService.isLoggedIn();
+        };
+        var scrollTo = function scrollTo(id) {
+            $location.hash(id);
+            return $anchorScroll();
+        };
+        var redirectTo = function redirectTo(url) {
+            return $window.location.href = url;
+        };
+
+        return {
+            setScope: setScope,
+            isAdmin: isAdmin,
+            showLoaderHandler: showLoaderHandler,
+            hideLoaderHandler: hideLoaderHandler,
+            locationChangeStartHandler: locationChangeStartHandler,
+            getPartial: getPartial,
+            logout: logout,
+            setRoute: setRoute,
+            getUrlParam: getUrlParam,
+            base64encode: base64encode,
+            broadcastItemUpdate: broadcastItemUpdate,
+            isAdminIFrame: isAdminIFrame,
+            reloadDashboard: reloadDashboard,
+            $debounce: $debounce,
+            supportsTouch: supportsTouch,
+            isMemberLoggedIn: isMemberLoggedIn,
+            scrollTo: scrollTo,
+            redirectTo: redirectTo
+        };
+    }
+})();
