@@ -13400,6 +13400,9 @@ angular.module('BB.Services').factory("MembershipLevelsService", function ($q, B
                     return x.type === 'submit';
                 });
                 var model_type = functionName(model.constructor);
+                if (model_type === 'Object' && model.type) {
+                    model_type = model.type;
+                }
                 if (FormTransform['edit'][model_type]) {
                     $scope.form = FormTransform['edit'][model_type]($scope.form, schema.schema, $scope.model);
                 }
