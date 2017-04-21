@@ -13400,6 +13400,9 @@ angular.module('BB.Services').factory("MembershipLevelsService", function ($q, B
                     return x.type === 'submit';
                 });
                 var model_type = functionName(model.constructor);
+                if (model_type === 'Object' && model.type) {
+                    model_type = model.type;
+                }
                 if (FormTransform['edit'][model_type]) {
                     $scope.form = FormTransform['edit'][model_type]($scope.form, schema.schema, $scope.model);
                 }
@@ -17651,61 +17654,6 @@ angular.module('BB.Directives').directive('bbCustomBookingText', function () {
 });
 'use strict';
 
-angular.module('BB.Controllers').controller('CustomConfirmationText', function ($scope, $rootScope, CustomTextService, $q, LoadingService) {
-    var loader = LoadingService.$loader($scope).notLoaded();
-
-    $rootScope.connection_started.then(function () {
-        return $scope.loadData();
-    }, function (err) {
-        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
-
-    /***
-     * @ngdoc method
-     * @name loadData
-     * @methodOf BB.Directives:bbCustomBookingText
-     * @description
-     * Load data and display a text message
-     */
-    return $scope.loadData = function () {
-
-        if ($scope.total) {
-
-            return CustomTextService.confirmationText($scope.bb.company, $scope.total).then(function (msgs) {
-                $scope.messages = msgs;
-                return loader.setLoaded();
-            }, function (err) {
-                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-            });
-        } else if ($scope.loadingTotal) {
-
-            return $scope.loadingTotal.then(function (total) {
-                return CustomTextService.confirmationText($scope.bb.company, total).then(function (msgs) {
-                    $scope.messages = msgs;
-                    return loader.setLoaded();
-                }, function (err) {
-                    return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-                });
-            }, function (err) {
-                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-            });
-        } else {
-            return loader.setLoaded();
-        }
-    };
-});
-'use strict';
-
-angular.module('BB.Directives').directive('bbCustomConfirmationText', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: 'CustomConfirmationText'
-    };
-});
-'use strict';
-
 /***
  * @ngdoc directive
  * @name BB.Directives.directive:bbDateTimePicker
@@ -17814,6 +17762,134 @@ angular.module('BB.Directives').directive('bbDateTimePicker', function (PathSvc)
 
             $scope.minDateClean = clearTimezone($scope.minDate);
             return $scope.maxDateClean = clearTimezone($scope.maxDate);
+        }
+    };
+});
+'use strict';
+
+angular.module('BB.Controllers').controller('CustomConfirmationText', function ($scope, $rootScope, CustomTextService, $q, LoadingService) {
+    var loader = LoadingService.$loader($scope).notLoaded();
+
+    $rootScope.connection_started.then(function () {
+        return $scope.loadData();
+    }, function (err) {
+        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+    });
+
+    /***
+     * @ngdoc method
+     * @name loadData
+     * @methodOf BB.Directives:bbCustomBookingText
+     * @description
+     * Load data and display a text message
+     */
+    return $scope.loadData = function () {
+
+        if ($scope.total) {
+
+            return CustomTextService.confirmationText($scope.bb.company, $scope.total).then(function (msgs) {
+                $scope.messages = msgs;
+                return loader.setLoaded();
+            }, function (err) {
+                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+            });
+        } else if ($scope.loadingTotal) {
+
+            return $scope.loadingTotal.then(function (total) {
+                return CustomTextService.confirmationText($scope.bb.company, total).then(function (msgs) {
+                    $scope.messages = msgs;
+                    return loader.setLoaded();
+                }, function (err) {
+                    return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+                });
+            }, function (err) {
+                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+            });
+        } else {
+            return loader.setLoaded();
+        }
+    };
+});
+'use strict';
+
+angular.module('BB.Directives').directive('bbCustomConfirmationText', function () {
+    return {
+        restrict: 'AE',
+        replace: true,
+        scope: true,
+        controller: 'CustomConfirmationText'
+    };
+});
+"use strict";
+
+angular.module("BB.Directives").directive("bbFbLogin", function (LoginService, $rootScope, AlertService, $window) {
+
+    return {
+        restrict: 'A',
+        scope: true,
+        link: function link(scope, element, attrs) {
+
+            var options = scope.$eval(attrs.bbFbLogin) || {};
+            $rootScope.connection_started.then(function () {
+                return checkLoginState();
+            });
+
+            var statusChangeCallback = function statusChangeCallback(response) {
+                if (response.status === 'connected') {
+                    var params = {};
+                    params.access_token = response.authResponse.accessToken;
+                    if (options.login_only) {
+                        params.login_only = options.login_only;
+                    }
+                    loginToBBWithFBUser(params);
+                } else if (response.status === 'not_authorized') {
+                    scope.loginFB();
+                } else {
+                    scope.loginFB();
+                }
+            };
+
+            var checkLoginState = function checkLoginState() {
+                FB.getLoginStatus(function (response) {
+                    statusChangeCallback(response);
+                });
+            };
+
+            var loginToBBWithFBUser = function loginToBBWithFBUser(params) {
+                return LoginService.FBLogin(scope.bb.company, params).then(function (member) {
+                    $rootScope.member = member;
+                    scope.setClient($rootScope.member);
+                    if (scope.bb.destination) {
+                        return scope.redirectTo(scope.bb.destination);
+                    } else {
+                        scope.setLoaded(scope);
+                        return scope.decideNextPage();
+                    }
+                }, function (err) {
+                    if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
+                        return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
+                    } else {
+                        return AlertService.raise('LOGIN_FAILED');
+                    }
+                });
+            };
+
+            return scope.loginFB = function () {
+                return FB.login(function (response) {
+                    if (response.status === 'connected') {
+                        var params = {};
+                        params.access_token = response.authResponse.accessToken;
+                        if (options.login_only) {
+                            params.login_only = options.login_only;
+                        }
+                        loginToBBWithFBUser(params);
+                    } else if (response.status === 'not_authorized') {
+                        AlertService.raise('LOGIN_FAILED');
+                    } else {
+                        AlertService.raise('LOGIN_FAILED');
+                    }
+                }, { scope: 'public_profile,email' });
+            };
         }
     };
 });
@@ -18001,79 +18077,6 @@ angular.module('BB.Directives').directive('bbDatepickerPopup', function ($parse,
                 }
             };
             f();
-        }
-    };
-});
-"use strict";
-
-angular.module("BB.Directives").directive("bbFbLogin", function (LoginService, $rootScope, AlertService, $window) {
-
-    return {
-        restrict: 'A',
-        scope: true,
-        link: function link(scope, element, attrs) {
-
-            var options = scope.$eval(attrs.bbFbLogin) || {};
-            $rootScope.connection_started.then(function () {
-                return checkLoginState();
-            });
-
-            var statusChangeCallback = function statusChangeCallback(response) {
-                if (response.status === 'connected') {
-                    var params = {};
-                    params.access_token = response.authResponse.accessToken;
-                    if (options.login_only) {
-                        params.login_only = options.login_only;
-                    }
-                    loginToBBWithFBUser(params);
-                } else if (response.status === 'not_authorized') {
-                    scope.loginFB();
-                } else {
-                    scope.loginFB();
-                }
-            };
-
-            var checkLoginState = function checkLoginState() {
-                FB.getLoginStatus(function (response) {
-                    statusChangeCallback(response);
-                });
-            };
-
-            var loginToBBWithFBUser = function loginToBBWithFBUser(params) {
-                return LoginService.FBLogin(scope.bb.company, params).then(function (member) {
-                    $rootScope.member = member;
-                    scope.setClient($rootScope.member);
-                    if (scope.bb.destination) {
-                        return scope.redirectTo(scope.bb.destination);
-                    } else {
-                        scope.setLoaded(scope);
-                        return scope.decideNextPage();
-                    }
-                }, function (err) {
-                    if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
-                        return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
-                    } else {
-                        return AlertService.raise('LOGIN_FAILED');
-                    }
-                });
-            };
-
-            return scope.loginFB = function () {
-                return FB.login(function (response) {
-                    if (response.status === 'connected') {
-                        var params = {};
-                        params.access_token = response.authResponse.accessToken;
-                        if (options.login_only) {
-                            params.login_only = options.login_only;
-                        }
-                        loginToBBWithFBUser(params);
-                    } else if (response.status === 'not_authorized') {
-                        AlertService.raise('LOGIN_FAILED');
-                    } else {
-                        AlertService.raise('LOGIN_FAILED');
-                    }
-                }, { scope: 'public_profile,email' });
-            };
         }
     };
 });
@@ -25977,59 +25980,6 @@ angular.module('BB.Directives').directive('bbBasket', function (PathSvc) {
 });
 'use strict';
 
-/***
- * @ngdoc directive
- * @name BB.Directives:bbMiniBasket
- * @restrict AE
- * @scope true
- *
- * @description
- * Loads a list of mini basket for the currently in scope company
- *
- * <pre>
- * restrict: 'AE'
- * replace: true
- * scope: true
- * </pre>
- *
- * @property {boolean} setUsingBasket Set using basket  or not
- */ //
-
-
-angular.module('BB.Directives').directive('bbMiniBasket', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: function controller($scope, $rootScope, BasketService, $q) {
-            $scope.setUsingBasket(true);
-            $rootScope.connection_started.then(function () {});
-
-            /***
-             * @ngdoc method
-             * @name basketDescribe
-             * @methodOf BB.Directives:bbMiniBasket
-             * @description
-             * Basked describe in according of basket length
-             *
-             * @param {string} nothing Nothing to describe
-             * @param {string} single The single describe
-             * @param {string} plural The plural describe
-             */
-            return $scope.basketDescribe = function (nothing, single, plural) {
-                if (!$scope.bb.basket || $scope.bb.basket.length() === 0) {
-                    return nothing;
-                } else if ($scope.bb.basket.length() === 1) {
-                    return single;
-                } else {
-                    return plural.replace("$0", $scope.bb.basket.length());
-                }
-            };
-        }
-    };
-});
-'use strict';
-
 angular.module('BB.Directives').directive('bbMinSpend', function () {
     return {
         restrict: 'A',
@@ -26079,6 +26029,59 @@ angular.module('BB.Directives').directive('bbMinSpend', function () {
                     AlertService.clear();
                     AlertService.add("warning", { msg: $translate.instant('CORE.ALERTS.SPEND_AT_LEAST', { min_spend: $scope.min_spend }) });
                     return false;
+                }
+            };
+        }
+    };
+});
+'use strict';
+
+/***
+ * @ngdoc directive
+ * @name BB.Directives:bbMiniBasket
+ * @restrict AE
+ * @scope true
+ *
+ * @description
+ * Loads a list of mini basket for the currently in scope company
+ *
+ * <pre>
+ * restrict: 'AE'
+ * replace: true
+ * scope: true
+ * </pre>
+ *
+ * @property {boolean} setUsingBasket Set using basket  or not
+ */ //
+
+
+angular.module('BB.Directives').directive('bbMiniBasket', function () {
+    return {
+        restrict: 'AE',
+        replace: true,
+        scope: true,
+        controller: function controller($scope, $rootScope, BasketService, $q) {
+            $scope.setUsingBasket(true);
+            $rootScope.connection_started.then(function () {});
+
+            /***
+             * @ngdoc method
+             * @name basketDescribe
+             * @methodOf BB.Directives:bbMiniBasket
+             * @description
+             * Basked describe in according of basket length
+             *
+             * @param {string} nothing Nothing to describe
+             * @param {string} single The single describe
+             * @param {string} plural The plural describe
+             */
+            return $scope.basketDescribe = function (nothing, single, plural) {
+                if (!$scope.bb.basket || $scope.bb.basket.length() === 0) {
+                    return nothing;
+                } else if ($scope.bb.basket.length() === 1) {
+                    return single;
+                } else {
+                    return plural.replace("$0", $scope.bb.basket.length());
                 }
             };
         }
