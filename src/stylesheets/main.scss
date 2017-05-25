@@ -80,3 +80,16 @@ select.form-control[disabled],
     display : none;
   }
 }
+
+.ui-select-bootstrap .ui-select-choices-row > a{
+  white-space: normal;
+}
+.ui-select-toggle {
+  display: flex;
+  justify-content: space-between;
+}
+.ui-select-match-text{
+  overflow-x: hidden; 
+  text-overflow: ellipsis;
+}
+
