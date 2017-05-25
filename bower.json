@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-core",
-  "version": "2.2.15",
+  "version": "2.2.17",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-core-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -36,14 +36,12 @@
     "angular-touch": "~1.5.10",
     "angular-bootstrap": "~2.0.0",
     "angular-carousel": "~0.3.13",
-
     "moment": "~2.14.0",
     "moment-timezone": "~0.5.4",
-
+    "angular-moment": "~1.0.1",
     "fullcalendar": "~3.0.0",
     "fontawesome": "~4.6.3",
     "angular-ui-router": "~0.2.18",
-
     "accounting": "~0.3.2",
     "angular-mocks": "~1.5.10",
     "trNgGrid": "~3.1.7",
@@ -60,7 +58,7 @@
     "angular-cache": "~3.2.5",
     "angular-spectrum-colorpicker": "~1.4.2",
     "bootstrap-sass": "~3.3.6",
-    "underscore": "~1.7.0",
+    "underscore": "^1.8.3",
     "sprintf": "~1.0.2",
     "angular-google-maps": "2.3.2",
     "angular-rangeslider": "~0.0.13",
@@ -71,12 +69,11 @@
     "angulartics": "~1.4.0",
     "angulartics-piwik": "~1.0.5",
     "waypoints": "~3.1.1",
-    "lodash": "3.10.1",
     "airbrake-js-client": "^0.5.8",
     "pusher-angular": "~0.1.4",
     "pusher": "~2.2.4",
     "ng-file-upload": "^12.0.4",
-    "ui-select": "angular-ui-select#^0.16.1"
+    "angular-ui-select": "0.18.1"
   },
   "resolutions": {
     "jquery": "~1.11.3",
