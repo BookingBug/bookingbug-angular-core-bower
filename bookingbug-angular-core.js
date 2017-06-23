@@ -32424,7 +32424,7 @@ angular.module('BB.Directives').directive('bbLogin', function () {
 
     angular.module('BB.Controllers').controller('MapCtrl', MapCtrl);
 
-    function MapCtrl($scope, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, ErrorService, $log, GeolocationService, GeneralOptions, bbAnalyticsPiwik) {
+    function MapCtrl($scope, $attrs, $rootScope, AlertService, FormDataStoreService, LoadingService, $q, $window, $timeout, ErrorService, $log, GeolocationService, GeneralOptions, bbAnalyticsPiwik, bbWidgetInit) {
 
         /*
          *  Retrieve the value passed to the layout attribute
@@ -32523,7 +32523,7 @@ angular.module('BB.Directives').directive('bbLogin', function () {
             if ($scope.bb.company.companies) {
                 $rootScope.parent_id = $scope.bb.company.id;
             } else if ($rootScope.parent_id) {
-                $scope.initWidget({
+                bbWidgetInit.initWidget({
                     company_id: $rootScope.parent_id,
                     first_page: $scope.bb.current_page,
                     keep_basket: true,
@@ -32531,7 +32531,7 @@ angular.module('BB.Directives').directive('bbLogin', function () {
                 });
                 return;
             } else {
-                $scope.initWidget({
+                bbWidgetInit.initWidget({
                     company_id: $scope.bb.company.id,
                     first_page: null
                 });
@@ -32544,9 +32544,9 @@ angular.module('BB.Directives').directive('bbLogin', function () {
             }
 
             if ($scope.bb.current_item.service && $scope.options && $scope.options.filter_by_service) {
-                $scope.notLoaded($scope);
+                loader.notLoaded($scope);
 
-                filterByService().then(function () {
+                $scope.filterByServicePromise().then(function () {
                     return $scope.map_init.then(function () {
                         return mapInit();
                     });
@@ -32608,13 +32608,13 @@ angular.module('BB.Directives').directive('bbLogin', function () {
 
         /***
          * @ngdoc method
-         * @name filterByService
+         * @name $scope.filterByServicePromise
          * @methodOf BB.Directives:bbMap
          * @description
          * Set the has_service property and the service object on all companies
          * so companies can be filtered by service
          */
-        var filterByService = function filterByService() {
+        $scope.filterByServicePromise = function () {
             var deferred = $q.defer();
             if ($scope.bb.selected_service.$has('all_children')) {
                 $scope.bb.selected_service.$get('all_children').then(function (resource) {
@@ -32791,7 +32791,9 @@ angular.module('BB.Directives').directive('bbLogin', function () {
          *
          * @param {object} prms The parameters of the address
          */
-        $scope.searchAddress = function (prms) {
+        $scope.searchAddress = function () {
+            var prms = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
 
             if (bbAnalyticsPiwik.isEnabled()) setPiwik('Search');
 
@@ -32801,9 +32803,23 @@ angular.module('BB.Directives').directive('bbLogin', function () {
                 return false;
             }
 
+            if (angular.isDefined(prms.address)) {
+                $scope.address = prms.address;
+            }
+
             // a condition for the empty sent address value which was causing non-stopping spinner
             // the previous condition isn't editted for the purpose of the application wide possible side-effects
             if ($scope.loadMapOnGeolocate && (!$scope.address || angular.isString($scope.address) && !$scope.address.trim())) {
+                AlertService.clear();
+                AlertService.raise('MISSING_LOCATION');
+                return false;
+            }
+
+            /*
+             * the previous condition seems to break map rendering on some clients implementations (i.e. COS),
+             * so this one only prevents searches for empty criteria
+             */
+            if ($scope.address !== undefined && $scope.address.trim() === '') {
                 return false;
             }
 
@@ -32812,16 +32828,13 @@ angular.module('BB.Directives').directive('bbLogin', function () {
             $scope.loadMapOnGeolocate = true;
 
             delete $scope.geocoder_result;
-            if (!prms) {
-                prms = {};
-            }
+
             $scope.search_prms = prms;
             $scope.map_init.then(function () {
                 var address = $scope.address;
 
                 if (prms.address) {
-                    var _prms = prms;
-                    address = _prms.address;
+                    address = prms.address;
                 }
 
                 if (address) {
