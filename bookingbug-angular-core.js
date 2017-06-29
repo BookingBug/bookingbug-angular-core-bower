@@ -12868,8 +12868,10 @@ angular.module('BB.Services').provider('GeneralOptions', function () {
         update_document_title: false,
         scroll_offset: 0,
         map_marker_icon: null,
+        mapActiveMarkerIcon: null,
         map_layout: 'default',
         companyHasExternalBookings: false,
+        mapMarkerHasLabel: true,
         maxAdvanceDatetimeDays: null
     };
 
@@ -20051,6 +20053,40 @@ angular.module('BB.Directives').directive('bbPurchaseTotal', function () {
 });
 'use strict';
 
+/***
+ * @ngdoc directive
+ * @name BB.Directives:bbSkipDecideNextPage
+ * @restrict AE
+ * @scope true
+ *
+ * @description
+ *
+ * Disables the auto decide next page inside the widget controllers
+ *
+ * <pre>
+ * restrict: 'AE'
+ * replace: true
+ * scope: true
+ * </pre>
+ *
+ * @property {string} target widget directive name, e.g. bb-times
+ */ //
+
+
+angular.module('BB.Directives').directive('bbSkipDecideNextPage', function (bbWidgetPage) {
+
+    return {
+        restrict: 'AE',
+        replace: true,
+        scope: true,
+        link: function link(scope, element, attrs) {
+
+            if (attrs.bbSkipDecideNextPage) bbWidgetPage.setAutoDecideNextPage(attrs.bbSkipDecideNextPage, false);else console.warn("Warning: you forgot to use the bb-skip-decide-next-page=\"directive-name\" notation");
+        }
+    };
+});
+'use strict';
+
 angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $window, $document) {
     return {
         restrict: 'AE',
@@ -21879,6 +21915,11 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
     function BBWidgetPage(AlertService, BBModel, LoadingService, LoginService, $rootScope, $sce, $analytics) {
 
         var $scope = null;
+
+        // Automatic Decide Next Page: this flag can be used for pages
+        // which require to prevent the widget's built-in decide next page
+        var automaticDNP = {};
+
         var setScope = function setScope($s) {
             $scope = $s;
         };
@@ -21941,6 +21982,10 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                 LoadingService.notLoaded($scope);
                 $scope.bb_main = $sce.trustAsResourceUrl($scope.bb.pageURL(route));
             }
+
+            // reset this collection on each page change
+            automaticDNP = {};
+
             $analytics.pageTrack($scope.bb.current_page);
             return $rootScope.$broadcast("page:loaded");
         };
@@ -22061,6 +22106,17 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                 return showPage('confirmation');
             }
         };
+
+        var canAutoDecideNextPage = function canAutoDecideNextPage(widget) {
+            return automaticDNP.hasOwnProperty(widget) ? automaticDNP[widget] : true;
+        };
+
+        var setAutoDecideNextPage = function setAutoDecideNextPage(widget) {
+            var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+            automaticDNP[widget] = state;
+        };
+
         return {
             clearPage: clearPage,
             decideNextPage: decideNextPage,
@@ -22071,7 +22127,9 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
             setPageLoaded: setPageLoaded,
             setPageRoute: setPageRoute,
             setScope: setScope,
-            showPage: showPage
+            showPage: showPage,
+            canAutoDecideNextPage: canAutoDecideNextPage,
+            setAutoDecideNextPage: setAutoDecideNextPage
         };
     }
 })();
@@ -32470,6 +32528,8 @@ angular.module('BB.Directives').directive('bbLogin', function () {
 
         // custom map marker icon can be set using GeneralOptions
         var defaultPin = GeneralOptions.map_marker_icon;
+        var activePin = GeneralOptions.mapActiveMarkerIcon;
+        var pinHasLabel = GeneralOptions.mapMarkerHasLabel;
 
         // when set to false, geolocate() only fills the input with the returned address and does not load the map
         $scope.loadMapOnGeolocate = true;
@@ -32692,11 +32752,14 @@ angular.module('BB.Directives').directive('bbLogin', function () {
                         map: $scope.myMap,
                         position: latlong,
                         visible: $scope.showAllMarkers,
-                        icon: defaultPin,
-
-                        // assign a label to the pin in order to easily match with the list
-                        label: (index + 1).toString()
+                        icon: defaultPin
                     });
+
+                    // assign a label to the pin in order to easily match with the list
+                    if (pinHasLabel) {
+                        marker.setLabel((index + 1).toString());
+                    }
+
                     marker.company = comp;
                     if (!$scope.hide_not_live_stores || !!comp.live) {
                         $scope.mapMarkers.push(marker);
@@ -33143,7 +33206,6 @@ angular.module('BB.Directives').directive('bbLogin', function () {
          */
         $scope.openMarkerInfo = function (marker) {
             return $timeout(function () {
-
                 $scope.currentMarker = marker;
                 $scope.myMap.setCenter(marker.position);
                 $scope.myInfoWindow.open($scope.myMap, marker);
@@ -33155,7 +33217,11 @@ angular.module('BB.Directives').directive('bbLogin', function () {
                     for (var _iterator5 = Array.from($scope.shownMarkers)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
                         var shown_marker = _step5.value;
 
+                        shown_marker.setIcon(defaultPin);
                         if (shown_marker.company.id === marker.company.id) {
+                            if (activePin) {
+                                shown_marker.setIcon(activePin);
+                            }
                             shown_marker.is_open = true;
                         }
                     }
@@ -39569,7 +39635,7 @@ angular.module('BB.Directives').directive('bbTimeSlots', function () {
 
 angular.module('BB.Controllers').controller('TimeList', TimeListCtrl);
 
-function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBModel, DateTimeUtilitiesService, LoadingService, ErrorService, $translate) {
+function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBModel, DateTimeUtilitiesService, LoadingService, ErrorService, $translate, bbWidgetPage) {
     'ngInject';
 
     var loader = LoadingService.$loader($scope).notLoaded();
@@ -39579,6 +39645,8 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
     }
 
     $scope.options = $scope.$eval($attrs.bbTimes) || {};
+
+    var currentSlot = null;
 
     $rootScope.connection_started.then(function () {
 
@@ -39660,6 +39728,8 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
 
         if (slot && slot.availability() > 0) {
 
+            currentSlot = slot;
+
             // if this time cal was also for a specific item source (i.e.a person or resoure- make sure we've selected it)
             if ($scope.item_link_source) {
                 $scope.data_source.setItem($scope.item_link_source);
@@ -39676,10 +39746,14 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
             $scope.data_source.setTime(slot);
             if ($scope.data_source.reserve_ready) {
                 return $scope.addItemToBasket().then(function () {
-                    return $scope.decideNextPage(route);
+                    if (bbWidgetPage.canAutoDecideNextPage('bb-times')) {
+                        return $scope.decideNextPage(route);
+                    }
                 });
             } else {
-                return $scope.decideNextPage(route);
+                if (bbWidgetPage.canAutoDecideNextPage('bb-times')) {
+                    return $scope.decideNextPage(route);
+                }
             }
         }
     };
@@ -39869,6 +39943,19 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
         } else if (requested_slot.slot && requested_slot.match === "partial") {
             return $scope.highlightSlot(requested_slot.slot, $scope.selected_day);
         }
+    };
+
+    /***
+     * @ngdoc method
+     * @name isCurrentTimeSlot
+     * @methodOf BB.Directives.isCurrentTimeSlot
+     * @description
+     * Is the slot the currently selected slot
+     *
+     * @param {TimeSlot} slot
+     */
+    $scope.isCurrentTimeSlot = function (slot) {
+        return currentSlot && slot.time == currentSlot.time;
     };
 
     /***
