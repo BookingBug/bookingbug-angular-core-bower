@@ -17,6 +17,11 @@ angular.module('BB.analytics', ['angulartics', 'angulartics.piwik']);
 angular.module('BB.i18n', ['tmh.dynamicLocale']);
 'use strict';
 
+(function () {
+    angular.module('toggle-switch', ['ng']);
+})();
+'use strict';
+
 angular.module('BB.uiSelect', []);
 'use strict';
 
@@ -176,311 +181,6 @@ angular.module('schemaForm').config(function (schemaFormProvider, schemaFormDeco
     schemaFormDecoratorsProvider.addMapping('bootstrapDecorator', 'radiobuttons', 'radio-buttons.html');
 
     return schemaFormDecoratorsProvider.createDirective('radiobuttons', 'radio-buttons.html');
-});
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-window.Collection = function Collection() {
-    _classCallCheck(this, Collection);
-};
-
-window.Collection.Base = function () {
-    function Base(res, items, params) {
-        _classCallCheck(this, Base);
-
-        this.res = res;
-        this.items = items;
-        this.params = params;
-        this.callbacks = [];
-
-        var clean_params = {};
-        for (var key in params) {
-            var val = params[key];
-            if (val != null) {
-                if (val.id != null) {
-                    clean_params[key + "_id"] = val.id;
-                } else {
-                    clean_params[key] = val;
-                }
-            }
-        }
-        this.jparams = JSON.stringify(clean_params);
-        if (res) {
-            for (var n in res) {
-                var m = res[n];
-                this[n] = m;
-            }
-        }
-    }
-
-    Base.prototype.checkItem = function checkItem(item) {
-        var _this = this;
-
-        var call = void 0;
-        if (!this.matchesParams(item)) {
-            this.deleteItem(item); //delete if it is in the collection at the moment
-            return true;
-        } else {
-            for (var index = 0; index < this.items.length; index++) {
-                var existingItem = this.items[index];
-                if (item.self === existingItem.self) {
-                    this.items[index] = item;
-                    var _iteratorNormalCompletion = true;
-                    var _didIteratorError = false;
-                    var _iteratorError = undefined;
-
-                    try {
-                        for (var _iterator = Array.from(this.callbacks)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                            call = _step.value;
-
-                            call[1](item, "update");
-                        }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return) {
-                                _iterator.return();
-                            }
-                        } finally {
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-            }
-        }
-
-        this.items.push(item);
-        return function () {
-            var result = [];
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = Array.from(_this.callbacks)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    call = _step2.value;
-
-                    result.push(call[1](item, "add"));
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
-            return result;
-        }();
-    };
-
-    Base.prototype.deleteItem = function deleteItem(item) {
-        var len = this.items.length;
-        this.items = this.items.filter(function (x) {
-            return x.self !== item.self;
-        });
-        if (this.items.length !== len) {
-            return Array.from(this.callbacks).map(function (call) {
-                return call[1](item, "delete");
-            });
-        }
-    };
-
-    Base.prototype.getItems = function getItems() {
-        return this.items;
-    };
-
-    Base.prototype.addCallback = function addCallback(obj, fn) {
-        var _iteratorNormalCompletion3 = true;
-        var _didIteratorError3 = false;
-        var _iteratorError3 = undefined;
-
-        try {
-            for (var _iterator3 = Array.from(this.callbacks)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                var call = _step3.value;
-
-                if (call[0] === obj) {
-                    return;
-                }
-            }
-        } catch (err) {
-            _didIteratorError3 = true;
-            _iteratorError3 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                    _iterator3.return();
-                }
-            } finally {
-                if (_didIteratorError3) {
-                    throw _iteratorError3;
-                }
-            }
-        }
-
-        return this.callbacks.push([obj, fn]);
-    };
-
-    Base.prototype.matchesParams = function matchesParams(item) {
-        return true;
-    };
-
-    return Base;
-}();
-
-window.BaseCollections = function () {
-    function BaseCollections() {
-        _classCallCheck(this, BaseCollections);
-
-        this.collections = [];
-    }
-
-    BaseCollections.prototype.count = function count() {
-        return this.collections.length;
-    };
-
-    BaseCollections.prototype.add = function add(col) {
-        return this.collections.push(col);
-    };
-
-    BaseCollections.prototype.checkItems = function checkItems(item) {
-        return Array.from(this.collections).map(function (col) {
-            return col.checkItem(item);
-        });
-    };
-
-    BaseCollections.prototype.deleteItems = function deleteItems(item) {
-        return Array.from(this.collections).map(function (col) {
-            return col.deleteItem(item);
-        });
-    };
-
-    BaseCollections.prototype.find = function find(prms) {
-        var clean_params = {};
-        for (var key in prms) {
-            var val = prms[key];
-            if (val != null) {
-                if (val.id != null) {
-                    clean_params[key + "_id"] = val.id;
-                } else {
-                    clean_params[key] = val;
-                }
-            }
-        }
-        var jprms = JSON.stringify(clean_params);
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
-
-        try {
-            for (var _iterator4 = Array.from(this.collections)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                var col = _step4.value;
-
-                if (jprms === col.jparams) {
-                    return col;
-                }
-            }
-        } catch (err) {
-            _didIteratorError4 = true;
-            _iteratorError4 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                    _iterator4.return();
-                }
-            } finally {
-                if (_didIteratorError4) {
-                    throw _iteratorError4;
-                }
-            }
-        }
-    };
-
-    BaseCollections.prototype.delete = function _delete(col) {
-        return this.collections = _.without(this.collections, col);
-    };
-
-    return BaseCollections;
-}();
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-window.Collection.Day = function (_window$Collection$Ba) {
-    _inherits(Day, _window$Collection$Ba);
-
-    function Day() {
-        _classCallCheck(this, Day);
-
-        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
-    }
-
-    Day.prototype.checkItem = function checkItem(item) {
-        var _window$Collection$Ba2;
-
-        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
-    };
-
-    return Day;
-}(window.Collection.Base);
-
-angular.module('BB.Services').provider("DayCollections", function () {
-    return {
-        $get: function $get() {
-            return new window.BaseCollections();
-        }
-    };
-});
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-window.Collection.Space = function (_window$Collection$Ba) {
-    _inherits(Space, _window$Collection$Ba);
-
-    function Space() {
-        _classCallCheck(this, Space);
-
-        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
-    }
-
-    Space.prototype.checkItem = function checkItem(item) {
-        var _window$Collection$Ba2;
-
-        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
-    };
-
-    return Space;
-}(window.Collection.Base);
-
-angular.module('BB.Services').provider("SpaceCollections", function () {
-    return {
-        $get: function $get() {
-            return new window.BaseCollections();
-        }
-    };
 });
 'use strict';
 
@@ -846,8 +546,8 @@ angular.module('angular-hal', []).provider('data_cache', function () {
 
         return resultHref;
     } //resolveUrl
-}] //service
-);
+}]) //service
+;
 'use strict';
 
 angular.module('ngStorage', []).factory('$fakeStorage', ['$cookies', function ($cookies) {
@@ -1110,9 +810,497 @@ String.prototype.parameterise = function (seperator) {
     }
     return this.trim().replace(/\s/g, seperator).toLowerCase();
 };
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+window.Collection = function Collection() {
+    _classCallCheck(this, Collection);
+};
+
+window.Collection.Base = function () {
+    function Base(res, items, params) {
+        _classCallCheck(this, Base);
+
+        this.res = res;
+        this.items = items;
+        this.params = params;
+        this.callbacks = [];
+
+        var clean_params = {};
+        for (var key in params) {
+            var val = params[key];
+            if (val != null) {
+                if (val.id != null) {
+                    clean_params[key + "_id"] = val.id;
+                } else {
+                    clean_params[key] = val;
+                }
+            }
+        }
+        this.jparams = JSON.stringify(clean_params);
+        if (res) {
+            for (var n in res) {
+                var m = res[n];
+                this[n] = m;
+            }
+        }
+    }
+
+    Base.prototype.checkItem = function checkItem(item) {
+        var _this = this;
+
+        var call = void 0;
+        if (!this.matchesParams(item)) {
+            this.deleteItem(item); //delete if it is in the collection at the moment
+            return true;
+        } else {
+            for (var index = 0; index < this.items.length; index++) {
+                var existingItem = this.items[index];
+                if (item.self === existingItem.self) {
+                    this.items[index] = item;
+                    var _iteratorNormalCompletion = true;
+                    var _didIteratorError = false;
+                    var _iteratorError = undefined;
+
+                    try {
+                        for (var _iterator = Array.from(this.callbacks)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                            call = _step.value;
+
+                            call[1](item, "update");
+                        }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return) {
+                                _iterator.return();
+                            }
+                        } finally {
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        this.items.push(item);
+        return function () {
+            var result = [];
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = Array.from(_this.callbacks)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    call = _step2.value;
+
+                    result.push(call[1](item, "add"));
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            return result;
+        }();
+    };
+
+    Base.prototype.deleteItem = function deleteItem(item) {
+        var len = this.items.length;
+        this.items = this.items.filter(function (x) {
+            return x.self !== item.self;
+        });
+        if (this.items.length !== len) {
+            return Array.from(this.callbacks).map(function (call) {
+                return call[1](item, "delete");
+            });
+        }
+    };
+
+    Base.prototype.getItems = function getItems() {
+        return this.items;
+    };
+
+    Base.prototype.addCallback = function addCallback(obj, fn) {
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+            for (var _iterator3 = Array.from(this.callbacks)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                var call = _step3.value;
+
+                if (call[0] === obj) {
+                    return;
+                }
+            }
+        } catch (err) {
+            _didIteratorError3 = true;
+            _iteratorError3 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                    _iterator3.return();
+                }
+            } finally {
+                if (_didIteratorError3) {
+                    throw _iteratorError3;
+                }
+            }
+        }
+
+        return this.callbacks.push([obj, fn]);
+    };
+
+    Base.prototype.matchesParams = function matchesParams(item) {
+        return true;
+    };
+
+    return Base;
+}();
+
+window.BaseCollections = function () {
+    function BaseCollections() {
+        _classCallCheck(this, BaseCollections);
+
+        this.collections = [];
+    }
+
+    BaseCollections.prototype.count = function count() {
+        return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function add(col) {
+        return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function checkItems(item) {
+        return Array.from(this.collections).map(function (col) {
+            return col.checkItem(item);
+        });
+    };
+
+    BaseCollections.prototype.deleteItems = function deleteItems(item) {
+        return Array.from(this.collections).map(function (col) {
+            return col.deleteItem(item);
+        });
+    };
+
+    BaseCollections.prototype.find = function find(prms) {
+        var clean_params = {};
+        for (var key in prms) {
+            var val = prms[key];
+            if (val != null) {
+                if (val.id != null) {
+                    clean_params[key + "_id"] = val.id;
+                } else {
+                    clean_params[key] = val;
+                }
+            }
+        }
+        var jprms = JSON.stringify(clean_params);
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+            for (var _iterator4 = Array.from(this.collections)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                var col = _step4.value;
+
+                if (jprms === col.jparams) {
+                    return col;
+                }
+            }
+        } catch (err) {
+            _didIteratorError4 = true;
+            _iteratorError4 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                    _iterator4.return();
+                }
+            } finally {
+                if (_didIteratorError4) {
+                    throw _iteratorError4;
+                }
+            }
+        }
+    };
+
+    BaseCollections.prototype.delete = function _delete(col) {
+        return this.collections = _.without(this.collections, col);
+    };
+
+    return BaseCollections;
+}();
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+window.Collection.Day = function (_window$Collection$Ba) {
+    _inherits(Day, _window$Collection$Ba);
+
+    function Day() {
+        _classCallCheck(this, Day);
+
+        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
+    }
+
+    Day.prototype.checkItem = function checkItem(item) {
+        var _window$Collection$Ba2;
+
+        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+
+    return Day;
+}(window.Collection.Base);
+
+angular.module('BB.Services').provider("DayCollections", function () {
+    return {
+        $get: function $get() {
+            return new window.BaseCollections();
+        }
+    };
+});
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+window.Collection.Space = function (_window$Collection$Ba) {
+    _inherits(Space, _window$Collection$Ba);
+
+    function Space() {
+        _classCallCheck(this, Space);
+
+        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
+    }
+
+    Space.prototype.checkItem = function checkItem(item) {
+        var _window$Collection$Ba2;
+
+        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+
+    return Space;
+}(window.Collection.Base);
+
+angular.module('BB.Services').provider("SpaceCollections", function () {
+    return {
+        $get: function $get() {
+            return new window.BaseCollections();
+        }
+    };
+});
 'use strict';
 
-angular.module('BB').constant('routeStates', {
+(function () {
+
+    angular.module('BB').constant('BBAlerts', [{
+        key: 'GENERIC',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'LOCATION_NOT_FOUND',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'MISSING_LOCATION',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'MISSING_POSTCODE',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'POSTCODE_INVALID',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'ITEM_NO_LONGER_AVAILABLE',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'NO_WAITLIST_SPACES_LEFT',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'FORM_INVALID',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'GEOLOCATION_ERROR_FORBIDDEN',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'GEOLOCATION_ERROR',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'EMPTY_BASKET_FOR_CHECKOUT',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'MAXIMUM_TICKETS',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'GIFT_CERTIFICATE_REQUIRED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'TIME_SLOT_NOT_SELECTED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'STORE_NOT_SELECTED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'APPT_AT_SAME_TIME',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'REQ_TIME_NOT_AVAIL',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'TOPUP_SUCCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'TOPUP_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'UPDATE_SUCCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'UPDATE_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'ALREADY_REGISTERED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'LOGIN_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'SSO_LOGIN_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_INVALID',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_REQ_SUCCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_REQ_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_SUCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_MISMATCH',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'ATTENDEES_CHANGED',
+        type: 'info',
+        persist: true
+    }, {
+        key: 'PAYMENT_FAILED',
+        type: 'danger',
+        persist: true
+    }, {
+        key: 'ACCOUNT_DISABLED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'FB_LOGIN_NOT_A_MEMBER',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PHONE_NUMBER_IN_USE',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'EMAIL_IN_USE',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'WAITLIST_ACCEPTED',
+        type: 'success',
+        persist: false
+    }, {
+        key: 'BOOKING_CANCELLED',
+        type: 'success',
+        persist: false
+    }, {
+        key: 'NOT_BOOKABLE_PERSON',
+        type: 'warning',
+        persist: false
+    }, {
+        key: 'NOT_BOOKABLE_RESOURCE',
+        type: 'warning',
+        persist: false
+    }, {
+        key: 'COUPON_APPLY_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true
+    }, {
+        key: 'DEAL_APPLY_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true
+    }, {
+        key: 'DEAL_REMOVE_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true
+    }]);
+})();
+'use strict';
+
+(function () {
+
+    angular.module('BB').constant('routeStates', {
         Company: 0,
         Category: 1,
         Service: 2,
@@ -1130,7 +1318,8 @@ angular.module('BB').constant('routeStates', {
         Login: 14,
         Questions: 15,
         Confirmation: 16
-});
+    });
+})();
 'use strict';
 
 /***
@@ -6065,10 +6254,11 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * @property {integer} id Id of the client
  * @property {array} answers Answers of the client
  * @property {boolean} deleted Verify if the client account is deleted or not
+ * @property {object} extra_info Can contain any data in addition to locale
  */ //
 
 
-angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseModel, ClientService) {
+angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseModel, ClientService, bbLocale) {
     return function (_BaseModel) {
         _inherits(Client, _BaseModel);
 
@@ -6078,6 +6268,7 @@ angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseMo
             var _this = _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
 
             _this.name = _this.getName();
+            _this.setExtraInfo();
             if (data) {
                 if (data.answers && data.$has('questions')) {
                     _this.waitingQuestions = $q.defer();
@@ -6124,6 +6315,22 @@ angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseMo
             if (time_zone != null) {
                 this.time_zone = time_zone;
             }
+        };
+
+        /**
+         * @ngdoc method
+         * @name setExtraInfo
+         * @methodOf BB.Models:Client
+         * @description
+         * Set the extra_info object
+         * @param {object} extra_info Can contain any data in addition to locale
+         */
+
+
+        Client.prototype.setExtraInfo = function setExtraInfo() {
+            var extra_info = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            this.extra_info = extra_info;
         };
 
         /***
@@ -6191,6 +6398,9 @@ angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseMo
             }
             if (values.time_zone) {
                 return this.time_zone = values.time_zone;
+            }
+            if (values.extra_info) {
+                return this.extra_info = values.extra_info;
             }
         };
 
@@ -6512,6 +6722,10 @@ angular.module('BB.Models').factory("ClientModel", function ($q, BBModel, BaseMo
                     }
                 }
             }
+
+            x.extra_info = this.extra_info;
+            x.extra_info.locale = bbLocale.getLocale();
+
             return x;
         };
 
@@ -10497,48 +10711,39 @@ angular.module('BB.Services').factory('$exceptionHandler', function ($log, Airbr
 });
 'use strict';
 
-/***
- * @ngdoc service
- * @name BB.Services:Alert
- *
- * @description
- * Representation of an Alert Object
- *
- * @property {array} alerts The array with all types of alerts
- * @property {string} add Add alert message
- */ //
+(function () {
 
-angular.module('BB.Services').factory('AlertService', function ($rootScope, ErrorService, $timeout, $translate) {
+    angular.module('BB.Services').factory('AlertService', AlertService);
 
-    var alertService = void 0;
-    $rootScope.alerts = [];
+    function AlertService($rootScope, ErrorService, $timeout, $translate) {
 
-    /***
-     * @ngdoc method
-     * @name titleLookup
-     * @methodOf BB.Services:Alert
-     * @description
-     * Title look up in according of type and title parameters
-     *
-     * @returns {boolean} The returned title
-     */
-    var titleLookup = function titleLookup(type, title) {
-        if (title) {
+        $rootScope.alerts = [];
+
+        /***
+         * @ngdoc method
+         * @name titleLookup
+         * @methodOf BB.Services:Alert
+         * @description
+         * Title look up in according of type and title parameters
+         *
+         * @returns {boolean} The returned title
+         */
+        var titleLookup = function titleLookup(type, title) {
+            if (title) {
+                return title;
+            }
+            switch (type) {
+                case "error":
+                case "danger":
+                    title = $translate.instant('CORE.ERROR_HEADING');
+                    break;
+                default:
+                    title = null;
+            }
             return title;
-        }
-        switch (type) {
-            case "error":
-            case "danger":
-                title = $translate.instant('CORE.ERROR_HEADING');
-                break;
-            default:
-                title = null;
-        }
-        return title;
-    };
+        };
 
-    return alertService = {
-        add: function add(type, _ref) {
+        var add = function add(type, _ref) {
             var title = _ref.title,
                 msg = _ref.msg,
                 persist = _ref.persist;
@@ -10562,8 +10767,7 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
                 }, 3000);
             }
             return $rootScope.$broadcast("alert:raised");
-        },
-
+        };
 
         /***
          * @ngdoc method
@@ -10574,10 +10778,9 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {boolean}  close alert
          */
-        closeAlert: function closeAlert(alert) {
-            return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
-        },
-
+        var closeAlert = function closeAlert(alert) {
+            return closeAlertIdx($rootScope.alerts.indexOf(alert));
+        };
 
         /***
          * @ngdoc method
@@ -10588,10 +10791,9 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {boolean}  The returned close alert index
          */
-        closeAlertIdx: function closeAlertIdx(index) {
+        var closeAlertIdx = function closeAlertIdx(index) {
             return $rootScope.alerts.splice(index, 1);
-        },
-
+        };
 
         /***
          * @ngdoc method
@@ -10602,10 +10804,9 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} Newly clear array of the alert messages
          */
-        clear: function clear() {
+        var clear = function clear() {
             return $rootScope.alerts = [];
-        },
-
+        };
 
         /***
          * @ngdoc error
@@ -10616,13 +10817,12 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} The returned error alert
          */
-        error: function error(alert) {
+        var error = function error(alert) {
             if (!alert) {
                 return;
             }
-            return this.add('error', { title: alert.title, msg: alert.msg, persist: alert.persist });
-        },
-
+            return add('error', { title: alert.title, msg: alert.msg, persist: alert.persist });
+        };
 
         /***
          * @ngdoc error
@@ -10633,13 +10833,12 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} The returned danger alert
          */
-        danger: function danger(alert) {
+        var danger = function danger(alert) {
             if (!alert) {
                 return;
             }
-            return this.add('danger', { title: alert.title, msg: alert.msg, persist: alert.persist });
-        },
-
+            return add('danger', { title: alert.title, msg: alert.msg, persist: alert.persist });
+        };
 
         /***
          * @ngdoc error
@@ -10650,13 +10849,12 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} The returned info alert
          */
-        info: function info(alert) {
+        var info = function info(alert) {
             if (!alert) {
                 return;
             }
-            return this.add('info', { title: alert.title, msg: alert.msg, persist: alert.persist });
-        },
-
+            return add('info', { title: alert.title, msg: alert.msg, persist: alert.persist });
+        };
 
         /***
          * @ngdoc error
@@ -10667,13 +10865,12 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} The returned warning alert
          */
-        warning: function warning(alert) {
+        var warning = function warning(alert) {
             if (!alert) {
                 return;
             }
-            return this.add('warning', { title: alert.title, msg: alert.msg, persist: alert.persist });
-        },
-
+            return add('warning', { title: alert.title, msg: alert.msg, persist: alert.persist });
+        };
 
         /***
          * @ngdoc error
@@ -10684,13 +10881,12 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} The returned warning alert
          */
-        success: function success(alert) {
+        var success = function success(alert) {
             if (!alert) {
                 return;
             }
-            return this.add('success', { title: alert.title, msg: alert.msg, persist: alert.persist });
-        },
-
+            return add('success', { title: alert.title, msg: alert.msg, persist: alert.persist });
+        };
 
         /***
          * @ngdoc error
@@ -10701,17 +10897,28 @@ angular.module('BB.Services').factory('AlertService', function ($rootScope, Erro
          *
          * @returns {array} The returned raise alert
          */
-        raise: function raise(key) {
-            if (!key) {
-                return;
-            }
-            var alert = ErrorService.getAlert(key);
+        var raise = function raise(key, translationValue) {
+            if (!key) return;
+            var alert = ErrorService.getAlert(key, translationValue);
             if (alert) {
-                return this.add(alert.type, { title: alert.title, msg: alert.msg, persist: alert.persist });
+                return add(alert.type, { title: alert.title, msg: alert.msg, persist: alert.persist });
             }
-        }
-    };
-});
+        };
+
+        return {
+            add: add,
+            closeAlert: closeAlert,
+            closeAlertIdx: closeAlertIdx,
+            clear: clear,
+            error: error,
+            danger: danger,
+            info: info,
+            warning: warning,
+            success: success,
+            raise: raise
+        };
+    }
+})();
 'use strict';
 
 angular.module('BB.Services').factory('AppService', function ($uibModalStack) {
@@ -12006,244 +12213,61 @@ angular.module('BB.Services').factory('Dialog', function ($uibModal, $log, $docu
 });
 'use strict';
 
-/***
- * @ngdoc service
- * @name BB.Services.ErrorService
- *
- * @description
- * Defines different alerts and errors that are raised by the SDK.
- *
- */
-angular.module('BB.Services').factory('ErrorService', function ($translate) {
+(function () {
 
-    var alerts = [{
-        key: 'GENERIC',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'LOCATION_NOT_FOUND',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'MISSING_LOCATION',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'MISSING_POSTCODE',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'POSTCODE_INVALID',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'ITEM_NO_LONGER_AVAILABLE',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'NO_WAITLIST_SPACES_LEFT',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'FORM_INVALID',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'GEOLOCATION_ERROR',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'EMPTY_BASKET_FOR_CHECKOUT',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'MAXIMUM_TICKETS',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'GIFT_CERTIFICATE_REQUIRED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'TIME_SLOT_NOT_SELECTED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'STORE_NOT_SELECTED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'APPT_AT_SAME_TIME',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'REQ_TIME_NOT_AVAIL',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'TOPUP_SUCCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'TOPUP_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'UPDATE_SUCCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'UPDATE_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'ALREADY_REGISTERED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'LOGIN_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'SSO_LOGIN_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_INVALID',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_REQ_SUCCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_REQ_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_SUCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_MISMATCH',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'ATTENDEES_CHANGED',
-        type: 'info',
-        persist: true
-    }, {
-        key: 'PAYMENT_FAILED',
-        type: 'danger',
-        persist: true
-    }, {
-        key: 'ACCOUNT_DISABLED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'FB_LOGIN_NOT_A_MEMBER',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PHONE_NUMBER_IN_USE',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'EMAIL_IN_USE',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'WAITLIST_ACCEPTED',
-        type: 'success',
-        persist: false
-    }, {
-        key: 'BOOKING_CANCELLED',
-        type: 'success',
-        persist: false
-    }, {
-        key: 'NOT_BOOKABLE_PERSON',
-        type: 'warning',
-        persist: false
-    }, {
-        key: 'NOT_BOOKABLE_RESOURCE',
-        type: 'warning',
-        persist: false
-    }, {
-        key: 'COUPON_APPLY_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true
-    }, {
-        key: 'DEAL_APPLY_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true
-    }, {
-        key: 'DEAL_REMOVE_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true
-    }];
+    angular.module('BB.Services').factory('ErrorService', ErrorService);
 
-    /**
-     * @param {String} msg
-     * @returns {{msg: String}}
-     */
-    var createCustomError = function createCustomError(msg) {
-        return { msg: msg };
-    };
+    function ErrorService($translate, BBAlerts) {
+        /**
+         * @param {String} msg
+         * @returns {{msg: String}}
+         */
+        var createCustomError = function createCustomError(msg) {
+            return { msg: msg };
+        };
 
-    /***
-     * @ngdoc method
-     * @name getError
-     * @methodOf BB.Directives.bbServices
-     * @description
-     * Returns error, always setting persist to true. Returns generic error if error with given key is not found.
-     */
-    var getError = function getError(key) {
+        /***
+         * @ngdoc method
+         * @name getError
+         * @methodOf BB.Directives.bbServices
+         * @description
+         * Returns error, always setting persist to true. Returns generic error if error with given key is not found.
+         */
+        var getError = function getError(key) {
+            var error = getAlert(key);
+            // return generic error if we can't find the key
+            if (!error) {
+                error = getAlert('GENERIC');
+            }
+            error.persist = true;
+            return error;
+        };
 
-        var error = getAlert(key);
-        // return generic error if we can't find the key
-        if (!error) {
-            error = getAlert('GENERIC');
-        }
-        error.persist = true;
+        /***
+         * @ngdoc method
+         * @name getAlert
+         * @methodOf BB.Directives.bbServices
+         * @description
+         * Returns alert by given key
+         */
+        var getAlert = function getAlert(key, translationValue) {
+            var alert = _.findWhere(BBAlerts, { key: key });
 
-        return error;
-    };
+            if (alert) {
+                alert.msg = $translate.instant('CORE.ALERTS.' + key, { value: translationValue });
+                return alert;
+            } else {
+                return null;
+            }
+        };
 
-    /***
-     * @ngdoc method
-     * @name getAlert
-     * @methodOf BB.Directives.bbServices
-     * @description
-     * Returns alert by given key
-     */
-    var getAlert = function getAlert(key) {
-
-        var alert = _.findWhere(alerts, { key: key });
-
-        if (alert) {
-
-            alert.msg = $translate.instant('CORE.ALERTS.' + key);
-
-            return alert;
-        } else {
-
-            return null;
-        }
-    };
-
-    return {
-        createCustomError: createCustomError,
-        getAlert: getAlert,
-        getError: getError
-    };
-});
+        return {
+            createCustomError: createCustomError,
+            getAlert: getAlert,
+            getError: getError
+        };
+    }
+})();
 'use strict';
 
 angular.module('BB.Services').factory("EventService", function ($q, BBModel) {
@@ -12872,7 +12896,8 @@ angular.module('BB.Services').provider('GeneralOptions', function () {
         map_layout: 'default',
         companyHasExternalBookings: false,
         mapMarkerHasLabel: true,
-        maxAdvanceDatetimeDays: null
+        maxAdvanceDatetimeDays: null,
+        calendarDaysByScreenWidth: { lg: 7, md: 5, sm: 3, xs: 1 }
     };
 
     this.setOption = function (option, value) {
@@ -16587,6 +16612,7 @@ angular.module('BB.Services').config(function ($translateProvider) {
                 FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
                 FORM_INVALID: "Please complete all required fields",
                 GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
                 GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
                 GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
                 POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
@@ -16789,153 +16815,6 @@ angular.module('BB.Services').config(function ($translateProvider) {
 });
 'use strict';
 
-(function () {
-
-    angular.module('BB.uiSelect').directive('uiSelectChoicesLazyload', uiSelectChoicesLazyLoadDirective);
-
-    function uiSelectChoicesLazyLoadDirective($timeout, $parse, $compile, $document, $filter) {
-
-        return function (scope, elm, attr) {
-            var raw, refreshCallBack, scrollCompleted;
-            scope.$on('UISelect:closeSelect', function () {
-                return scope.$select.close();
-            });
-            raw = elm[0];
-            scrollCompleted = true;
-            if (!attr.allChoices) {
-                throw new Error('ief:ui-select: Attribute all-choices is required in ui-select-choices so that we can handle pagination.');
-            }
-            scope.pagingOptions = {
-                allOptions: scope.$eval(attr.allChoices)
-            };
-
-            attr.refresh = 'addMoreItems()';
-            refreshCallBack = $parse(attr.refresh);
-            elm.bind('scroll', function (event) {
-                var callback, percent, remainingHeight, scrollTop;
-                remainingHeight = raw.offsetHeight - raw.scrollHeight;
-                scrollTop = raw.scrollTop;
-                percent = Math.abs(scrollTop / remainingHeight * 100);
-                if (percent >= 80) {
-                    if (scrollCompleted) {
-                        scrollCompleted = false;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        callback = function callback() {
-                            scope.addingMore = true;
-                            refreshCallBack(scope, {
-                                $event: event
-                            });
-                            scrollCompleted = true;
-                        };
-                        $timeout(callback, 100);
-                    }
-                }
-            });
-            scope.addMoreItems = function (doneCalBack) {
-                var $select, allItems, i, itemsThreshold, k, moreItems, pagingOptions, ref, search, searchDidNotChange;
-                $select = scope.$select;
-                allItems = scope.pagingOptions.allOptions;
-                moreItems = [];
-                itemsThreshold = 100;
-                search = $select.search;
-                pagingOptions = $select.pagingOptions = $select.pagingOptions || {
-                    page: 0,
-                    pageSize: 20,
-                    items: $select.items
-                };
-                if (pagingOptions.page === 0) {
-                    pagingOptions.items.length = 0;
-                }
-                if (!pagingOptions.originalAllItems) {
-                    pagingOptions.originalAllItems = scope.pagingOptions.allOptions;
-                }
-                searchDidNotChange = search && pagingOptions.prevSearch && search === pagingOptions.prevSearch;
-                if (pagingOptions.filteredItems && searchDidNotChange) {
-                    allItems = pagingOptions.filteredItems;
-                }
-                pagingOptions.prevSearch = search;
-                if (search && search.length > 0 && pagingOptions.items.length < allItems.length && !searchDidNotChange) {
-                    pagingOptions.filteredItems = null;
-                    moreItems = $filter('filter')(pagingOptions.originalAllItems, search);
-                    if (moreItems.length > itemsThreshold) {
-
-                        if (!pagingOptions.filteredItems) {
-                            pagingOptions.page = 0;
-                            pagingOptions.items.length = 0;
-                        }
-
-                        pagingOptions.page = 0;
-                        pagingOptions.items.length = 0;
-                        allItems = pagingOptions.filteredItems = moreItems;
-                    } else {
-                        allItems = moreItems;
-                        pagingOptions.items.length = 0;
-                        pagingOptions.filteredItems = null;
-                    }
-                }
-                pagingOptions.page++;
-                if (pagingOptions.page * pagingOptions.pageSize < allItems.length) {
-                    moreItems = allItems.slice(pagingOptions.items.length, pagingOptions.page * pagingOptions.pageSize);
-                } else {
-                    moreItems = allItems;
-                }
-                for (k = i = 0, ref = moreItems.length; 0 <= ref ? i < ref : i > ref; k = 0 <= ref ? ++i : --i) {
-                    if (pagingOptions.items.indexOf(moreItems[k]) === -1) {
-                        pagingOptions.items.push(moreItems[k]);
-                    }
-                }
-                scope.calculateDropdownPos();
-                scope.$broadcast('uis:refresh');
-                if (doneCalBack) {
-                    return doneCalBack();
-                }
-            };
-            scope.$on('$destroy', function () {
-                elm.off('scroll');
-            });
-
-            scope.$watch(attr.allChoices, function (newValue, oldValue) {
-                if (newValue.length !== oldValue.length) {
-                    scope.pagingOptions.allOptions = newValue;
-                    scope.addMoreItems();
-                }
-            });
-        };
-    }
-})();
-'use strict';
-
-(function () {
-
-    angular.module('BB.uiSelect').directive('uiSelectChoicesListener', uiSelectChoicesListenerDirective);
-
-    function uiSelectChoicesListenerDirective() {
-
-        return function (scope, elm, attr) {
-            scope.$on('UISelect:closeSelect', function () {
-                return scope.$select.close();
-            });
-        };
-    }
-})();
-'use strict';
-
-angular.module('BB.uib').run(function ($document, runtimeUibModal) {
-    'ngInject';
-
-    var init = function init() {
-        setUibModalDefaults();
-    };
-
-    var setUibModalDefaults = function setUibModalDefaults() {
-        runtimeUibModal.options.appendTo = angular.element($document[0].getElementById('bb'));
-    };
-
-    init();
-});
-'use strict';
-
 (function (angular) {
 
     angular.module('BB.analytics').provider('bbAnalyticsPiwik', BBAnalyticsPiwikProvider);
@@ -17060,10 +16939,10 @@ angular.module('BB.Directives').directive('autofocus', function ($timeout) {
 // This is a customisation of the accordion-group directive in ui bootstrap
 // v0.12.0 to fix an issue in ie8. Replace has been changed from true to false
 
-angular.module('BB.Directives'
+angular.module('BB.Directives')
 
 // The accordion-group directive indicates a block of html that will expand and collapse in an accordion
-).directive('bbAccordionGroup', function () {
+.directive('bbAccordionGroup', function () {
     return {
         require: '^accordion', // We need this directive to be inside an accordion
         restrict: 'EA',
@@ -17096,13 +16975,13 @@ angular.module('BB.Directives'
             };
         }
     };
-}
+})
 
 // Use accordion-heading below an accordion-group to provide a heading containing HTML
 // <accordion-group>
 //   <accordion-heading>Heading containing HTML - <img src="..."></accordion-heading>
 // </accordion-group>
-).directive('bbAccordionHeading', function () {
+.directive('bbAccordionHeading', function () {
     return {
         restrict: 'EA',
         transclude: true, // Grab the contents to be used as the heading
@@ -17116,7 +16995,7 @@ angular.module('BB.Directives'
             accordionGroupCtrl.setHeading(transclude(scope, function () {}));
         }
     };
-}
+})
 
 // Use in the accordion-group template to indicate where you want the heading to be transcluded
 // You must provide the property on the accordion-group controller that will hold the transcluded element
@@ -17124,7 +17003,7 @@ angular.module('BB.Directives'
 //   <div class="accordion-heading" ><a ... accordion-transclude="heading">...</a></div>
 //   ...
 // </div>
-).directive('bbAccordionTransclude', function () {
+.directive('bbAccordionTransclude', function () {
     return {
         require: '^bbAccordionGroup',
         link: function link(scope, element, attr, controller) {
@@ -24581,7 +24460,6 @@ function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLoca
     var languages = bbi18nOptions.available_languages;
     this.language = null;
     this.availableLanguages = [];
-    this.enableSearch = true;
     this.setAvailableLanguages = setAvailableLanguages;
     this.setCurrentLanguage = setCurrentLanguage;
     this.setLanguage = setLanguage;
@@ -24599,7 +24477,6 @@ function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLoca
         languages.forEach(function (languageKey) {
             _this2.availableLanguages.push(createLanguage(languageKey));
         });
-        //vm.enableSearch = vm.availableLanguages.length >= 10;
     }
 
     function setCurrentLanguage() {
@@ -25444,7 +25321,8 @@ angular.module('BB.i18n').config(function ($translateProvider) {
                 SET_TIMEZONE_AUTOMATICALLY_LABEL: 'Set timezone automatically',
                 SET_TIMEZONE_AUTOMATICALLY_ON_LABEL: 'On',
                 SET_TIMEZONE_AUTOMATICALLY_OFF_LABEL: 'Off',
-                TIMEZONE_LABEL: 'Timezone'
+                TIMEZONE_LABEL: 'Timezone',
+                SELECT_TIMEZONE_PLACEHOLDER: 'Select timezone'
             },
             TIMEZONE_LOCATIONS: {
                 CODES: {
@@ -26218,6 +26096,219 @@ angular.module('BB.i18n').config(function ($translateProvider) {
     };
 
     $translateProvider.translations('en', translations);
+});
+'use strict';
+
+(function () {
+    angular.module('toggle-switch').directive('toggleSwitch', function () {
+        'ngInject';
+
+        return {
+            restrict: 'EA',
+            replace: true,
+            require: 'ngModel',
+            scope: {
+                disabled: '@',
+                onLabel: '@',
+                offLabel: '@',
+                knobLabel: '@',
+                labelAria: '@'
+            },
+            link: toggleSwitchLinkFn,
+            template: ' <div tabindex="0" class="bb-toggle-switch ats-switch switch-primary" >\n                              <label  aria-label="{{labelAria}}">\n                                <input class="toggler" ng-checked="!model" type="checkbox" />\n                                <!-- use span for backwards compatibility-->\n                                <span class="slider " ng-class="{\'switch-left\':model, \'switch-right\':!model}">\n                                     <span ng-if="!model"  aria-live="polite" class="slide-no ">{{offLabel}}</span>\n                                     <span ng-if="model" aria-live="polite"  class="slide-checked ">{{onLabel}}</span>\n                                </span>\n                              </label>\n                           </div>'
+        };
+
+        function toggleSwitchLinkFn(scope, element, attrs, ngModelCtrl) {
+
+            scope.model = scope.model ? !!scope.model : false;
+
+            //use this elem because event being fired twice, on label and input causing event bubble buggy behaviour
+            var elem = element.find('input')[0];
+            element.on('click', function (e) {
+                if (e.target.className === elem.className) {
+                    scope.$apply(scope.toggle);
+                }
+            });
+
+            element.on('keydown', function (e) {
+                var key = e.which ? e.which : e.keyCode;
+                if (key === 13 || key === 32) {
+                    // call click instead of $applying here bcoz screen reader not responding when toggle triggered by keyboard. Click event works with screen reader.
+                    elem.click();
+                }
+            });
+
+            ngModelCtrl.$formatters.push(function (modelValue) {
+                return modelValue;
+            });
+
+            ngModelCtrl.$parsers.push(function (viewValue) {
+                return viewValue;
+            });
+
+            ngModelCtrl.$viewChangeListeners.push(function () {
+                return scope.$eval(attrs.ngChange);
+            });
+
+            ngModelCtrl.$render = function () {
+                return scope.model = ngModelCtrl.$viewValue;
+            };
+
+            scope.toggle = function () {
+                if (!scope.disabled) {
+                    scope.model = !scope.model;
+                    ngModelCtrl.$setViewValue(scope.model);
+                }
+            };
+        }
+    });
+})();
+'use strict';
+
+(function () {
+
+    angular.module('BB.uiSelect').directive('uiSelectChoicesLazyload', uiSelectChoicesLazyLoadDirective);
+
+    function uiSelectChoicesLazyLoadDirective($timeout, $parse, $compile, $document, $filter) {
+
+        return function (scope, elm, attr) {
+            var raw, refreshCallBack, scrollCompleted;
+            scope.$on('UISelect:closeSelect', function () {
+                return scope.$select.close();
+            });
+            raw = elm[0];
+            scrollCompleted = true;
+            if (!attr.allChoices) {
+                throw new Error('ief:ui-select: Attribute all-choices is required in ui-select-choices so that we can handle pagination.');
+            }
+            scope.pagingOptions = {
+                allOptions: scope.$eval(attr.allChoices)
+            };
+
+            attr.refresh = 'addMoreItems()';
+            refreshCallBack = $parse(attr.refresh);
+            elm.bind('scroll', function (event) {
+                var callback, percent, remainingHeight, scrollTop;
+                remainingHeight = raw.offsetHeight - raw.scrollHeight;
+                scrollTop = raw.scrollTop;
+                percent = Math.abs(scrollTop / remainingHeight * 100);
+                if (percent >= 80) {
+                    if (scrollCompleted) {
+                        scrollCompleted = false;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        callback = function callback() {
+                            scope.addingMore = true;
+                            refreshCallBack(scope, {
+                                $event: event
+                            });
+                            scrollCompleted = true;
+                        };
+                        $timeout(callback, 100);
+                    }
+                }
+            });
+            scope.addMoreItems = function (doneCalBack) {
+                var $select, allItems, i, itemsThreshold, k, moreItems, pagingOptions, ref, search, searchDidNotChange;
+                $select = scope.$select;
+                allItems = scope.pagingOptions.allOptions;
+                moreItems = [];
+                itemsThreshold = 100;
+                search = $select.search;
+                pagingOptions = $select.pagingOptions = $select.pagingOptions || {
+                    page: 0,
+                    pageSize: 20,
+                    items: $select.items
+                };
+                if (pagingOptions.page === 0) {
+                    pagingOptions.items.length = 0;
+                }
+                if (!pagingOptions.originalAllItems) {
+                    pagingOptions.originalAllItems = scope.pagingOptions.allOptions;
+                }
+                searchDidNotChange = search && pagingOptions.prevSearch && search === pagingOptions.prevSearch;
+                if (pagingOptions.filteredItems && searchDidNotChange) {
+                    allItems = pagingOptions.filteredItems;
+                }
+                pagingOptions.prevSearch = search;
+                if (search && search.length > 0 && pagingOptions.items.length < allItems.length && !searchDidNotChange) {
+                    pagingOptions.filteredItems = null;
+                    moreItems = $filter('filter')(pagingOptions.originalAllItems, search);
+                    if (moreItems.length > itemsThreshold) {
+
+                        if (!pagingOptions.filteredItems) {
+                            pagingOptions.page = 0;
+                            pagingOptions.items.length = 0;
+                        }
+
+                        pagingOptions.page = 0;
+                        pagingOptions.items.length = 0;
+                        allItems = pagingOptions.filteredItems = moreItems;
+                    } else {
+                        allItems = moreItems;
+                        pagingOptions.items.length = 0;
+                        pagingOptions.filteredItems = null;
+                    }
+                }
+                pagingOptions.page++;
+                if (pagingOptions.page * pagingOptions.pageSize < allItems.length) {
+                    moreItems = allItems.slice(pagingOptions.items.length, pagingOptions.page * pagingOptions.pageSize);
+                } else {
+                    moreItems = allItems;
+                }
+                for (k = i = 0, ref = moreItems.length; 0 <= ref ? i < ref : i > ref; k = 0 <= ref ? ++i : --i) {
+                    if (pagingOptions.items.indexOf(moreItems[k]) === -1) {
+                        pagingOptions.items.push(moreItems[k]);
+                    }
+                }
+                scope.calculateDropdownPos();
+                scope.$broadcast('uis:refresh');
+                if (doneCalBack) {
+                    return doneCalBack();
+                }
+            };
+            scope.$on('$destroy', function () {
+                elm.off('scroll');
+            });
+
+            scope.$watch(attr.allChoices, function (newValue, oldValue) {
+                if (newValue.length !== oldValue.length) {
+                    scope.pagingOptions.allOptions = newValue;
+                    scope.addMoreItems();
+                }
+            });
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    angular.module('BB.uiSelect').directive('uiSelectChoicesListener', uiSelectChoicesListenerDirective);
+
+    function uiSelectChoicesListenerDirective() {
+
+        return function (scope, elm, attr) {
+            scope.$on('UISelect:closeSelect', function () {
+                return scope.$select.close();
+            });
+        };
+    }
+})();
+'use strict';
+
+angular.module('BB.uib').run(function ($document, runtimeUibModal) {
+    'ngInject';
+
+    var init = function init() {
+        setUibModalDefaults();
+    };
+
+    var setUibModalDefaults = function setUibModalDefaults() {
+        runtimeUibModal.options.appendTo = angular.element($document[0].getElementById('bb'));
+    };
+
+    init();
 });
 'use strict';
 
@@ -28085,26 +28176,6 @@ angular.module('BB.Services').service("TimeSlotPermutationService", function (Da
 
         return daysBySlots;
     };
-});
-'use strict';
-
-/**
- * @ngdoc service
- * @name BB.uib.runtimeUibModal
- *
- * @description
- * Returns an instance of $uibModalProvider that allows to set modal default options (on runtime)
- */
-angular.module('BB.uib').provider('runtimeUibModal', function ($uibModalProvider) {
-  'ngInject';
-
-  var uibModalProvider = $uibModalProvider;
-  this.setProvider = function (provider) {
-    return uibModalProvider = provider;
-  };
-  this.$get = function () {
-    return uibModalProvider;
-  };
 });
 'use strict';
 
@@ -33392,9 +33463,15 @@ angular.module('BB.Directives').directive('bbLogin', function () {
          */
         var geolocateFail = function geolocateFail(error) {
             switch (error.code) {
-                // if the geocode failed because the position was unavailable or the request timed out, raise an alert
-                case 2:
-                case 3:
+                // Browser may not allow websites to request physical location. It can be changed in browser settings.
+                case error.PERMISSION_DENIED:
+                    loader.setLoaded();
+                    AlertService.raise('GEOLOCATION_ERROR_FORBIDDEN');
+                    break;
+
+                // If the geocode failed because the position was unavailable or the request timed out, raise an alert.
+                case error.POSITION_UNAVAILABLE:
+                case error.TIMEOUT:
                     loader.setLoaded();
                     AlertService.raise('GEOLOCATION_ERROR');
                     break;
@@ -38691,7 +38768,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
         // store the form data for the following scope properties
 
+        var _this = this;
+
         var currentPostcode = $scope.bb.postcode;
+        this.viewPortChangeListener = null;
 
         FormDataStoreService.init('TimeRangeList', $scope, ['selected_slot', 'postcode', 'original_start_date', 'start_at_week_start']);
 
@@ -38736,17 +38816,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 $scope.time_range_length = $scope.options.time_range_length;
             } else {
                 var calculateDayNum = function calculateDayNum() {
-                    var cal_days = {
-                        lg: 7,
-                        md: 5,
-                        sm: 3,
-                        xs: 1
-                    };
+                    var calendarDays = GeneralOptions.calendarDaysByScreenWidth;
 
+                    // default to the large time range
                     var timeRange = 7;
 
-                    for (var size in cal_days) {
-                        var days = cal_days[size];
+                    for (var size in calendarDays) {
+                        var days = calendarDays[size];
                         if (size === viewportSize.getViewportSize()) {
                             timeRange = days;
                         }
@@ -38756,6 +38832,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 };
 
                 $scope.time_range_length = calculateDayNum();
+
+                if (_this.viewPortChangeListener === null) registerViewportChangedListener();
 
                 $scope.$on('viewportSize:changed', function () {
                     $scope.time_range_length = null;
@@ -38821,6 +38899,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             if (selected_slot) {
                 return selected_slot.selected = true;
             }
+        };
+
+        var registerViewportChangedListener = function registerViewportChangedListener() {
+            _this.viewPortChangeListener = $scope.$on('viewportSize:changed', function () {
+                $scope.time_range_length = null;
+                $scope.initialise();
+            });
         };
 
         /***
@@ -39507,13 +39592,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 // focus on continue button after slot selected - for screen readers
                 scope.$on('time:selected', function () {
                     var btn = angular.element('#btn-continue');
-                    btn[0].disabled = false;
-                    $timeout(function () {
-                        return scrollIntercepter.scrollToElement(btn, 500, 'time:selected');
-                    }, 1000);
-                    return $timeout(function () {
-                        return btn[0].focus();
-                    }, 1500);
+                    if (btn[0]) {
+                        btn[0].disabled = false;
+                        $timeout(function () {
+                            return scrollIntercepter.scrollToElement(btn, 500, 'time:selected');
+                        }, 1000);
+                        return $timeout(function () {
+                            return btn[0].focus();
+                        }, 1500);
+                    }
                 });
 
                 // date helpers
@@ -40097,4 +40184,24 @@ angular.module('BB.Directives').directive('bbTotal', function () {
         scope: true,
         controller: 'Total'
     };
+});
+'use strict';
+
+/**
+ * @ngdoc service
+ * @name BB.uib.runtimeUibModal
+ *
+ * @description
+ * Returns an instance of $uibModalProvider that allows to set modal default options (on runtime)
+ */
+angular.module('BB.uib').provider('runtimeUibModal', function ($uibModalProvider) {
+  'ngInject';
+
+  var uibModalProvider = $uibModalProvider;
+  this.setProvider = function (provider) {
+    return uibModalProvider = provider;
+  };
+  this.$get = function () {
+    return uibModalProvider;
+  };
 });
