@@ -1,4 +1,8 @@
+
 @import "../../bower_components/angular-bootstrap/ui-bootstrap-csp";
+// BookingBug mixins
+
+@import "bb-toggle-switch";
 
 
 [pricepicker] {
@@ -92,4 +96,3 @@ select.form-control[disabled],
   overflow-x: hidden; 
   text-overflow: ellipsis;
 }
-
