@@ -182,6 +182,311 @@ angular.module('schemaForm').config(function (schemaFormProvider, schemaFormDeco
 
     return schemaFormDecoratorsProvider.createDirective('radiobuttons', 'radio-buttons.html');
 });
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+window.Collection = function Collection() {
+    _classCallCheck(this, Collection);
+};
+
+window.Collection.Base = function () {
+    function Base(res, items, params) {
+        _classCallCheck(this, Base);
+
+        this.res = res;
+        this.items = items;
+        this.params = params;
+        this.callbacks = [];
+
+        var clean_params = {};
+        for (var key in params) {
+            var val = params[key];
+            if (val != null) {
+                if (val.id != null) {
+                    clean_params[key + "_id"] = val.id;
+                } else {
+                    clean_params[key] = val;
+                }
+            }
+        }
+        this.jparams = JSON.stringify(clean_params);
+        if (res) {
+            for (var n in res) {
+                var m = res[n];
+                this[n] = m;
+            }
+        }
+    }
+
+    Base.prototype.checkItem = function checkItem(item) {
+        var _this = this;
+
+        var call = void 0;
+        if (!this.matchesParams(item)) {
+            this.deleteItem(item); //delete if it is in the collection at the moment
+            return true;
+        } else {
+            for (var index = 0; index < this.items.length; index++) {
+                var existingItem = this.items[index];
+                if (item.self === existingItem.self) {
+                    this.items[index] = item;
+                    var _iteratorNormalCompletion = true;
+                    var _didIteratorError = false;
+                    var _iteratorError = undefined;
+
+                    try {
+                        for (var _iterator = Array.from(this.callbacks)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                            call = _step.value;
+
+                            call[1](item, "update");
+                        }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return) {
+                                _iterator.return();
+                            }
+                        } finally {
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        this.items.push(item);
+        return function () {
+            var result = [];
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = Array.from(_this.callbacks)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    call = _step2.value;
+
+                    result.push(call[1](item, "add"));
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            return result;
+        }();
+    };
+
+    Base.prototype.deleteItem = function deleteItem(item) {
+        var len = this.items.length;
+        this.items = this.items.filter(function (x) {
+            return x.self !== item.self;
+        });
+        if (this.items.length !== len) {
+            return Array.from(this.callbacks).map(function (call) {
+                return call[1](item, "delete");
+            });
+        }
+    };
+
+    Base.prototype.getItems = function getItems() {
+        return this.items;
+    };
+
+    Base.prototype.addCallback = function addCallback(obj, fn) {
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+            for (var _iterator3 = Array.from(this.callbacks)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                var call = _step3.value;
+
+                if (call[0] === obj) {
+                    return;
+                }
+            }
+        } catch (err) {
+            _didIteratorError3 = true;
+            _iteratorError3 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                    _iterator3.return();
+                }
+            } finally {
+                if (_didIteratorError3) {
+                    throw _iteratorError3;
+                }
+            }
+        }
+
+        return this.callbacks.push([obj, fn]);
+    };
+
+    Base.prototype.matchesParams = function matchesParams(item) {
+        return true;
+    };
+
+    return Base;
+}();
+
+window.BaseCollections = function () {
+    function BaseCollections() {
+        _classCallCheck(this, BaseCollections);
+
+        this.collections = [];
+    }
+
+    BaseCollections.prototype.count = function count() {
+        return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function add(col) {
+        return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function checkItems(item) {
+        return Array.from(this.collections).map(function (col) {
+            return col.checkItem(item);
+        });
+    };
+
+    BaseCollections.prototype.deleteItems = function deleteItems(item) {
+        return Array.from(this.collections).map(function (col) {
+            return col.deleteItem(item);
+        });
+    };
+
+    BaseCollections.prototype.find = function find(prms) {
+        var clean_params = {};
+        for (var key in prms) {
+            var val = prms[key];
+            if (val != null) {
+                if (val.id != null) {
+                    clean_params[key + "_id"] = val.id;
+                } else {
+                    clean_params[key] = val;
+                }
+            }
+        }
+        var jprms = JSON.stringify(clean_params);
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+            for (var _iterator4 = Array.from(this.collections)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                var col = _step4.value;
+
+                if (jprms === col.jparams) {
+                    return col;
+                }
+            }
+        } catch (err) {
+            _didIteratorError4 = true;
+            _iteratorError4 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                    _iterator4.return();
+                }
+            } finally {
+                if (_didIteratorError4) {
+                    throw _iteratorError4;
+                }
+            }
+        }
+    };
+
+    BaseCollections.prototype.delete = function _delete(col) {
+        return this.collections = _.without(this.collections, col);
+    };
+
+    return BaseCollections;
+}();
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+window.Collection.Day = function (_window$Collection$Ba) {
+    _inherits(Day, _window$Collection$Ba);
+
+    function Day() {
+        _classCallCheck(this, Day);
+
+        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
+    }
+
+    Day.prototype.checkItem = function checkItem(item) {
+        var _window$Collection$Ba2;
+
+        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+
+    return Day;
+}(window.Collection.Base);
+
+angular.module('BB.Services').provider("DayCollections", function () {
+    return {
+        $get: function $get() {
+            return new window.BaseCollections();
+        }
+    };
+});
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+window.Collection.Space = function (_window$Collection$Ba) {
+    _inherits(Space, _window$Collection$Ba);
+
+    function Space() {
+        _classCallCheck(this, Space);
+
+        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
+    }
+
+    Space.prototype.checkItem = function checkItem(item) {
+        var _window$Collection$Ba2;
+
+        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+
+    return Space;
+}(window.Collection.Base);
+
+angular.module('BB.Services').provider("SpaceCollections", function () {
+    return {
+        $get: function $get() {
+            return new window.BaseCollections();
+        }
+    };
+});
 'use strict';
 
 angular.module('angular-hal', []).provider('data_cache', function () {
@@ -810,311 +1115,6 @@ String.prototype.parameterise = function (seperator) {
     }
     return this.trim().replace(/\s/g, seperator).toLowerCase();
 };
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-window.Collection = function Collection() {
-    _classCallCheck(this, Collection);
-};
-
-window.Collection.Base = function () {
-    function Base(res, items, params) {
-        _classCallCheck(this, Base);
-
-        this.res = res;
-        this.items = items;
-        this.params = params;
-        this.callbacks = [];
-
-        var clean_params = {};
-        for (var key in params) {
-            var val = params[key];
-            if (val != null) {
-                if (val.id != null) {
-                    clean_params[key + "_id"] = val.id;
-                } else {
-                    clean_params[key] = val;
-                }
-            }
-        }
-        this.jparams = JSON.stringify(clean_params);
-        if (res) {
-            for (var n in res) {
-                var m = res[n];
-                this[n] = m;
-            }
-        }
-    }
-
-    Base.prototype.checkItem = function checkItem(item) {
-        var _this = this;
-
-        var call = void 0;
-        if (!this.matchesParams(item)) {
-            this.deleteItem(item); //delete if it is in the collection at the moment
-            return true;
-        } else {
-            for (var index = 0; index < this.items.length; index++) {
-                var existingItem = this.items[index];
-                if (item.self === existingItem.self) {
-                    this.items[index] = item;
-                    var _iteratorNormalCompletion = true;
-                    var _didIteratorError = false;
-                    var _iteratorError = undefined;
-
-                    try {
-                        for (var _iterator = Array.from(this.callbacks)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                            call = _step.value;
-
-                            call[1](item, "update");
-                        }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return) {
-                                _iterator.return();
-                            }
-                        } finally {
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-            }
-        }
-
-        this.items.push(item);
-        return function () {
-            var result = [];
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = Array.from(_this.callbacks)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    call = _step2.value;
-
-                    result.push(call[1](item, "add"));
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
-            return result;
-        }();
-    };
-
-    Base.prototype.deleteItem = function deleteItem(item) {
-        var len = this.items.length;
-        this.items = this.items.filter(function (x) {
-            return x.self !== item.self;
-        });
-        if (this.items.length !== len) {
-            return Array.from(this.callbacks).map(function (call) {
-                return call[1](item, "delete");
-            });
-        }
-    };
-
-    Base.prototype.getItems = function getItems() {
-        return this.items;
-    };
-
-    Base.prototype.addCallback = function addCallback(obj, fn) {
-        var _iteratorNormalCompletion3 = true;
-        var _didIteratorError3 = false;
-        var _iteratorError3 = undefined;
-
-        try {
-            for (var _iterator3 = Array.from(this.callbacks)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                var call = _step3.value;
-
-                if (call[0] === obj) {
-                    return;
-                }
-            }
-        } catch (err) {
-            _didIteratorError3 = true;
-            _iteratorError3 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                    _iterator3.return();
-                }
-            } finally {
-                if (_didIteratorError3) {
-                    throw _iteratorError3;
-                }
-            }
-        }
-
-        return this.callbacks.push([obj, fn]);
-    };
-
-    Base.prototype.matchesParams = function matchesParams(item) {
-        return true;
-    };
-
-    return Base;
-}();
-
-window.BaseCollections = function () {
-    function BaseCollections() {
-        _classCallCheck(this, BaseCollections);
-
-        this.collections = [];
-    }
-
-    BaseCollections.prototype.count = function count() {
-        return this.collections.length;
-    };
-
-    BaseCollections.prototype.add = function add(col) {
-        return this.collections.push(col);
-    };
-
-    BaseCollections.prototype.checkItems = function checkItems(item) {
-        return Array.from(this.collections).map(function (col) {
-            return col.checkItem(item);
-        });
-    };
-
-    BaseCollections.prototype.deleteItems = function deleteItems(item) {
-        return Array.from(this.collections).map(function (col) {
-            return col.deleteItem(item);
-        });
-    };
-
-    BaseCollections.prototype.find = function find(prms) {
-        var clean_params = {};
-        for (var key in prms) {
-            var val = prms[key];
-            if (val != null) {
-                if (val.id != null) {
-                    clean_params[key + "_id"] = val.id;
-                } else {
-                    clean_params[key] = val;
-                }
-            }
-        }
-        var jprms = JSON.stringify(clean_params);
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
-
-        try {
-            for (var _iterator4 = Array.from(this.collections)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                var col = _step4.value;
-
-                if (jprms === col.jparams) {
-                    return col;
-                }
-            }
-        } catch (err) {
-            _didIteratorError4 = true;
-            _iteratorError4 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                    _iterator4.return();
-                }
-            } finally {
-                if (_didIteratorError4) {
-                    throw _iteratorError4;
-                }
-            }
-        }
-    };
-
-    BaseCollections.prototype.delete = function _delete(col) {
-        return this.collections = _.without(this.collections, col);
-    };
-
-    return BaseCollections;
-}();
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-window.Collection.Day = function (_window$Collection$Ba) {
-    _inherits(Day, _window$Collection$Ba);
-
-    function Day() {
-        _classCallCheck(this, Day);
-
-        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
-    }
-
-    Day.prototype.checkItem = function checkItem(item) {
-        var _window$Collection$Ba2;
-
-        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
-    };
-
-    return Day;
-}(window.Collection.Base);
-
-angular.module('BB.Services').provider("DayCollections", function () {
-    return {
-        $get: function $get() {
-            return new window.BaseCollections();
-        }
-    };
-});
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-window.Collection.Space = function (_window$Collection$Ba) {
-    _inherits(Space, _window$Collection$Ba);
-
-    function Space() {
-        _classCallCheck(this, Space);
-
-        return _possibleConstructorReturn(this, _window$Collection$Ba.apply(this, arguments));
-    }
-
-    Space.prototype.checkItem = function checkItem(item) {
-        var _window$Collection$Ba2;
-
-        return (_window$Collection$Ba2 = _window$Collection$Ba.prototype.checkItem).call.apply(_window$Collection$Ba2, [this].concat(Array.prototype.slice.call(arguments)));
-    };
-
-    return Space;
-}(window.Collection.Base);
-
-angular.module('BB.Services').provider("SpaceCollections", function () {
-    return {
-        $get: function $get() {
-            return new window.BaseCollections();
-        }
-    };
-});
 'use strict';
 
 (function () {
@@ -39832,10 +39832,13 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
 
             $scope.data_source.setTime(slot);
             if ($scope.data_source.reserve_ready) {
+                $scope.notLoaded($scope);
                 return $scope.addItemToBasket().then(function () {
                     if (bbWidgetPage.canAutoDecideNextPage('bb-times')) {
                         return $scope.decideNextPage(route);
                     }
+                }).finally(function () {
+                    return loader.setLoaded();
                 });
             } else {
                 if (bbWidgetPage.canAutoDecideNextPage('bb-times')) {
