@@ -1866,7 +1866,8 @@ angular.module('BB.Filters').filter('local_phone_number', function (CompanyStore
  *
  * @param {moment|string} date The date to format
  * @param {string} format The format to apply. Defaults to LLL
- * @returns {boolean} show_time_zone Show timezone identifer. Defaults to false
+ * @param {boolean} showTimeZone Whether or not to display the time zone
+ * @param {string} timeZoneToConvert The time zone to convert to
  *
  *
 
@@ -1885,28 +1886,32 @@ angular.module('BB.Filters').filter('local_phone_number', function (CompanyStore
  </example>
  */
 angular.module('BB.Filters').filter('datetime', function ($translate, bbTimeZone) {
-    return function (date, format, show_time_zone) {
+    return function (date, format, showTimeZone, timeZoneToConvert) {
 
         var timeZone = '';
 
         if (format == null) {
             format = "LLL";
         }
-        if (show_time_zone == null) {
-            show_time_zone = false;
-        }
+
         if (!date || date && !moment(date).isValid()) {
             return;
         }
 
-        var new_date = moment(date);
-        new_date.tz(bbTimeZone.getDisplay());
+        var newDate = moment(date);
 
-        if (show_time_zone) {
-            timeZone = '(' + $translate.instant('I18N.TIMEZONE_LOCATIONS.CODES.' + new_date.format('zz')) + ')';
+        // use the display timezone unless a timeZoneToConvert has been passed in
+        if (timeZoneToConvert) {
+            newDate.tz(timeZoneToConvert);
+        } else {
+            newDate.tz(bbTimeZone.getDisplay());
         }
 
-        return new_date.format(format) + ' ' + timeZone;
+        if (showTimeZone) {
+            timeZone = '(' + $translate.instant('I18N.TIMEZONE_LOCATIONS.CODES.' + newDate.format('zz')) + ')';
+        }
+
+        return newDate.format(format) + ' ' + timeZone;
     };
 });
 
@@ -3992,7 +3997,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  *
  */
 
-angular.module('BB.Models').factory("BasketItemModel", function ($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, $translate) {
+angular.module('BB.Models').factory("BasketItemModel", function ($q, $window, BBModel, BookableItemModel, BaseModel, $bbug, DateTimeUtilitiesService, $translate, bbTimeZone) {
     return (
 
         // A class that defines an item in a shopping basket
@@ -5000,7 +5005,7 @@ angular.module('BB.Models').factory("BasketItemModel", function ($q, $window, BB
             BasketItem.prototype.setDate = function setDate(date) {
                 this.date = date;
                 if (this.date) {
-                    this.date.date = moment(this.date.date);
+                    this.date.date = bbTimeZone.convertToCompany(moment(this.date.date));
                     if (this.datetime) {
                         this.datetime.date(this.date.date.date());
                         this.datetime.month(this.date.date.month());
@@ -7546,6 +7551,25 @@ angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseM
                     return this.pusher.channel(channelName);
                 }
             }
+        };
+
+        Company.prototype.getOpeningHours = function getOpeningHours() {
+            var _this3 = this;
+
+            if (this.$has('opening_hours')) {
+                this.$get('opening_hours').then(function (openingHours) {
+                    _this3.openingHours = openingHours.openingHoursSpecification;
+                    _this3.formatOpeningHoursSchema();
+                });
+            }
+        };
+
+        Company.prototype.formatOpeningHoursSchema = function formatOpeningHoursSchema() {
+            if (!this.openingHours) return;
+            this.openingHours.map(function (openingHour) {
+                // http://schema.org/Monday => monday
+                openingHour.dayKey = openingHour.dayOfWeek.replace('http://schema.org/', '').toUpperCase();
+            });
         };
 
         Company.$query = function $query(company_id, options) {
@@ -15012,12 +15036,22 @@ angular.module('BB.Services').factory("TemplateSvc", function ($q, $http, $templ
         }
     };
 });
-"use strict";
+'use strict';
 
-angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halClient, bbi18nOptions, CompanyStoreService, DateTimeUtilitiesService, bbTimeZone) {
+(function (angular) {
 
-    return {
-        query: function query(prms) {
+    angular.module('BB.Services').factory('TimeService', TimeService);
+
+    function TimeService($q, BBModel, halClient, CompanyStoreService, DateTimeUtilitiesService, bbTimeZone) {
+
+        return {
+            query: query,
+            queryItems: queryItems,
+            merge_times: merge_times,
+            checkCurrentItem: checkCurrentItem
+        };
+
+        function query(prms) {
             var _this = this;
 
             var deferred = $q.defer();
@@ -15039,12 +15073,15 @@ angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halC
 
             if (prms.end_date) {
                 end_date = prms.end_date;
+            } else {
+                prms.end_date = prms.start_date.clone();
+                end_date = prms.end_date.clone();
             }
 
             // Adjust time range based on UTC offset between company time zone and display time zone
             if (bbTimeZone.getDisplay() != null && bbTimeZone.getDisplay() !== CompanyStoreService.time_zone) {
 
-                if (bbTimeZone.getCompanyUTCOffset() < bbTimeZone.getDisplayUTCOffset() && !prms.cItem.defaults.datetime) {
+                if (bbTimeZone.getCompanyUTCOffset() < bbTimeZone.getDisplayUTCOffset()) {
                     start_date = prms.start_date.clone().subtract(1, 'day');
                 } else if (bbTimeZone.getCompanyUTCOffset() > bbTimeZone.getDisplayUTCOffset() && prms.end_date) {
                     end_date = prms.end_date.clone().add(1, 'day');
@@ -15192,7 +15229,12 @@ angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halC
                                     startDateClone = startDateClone.clone().add(1, 'day');
                                 }
 
-                                return deferred.resolve(newDateTimes);
+                                if (prms.start_date.isSame(prms.end_date)) {
+                                    var _dateISO = prms.start_date.toISODate();
+                                    return deferred.resolve(newDateTimes[_dateISO]);
+                                } else {
+                                    return deferred.resolve(newDateTimes);
+                                }
                             });
                         });
                     } else if (results.$has('event_links')) {
@@ -15228,11 +15270,10 @@ angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halC
             }
 
             return deferred.promise;
-        },
-
+        }
 
         // query a set of basket items for the same time data
-        queryItems: function queryItems(prms) {
+        function queryItems(prms) {
 
             var defer = $q.defer();
 
@@ -15277,8 +15318,9 @@ angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halC
             });
 
             return defer.promise;
-        },
-        merge_times: function merge_times(all_events, service, item, date) {
+        }
+
+        function merge_times(all_events, service, item, date) {
 
             var i = void 0;
             if (!all_events || all_events.length === 0) {
@@ -15383,8 +15425,9 @@ angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halC
             }
 
             return times;
-        },
-        checkCurrentItem: function checkCurrentItem(item, sorted_times, ev) {
+        }
+
+        function checkCurrentItem(item, sorted_times, ev) {
             if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
                 // calculate the correct datetime for time slot
                 item.time.datetime = DateTimeUtilitiesService.convertTimeToMoment(item.date.date, item.time.time);
@@ -15395,8 +15438,8 @@ angular.module('BB.Services').factory("TimeService", function ($q, BBModel, halC
                 return sorted_times[item.time.time].avail = 1;
             }
         }
-    };
-});
+    }
+})(angular);
 'use strict';
 
 angular.module('BB.Services').factory('TimeSlotService', function ($q, BBModel) {
@@ -36551,13 +36594,16 @@ var BBResourcesCtrl = function BBResourcesCtrl($scope, $rootScope, $attrs, $q, B
                 if ($scope.bb.item_defaults.resource) {
                     resource = $scope.bb.item_defaults.resource;
                 }
-                if (resource && !$scope.selectItem(resource.item, $scope.nextRoute, { skip_step: true })) {
-                    $scope.bookable_resources = resources;
-                    $scope.bookable_items = items;
-                } else {
-                    $scope.bookable_resources = resources;
-                    $scope.bookable_items = items;
+
+                var selectedResource = resource && resource.item ? resource.item : resource;
+
+                if (resource) {
+                    $scope.selectItem(selectedResource, $scope.nextRoute, { skip_step: true });
                 }
+
+                $scope.bookable_resources = resources;
+                $scope.bookable_items = items;
+
                 return loader.setLoaded();
             }, function (err) {
                 return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
@@ -39298,6 +39344,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 var promise = BBModel.TimeSlot.$query({
                     company: $scope.bb.company,
                     resource_ids: $scope.bb.item_defaults.resources,
+                    people_ids: $scope.bb.item_defaults.people_ids,
                     cItem: $scope.data_source,
                     date: date,
                     client: $scope.client,
@@ -39949,7 +39996,8 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
                 item_link: $scope.item_link_source,
                 date: $scope.selected_day.date,
                 client: $scope.client,
-                available: 1
+                available: 1,
+                people_ids: $scope.bb.item_defaults.people_ids
             });
 
             pslots.finally(function () {
