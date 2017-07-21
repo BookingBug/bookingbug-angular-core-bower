@@ -7253,7 +7253,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 
 // helpful functions about a company
-angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseModel, halClient, AppConfig, $sessionStorage, CompanyService) {
+angular.module('BB.Models').factory("CompanyModel", function ($q, $log, BBModel, BaseModel, halClient, AppConfig, $sessionStorage, CompanyService) {
     return function (_BaseModel) {
         _inherits(Company, _BaseModel);
 
@@ -7346,9 +7346,9 @@ angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseM
                     return c.reference === ref;
                 });
                 if (company) {
-                    return defer.resolve(company);
+                    defer.resolve(company);
                 } else {
-                    return defer.reject('No company for ref ' + ref);
+                    defer.reject('No company for ref ' + ref);
                 }
             }, function (err) {
                 console.log('err ', err);
@@ -7457,7 +7457,7 @@ angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseM
                 if (this.$has('settings')) {
                     this.$get('settings').then(function (set) {
                         _this2.settings = new BBModel.CompanySettings(set);
-                        return def.resolve(_this2.settings);
+                        def.resolve(_this2.settings);
                     });
                 } else {
                     def.reject("Company has no settings");
@@ -7556,19 +7556,34 @@ angular.module('BB.Models').factory("CompanyModel", function ($q, BBModel, BaseM
         Company.prototype.getOpeningHours = function getOpeningHours() {
             var _this3 = this;
 
+            var openingHoursPromise = $q.defer();
             if (this.$has('opening_hours')) {
                 this.$get('opening_hours').then(function (openingHours) {
                     _this3.openingHours = openingHours.openingHoursSpecification;
                     _this3.formatOpeningHoursSchema();
+                    openingHoursPromise.resolve(_this3.openingHours);
+                }, function (err) {
+                    $log.info(err);
+                    openingHoursPromise.reject(err);
                 });
             }
+
+            return openingHoursPromise.promise;
         };
 
         Company.prototype.formatOpeningHoursSchema = function formatOpeningHoursSchema() {
             if (!this.openingHours) return;
-            this.openingHours.map(function (openingHour) {
+            this.openingHours.forEach(function (day) {
                 // http://schema.org/Monday => monday
-                openingHour.dayKey = openingHour.dayOfWeek.replace('http://schema.org/', '').toUpperCase();
+                day.dayKey = day.dayOfWeek.replace('http://schema.org/', '').toUpperCase();
+                // create moment objects from time strings passed in format 'HH:mm:ss'
+                if (day.opens) {
+                    day.opens = moment(day.opens, 'HH:mm:ss');
+                }
+
+                if (day.closes) {
+                    day.closes = moment(day.closes, 'HH:mm:ss');
+                }
             });
         };
 
@@ -13132,6 +13147,7 @@ angular.module('BB.Services').factory('LoadingService', function ($q, $window, $
     // currently it's still just using the scope to store the status, but we're encapsulating it away so that we can change it later
     return {
         $loader: function $loader(scope) {
+
             var lservice = this;
             var item = {
                 scope: scope,
@@ -17352,14 +17368,50 @@ angular.module('BB.Directives').directive('bbAccordionRangeGroup', function (Pat
             disabled_slot: "=disabledSlot"
         },
         controller: 'AccordionRangeGroup',
-        link: function link(scope, elem, attrs) {
-
+        link: function link(scope, element, attrs) {
+            addFocusOnlyOnPressingTabFunctionality(scope, element);
             return scope.options = scope.$eval(attrs.bbAccordionRangeGroup) || {};
         },
-        templateUrl: function templateUrl(elem, attrs) {
+        templateUrl: function templateUrl(element, attrs) {
             return PathSvc.directivePartial("_accordion_range_group");
         }
     };
+
+    /***
+     * @ngdoc function
+     * @name addFocusOnlyOnPressingTabFunctionality
+     *
+     * @description
+     * Adds listeners to accordion group detecting if mouse was clicked. It adds special tab-focused class to
+     * element only if focus what obtained in another way.
+     */
+    function addFocusOnlyOnPressingTabFunctionality(scope, element) {
+        var wasElementClicked = false;
+
+        element.mousedown(function () {
+            return wasElementClicked = true;
+        });
+        element.mouseup(function () {
+            return wasElementClicked = false;
+        });
+
+        element.focusin(function (event) {
+            if (!wasElementClicked && event.target.localName !== 'li') {
+                // 1. Mark as focused only in case the element wasn't clicked before.
+                // 2. Do not focus element when event was meant to be delivered to its child element.
+                element.find('div.panel-heading[role="tab"]').addClass('tab-focused');
+            }
+        });
+
+        element.focusout(function () {
+            element.find('div.panel-heading[role="tab"]').removeClass('tab-focused');
+        });
+
+        // Clearing DOM from redundant binding.
+        scope.$on('$destroy', function () {
+            return element.off();
+        });
+    }
 });
 'use strict';
 
@@ -20825,7 +20877,7 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
 
     angular.module('BB.Services').service('bbWidgetBasket', BBWidgetBasket);
 
-    function BBWidgetBasket($q, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal, bbWidgetUtilities, ErrorService, LoginService) {
+    function BBWidgetBasket($q, $rootScope, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal, bbWidgetUtilities, ErrorService, LoginService) {
 
         var $scope = null;
         var setScope = function setScope($s) {
@@ -20913,11 +20965,11 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                 $scope.bb.current_item = current_item;
 
                 if (!$scope.bb.current_item) {
-                    return clearBasketItem().then(function () {
-                        return add_defer.resolve(basket);
+                    clearBasketItem().then(function () {
+                        add_defer.resolve(basket);
                     });
                 } else {
-                    return add_defer.resolve(basket);
+                    add_defer.resolve(basket);
                 }
             }, function (err) {
                 var error_modal;
@@ -20930,21 +20982,21 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                         templateUrl: bbWidgetUtilities.getPartial('_error_modal'),
                         controller: function controller($scope, $uibModalInstance) {
                             $scope.message = ErrorService.getError('ITEM_NO_LONGER_AVAILABLE').msg;
-                            return $scope.ok = function () {
+                            $scope.ok = function () {
                                 return $uibModalInstance.close();
                             };
                         }
                     });
-                    return error_modal.result["finally"](function () {
+                    error_modal.result.then(function () {
                         if ($scope.bb.on_conflict) {
-                            return $scope.$eval($scope.bb.on_conflict);
+                            $scope.$eval($scope.bb.on_conflict);
                         } else {
                             if ($scope.bb.nextSteps) {
                                 if (!bbWidgetPage.setPageRoute($rootScope.Route.Date) && !bbWidgetPage.setPageRoute($rootScope.Route.Event)) {
-                                    return bbWidgetStep.loadPreviousStep();
+                                    bbWidgetStep.loadPreviousStep();
                                 }
                             } else {
-                                return bbWidgetPage.decideNextPage();
+                                bbWidgetPage.decideNextPage();
                             }
                         }
                     });
@@ -38824,6 +38876,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         $scope.$on('BBTimeZoneOptions:timeZoneChanged', function () {
             $scope.initialise();
         }); // check to see if the user has changed the postcode and remove data if they have
+
         if (currentPostcode !== $scope.postcode) {
             $scope.selected_slot = null;
             $scope.selected_date = null;
@@ -38833,7 +38886,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         $scope.postcode = $scope.bb.postcode;
 
         // show the loading icon
-        var loader = LoadingService.$loader($scope).notLoaded();
+        var loader = LoadingService.$loader($scope);
 
         // if the data source isn't set, set it as the current item
         if (!$scope.data_source) {
@@ -38879,12 +38932,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
                 $scope.time_range_length = calculateDayNum();
 
-                if (_this.viewPortChangeListener === null) registerViewportChangedListener();
-
-                $scope.$on('viewportSize:changed', function () {
-                    $scope.time_range_length = null;
-                    $scope.initialise();
-                });
+                registerViewportChangedListener();
             }
 
             if ($attrs.bbDayOfWeek != null || $scope.options && $scope.options.day_of_week) {
@@ -38948,6 +38996,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         };
 
         var registerViewportChangedListener = function registerViewportChangedListener() {
+            if (_this.viewPortChangeListener !== null) return;
             _this.viewPortChangeListener = $scope.$on('viewportSize:changed', function () {
                 $scope.time_range_length = null;
                 $scope.initialise();
@@ -39305,7 +39354,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 $rootScope.$broadcast("time:selected");
 
                 // broadcast message to the accordion range groups
-                return $scope.$broadcast('slotChanged', day, slot);
+                $scope.$broadcast('slotChanged', day, slot);
             }
         };
 
@@ -39335,7 +39384,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             }
 
             if ($scope.data_source && $scope.data_source.days_link) {
-                $scope.notLoaded($scope);
+                loader.notLoaded();
                 var loc = null;
                 if ($scope.bb.postcode) {
                     loc = ',,,,' + $scope.bb.postcode + ',';
@@ -39355,11 +39404,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                     available: 1
                 });
 
-                promise.finally(function () {
-                    return loader.setLoaded();
-                });
-
-                return promise.then(function (datetime_arr) {
+                promise.then(function (datetime_arr) {
 
                     var time_slots = void 0;
                     $scope.days = [];
@@ -39477,24 +39522,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                         }
                     }
 
-                    return $scope.$broadcast("time_slots:loaded", time_slots);
+                    loader.setLoaded();
+
+                    $scope.$broadcast("time_slots:loaded", time_slots);
                 }, function (err) {
                     if (err.status === 404 && err.data && err.data.error && err.data.error === "No bookable events found") {
                         if ($scope.data_source && $scope.data_source.person) {
                             AlertService.warning(ErrorService.getError('NOT_BOOKABLE_PERSON'));
-                            $scope.setLoaded($scope);
+                            loader.setLoaded();
                         } else if ($scope.data_source && $scope.data_source.resource) {
                             AlertService.warning(ErrorService.getError('NOT_BOOKABLE_RESOURCE'));
-                            $scope.setLoaded($scope);
+                            loader.setLoaded();
                         }
 
-                        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+                        loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
                     } else {
-                        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+                        loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
                     }
                 });
-            } else {
-                return loader.setLoaded();
             }
         };
 
@@ -39590,7 +39635,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
          * @description
          * Select earliest time slot
          */
-        return $scope.selectEarliestTimeSlot = function () {
+        $scope.selectEarliestTimeSlot = function () {
             var day = _.find($scope.days, function (day) {
                 return day.date.isSame($scope.bb.current_item.earliest_time_slot.date, 'day');
             });
@@ -39772,7 +39817,7 @@ angular.module('BB.Controllers').controller('TimeList', TimeListCtrl);
 function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBModel, DateTimeUtilitiesService, LoadingService, ErrorService, $translate, bbWidgetPage) {
     'ngInject';
 
-    var loader = LoadingService.$loader($scope).notLoaded();
+    var loader = LoadingService.$loader($scope);
 
     if (!$scope.data_source) {
         $scope.data_source = $scope.bb.current_item;
@@ -39840,7 +39885,7 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
 
     $scope.$on('dateChanged', function (event, newdate) {
         $scope.setDate(newdate);
-        return $scope.loadDay();
+        $scope.loadDay();
     });
 
     // when the current item is updated, reload the time data
@@ -39879,17 +39924,19 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
 
             $scope.data_source.setTime(slot);
             if ($scope.data_source.reserve_ready) {
-                $scope.notLoaded($scope);
-                return $scope.addItemToBasket().then(function () {
+                loader.notLoaded();
+                $scope.addItemToBasket().then(function () {
+
                     if (bbWidgetPage.canAutoDecideNextPage('bb-times')) {
-                        return $scope.decideNextPage(route);
+
+                        $scope.decideNextPage(route);
                     }
                 }).finally(function () {
                     return loader.setLoaded();
                 });
             } else {
                 if (bbWidgetPage.canAutoDecideNextPage('bb-times')) {
-                    return $scope.decideNextPage(route);
+                    $scope.decideNextPage(route);
                 }
             }
         }
@@ -39917,7 +39964,7 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
             $scope.data_source.setTime(slot);
 
             // tell any accordion groups to update
-            return $scope.$broadcast('slotChanged', slot);
+            $scope.$broadcast('slotChanged', slot);
         }
     };
 
@@ -39957,7 +40004,7 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
 
         var new_date = moment($scope.selected_day.date).add(amount, type);
         $scope.setDate(new_date);
-        return $scope.loadDay();
+        $scope.loadDay();
     };
 
     /***
@@ -39983,12 +40030,13 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
      * Load day
      */
     $scope.loadDay = function (options) {
+
         if (!options) {
             options = { check_requested_slot: true };
         }
         if ($scope.data_source && ($scope.data_source.days_link || $scope.item_link_source) && $scope.selected_day) {
 
-            $scope.notLoaded($scope);
+            loader.notLoaded();
 
             var pslots = TimeService.query({
                 company: $scope.bb.company,
@@ -40000,11 +40048,7 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
                 people_ids: $scope.bb.item_defaults.people_ids
             });
 
-            pslots.finally(function () {
-                return loader.setLoaded();
-            });
-            return pslots.then(function (time_slots) {
-
+            pslots.then(function (time_slots) {
                 $scope.slots = time_slots;
                 $scope.$broadcast('slotsUpdated', $scope.data_source, time_slots); // data_source is the BasketItem
                 // padding is used to ensure that a list of time slots is always padded out with a certain of values, if it's a partial set of results
@@ -40044,25 +40088,25 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
                 }
 
                 if (options.check_requested_slot === true) {
-                    return checkRequestedSlots(time_slots);
+                    checkRequestedSlots(time_slots);
                 }
+
+                loader.setLoaded();
             }, function (err) {
                 if (err.status === 404 && err.data && err.data.error && err.data.error === "No bookable events found") {
                     if ($scope.data_source && $scope.data_source.person) {
                         AlertService.warning(ErrorService.getError('NOT_BOOKABLE_PERSON'));
-                        return $scope.setLoaded($scope);
+                        loader.setLoaded();
                     } else if ($scope.data_source && $scope.data_source.resource) {
                         AlertService.warning(ErrorService.getError('NOT_BOOKABLE_RESOURCE'));
-                        return $scope.setLoaded($scope);
+                        loader.setLoaded();
                     } else {
-                        return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+                        loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
                     }
                 } else {
-                    return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+                    loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
                 }
             });
-        } else {
-            return loader.setLoaded();
         }
     };
 
@@ -40116,7 +40160,7 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
      * @description
      * Set this page section as ready
      */
-    return $scope.setReady = function () {
+    $scope.setReady = function () {
         if (!$scope.data_source.time) {
             AlertService.clear();
             AlertService.add("danger", { msg: $translate.instant('PUBLIC_BOOKING.TIME.TIME_NOT_SELECTED_ALERT') });
