@@ -1322,36 +1322,6 @@ String.prototype.parameterise = function (seperator) {
 })();
 'use strict';
 
-/***
- * @ngdoc directive
- * @name BB.Directives:bbWalletRemainder
- * @restrict A
- * @scope
- *   basketTotal: '='
- *   walletAmount: '='
- * @description
- *
- * Calculates wallet remainder
- *
- */
-
-angular.module('BB.Directives').directive('bbWalletRemainder', function () {
-    return {
-        restrict: 'A',
-        scope: {
-            totalPrice: '=',
-            walletAmount: '='
-        },
-        controllerAs: 'vm',
-        bindToController: true,
-        template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
-        controller: function controller() {
-            return this.amountRemaining = this.walletAmount - this.totalPrice;
-        }
-    };
-});
-'use strict';
-
 // strips the postcode from the end of the address. i.e.
 // '15 some address, somwhere, SS1 4RP' becomes '15 some address, somwhere'
 angular.module('BB.Filters').filter('stripPostcode', function () {
@@ -2096,6 +2066,36 @@ angular.module('BB.i18n').run(function ($localStorage, bbi18nOptions, bbLocale, 
 
     bbLocale.determineLocale();
     bbTimeZone.determine();
+});
+'use strict';
+
+/***
+ * @ngdoc directive
+ * @name BB.Directives:bbWalletRemainder
+ * @restrict A
+ * @scope
+ *   basketTotal: '='
+ *   walletAmount: '='
+ * @description
+ *
+ * Calculates wallet remainder
+ *
+ */
+
+angular.module('BB.Directives').directive('bbWalletRemainder', function () {
+    return {
+        restrict: 'A',
+        scope: {
+            totalPrice: '=',
+            walletAmount: '='
+        },
+        controllerAs: 'vm',
+        bindToController: true,
+        template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
+        controller: function controller() {
+            return this.amountRemaining = this.walletAmount - this.totalPrice;
+        }
+    };
 });
 "use strict";
 
@@ -10960,14 +10960,20 @@ angular.module('BB.Services').factory('$exceptionHandler', function ($log, Airbr
 })();
 'use strict';
 
-angular.module('BB.Services').factory('AppService', function ($uibModalStack) {
+(function () {
 
-    return {
-        isModalOpen: function isModalOpen() {
-            return !!$uibModalStack.getTop();
-        }
-    };
-});
+	angular.module('BB.Services').factory('AppService', AppService);
+
+	function AppService($uibModalStack) {
+		var isModalOpen = function isModalOpen() {
+			return !!$uibModalStack.getTop();
+		};
+
+		return {
+			isModalOpen: isModalOpen
+		};
+	}
+})();
 "use strict";
 
 angular.module('BB.Services').factory("BasketService", function ($q, $rootScope, BBModel, MutexService) {
@@ -16655,6 +16661,71 @@ angular.module('BB.Services').service('viewportSize', function ($window, $docume
 });
 'use strict';
 
+(function () {
+
+    /**
+     * @ngdoc service
+     * @name BB.WidgetModalService
+     *
+     * @description
+     * WidgetModalService handles opening and closing of $uibModal modals
+     *
+     */
+
+    angular.module('BB').factory('WidgetModalService', WidgetModal);
+
+    function WidgetModal($uibModal, $uibModalStack, AlertService) {
+        return {
+            /***
+             * @ngdoc method
+             * @name open
+             * @methodOf BB:WidgetModalService
+             * @description
+             * Initialises $uibModal modal
+             * @param {Object} config The config to initialise the modal with
+             *
+             * @returns {Promise} the promise returned by $uibModal
+             */
+            open: function open(_config) {
+                var controller = function controller($scope, WidgetModalService, config) {
+                    $scope.config = config;
+                    $scope.cancel = function () {
+                        return WidgetModalService.close();
+                    };
+                };
+
+                var resolve = { config: function config() {
+                        return _config;
+                    } };
+                var modalOptions = {
+                    templateUrl: _config.templateUrl,
+                    controller: controller,
+                    resolve: resolve,
+                    size: 'lg'
+                };
+
+                this.modal = $uibModal.open(modalOptions);
+                return this.modal;
+            },
+
+
+            /***
+             * @ngdoc method
+             * @name close
+             * @methodOf BB:WidgetModalService
+             * @description
+             * Closes $uibModal modal
+             */
+            close: function close() {
+                AlertService.clear();
+                var openModal = $uibModalStack.getTop();
+                $uibModalStack.close(openModal.key);
+            }
+        };
+    }
+})();
+'use strict';
+
 angular.module('BB.Services').config(function ($translateProvider) {
     'ngInject';
 
@@ -16705,7 +16776,9 @@ angular.module('BB.Services').config(function ($translateProvider) {
                 SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
                 COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
                 DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
-                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again."
+                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again.",
+                MOVE_BOOKING_SUCCESS: "Your booking has been moved to {{datetime | datetime: 'LLLL':true}}",
+                MOVE_BOOKING_FAILED: "Failed to move booking. Please try again."
             },
             PAGINATION: {
                 SUMMARY: "{{start}} - {{end}} of {{total}}"
@@ -16955,6 +17028,1844 @@ angular.module('BB.Services').config(function ($translateProvider) {
         };
     }
 })(angular);
+'use strict';
+
+(function () {
+
+    /**
+     * @ngdoc directive
+     * @name BB.bbMoveBooking
+     *
+     * @description
+     * bbMoveBooking component enables changing time of bookings when widget is initialised in a modal via bbMoveBookingOpenMoveModal
+     *
+     <example module='BB.bbMoveBooking'>
+        <bb-move-booking
+          booking-to-move="bookings[0]"
+          purchase="bb.purchase">
+        </bb-move-booking>
+      </example>
+     */
+
+    angular.module('BB').component('bbMoveBooking', {
+        templateUrl: '_move_booking.html',
+        bindings: {
+            bookingToMove: '<',
+            purchase: '<'
+        },
+        controller: bbMoveBookingCtrl,
+        controllerAs: '$bbMoveBookingCtrl'
+    });
+
+    function bbMoveBookingCtrl($scope, $rootScope, $log, $translate, $timeout, AlertService, LoadingService, bbWidgetPage, PurchaseBookingService, PurchaseService, AppService, MoveBookingOptions, bbAnalyticsPiwik) {
+        var _this = this;
+
+        var setPiwik = function setPiwik() {
+            if (bbAnalyticsPiwik.isEnabled()) {
+                bbAnalyticsPiwik.push(['trackEvent', [bbWidgetPage.getCurrentPage], "Move Booking"]);
+            }
+        };
+
+        var handleMovedBooking = function handleMovedBooking(movedBooking) {
+            if (!_this.purchase) return getPurchaseTotal(movedBooking);
+            var updatedPurchase = PurchaseService.updateBBPurchase(_this.purchase, movedBooking);
+            routeToNextStep(updatedPurchase);
+        };
+
+        var getPurchaseTotal = function getPurchaseTotal(movedBooking) {
+            PurchaseService.query({ url_root: $rootScope.bb.api_url, purchase_id: movedBooking.purchase_ref }).then(function (purchase) {
+                routeToNextStep(purchase);
+            }, function (err) {
+                _this.loader.setLoaded();
+                $log.info(err);
+            });
+        };
+
+        var routeToNextStep = function routeToNextStep(updatedPurchase) {
+            _this.loader.setLoaded();
+            bbWidgetPage.decideNextPage(MoveBookingOptions.nextStepTemplate);
+            $timeout(function () {
+                $scope.$emit('booking:moved', updatedPurchase);
+                $rootScope.$broadcast('booking:moved', updatedPurchase);
+            });
+        };
+
+        this.$onInit = function () {
+            _this.loader = LoadingService.$loader($scope);
+        };
+
+        this.moveBooking = function () {
+            if (AppService.isModalOpen()) {
+                setPiwik();
+                _this.bookingToMove.setAskedQuestions();
+                // setAskedQuestions will check if the booking is ready to be moved
+                if (_this.bookingToMove.ready) {
+                    _this.loader.notLoaded();
+                    PurchaseBookingService.update(_this.bookingToMove).then(function (movedBooking) {
+                        handleMovedBooking(movedBooking);
+                    }, function (err) {
+                        _this.loader.setLoaded();
+                        $log.info(err);
+                        AlertService.add('danger', { msg: $translate.instant('CORE.ALERTS.MOVE_BOOKING_FAILED') });
+                    });
+                } else {
+                    $log.info('booking is not ready to be moved');
+                }
+            } else $log.info('please load bbMoveBooking using bbMoveBookingOpenMoveModal(which would load in a modal).');
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    /**
+     * @ngdoc directive
+     * @name BB.bbMoveBooking
+     *
+     * @description
+     * bbMoveBookingOpenMoveModal component initialises widget in modal to change time of bookings
+     *
+     <example module='BB.bbMoveBooking'>
+        <bb-move-booking-open-move-modal
+          booking-to-move="bookings[0]"
+          move-reasons="bb.move_reasons"
+          cancel-reasons="bb.cancel_reasons">
+        </bb-move-booking-open-move-modal>
+      </example>
+     */
+
+    angular.module('BB').component('bbMoveBookingOpenMoveModal', {
+        templateUrl: '_move_booking_open_move_modal.html',
+        bindings: {
+            bookingToMove: '<',
+            cancelReasons: '<',
+            moveReasons: '<'
+        },
+        controller: bbMoveBookingOpenMoveModalCtrl,
+        controllerAs: '$bbMoveBookingOpenMoveModalCtrl'
+    });
+
+    function bbMoveBookingOpenMoveModalCtrl(MoveBookingOptions, WidgetModalService) {
+
+        this.openMoveModal = function () {
+            this.modalParams = {
+                company_id: this.bookingToMove.company_id,
+                total_id: this.bookingToMove.purchase_ref,
+                first_page: MoveBookingOptions.modalFirstPage,
+                template: MoveBookingOptions.modalTemplate,
+                templateUrl: MoveBookingOptions.modalTemplateUrl,
+                move_reasons: this.moveReasons ? this.moveReasons : null,
+                cancel_reasons: this.cancelReasons ? this.cancelReason : null,
+                size: 'lg'
+            };
+
+            WidgetModalService.open(this.modalParams);
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    angular.module('BB.Services').provider('MoveBookingOptions', function () {
+
+        var options = {
+            modalFirstPage: 'calendar',
+            modalTemplate: 'main_view_booking',
+            modalTemplateUrl: 'widget_modal.html',
+            nextStepTemplate: 'confirmation'
+        };
+
+        this.setOption = function (option, value) {
+            if (options.hasOwnProperty(option)) {
+                options[option] = value;
+            }
+        };
+
+        this.$get = function () {
+            return options;
+        };
+    });
+})();
+'use strict';
+
+/**
+ * @ngdoc directive
+ * @name BB.i18n:bbLanguagePicker
+ * @scope
+ * @restrict A
+ *
+ * @description
+ * Responsible for providing a ui representation of available translations
+ *
+ */
+angular.module('BB.i18n').directive('bbLanguagePicker', function () {
+
+    return {
+        controller: bbLanguagePickerController,
+        controllerAs: 'vm',
+        restrict: 'A',
+        scope: true,
+        link: bbLanguagePickerLink,
+        templateUrl: 'i18n/language_picker.html'
+    };
+});
+
+function bbLanguagePickerLink(scope, element, attrs) {
+
+    if (scope.vm.availableLanguages.length <= 1) {
+        angular.element(element).addClass('hidden');
+    }
+}
+
+function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLocale, bbi18nOptions) {
+    'ngInject';
+
+    /*jshint validthis: true */
+
+    var _this = this;
+
+    var languages = bbi18nOptions.available_languages;
+    this.language = null;
+    this.availableLanguages = [];
+    this.setAvailableLanguages = setAvailableLanguages;
+    this.setCurrentLanguage = setCurrentLanguage;
+    this.setLanguage = setLanguage;
+
+    (function () {
+        _this.setAvailableLanguages();
+        _this.setCurrentLanguage();
+        $scope.$on('BBLanguagePicker:refresh', setCurrentLanguage);
+        _this.pickLanguage = pickLanguage;
+    })();
+
+    function setAvailableLanguages() {
+        var _this2 = this;
+
+        languages.forEach(function (languageKey) {
+            _this2.availableLanguages.push(createLanguage(languageKey));
+        });
+    }
+
+    function setCurrentLanguage() {
+        var _this3 = this;
+
+        tmhDynamicLocale.set(bbLocale.getLocale()).then(function () {
+            _this3.language = { selected: createLanguage(bbLocale.getLocale()) };
+        });
+    }
+
+    /*
+     * @param {String]
+     */
+    function createLanguage(languageKey) {
+        return {
+            identifier: languageKey,
+            label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
+        };
+    }
+
+    function setLanguage(lang) {
+        this.language.selected = lang;
+        this.pickLanguage(lang.identifier);
+    }
+
+    /*
+     * @param {String]
+     */
+    function pickLanguage(languageKey) {
+        tmhDynamicLocale.set(languageKey).then(function () {
+            bbLocale.setLocale(languageKey, 'bbLanguagePicker.pickLanguage');
+            $rootScope.$broadcast('BBLanguagePicker:languageChanged');
+        });
+    }
+}
+'use strict';
+
+(function () {
+
+    'use strict';
+
+    /**
+     * @ngdoc directive
+     * @name BBAdminDashboard.bbTimeZoneSelect
+     *
+     * @description
+     * TimeZone Select component changes the time zone in which times are displayed in Studio
+     * Configured using bbi18nOptionsProvider
+     *
+     *
+     <example module='BBAdminDashboard.bbTimeZoneSelect'>
+        <bb-time-zone-select></bb-time-zone-select>
+     </example>
+     */
+
+    angular.module('BB.i18n').component('bbTimeZoneSelect', {
+        templateUrl: 'i18n/_bb_timezone_select.html',
+        bindings: {
+            hideToggle: '<',
+            format: '<'
+        },
+        controller: TimeZoneSelectCtrl,
+        controllerAs: '$bbTimeZoneSelectCtrl'
+    });
+
+    function TimeZoneSelectCtrl($rootScope, $scope, $localStorage, bbi18nOptions, bbTimeZone, bbTimeZoneOptions, bbTimeZoneUtils) {
+        'ngInject';
+
+        var _this = this;
+
+        var LIST_CAPACITY = 100;
+        var companyTimeZone = void 0;
+        var displayTimeZone = void 0;
+        var browserTimeZone = void 0;
+
+        this.timeZones = [];
+        this.isAutomaticTimeZone = false;
+        this.selectedTimeZone = null;
+        this.isLongList = false;
+
+        this.$onInit = function () {
+            _this.timeZones = bbTimeZoneOptions.composeTimeZoneList(_this.format, bbTimeZone.getDisplay());
+            _this.isLongList = _this.timeZones.length > LIST_CAPACITY;
+            _this.setTimeZone = setTimeZone;
+            _this.automaticTimeZoneToggle = automaticTimeZoneToggle;
+            $rootScope.connection_started ? $rootScope.connection_started.then(determineDefaults) : determineDefaults();
+        };
+
+        var determineDefaults = function determineDefaults() {
+            var localStorage = $localStorage.getObject('bbTimeZone');
+            var getEqualTzInList = function getEqualTzInList(timeZone) {
+                return bbTimeZoneUtils.getEqualInList(timeZone, _this.timeZones);
+            };
+            companyTimeZone = getEqualTzInList(bbTimeZone.getCompany());
+            displayTimeZone = getEqualTzInList(bbTimeZone.getDisplay());
+            browserTimeZone = getEqualTzInList(moment.tz.guess());
+            _this.isAutomaticTimeZone = localStorage.useBrowserTimeZone || bbi18nOptions.timeZone.useBrowser && !localStorage.displayTimeZone;
+            _this.selectedTimeZone = _this.timeZones.find(function (tz) {
+                return tz.value === displayTimeZone;
+            });
+        };
+
+        var automaticTimeZoneToggle = function automaticTimeZoneToggle() {
+            displayTimeZone = _this.isAutomaticTimeZone ? browserTimeZone : companyTimeZone;
+            _this.timeZones = bbTimeZoneOptions.addMissingTimeZones(_this.timeZones, _this.format, displayTimeZone);
+            setTimeZone(displayTimeZone, _this.isAutomaticTimeZone);
+            $scope.$broadcast('UISelect:closeSelect');
+            bbTimeZone.setLocalStorage({ useBrowserTimeZone: _this.isAutomaticTimeZone });
+        };
+
+        var setTimeZone = function setTimeZone(timeZone) {
+            var isAutomaticTimeZone = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+            displayTimeZone = timeZone;
+            bbTimeZone.setDisplay(timeZone);
+            _this.selectedTimeZone = _this.timeZones.find(function (tz) {
+                return tz.value === timeZone;
+            });
+            $rootScope.$broadcast('BBTimeZoneOptions:timeZoneChanged', timeZone);
+            if (!isAutomaticTimeZone) bbTimeZone.setLocalStorage({ displayTimeZone: timeZone });
+        };
+
+        var languageChangedHandler = function languageChangedHandler() {
+            _this.timeZones = bbTimeZoneOptions.composeTimeZoneList(_this.format, displayTimeZone);
+            _this.selectedTimeZone = _this.timeZones.find(function (tz) {
+                return tz.value === displayTimeZone;
+            });
+        };
+
+        $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
+    }
+})();
+'use strict';
+
+(function () {
+
+    angular.module('BB.i18n').constant('bbCustomTimeZones', {
+        GROUPED_TIME_ZONES: {
+            'Africa/Cairo': 'Cairo',
+            'Africa/Casablanca': 'Monrovia',
+            'Africa/Harare': 'Harare, Pretoria',
+            'Africa/Lagos': 'West Central Africa',
+            'Africa/Nairobi': 'Nairobi',
+            'America/Bogota': 'Bogota, Lima, Quito',
+            'America/Buenos_Aires': 'Buenos Aires, Georgetown',
+            'America/Caracas': 'Caracas, La Paz',
+            'America/Chicago': 'Central Time (US and Canada)',
+            'America/Chihuahua': 'Chihuahua, Mazatlan',
+            'America/Denver': 'Mountain Time (US and Canada)',
+            'America/El_Salvador': 'Central America',
+            'America/Halifax': 'Atlantic Time (Canada)',
+            'America/Indiana/Knox': 'Indiana (East)',
+            'America/Los_Angeles': 'Pacific Time (US and Canada); Tijuana',
+            'America/Mexico_City': 'Guadalajara, Mexico City, Monterrey',
+            'America/New_York': 'Eastern Time (US and Canada)',
+            'America/Phoenix': 'Arizona',
+            'America/Santiago': 'Santiago',
+            'America/Sao_Paulo': 'Brasilia',
+            'America/Thule': 'Greenland',
+            'Asia/Almaty': 'Almaty, Novosibirsk',
+            'Asia/Baghdad': 'Baghdad',
+            'Asia/Bangkok': 'Bangkok, Hanoi, Jakarta',
+            'Asia/Colombo': 'Sri Jayawardenepura',
+            'Asia/Dhaka': 'Astana, Dhaka',
+            'Asia/Dubai': 'Abu Dhabi, Muscat',
+            'Asia/Hong_Kong': 'Beijing, Chongqing, Hong Kong SAR, Urumqi',
+            'Asia/Irkutsk': 'Irkutsk, Ulaanbaatar',
+            'Asia/Jerusalem': 'Jerusalem',
+            'Asia/Kabul': 'Kabul',
+            'Asia/Karachi': 'Islamabad, Karachi, Tashkent',
+            'Asia/Kathmandu': 'Kathmandu',
+            'Asia/Kolkata': 'Chennai, Kolkata, Mumbai, New Delhi',
+            'Asia/Krasnoyarsk': 'Krasnoyarsk',
+            'Asia/Kuwait': 'Kuwait, Riyadh',
+            'Asia/Magadan': 'Magadan, Solomon Islands, New Caledonia',
+            'Asia/Rangoon': 'Yangon Rangoon',
+            'Asia/Seoul': 'Seoul',
+            'Asia/Singapore': 'Kuala Lumpur, Singapore',
+            'Asia/Taipei': 'Taipei',
+            'Asia/Tehran': 'Tehran',
+            'Asia/Tokyo': 'Osaka, Sapporo, Tokyo',
+            'Asia/Vladivostok': 'Vladivostok',
+            'Asia/Yakutsk': 'Yakutsk',
+            'Asia/Yekaterinburg': 'Ekaterinburg',
+            'Asia/Yerevan': 'Baku, Tbilisi, Yerevan',
+            'Atlantic/Azores': 'Azores',
+            'Atlantic/Cape_Verde': 'Cape Verde Islands',
+            'Australia/Adelaide': 'Adelaide',
+            'Australia/Brisbane': 'Brisbane',
+            'Australia/Canberra': 'Canberra, Melbourne, Sydney',
+            'Australia/Darwin': 'Darwin',
+            'Australia/Perth': 'Perth',
+            'Australia/Tasmania': 'Hobart',
+            'Canada/Newfoundland': 'Newfoundland and Labrador',
+            'Canada/Saskatchewan': 'Saskatchewan',
+            'Etc/GMT+12': 'International Date Line West',
+            'Europe/Amsterdam': 'Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna',
+            'Europe/Athens': 'Athens, Minsk',
+            'Europe/Belgrade': 'Belgrade, Bratislava, Budapest, Ljubljana, Prague',
+            'Europe/Bucharest': 'Bucharest',
+            'Europe/Helsinki': 'Helsinki, Kiev, Riga, Sofia, Tallinn, Vilnius',
+            'Europe/Istanbul': 'Istanbul',
+            'Europe/London': 'Edinburgh, Lisbon, London',
+            'Europe/Moscow': 'Moscow, St. Petersburg, Volgograd',
+            'Europe/Paris': 'Brussels, Copenhagen, Madrid, Paris',
+            'Europe/Sarajevo': 'Sarajevo, Skopje, Warsaw, Zagreb',
+            'Pacific/Auckland': 'Auckland, Wellington',
+            'Pacific/Fiji': 'Fiji Islands, Kamchatka, Marshall Islands',
+            'Pacific/Guam': 'Guam, Port Moresby',
+            'Pacific/Honolulu': 'Hawaii',
+            'Pacific/Pago_Pago': 'Midway Island, Samoa',
+            'Pacific/Tongatapu': 'Nuku\'alofa',
+            'US/Alaska': 'Alaska'
+        }
+    });
+})();
+'use strict';
+
+angular.module('BB.i18n').provider('bbi18nOptions', function (bbOptionsProvider) {
+    'ngInject';
+
+    var options = {
+        default_language: 'en',
+        use_browser_language: true,
+        available_languages: ['en'],
+        available_language_associations: {
+            'en_*': 'en',
+            'fr_*': 'fr'
+        },
+        timeZone: {
+            default: 'Europe/London',
+            useBrowser: false,
+            useCompany: true,
+            useCustomList: true,
+            replaceBrowser: { replace: '', replaceWith: '' },
+            filters: {
+                limitTo: [],
+                limitDaylightSaving: [],
+                limitStandard: [],
+                exclude: []
+            }
+        }
+    };
+
+    this.setOption = function (option, value) {
+        options = bbOptionsProvider.setOption(options, option, value);
+    };
+
+    this.getOption = function (option) {
+        return options[option];
+    };
+
+    this.$get = function () {
+        return options;
+    };
+});
+'use strict';
+
+angular.module('BB.i18n').service('bbLocale', function (bbi18nOptions, $log, $translate, $window) {
+    'ngInject';
+
+    var _localeCompanyUsed = false;
+
+    var determineLocale = function determineLocale() {
+
+        if ($translate.use() !== 'undefined' && angular.isDefined($translate.use()) && isAvailable($translate.use())) {
+            setLocale($translate.use(), '$translate.use() locale');
+        } else {
+            var browserLocale = $translate.negotiateLocale($translate.resolveClientLocale()); //browserLocale = $window.navigator.language;
+            var defaultLocale = bbi18nOptions.default_language;
+            var URIParamLocale = $window.getURIparam('locale');
+
+            if (URIParamLocale && isAvailable(URIParamLocale)) {
+                setLocale(URIParamLocale, 'URIParam locale');
+            } else if (bbi18nOptions.use_browser_language && isAvailable(browserLocale)) {
+                setLocale(browserLocale, 'browser locale');
+            } else {
+                setLocale(defaultLocale, 'default locale');
+            }
+        }
+
+        $translate.preferredLanguage(getLocale());
+    };
+
+    /*
+     * @param {String} locale
+     * @param {String} setWith
+     */
+    var setLocale = function setLocale(locale, setWith) {
+        if (setWith == null) {
+            setWith = '';
+        }
+        if (!isAvailable(locale)) {
+            return;
+        }
+
+        moment.locale(locale); // TODO we need angular wrapper for moment
+        $translate.use(locale);
+
+        //console.info('bbLocale.locale = ', locale, ', set with: ', setWith)
+
+        if (locale !== moment.locale() || locale !== $translate.use()) {
+            console.error('moment locale not available, preferred locale = ' + locale + ', moment.locale() = ', moment.locale(), '$translate.use() = ', $translate.use());
+        }
+    };
+
+    /*
+     * {String} locale
+     */
+    var isAvailable = function isAvailable(locale) {
+        return bbi18nOptions.available_languages.indexOf(locale) !== -1;
+    };
+
+    /*
+     * @returns {String}
+     */
+    var getLocale = function getLocale() {
+        return $translate.use();
+    };
+
+    /*
+     * It's a hacky way to map country code to specific locale. Reason is moment default is set to en_US
+     * @param {string} countryCode
+     */
+    var setLocaleUsingCountryCode = function setLocaleUsingCountryCode(countryCode) {
+        if (_localeCompanyUsed) {
+            return; //can be set only once
+        }
+        _localeCompanyUsed = true;
+
+        if (countryCode && countryCode.match(/^(gb|au)$/)) {
+            var locale = 'en-' + countryCode;
+            setLocale(locale, 'countryCode');
+        }
+    };
+
+    return {
+        determineLocale: determineLocale,
+        getLocale: getLocale,
+        setLocale: setLocale,
+        setLocaleUsingCountryCode: setLocaleUsingCountryCode
+    };
+});
+'use strict';
+
+(function () {
+
+    /**
+     * @ngdoc service
+     * @name BBAdminDashboard.bbTimeZone
+     * @description
+     * TimeZone factory
+     */
+    angular.module('BB.i18n').service('bbTimeZone', bbTimeZoneService);
+
+    function bbTimeZoneService($localStorage, $log, moment, bbi18nOptions, CompanyStoreService, bbCustomTimeZones, bbTimeZoneUtils) {
+        'ngInject';
+
+        var displayTimeZone = bbTimeZoneUtils.getKeyInCustomList(bbi18nOptions.timeZone.default, bbi18nOptions.timeZone.useCustomList);
+
+        return {
+            getDisplay: getDisplay,
+            getDisplayUTCOffset: getDisplayUTCOffset,
+            getCompany: getCompany,
+            getCompanyUTCOffset: getCompanyUTCOffset,
+
+            convertToCompany: convertToCompany,
+            convertToDisplay: convertToDisplay,
+
+            determine: determine,
+            setDisplay: setDisplay,
+            setLocalStorage: setLocalStorage
+        };
+
+        /**
+         * @param {moment|String} dateTime If string must be valid ISO string
+         * @returns {moment}
+         */
+        function convertToCompany(dateTime) {
+            return convertDateTime(dateTime, CompanyStoreService.time_zone);
+        }
+
+        /**
+         * @param {moment|String} dateTime If string must be valid ISO string
+         * @returns {moment}
+         */
+        function convertToDisplay(dateTime) {
+            return convertDateTime(dateTime, displayTimeZone);
+        }
+
+        function convertDateTime(dateTime, timeZone) {
+            if (!moment(dateTime).isValid()) $log.error('not valid dateTime', dateTime);
+            var converted = moment.tz(dateTime, timeZone);
+            return converted;
+        }
+
+        function getDisplay() {
+            return displayTimeZone;
+        }
+
+        function getDisplayUTCOffset() {
+            return moment().tz(displayTimeZone).utcOffset();
+        }
+
+        function getCompany() {
+            return CompanyStoreService.time_zone;
+        }
+
+        function getCompanyUTCOffset() {
+            return moment().tz(CompanyStoreService.time_zone).utcOffset();
+        }
+
+        function determine() {
+            var _bbi18nOptions$timeZo = bbi18nOptions.timeZone,
+                useBrowser = _bbi18nOptions$timeZo.useBrowser,
+                useCustomList = _bbi18nOptions$timeZo.useCustomList,
+                useCompany = _bbi18nOptions$timeZo.useCompany;
+
+            var localStorage = $localStorage.getObject('bbTimeZone');
+
+            if (localStorage.displayTimeZone) {
+                setDisplay(localStorage.displayTimeZone);
+                return;
+            }
+
+            if (useBrowser || localStorage.useBrowserTimeZone) {
+                var timeZone = bbTimeZoneUtils.getKeyInCustomList(moment.tz.guess(), useCustomList);
+                setDisplay(timeZone);
+                return;
+            }
+
+            if (useCompany && CompanyStoreService.time_zone) {
+                var _timeZone = bbTimeZoneUtils.getKeyInCustomList(CompanyStoreService.time_zone, useCustomList);
+                setDisplay(_timeZone);
+            }
+        }
+
+        function setDisplay(timeZone) {
+            moment.tz.setDefault(timeZone);
+            displayTimeZone = timeZone;
+        }
+
+        function setLocalStorage(localStorageObj) {
+            $localStorage.setObject('bbTimeZone', localStorageObj);
+        }
+    }
+})();
+'use strict';
+
+(function () {
+
+    /**
+     * @ngdoc service
+     * @name BBAdminDashboard.bbTimeZoneOptions
+     * @description
+     * TimeZone options factory
+     */
+    angular.module('BB.i18n').factory('bbTimeZoneOptions', timeZoneOptionsService);
+
+    function timeZoneOptionsService(bbi18nOptions, bbTimeZoneUtils) {
+        'ngInject';
+
+        var compose = function compose() {
+            for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
+                funcs[_key] = arguments[_key];
+            }
+
+            return function (value) {
+                return funcs.reduce(function (v, fn) {
+                    return fn(v);
+                }, value);
+            };
+        };
+        var initOptions = function initOptions() {
+            var timeZones = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+            var displayFormat = arguments[1];
+            var timeZone = arguments[2];
+
+            return {
+                timeZone: timeZone,
+                timeZones: timeZones,
+                displayFormat: displayFormat,
+                useCustomList: bbi18nOptions.timeZone.useCustomList,
+                filters: bbi18nOptions.timeZone.filters,
+                isDST: moment().isDST()
+            };
+        };
+
+        return {
+            composeTimeZoneList: composeTimeZoneList,
+            addMissingTimeZones: addMissingTimeZones
+        };
+
+        function composeTimeZoneList(displayFormat, timeZone) {
+            var options = initOptions(undefined, displayFormat, timeZone);
+            var composeTimeZones = compose(bbTimeZoneUtils.loadKeys, bbTimeZoneUtils.findFilterKeysInCustomList, bbTimeZoneUtils.filter, bbTimeZoneUtils.reject, bbTimeZoneUtils.filterDayLightOrStandard, bbTimeZoneUtils.ensureExists, bbTimeZoneUtils.mapModel, bbTimeZoneUtils.removeDuplicates, bbTimeZoneUtils.order);
+            return composeTimeZones(options).timeZones;
+        }
+
+        function addMissingTimeZones(timeZones, displayFormat, timeZone) {
+            var options = initOptions(timeZones, displayFormat, timeZone);
+            var composeTimeZones = compose(bbTimeZoneUtils.ensureExists, bbTimeZoneUtils.mapModel, bbTimeZoneUtils.removeDuplicates, bbTimeZoneUtils.order);
+            return options.filters.limitTo.length ? composeTimeZones(options).timeZones : timeZones;
+        }
+    }
+})();
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+(function () {
+
+    /**
+     * @ngdoc service
+     * @name BBAdminDashboard.bbTimeZoneOptions
+     * @description
+     * TimeZone options factory
+     */
+    angular.module('BB.i18n').factory('bbTimeZoneUtils', bbTimeZoneUtils);
+
+    function bbTimeZoneUtils($translate, $log, moment, orderByFilter, bbi18nOptions, bbCustomTimeZones) {
+        'ngInject';
+
+        return {
+            loadKeys: loadKeys,
+            filter: filter,
+            reject: reject,
+            findFilterKeysInCustomList: findFilterKeysInCustomList,
+            filterDayLightOrStandard: filterDayLightOrStandard,
+            ensureExists: ensureExists,
+            mapModel: mapModel,
+            removeDuplicates: removeDuplicates,
+            order: order,
+
+            getKeyInCustomList: getKeyInCustomList,
+            getEqualInList: getEqualInList
+        };
+
+        function loadKeys(options) {
+            return Object.assign({}, options, {
+                timeZones: options.useCustomList ? Object.keys(bbCustomTimeZones.GROUPED_TIME_ZONES) : loadMomentNames()
+            });
+        }
+
+        function loadMomentNames() {
+            var timeZones = moment.tz.names();
+            var contains = function contains(timeZone) {
+                return function (strings) {
+                    return _.any(strings, function (string) {
+                        return timeZone.indexOf(string) !== -1;
+                    });
+                };
+            };
+            var isUpperCase = function isUpperCase(timeZone) {
+                return timeZone.match(/[^/]*$/)[0] === timeZone.match(/[^/]*$/)[0].toUpperCase();
+            };
+            return _.chain(timeZones).reject(contains(['GMT', 'Etc'])).reject(isUpperCase).value();
+        }
+
+        function findFilterKeysInCustomList(options) {
+            var getKey = function getKey(timeZoneKey) {
+                return getKeyInCustomList(timeZoneKey, options.useCustomList);
+            };
+            var mapFilters = function mapFilters(listOfFilters, typeOfFilter, filters) {
+                return filters[typeOfFilter] = _.map(listOfFilters, getKey);
+            };
+            return Object.assign({}, options, {
+                filters: _.mapObject(options.filters, mapFilters)
+            });
+        }
+
+        function filter(options) {
+            return Object.assign({}, options, {
+                timeZones: filterTimeZoneList(options.timeZones, options.filters.limitTo)
+            });
+        }
+
+        function reject(options) {
+            return Object.assign({}, options, {
+                timeZones: filterTimeZoneList(options.timeZones, options.filters.exclude, true)
+            });
+        }
+
+        function filterDayLightOrStandard(options) {
+            var _options$filters = options.filters,
+                limitDaylightSaving = _options$filters.limitDaylightSaving,
+                limitStandard = _options$filters.limitStandard;
+
+            return Object.assign({}, options, {
+                timeZones: filterTimeZoneList(options.timeZones, options.isDST ? limitDaylightSaving : limitStandard)
+            });
+        }
+
+        function filterTimeZoneList(timeZones, timeZonesToFilter) {
+            var exclude = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+
+            if (!angular.isArray(timeZonesToFilter)) {
+                $log.error('must be an Array:', timeZonesToFilter + ':' + (typeof timeZonesToFilter === 'undefined' ? 'undefined' : _typeof(timeZonesToFilter)));
+                return timeZones;
+            }
+
+            if (!timeZonesToFilter.length) {
+                return timeZones;
+            }
+
+            var contains = function contains(filters) {
+                return function (timeZone) {
+                    return _.any(filters, function (filter) {
+                        return timeZone.indexOf(filter) !== -1;
+                    });
+                };
+            };
+            if (exclude) {
+                return _.reject(timeZones, contains(timeZonesToFilter));
+            } else {
+                return _.filter(timeZones, contains(timeZonesToFilter));
+            }
+        }
+
+        function ensureExists(options) {
+            return Object.assign({}, options, {
+                timeZones: addMissingTimeZone(options.timeZones, options.timeZone)
+            });
+        }
+
+        function addMissingTimeZone(timeZones, timeZone) {
+            var mappedTimeZone = getEqualInList(timeZone, timeZones);
+            var allTimeZones = [].concat(_toConsumableArray(timeZones));
+            if (!allTimeZones.find(function (tz) {
+                return (tz.value || tz) === mappedTimeZone;
+            })) {
+                allTimeZones.push(mappedTimeZone);
+            }
+            return allTimeZones;
+        }
+
+        function mapModel(options) {
+            var mapTimeZone = function mapTimeZone(timeZone, index) {
+                return timeZone.value ? timeZone : mapTimeZoneItem(options, timeZone, index);
+            };
+            return Object.assign({}, options, {
+                timeZones: _.map(options.timeZones, mapTimeZone)
+            });
+        }
+
+        function mapTimeZoneItem(options, timeZoneKey, index) {
+            var city = timeZoneKey.match(/[^/]*$/)[0].replace(/-/g, '_');
+            var momentTz = moment.tz(timeZoneKey);
+            return {
+                id: index,
+                display: formatDisplayValue(options, city, momentTz),
+                value: timeZoneKey,
+                order: [parseInt(momentTz.format('Z')), momentTz.format('zz'), city]
+            };
+        }
+
+        function formatDisplayValue(options, city, momentTz) {
+
+            var format = angular.copy(options.displayFormat);
+
+            var formatMap = {
+                'tz-code': $translate.instant('I18N.TIMEZONE_LOCATIONS.CODES.' + momentTz.format('zz')),
+                'offset-hours': momentTz.format('Z'),
+                'location': $translate.instant('I18N.TIMEZONE_LOCATIONS.' + (options.useCustomList ? 'CUSTOM' : 'MOMENT') + '.' + city.toUpperCase())
+            };
+
+            if (!format) return '(GMT' + formatMap['offset-hours'] + ') ' + formatMap.location;
+            for (var formatKey in formatMap) {
+                format = format.replace(formatKey, formatMap[formatKey]);
+            }
+
+            return format;
+        }
+
+        function removeDuplicates(options) {
+            return Object.assign({}, options, {
+                timeZones: _.uniq(options.timeZones, function (timeZone) {
+                    return timeZone.display;
+                })
+            });
+        }
+
+        function order(options) {
+            return Object.assign({}, options, {
+                timeZones: orderByFilter(options.timeZones, ['order[0]', 'order[1]', 'order[2]'], false)
+            });
+        }
+
+        function getKeyInCustomList(timeZone) {
+            var useCustomList = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+            var selectedTimeZone = void 0;
+
+            if (!useCustomList) return timeZone;
+            if (bbCustomTimeZones.GROUPED_TIME_ZONES[timeZone]) return timeZone;
+
+            var city = timeZone.match(/[^/]*$/)[0].replace(/ /g, "_");
+
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = Object.entries(bbCustomTimeZones.GROUPED_TIME_ZONES)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var _step$value = _slicedToArray(_step.value, 2),
+                        groupName = _step$value[0],
+                        groupCities = _step$value[1];
+
+                    if (groupName.match(/[^/]*$/)[0] === city) {
+                        selectedTimeZone = groupName;
+                        break;
+                    }
+
+                    groupCities = groupCities.split(/\s*,\s*/).map(function (tz) {
+                        return tz.replace(/ /g, "_");
+                    }).join(', ').split(/\s*,\s*/);
+                    var cityGroupIndex = groupCities.findIndex(function (groupCity) {
+                        return groupCity === city;
+                    });
+                    if (cityGroupIndex !== -1) {
+                        selectedTimeZone = groupName;
+                        break;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            return selectedTimeZone || timeZone;
+        }
+
+        function getEqualInList(timeZone, timeZones) {
+            var selectedTimeZone = void 0;
+
+            var overwrite = bbi18nOptions.timeZone.replaceBrowser;
+            if (overwrite.replace && overwrite.replaceWith) {
+                if (overwrite.replace === timeZone) {
+                    selectedTimeZone = overwrite.replaceWith;
+                    return selectedTimeZone;
+                }
+            }
+
+            var formatTz = function formatTz(timeZone, format) {
+                return moment.tz(timeZone).format(format);
+            };
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = timeZones[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var tz = _step2.value;
+
+                    if (formatTz(tz.value || tz, 'zz') === formatTz(timeZone, 'zz') && formatTz(tz.value || tz, 'ZZ') === formatTz(timeZone, 'ZZ')) {
+                        selectedTimeZone = tz.value || tz;
+                        break;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            return selectedTimeZone || timeZone;
+        }
+    }
+})();
+'use strict';
+
+/**
+ * @ngdoc service
+ * @name BB.i18n.RuntimeTranslate
+ *
+ * @description
+ * Returns an instance of $translateProvider that allows late language binding (on runtime)
+ */
+
+/**
+ * @ngdoc service
+ * @name BB.i18n.RuntimeTranslateProvider
+ *
+ * @description
+ * Provider
+ *
+ * @example
+ <pre>
+ angular.module('ExampleModule').config ['RuntimeTranslateProvider', '$translateProvider', (RuntimeTranslateProvider, $translateProvider) ->
+ RuntimeTranslateProvider.setProvider($translateProvider)
+ ]
+ </pre>
+ */
+angular.module('BB.i18n').provider('RuntimeTranslate', function ($translateProvider) {
+  'ngInject';
+
+  var translateProvider = $translateProvider;
+  this.setProvider = function (provider) {
+    return translateProvider = provider;
+  };
+  this.$get = function () {
+    return translateProvider;
+  };
+});
+'use strict';
+
+angular.module('BB.i18n').config(function ($translateProvider) {
+    'ngInject';
+
+    var translations = {
+        I18N: {
+            LANGUAGE_PICKER: {
+                SELECT_LANG_PLACEHOLDER: 'Select...'
+            },
+            TIMEZONE: {
+                PREFERENCES: 'Preferences',
+                TIMEZONE_INFO: 'All times are shown in {{time_zone_name}}.',
+                SET_TIMEZONE_AUTOMATICALLY_LABEL: 'Set timezone automatically',
+                SET_TIMEZONE_AUTOMATICALLY_ON_LABEL: 'On',
+                SET_TIMEZONE_AUTOMATICALLY_OFF_LABEL: 'Off',
+                TIMEZONE_LABEL: 'Timezone',
+                SELECT_TIMEZONE_PLACEHOLDER: 'Select timezone'
+            },
+            TIMEZONE_LOCATIONS: {
+                CODES: {
+                    '+00': '+00',
+                    '+01': '+01',
+                    '+02': '+02',
+                    '+03': '+03',
+                    '+04': '+04',
+                    '+05': '+05',
+                    '+0530': '+0530',
+                    '+06': '+06',
+                    '+07': '+07',
+                    '+08': '+08',
+                    '+09': '+09',
+                    '+10': '+10',
+                    '+11': '+11',
+                    '+12': '+12',
+                    '+13': '+13',
+                    '+14': '+14',
+                    '-01': '-01',
+                    '-02': '-02',
+                    '-03': '-03',
+                    '-04': '-04',
+                    '-05': '-05',
+                    '-06': '-06',
+                    '-07': '-07',
+                    '-08': '-08',
+                    '-09': '-09',
+                    '-10': '-10',
+                    '-11': '-11',
+                    '-12': '-12',
+                    ACDT: 'ACDT',
+                    ACST: 'ACST',
+                    ACT: 'ACT',
+                    ACWST: 'ACWST',
+                    ADT: 'ADT',
+                    AEDT: 'AEDT',
+                    AEST: 'AEST',
+                    AFT: 'AFT',
+                    AKDT: 'AKDT',
+                    AKST: 'AKST',
+                    AMST: 'AMST',
+                    AMT: 'AMT',
+                    ART: 'ART',
+                    AST: 'AST',
+                    AWST: 'AWST',
+                    AZOST: 'AZOST',
+                    AZOT: 'AZOT',
+                    BDT: 'BDT',
+                    BNT: 'BNT',
+                    BOT: 'BOT',
+                    BRST: 'BRST',
+                    BRT: 'BRT',
+                    BST: 'BST',
+                    BTT: 'BTT',
+                    CAT: 'CAT',
+                    CCT: 'CCT',
+                    CDT: 'CDT',
+                    CEST: 'CEST',
+                    CET: 'CET',
+                    CHADT: 'CHADT',
+                    CHAST: 'CHAST',
+                    CHOST: 'CHOST',
+                    CHOT: 'CHOT',
+                    CHUT: 'CHUT',
+                    CKT: 'CKT',
+                    CLST: 'CLST',
+                    COT: 'COT',
+                    CST: 'CST',
+                    CVT: 'CVT',
+                    CXT: 'CXT',
+                    'ChST': 'ChST',
+                    EASST: 'EASST',
+                    EAT: 'EAT',
+                    ECT: 'ECT',
+                    EDT: 'EDT',
+                    EEST: 'EEST',
+                    EET: 'EET',
+                    EGST: 'EGST',
+                    EGT: 'EGT',
+                    EST: 'EST',
+                    FJST: 'FJST',
+                    FJT: 'FJT',
+                    FKST: 'FKST',
+                    FNT: 'FNT',
+                    GALT: 'GALT',
+                    GAMT: 'GAMT',
+                    GFT: 'GFT',
+                    GILT: 'GILT',
+                    GMT: 'GMT',
+                    GST: 'GST',
+                    GYT: 'GYT',
+                    HDT: 'HDT',
+                    HKT: 'HKT',
+                    HOVST: 'HOVST',
+                    HOVT: 'HOVT',
+                    HST: 'HST',
+                    ICT: 'ICT',
+                    IDT: 'IDT',
+                    IOT: 'IOT',
+                    IRDT: 'IRDT',
+                    IRST: 'IRST',
+                    IST: 'IST',
+                    JST: 'JST',
+                    KOST: 'KOST',
+                    KST: 'KST',
+                    LHDT: 'LHDT',
+                    LHST: 'LHST',
+                    LINT: 'LINT',
+                    MART: 'MART',
+                    MDT: 'MDT',
+                    MEST: 'MEST',
+                    MET: 'MET',
+                    MHT: 'MHT',
+                    MIST: 'MIST',
+                    MMT: 'MMT',
+                    MSK: 'MSK',
+                    MST: 'MST',
+                    MUT: 'MUT',
+                    MVT: 'MVT',
+                    MYT: 'MYT',
+                    NCT: 'NCT',
+                    NDT: 'NDT',
+                    NFT: 'NFT',
+                    NPT: 'NPT',
+                    NRT: 'NRT',
+                    NST: 'NST',
+                    NUT: 'NUT',
+                    NZDT: 'NZDT',
+                    NZST: 'NZST',
+                    PDT: 'PDT',
+                    PET: 'PET',
+                    PGT: 'PGT',
+                    PHOT: 'PHOT',
+                    PHT: 'PHT',
+                    PKT: 'PKT',
+                    PMDT: 'PMDT',
+                    PMST: 'PMST',
+                    PONT: 'PONT',
+                    PST: 'PST',
+                    PWT: 'PWT',
+                    PYST: 'PYST',
+                    PYT: 'PYT',
+                    RET: 'RET',
+                    SAST: 'SAST',
+                    SBT: 'SBT',
+                    SCT: 'SCT',
+                    SGT: 'SGT',
+                    SRT: 'SRT',
+                    SST: 'SST',
+                    TAHT: 'TAHT',
+                    TKT: 'TKT',
+                    TLT: 'TLT',
+                    TVT: 'TVT',
+                    UCT: 'UCT',
+                    ULAST: 'ULAST',
+                    ULAT: 'ULAT',
+                    UTC: 'UTC',
+                    UYT: 'UYT',
+                    VET: 'VET',
+                    VUT: 'VUT',
+                    WAKT: 'WAKT',
+                    WAST: 'WAST',
+                    WAT: 'WAT',
+                    WEST: 'WEST',
+                    WET: 'WET',
+                    WFT: 'WFT',
+                    WGST: 'WGST',
+                    WGT: 'WGT',
+                    WIB: 'WIB',
+                    WIT: 'WIT',
+                    WITA: 'WITA',
+                    WSDT: 'WSDT',
+                    WSST: 'WSST',
+                    XJT: 'XJT'
+                },
+                CUSTOM: {
+                    ADELAIDE: 'Adelaide',
+                    ALASKA: 'Alaska',
+                    ALMATY: 'Almaty, Novosibirsk',
+                    AMSTERDAM: 'Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna',
+                    ATHENS: 'Athens, Minsk',
+                    AUCKLAND: 'Auckland, Wellington',
+                    AZORES: 'Azores',
+                    BAGHDAD: 'Baghdad',
+                    BANGKOK: 'Bangkok, Hanoi, Jakarta',
+                    BELGRADE: 'Belgrade, Bratislava, Budapest, Ljubljana, Prague',
+                    BOGOTA: 'Bogota, Lima, Quito',
+                    BRISBANE: 'Brisbane',
+                    BUCHAREST: 'Bucharest',
+                    BUENOS_AIRES: 'Buenos Aires, Georgetown',
+                    CAIRO: 'Cairo',
+                    CANBERRA: 'Canberra, Melbourne, Sydney',
+                    CAPE_VERDE: 'Cape Verde Islands',
+                    CARACAS: 'Caracas, La Paz',
+                    CASABLANCA: 'Casablanca, Monrovia',
+                    CHICAGO: 'Central Time (US and Canada)',
+                    CHIHUAHUA: 'Chihuahua, La Paz, Mazatlan',
+                    COLOMBO: 'Sri Jayawardenepura',
+                    DARWIN: 'Darwin',
+                    DENVER: 'Mountain Time (US and Canada)',
+                    DHAKA: 'Astana, Dhaka',
+                    DUBAI: 'Abu Dhabi, Muscat',
+                    EL_SALVADOR: 'Central America',
+                    FIJI: 'Fiji Islands, Kamchatka, Marshall Islands',
+                    'GMT+12': 'International Date Line West',
+                    GUAM: 'Guam, Port Moresby',
+                    HALIFAX: 'Atlantic Time (Canada)',
+                    HARARE: 'Harare, Pretoria',
+                    HELSINKI: 'Helsinki, Kiev, Riga, Sofia, Tallinn, Vilnius',
+                    HONG_KONG: 'Beijing, Chongqing, Hong Kong SAR, Urumqi',
+                    HONOLULU: 'Hawaii',
+                    IRKUTSK: 'Irkutsk, Ulaanbaatar',
+                    ISTANBUL: 'Istanbul',
+                    JERUSALEM: 'Jerusalem',
+                    KABUL: 'Kabul',
+                    KARACHI: 'Islamabad, Karachi, Tashkent',
+                    KATHMANDU: 'Kathmandu',
+                    KNOX: 'Indiana (East)',
+                    KOLKATA: 'Chennai, Kolkata, Mumbai, New Delhi',
+                    KRASNOYARSK: 'Krasnoyarsk',
+                    KUWAIT: 'Kuwait, Riyadh',
+                    LAGOS: 'West Central Africa',
+                    LONDON: 'Dublin, Edinburgh, Lisbon, London',
+                    LOS_ANGELES: 'Pacific Time (US and Canada), Tijuana',
+                    MAGADAN: 'Magadan, Solomon Islands, New Caledonia',
+                    MEXICO_CITY: 'Guadalajara, Mexico City, Monterrey',
+                    MOSCOW: 'Moscow, St. Petersburg, Volgograd',
+                    NAIROBI: 'Nairobi',
+                    NEWFOUNDLAND: 'Newfoundland and Labrador',
+                    NEW_YORK: 'Eastern Time (US and Canada)',
+                    PAGO_PAGO: 'Midway Island, Samoa',
+                    PARIS: 'Brussels, Copenhagen, Madrid, Paris',
+                    PERTH: 'Perth',
+                    PHOENIX: 'Arizona',
+                    RANGOON: 'Yangon Rangoon',
+                    SANTIAGO: 'Santiago',
+                    SAO_PAULO: 'Brasilia',
+                    SARAJEVO: 'Sarajevo, Skopje, Warsaw, Zagreb',
+                    SASKATCHEWAN: 'Saskatchewan',
+                    SEOUL: 'Seoul',
+                    SINGAPORE: 'Kuala Lumpur, Singapore',
+                    TAIPEI: 'Taipei',
+                    TASMANIA: 'Hobart',
+                    TEHRAN: 'Tehran',
+                    THULE: 'Greenland',
+                    TOKYO: 'Osaka, Sapporo, Tokyo',
+                    TONGATAPU: 'Nuku\'alofa',
+                    VLADIVOSTOK: 'Vladivostok',
+                    YAKUTSK: 'Yakutsk',
+                    YEKATERINBURG: 'Ekaterinburg',
+                    YEREVAN: 'Baku, Tbilisi, Yerevan'
+                },
+                MOMENT: {
+                    ABIDJAN: 'Abidjan',
+                    ACCRA: 'Accra',
+                    ACRE: 'Acre',
+                    ADAK: 'Adak',
+                    ADDIS_ABABA: 'Addis Ababa',
+                    ADELAIDE: 'Adelaide',
+                    ADEN: 'Aden',
+                    ALASKA: 'Alaska',
+                    ALEUTIAN: 'Aleutian',
+                    ALGIERS: 'Algiers',
+                    ALMATY: 'Almaty',
+                    AMMAN: 'Amman',
+                    AMSTERDAM: 'Amsterdam',
+                    ANADYR: 'Anadyr',
+                    ANCHORAGE: 'Anchorage',
+                    ANDORRA: 'Andorra',
+                    ANGUILLA: 'Anguilla',
+                    ANTANANARIVO: 'Antananarivo',
+                    ANTIGUA: 'Antigua',
+                    APIA: 'Apia',
+                    AQTAU: 'Aqtau',
+                    AQTOBE: 'Aqtobe',
+                    ARAGUAINA: 'Araguaina',
+                    ARIZONA: 'Arizona',
+                    ARUBA: 'Aruba',
+                    ASHGABAT: 'Ashgabat',
+                    ASHKHABAD: 'Ashkhabad',
+                    ASMARA: 'Asmara',
+                    ASMERA: 'Asmera',
+                    ASTRAKHAN: 'Astrakhan',
+                    ASUNCION: 'Asuncion',
+                    ATHENS: 'Athens',
+                    ATIKOKAN: 'Atikokan',
+                    ATKA: 'Atka',
+                    ATLANTIC: 'Atlantic',
+                    ATYRAU: 'Atyrau',
+                    AUCKLAND: 'Auckland',
+                    AZORES: 'Azores',
+                    BAGHDAD: 'Baghdad',
+                    BAHIA: 'Bahia',
+                    BAHIA_BANDERAS: 'Bahia Banderas',
+                    BAHRAIN: 'Bahrain',
+                    BAJANORTE: 'BajaNorte',
+                    BAJASUR: 'BajaSur',
+                    BAKU: 'Baku',
+                    BAMAKO: 'Bamako',
+                    BANGKOK: 'Bangkok',
+                    BANGUI: 'Bangui',
+                    BANJUL: 'Banjul',
+                    BARBADOS: 'Barbados',
+                    BARNAUL: 'Barnaul',
+                    BEIRUT: 'Beirut',
+                    BELEM: 'Belem',
+                    BELFAST: 'Belfast',
+                    BELGRADE: 'Belgrade',
+                    BELIZE: 'Belize',
+                    BERLIN: 'Berlin',
+                    BERMUDA: 'Bermuda',
+                    BEULAH: 'Beulah',
+                    BISHKEK: 'Bishkek',
+                    BISSAU: 'Bissau',
+                    BLANC_SABLON: 'Blanc-Sablon',
+                    BLANTYRE: 'Blantyre',
+                    BOA_VISTA: 'Boa Vista',
+                    BOGOTA: 'Bogota',
+                    BOISE: 'Boise',
+                    BOUGAINVILLE: 'Bougainville',
+                    BRATISLAVA: 'Bratislava',
+                    BRAZZAVILLE: 'Brazzaville',
+                    BRISBANE: 'Brisbane',
+                    BROKEN_HILL: 'Broken Hill',
+                    BRUNEI: 'Brunei',
+                    BRUSSELS: 'Brussels',
+                    BUCHAREST: 'Bucharest',
+                    BUDAPEST: 'Budapest',
+                    BUENOS_AIRES: 'Buenos Aires',
+                    BUJUMBURA: 'Bujumbura',
+                    BUSINGEN: 'Busingen',
+                    CAIRO: 'Cairo',
+                    CALCUTTA: 'Calcutta',
+                    CAMBRIDGE_BAY: 'Cambridge Bay',
+                    CAMPO_GRANDE: 'Campo Grande',
+                    CANARY: 'Canary',
+                    CANBERRA: 'Canberra',
+                    CANCUN: 'Cancun',
+                    CAPE_VERDE: 'Cape Verde',
+                    CARACAS: 'Caracas',
+                    CASABLANCA: 'Casablanca',
+                    CASEY: 'Casey',
+                    CATAMARCA: 'Catamarca',
+                    CAYENNE: 'Cayenne',
+                    CAYMAN: 'Cayman',
+                    CENTER: 'Center',
+                    CENTRAL: 'Central',
+                    CEUTA: 'Ceuta',
+                    CHAGOS: 'Chagos',
+                    CHATHAM: 'Chatham',
+                    CHICAGO: 'Chicago',
+                    CHIHUAHUA: 'Chihuahua',
+                    CHISINAU: 'Chisinau',
+                    CHITA: 'Chita',
+                    CHOIBALSAN: 'Choibalsan',
+                    CHONGQING: 'Chongqing',
+                    CHRISTMAS: 'Christmas',
+                    CHUNGKING: 'Chungking',
+                    CHUUK: 'Chuuk',
+                    COCOS: 'Cocos',
+                    COLOMBO: 'Colombo',
+                    COMODRIVADAVIA: 'ComodRivadavia',
+                    COMORO: 'Comoro',
+                    CONAKRY: 'Conakry',
+                    CONTINENTAL: 'Continental',
+                    COPENHAGEN: 'Copenhagen',
+                    CORAL_HARBOUR: 'Coral Harbour',
+                    CORDOBA: 'Cordoba',
+                    COSTA_RICA: 'Costa Rica',
+                    CRESTON: 'Creston',
+                    CUBA: 'Cuba',
+                    CUIABA: 'Cuiaba',
+                    CURACAO: 'Curacao',
+                    CURRIE: 'Currie',
+                    DACCA: 'Dacca',
+                    DAKAR: 'Dakar',
+                    DAMASCUS: 'Damascus',
+                    DANMARKSHAVN: 'Danmarkshavn',
+                    DARWIN: 'Darwin',
+                    DAR_ES_SALAAM: 'Dar es Salaam',
+                    DAVIS: 'Davis',
+                    DAWSON: 'Dawson',
+                    DAWSON_CREEK: 'Dawson Creek',
+                    DENORONHA: 'DeNoronha',
+                    DENVER: 'Denver',
+                    DETROIT: 'Detroit',
+                    DHAKA: 'Dhaka',
+                    DILI: 'Dili',
+                    DJIBOUTI: 'Djibouti',
+                    DOMINICA: 'Dominica',
+                    DOUALA: 'Douala',
+                    DUBAI: 'Dubai',
+                    DUBLIN: 'Dublin',
+                    DUMONTDURVILLE: 'DumontDUrville',
+                    DUSHANBE: 'Dushanbe',
+                    EAST: 'East',
+                    EASTER: 'Easter',
+                    EASTERISLAND: 'EasterIsland',
+                    EASTERN: 'Eastern',
+                    EAST_INDIANA: 'East-Indiana',
+                    EAST_SASKATCHEWAN: 'East-Saskatchewan',
+                    EDMONTON: 'Edmonton',
+                    EFATE: 'Efate',
+                    EGYPT: 'Egypt',
+                    EIRE: 'Eire',
+                    EIRUNEPE: 'Eirunepe',
+                    EL_AAIUN: 'El Aaiun',
+                    EL_SALVADOR: 'El Salvador',
+                    ENDERBURY: 'Enderbury',
+                    ENSENADA: 'Ensenada',
+                    EUCLA: 'Eucla',
+                    FAEROE: 'Faeroe',
+                    FAKAOFO: 'Fakaofo',
+                    FAMAGUSTA: 'Famagusta',
+                    FAROE: 'Faroe',
+                    FIJI: 'Fiji',
+                    FORTALEZA: 'Fortaleza',
+                    FORT_NELSON: 'Fort Nelson',
+                    FORT_WAYNE: 'Fort Wayne',
+                    FREETOWN: 'Freetown',
+                    FUNAFUTI: 'Funafuti',
+                    GABORONE: 'Gaborone',
+                    GALAPAGOS: 'Galapagos',
+                    GAMBIER: 'Gambier',
+                    GAZA: 'Gaza',
+                    GB_EIRE: 'GB-Eire',
+                    GENERAL: 'General',
+                    GIBRALTAR: 'Gibraltar',
+                    GLACE_BAY: 'Glace Bay',
+                    GODTHAB: 'Godthab',
+                    GOOSE_BAY: 'Goose Bay',
+                    GRAND_TURK: 'Grand Turk',
+                    GREENWICH: 'Greenwich',
+                    GRENADA: 'Grenada',
+                    GUADALCANAL: 'Guadalcanal',
+                    GUADELOUPE: 'Guadeloupe',
+                    GUAM: 'Guam',
+                    GUATEMALA: 'Guatemala',
+                    GUAYAQUIL: 'Guayaquil',
+                    GUERNSEY: 'Guernsey',
+                    GUYANA: 'Guyana',
+                    HALIFAX: 'Halifax',
+                    HARARE: 'Harare',
+                    HARBIN: 'Harbin',
+                    HAVANA: 'Havana',
+                    HAWAII: 'Hawaii',
+                    HEBRON: 'Hebron',
+                    HELSINKI: 'Helsinki',
+                    HERMOSILLO: 'Hermosillo',
+                    HOBART: 'Hobart',
+                    HONGKONG: 'Hongkong',
+                    HONG_KONG: 'Hong Kong',
+                    HONOLULU: 'Honolulu',
+                    HOVD: 'Hovd',
+                    HO_CHI_MINH: 'Ho Chi Minh',
+                    ICELAND: 'Iceland',
+                    INDIANAPOLIS: 'Indianapolis',
+                    INDIANA_STARKE: 'Indiana-Starke',
+                    INUVIK: 'Inuvik',
+                    IQALUIT: 'Iqaluit',
+                    IRAN: 'Iran',
+                    IRKUTSK: 'Irkutsk',
+                    ISLE_OF_MAN: 'Isle of Man',
+                    ISRAEL: 'Israel',
+                    ISTANBUL: 'Istanbul',
+                    JAKARTA: 'Jakarta',
+                    JAMAICA: 'Jamaica',
+                    JAN_MAYEN: 'Jan Mayen',
+                    JAPAN: 'Japan',
+                    JAYAPURA: 'Jayapura',
+                    JERSEY: 'Jersey',
+                    JERUSALEM: 'Jerusalem',
+                    JOHANNESBURG: 'Johannesburg',
+                    JOHNSTON: 'Johnston',
+                    JUBA: 'Juba',
+                    JUJUY: 'Jujuy',
+                    JUNEAU: 'Juneau',
+                    KABUL: 'Kabul',
+                    KALININGRAD: 'Kaliningrad',
+                    KAMCHATKA: 'Kamchatka',
+                    KAMPALA: 'Kampala',
+                    KARACHI: 'Karachi',
+                    KASHGAR: 'Kashgar',
+                    KATHMANDU: 'Kathmandu',
+                    KATMANDU: 'Katmandu',
+                    KERGUELEN: 'Kerguelen',
+                    KHANDYGA: 'Khandyga',
+                    KHARTOUM: 'Khartoum',
+                    KIEV: 'Kiev',
+                    KIGALI: 'Kigali',
+                    KINSHASA: 'Kinshasa',
+                    KIRITIMATI: 'Kiritimati',
+                    KIROV: 'Kirov',
+                    KNOX: 'Knox',
+                    KNOX_IN: 'Knox IN',
+                    KOLKATA: 'Kolkata',
+                    KOSRAE: 'Kosrae',
+                    KRALENDIJK: 'Kralendijk',
+                    KRASNOYARSK: 'Krasnoyarsk',
+                    KUALA_LUMPUR: 'Kuala Lumpur',
+                    KUCHING: 'Kuching',
+                    KUWAIT: 'Kuwait',
+                    KWAJALEIN: 'Kwajalein',
+                    LAGOS: 'Lagos',
+                    LA_PAZ: 'La Paz',
+                    LA_RIOJA: 'La Rioja',
+                    LIBREVILLE: 'Libreville',
+                    LIBYA: 'Libya',
+                    LIMA: 'Lima',
+                    LINDEMAN: 'Lindeman',
+                    LISBON: 'Lisbon',
+                    LJUBLJANA: 'Ljubljana',
+                    LOME: 'Lome',
+                    LONDON: 'London',
+                    LONGYEARBYEN: 'Longyearbyen',
+                    LORD_HOWE: 'Lord Howe',
+                    LOS_ANGELES: 'Los Angeles',
+                    LOUISVILLE: 'Louisville',
+                    LOWER_PRINCES: 'Lower Princes',
+                    LUANDA: 'Luanda',
+                    LUBUMBASHI: 'Lubumbashi',
+                    LUSAKA: 'Lusaka',
+                    LUXEMBOURG: 'Luxembourg',
+                    MACAO: 'Macao',
+                    MACAU: 'Macau',
+                    MACEIO: 'Maceio',
+                    MACQUARIE: 'Macquarie',
+                    MADEIRA: 'Madeira',
+                    MADRID: 'Madrid',
+                    MAGADAN: 'Magadan',
+                    MAHE: 'Mahe',
+                    MAJURO: 'Majuro',
+                    MAKASSAR: 'Makassar',
+                    MALABO: 'Malabo',
+                    MALDIVES: 'Maldives',
+                    MALTA: 'Malta',
+                    MANAGUA: 'Managua',
+                    MANAUS: 'Manaus',
+                    MANILA: 'Manila',
+                    MAPUTO: 'Maputo',
+                    MARENGO: 'Marengo',
+                    MARIEHAMN: 'Mariehamn',
+                    MARIGOT: 'Marigot',
+                    MARQUESAS: 'Marquesas',
+                    MARTINIQUE: 'Martinique',
+                    MASERU: 'Maseru',
+                    MATAMOROS: 'Matamoros',
+                    MAURITIUS: 'Mauritius',
+                    MAWSON: 'Mawson',
+                    MAYOTTE: 'Mayotte',
+                    MAZATLAN: 'Mazatlan',
+                    MBABANE: 'Mbabane',
+                    MCMURDO: 'McMurdo',
+                    MELBOURNE: 'Melbourne',
+                    MENDOZA: 'Mendoza',
+                    MENOMINEE: 'Menominee',
+                    MERIDA: 'Merida',
+                    METLAKATLA: 'Metlakatla',
+                    MEXICO_CITY: 'Mexico City',
+                    MICHIGAN: 'Michigan',
+                    MIDWAY: 'Midway',
+                    MINSK: 'Minsk',
+                    MIQUELON: 'Miquelon',
+                    MOGADISHU: 'Mogadishu',
+                    MONACO: 'Monaco',
+                    MONCTON: 'Moncton',
+                    MONROVIA: 'Monrovia',
+                    MONTERREY: 'Monterrey',
+                    MONTEVIDEO: 'Montevideo',
+                    MONTICELLO: 'Monticello',
+                    MONTREAL: 'Montreal',
+                    MONTSERRAT: 'Montserrat',
+                    MOSCOW: 'Moscow',
+                    MOUNTAIN: 'Mountain',
+                    MUSCAT: 'Muscat',
+                    NAIROBI: 'Nairobi',
+                    NASSAU: 'Nassau',
+                    NAURU: 'Nauru',
+                    NAVAJO: 'Navajo',
+                    NDJAMENA: 'Ndjamena',
+                    NEWFOUNDLAND: 'Newfoundland',
+                    NEW_SALEM: 'New Salem',
+                    NEW_YORK: 'New York',
+                    NIAMEY: 'Niamey',
+                    NICOSIA: 'Nicosia',
+                    NIPIGON: 'Nipigon',
+                    NIUE: 'Niue',
+                    NOME: 'Nome',
+                    NORFOLK: 'Norfolk',
+                    NORONHA: 'Noronha',
+                    NORTH: 'North',
+                    NOUAKCHOTT: 'Nouakchott',
+                    NOUMEA: 'Noumea',
+                    NOVOKUZNETSK: 'Novokuznetsk',
+                    NOVOSIBIRSK: 'Novosibirsk',
+                    OJINAGA: 'Ojinaga',
+                    OMSK: 'Omsk',
+                    ORAL: 'Oral',
+                    OSLO: 'Oslo',
+                    OUAGADOUGOU: 'Ouagadougou',
+                    PACIFIC: 'Pacific',
+                    PACIFIC_NEW: 'Pacific-New',
+                    PAGO_PAGO: 'Pago Pago',
+                    PALAU: 'Palau',
+                    PALMER: 'Palmer',
+                    PANAMA: 'Panama',
+                    PANGNIRTUNG: 'Pangnirtung',
+                    PARAMARIBO: 'Paramaribo',
+                    PARIS: 'Paris',
+                    PERTH: 'Perth',
+                    PETERSBURG: 'Petersburg',
+                    PHNOM_PENH: 'Phnom Penh',
+                    PHOENIX: 'Phoenix',
+                    PITCAIRN: 'Pitcairn',
+                    PODGORICA: 'Podgorica',
+                    POHNPEI: 'Pohnpei',
+                    POLAND: 'Poland',
+                    PONAPE: 'Ponape',
+                    PONTIANAK: 'Pontianak',
+                    PORTO_ACRE: 'Porto Acre',
+                    PORTO_NOVO: 'Porto-Novo',
+                    PORTO_VELHO: 'Porto Velho',
+                    PORTUGAL: 'Portugal',
+                    PORT_AU_PRINCE: 'Port-au-Prince',
+                    PORT_MORESBY: 'Port Moresby',
+                    PORT_OF_SPAIN: 'Port of Spain',
+                    PRAGUE: 'Prague',
+                    PUERTO_RICO: 'Puerto Rico',
+                    PUNTA_ARENAS: 'Punta Arenas',
+                    PYONGYANG: 'Pyongyang',
+                    QATAR: 'Qatar',
+                    QUEENSLAND: 'Queensland',
+                    QYZYLORDA: 'Qyzylorda',
+                    RAINY_RIVER: 'Rainy River',
+                    RANGOON: 'Rangoon',
+                    RANKIN_INLET: 'Rankin Inlet',
+                    RAROTONGA: 'Rarotonga',
+                    RECIFE: 'Recife',
+                    REGINA: 'Regina',
+                    RESOLUTE: 'Resolute',
+                    REUNION: 'Reunion',
+                    REYKJAVIK: 'Reykjavik',
+                    RIGA: 'Riga',
+                    RIO_BRANCO: 'Rio Branco',
+                    RIO_GALLEGOS: 'Rio Gallegos',
+                    RIYADH: 'Riyadh',
+                    ROME: 'Rome',
+                    ROSARIO: 'Rosario',
+                    ROTHERA: 'Rothera',
+                    SAIGON: 'Saigon',
+                    SAIPAN: 'Saipan',
+                    SAKHALIN: 'Sakhalin',
+                    SALTA: 'Salta',
+                    SAMARA: 'Samara',
+                    SAMARKAND: 'Samarkand',
+                    SAMOA: 'Samoa',
+                    SANTAREM: 'Santarem',
+                    SANTA_ISABEL: 'Santa Isabel',
+                    SANTIAGO: 'Santiago',
+                    SANTO_DOMINGO: 'Santo Domingo',
+                    SAN_JUAN: 'San Juan',
+                    SAN_LUIS: 'San Luis',
+                    SAN_MARINO: 'San Marino',
+                    SAO_PAULO: 'Sao Paulo',
+                    SAO_TOME: 'Sao Tome',
+                    SARAJEVO: 'Sarajevo',
+                    SARATOV: 'Saratov',
+                    SASKATCHEWAN: 'Saskatchewan',
+                    SCORESBYSUND: 'Scoresbysund',
+                    SEOUL: 'Seoul',
+                    SHANGHAI: 'Shanghai',
+                    SHIPROCK: 'Shiprock',
+                    SIMFEROPOL: 'Simferopol',
+                    SINGAPORE: 'Singapore',
+                    SITKA: 'Sitka',
+                    SKOPJE: 'Skopje',
+                    SOFIA: 'Sofia',
+                    SOUTH: 'South',
+                    SOUTH_GEORGIA: 'South Georgia',
+                    SOUTH_POLE: 'South Pole',
+                    SREDNEKOLYMSK: 'Srednekolymsk',
+                    STANLEY: 'Stanley',
+                    STOCKHOLM: 'Stockholm',
+                    ST_BARTHELEMY: 'St Barthelemy',
+                    ST_HELENA: 'St Helena',
+                    ST_JOHNS: 'St Johns',
+                    ST_KITTS: 'St Kitts',
+                    ST_LUCIA: 'St Lucia',
+                    ST_THOMAS: 'St Thomas',
+                    ST_VINCENT: 'St Vincent',
+                    SWIFT_CURRENT: 'Swift Current',
+                    SYDNEY: 'Sydney',
+                    SYOWA: 'Syowa',
+                    TAHITI: 'Tahiti',
+                    TAIPEI: 'Taipei',
+                    TALLINN: 'Tallinn',
+                    TARAWA: 'Tarawa',
+                    TASHKENT: 'Tashkent',
+                    TASMANIA: 'Tasmania',
+                    TBILISI: 'Tbilisi',
+                    TEGUCIGALPA: 'Tegucigalpa',
+                    TEHRAN: 'Tehran',
+                    TELL_CITY: 'Tell City',
+                    TEL_AVIV: 'Tel Aviv',
+                    THIMBU: 'Thimbu',
+                    THIMPHU: 'Thimphu',
+                    THULE: 'Thule',
+                    THUNDER_BAY: 'Thunder Bay',
+                    TIJUANA: 'Tijuana',
+                    TIMBUKTU: 'Timbuktu',
+                    TIRANE: 'Tirane',
+                    TIRASPOL: 'Tiraspol',
+                    TOKYO: 'Tokyo',
+                    TOMSK: 'Tomsk',
+                    TONGATAPU: 'Tongatapu',
+                    TORONTO: 'Toronto',
+                    TORTOLA: 'Tortola',
+                    TRIPOLI: 'Tripoli',
+                    TROLL: 'Troll',
+                    TRUK: 'Truk',
+                    TUCUMAN: 'Tucuman',
+                    TUNIS: 'Tunis',
+                    TURKEY: 'Turkey',
+                    UJUNG_PANDANG: 'Ujung Pandang',
+                    ULAANBAATAR: 'Ulaanbaatar',
+                    ULAN_BATOR: 'Ulan Bator',
+                    ULYANOVSK: 'Ulyanovsk',
+                    UNIVERSAL: 'Universal',
+                    URUMQI: 'Urumqi',
+                    USHUAIA: 'Ushuaia',
+                    UST_NERA: 'Ust-Nera',
+                    UZHGOROD: 'Uzhgorod',
+                    VADUZ: 'Vaduz',
+                    VANCOUVER: 'Vancouver',
+                    VATICAN: 'Vatican',
+                    VEVAY: 'Vevay',
+                    VICTORIA: 'Victoria',
+                    VIENNA: 'Vienna',
+                    VIENTIANE: 'Vientiane',
+                    VILNIUS: 'Vilnius',
+                    VINCENNES: 'Vincennes',
+                    VIRGIN: 'Virgin',
+                    VLADIVOSTOK: 'Vladivostok',
+                    VOLGOGRAD: 'Volgograd',
+                    VOSTOK: 'Vostok',
+                    WAKE: 'Wake',
+                    WALLIS: 'Wallis',
+                    WARSAW: 'Warsaw',
+                    WEST: 'West',
+                    WHITEHORSE: 'Whitehorse',
+                    WINAMAC: 'Winamac',
+                    WINDHOEK: 'Windhoek',
+                    WINNIPEG: 'Winnipeg',
+                    YAKUTAT: 'Yakutat',
+                    YAKUTSK: 'Yakutsk',
+                    YANCOWINNA: 'Yancowinna',
+                    YANGON: 'Yangon',
+                    YAP: 'Yap',
+                    YEKATERINBURG: 'Yekaterinburg',
+                    YELLOWKNIFE: 'Yellowknife',
+                    YEREVAN: 'Yerevan',
+                    YUKON: 'Yukon',
+                    ZAGREB: 'Zagreb',
+                    ZAPOROZHYE: 'Zaporozhye',
+                    ZULU: 'Zulu',
+                    ZURICH: 'Zurich'
+                }
+            }
+        }
+    };
+
+    $translateProvider.translations('en', translations);
+});
 'use strict';
 
 (function () {
@@ -18917,6 +20828,45 @@ bbLoggedUser.$inject = ['$compile', 'LoginService'];
 angular.module('BB.Directives').directive('bbLoggedUser', bbLoggedUser);
 'use strict';
 
+(function () {
+
+    angular.module('BB.Directives').directive('bbModalWidget', modalWidget);
+
+    function modalWidget(BBModel, $log, $compile, $q, PathSvc, $templateCache, $http) {
+
+        var getTemplate = function getTemplate(template) {
+            var partial = template ? template : 'main';
+            return $templateCache.get(partial + '.html');
+        };
+
+        var renderTemplate = function renderTemplate(scope, element, design_mode, template) {
+            $q.when(getTemplate(template)).then(function (template) {
+                element.html(template).show();
+                if (design_mode) {
+                    element.append('<style widget_css scoped></style>');
+                }
+                $compile(element.contents())(scope);
+            });
+        };
+
+        var link = function link(scope, element, attrs) {
+            var config = scope.$eval(attrs.bbModalWidget);
+            scope.initWidget(config);
+            return renderTemplate(scope, element, config.design_mode, config.template);
+        };
+
+        var directive = {
+            link: link,
+            controller: 'BBCtrl',
+            controllerAs: '$bbCtrl',
+            scope: true
+        };
+
+        return directive;
+    }
+})();
+'use strict';
+
 angular.module('BB.Directives').directive('bbMonthPicker', function (PathSvc, $timeout) {
     return {
         restrict: 'AE',
@@ -20871,13 +22821,15 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
 })();
 'use strict';
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 (function () {
 
     'use strict';
 
     angular.module('BB.Services').service('bbWidgetBasket', BBWidgetBasket);
 
-    function BBWidgetBasket($q, $rootScope, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal, bbWidgetUtilities, ErrorService, LoginService) {
+    function BBWidgetBasket($q, $rootScope, halClient, BBModel, $localStorage, $sessionStorage, bbWidgetPage, bbWidgetStep, $uibModal, bbWidgetUtilities, ErrorService, LoginService, $log) {
 
         var $scope = null;
         var setScope = function setScope($s) {
@@ -21004,6 +22956,36 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
             });
             return add_defer.promise;
         };
+
+        var createBasketFromBookings = function createBasketFromBookings(bookings, client, totalDefer) {
+            // set a basket item from each booking
+            var proms = [];
+            var readyBookings = [];
+            bookings.forEach(function (booking) {
+                var newBookingItem = new BBModel.BasketItem(booking, $scope.bb);
+                newBookingItem.setSrcBooking(booking, $scope.bb);
+                proms.push.apply(proms, _toConsumableArray(newBookingItem.promises));
+                $scope.bb.basket.addItem(newBookingItem);
+                readyBookings.push(newBookingItem);
+            });
+
+            // set current_item if we only have one booking
+            if (bookings.length === 1) {
+                $scope.bb.current_item = readyBookings[0];
+                $scope.bb.current_item.setDefaults({});
+                $scope.setClient(client);
+            }
+
+            $scope.bb.moving_booking = readyBookings;
+
+            $q.all(proms).then(function () {
+                return totalDefer.resolve();
+            }, function (err) {
+                $log.info(err);
+                return totalDefer.reject(err);
+            });
+        };
+
         var deleteBasketItem = function deleteBasketItem(item) {
             guardScope();
             return BBModel.Basket.$deleteItem(item, $scope.bb.company, {
@@ -21189,6 +23171,7 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
         return {
             setScope: setScope,
             deleteBasketItems: deleteBasketItems,
+            createBasketFromBookings: createBasketFromBookings,
             setBasketItem: setBasketItem,
             clearBasketItem: clearBasketItem,
             setBasket: setBasket,
@@ -21303,6 +23286,12 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
             }
             if (prms.admin) {
                 $scope.bb.isAdmin = prms.admin;
+            }
+            if (prms.move_reasons) {
+                $scope.bb.move_reasons = prms.move_reasons;
+            }
+            if (prms.cancel_reasons) {
+                $scope.bb.cancel_reasons = prms.cancel_reasons;
             }
             if (prms.auth_token) {
                 $sessionStorage.setItem("auth_token", prms.auth_token);
@@ -21565,6 +23554,30 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                     total_id = $scope.bb.item_defaults.purchase_total_long_id;
                 } else {
                     total_id = QueryStringService('total_id');
+                }
+                if (prms.total_id) {
+                    // get the purchase total and define it on BB
+                    // get the bookings from the total and then create a basket from those bookings
+                    var _params = {
+                        url_root: $scope.bb.api_url,
+                        purchase_id: prms.total_id
+                    };
+
+                    var totalDefer = $q.defer();
+                    PurchaseService.query(_params).then(function (total) {
+                        $scope.bb.purchase = total;
+                        total.$getBookings().then(function (bookings) {
+                            bbWidgetBasket.createBasketFromBookings(bookings, $scope.bb.purchase.client, totalDefer);
+                        }, function (err) {
+                            $log.info(err);
+                            totalDefer.reject(err);
+                        });
+                    }, function (err) {
+                        $log.info(err);
+                        totalDefer.reject(err);
+                    });
+                    // push the total promise so it is resolved before the first step is loaded
+                    setup_promises.push(totalDefer.promise);
                 }
                 if (total_id) {
                     params = {
@@ -22044,8 +24057,6 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
                     return;
                 }
                 return showPage('time');
-            } else if ($scope.bb.moving_booking && (!$scope.bb.current_item.ready || !$scope.bb.current_item.move_done)) {
-                return showPage('check_move');
             } else if (!$scope.client.valid()) {
                 if (setPageRoute($rootScope.Route.Client)) {
                     return;
@@ -22091,6 +24102,10 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
             automaticDNP[widget] = state;
         };
 
+        var getCurrentPage = function getCurrentPage() {
+            return $scope.bb.current_page;
+        };
+
         return {
             clearPage: clearPage,
             decideNextPage: decideNextPage,
@@ -22103,7 +24118,8 @@ angular.module('BB.Directives').directive('bbToggleEdit', function ($compile, $w
             setScope: setScope,
             showPage: showPage,
             canAutoDecideNextPage: canAutoDecideNextPage,
-            setAutoDecideNextPage: setAutoDecideNextPage
+            setAutoDecideNextPage: setAutoDecideNextPage,
+            getCurrentPage: getCurrentPage
         };
     }
 })();
@@ -24516,1684 +26532,6 @@ angular.module('BB.Directives').directive('script', function ($compile, halClien
 });
 'use strict';
 
-/**
- * @ngdoc directive
- * @name BB.i18n:bbLanguagePicker
- * @scope
- * @restrict A
- *
- * @description
- * Responsible for providing a ui representation of available translations
- *
- */
-angular.module('BB.i18n').directive('bbLanguagePicker', function () {
-
-    return {
-        controller: bbLanguagePickerController,
-        controllerAs: 'vm',
-        restrict: 'A',
-        scope: true,
-        link: bbLanguagePickerLink,
-        templateUrl: 'i18n/language_picker.html'
-    };
-});
-
-function bbLanguagePickerLink(scope, element, attrs) {
-
-    if (scope.vm.availableLanguages.length <= 1) {
-        angular.element(element).addClass('hidden');
-    }
-}
-
-function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLocale, bbi18nOptions) {
-    'ngInject';
-
-    /*jshint validthis: true */
-
-    var _this = this;
-
-    var languages = bbi18nOptions.available_languages;
-    this.language = null;
-    this.availableLanguages = [];
-    this.setAvailableLanguages = setAvailableLanguages;
-    this.setCurrentLanguage = setCurrentLanguage;
-    this.setLanguage = setLanguage;
-
-    (function () {
-        _this.setAvailableLanguages();
-        _this.setCurrentLanguage();
-        $scope.$on('BBLanguagePicker:refresh', setCurrentLanguage);
-        _this.pickLanguage = pickLanguage;
-    })();
-
-    function setAvailableLanguages() {
-        var _this2 = this;
-
-        languages.forEach(function (languageKey) {
-            _this2.availableLanguages.push(createLanguage(languageKey));
-        });
-    }
-
-    function setCurrentLanguage() {
-        var _this3 = this;
-
-        tmhDynamicLocale.set(bbLocale.getLocale()).then(function () {
-            _this3.language = { selected: createLanguage(bbLocale.getLocale()) };
-        });
-    }
-
-    /*
-     * @param {String]
-     */
-    function createLanguage(languageKey) {
-        return {
-            identifier: languageKey,
-            label: 'COMMON.LANGUAGE.' + languageKey.toUpperCase()
-        };
-    }
-
-    function setLanguage(lang) {
-        this.language.selected = lang;
-        this.pickLanguage(lang.identifier);
-    }
-
-    /*
-     * @param {String]
-     */
-    function pickLanguage(languageKey) {
-        tmhDynamicLocale.set(languageKey).then(function () {
-            bbLocale.setLocale(languageKey, 'bbLanguagePicker.pickLanguage');
-            $rootScope.$broadcast('BBLanguagePicker:languageChanged');
-        });
-    }
-}
-'use strict';
-
-(function () {
-
-    'use strict';
-
-    /**
-     * @ngdoc directive
-     * @name BBAdminDashboard.bbTimeZoneSelect
-     *
-     * @description
-     * TimeZone Select component changes the time zone in which times are displayed in Studio
-     * Configured using bbi18nOptionsProvider
-     *
-     *
-     <example module='BBAdminDashboard.bbTimeZoneSelect'>
-        <bb-time-zone-select></bb-time-zone-select>
-     </example>
-     */
-
-    angular.module('BB.i18n').component('bbTimeZoneSelect', {
-        templateUrl: 'i18n/_bb_timezone_select.html',
-        bindings: {
-            hideToggle: '<',
-            format: '<'
-        },
-        controller: TimeZoneSelectCtrl,
-        controllerAs: '$bbTimeZoneSelectCtrl'
-    });
-
-    function TimeZoneSelectCtrl($rootScope, $scope, $localStorage, bbi18nOptions, bbTimeZone, bbTimeZoneOptions, bbTimeZoneUtils) {
-        'ngInject';
-
-        var _this = this;
-
-        var LIST_CAPACITY = 100;
-        var companyTimeZone = void 0;
-        var displayTimeZone = void 0;
-        var browserTimeZone = void 0;
-
-        this.timeZones = [];
-        this.isAutomaticTimeZone = false;
-        this.selectedTimeZone = null;
-        this.isLongList = false;
-
-        this.$onInit = function () {
-            _this.timeZones = bbTimeZoneOptions.composeTimeZoneList(_this.format, bbTimeZone.getDisplay());
-            _this.isLongList = _this.timeZones.length > LIST_CAPACITY;
-            _this.setTimeZone = setTimeZone;
-            _this.automaticTimeZoneToggle = automaticTimeZoneToggle;
-            $rootScope.connection_started ? $rootScope.connection_started.then(determineDefaults) : determineDefaults();
-        };
-
-        var determineDefaults = function determineDefaults() {
-            var localStorage = $localStorage.getObject('bbTimeZone');
-            var getEqualTzInList = function getEqualTzInList(timeZone) {
-                return bbTimeZoneUtils.getEqualInList(timeZone, _this.timeZones);
-            };
-            companyTimeZone = getEqualTzInList(bbTimeZone.getCompany());
-            displayTimeZone = getEqualTzInList(bbTimeZone.getDisplay());
-            browserTimeZone = getEqualTzInList(moment.tz.guess());
-            _this.isAutomaticTimeZone = localStorage.useBrowserTimeZone || bbi18nOptions.timeZone.useBrowser && !localStorage.displayTimeZone;
-            _this.selectedTimeZone = _this.timeZones.find(function (tz) {
-                return tz.value === displayTimeZone;
-            });
-        };
-
-        var automaticTimeZoneToggle = function automaticTimeZoneToggle() {
-            displayTimeZone = _this.isAutomaticTimeZone ? browserTimeZone : companyTimeZone;
-            _this.timeZones = bbTimeZoneOptions.addMissingTimeZones(_this.timeZones, _this.format, displayTimeZone);
-            setTimeZone(displayTimeZone, _this.isAutomaticTimeZone);
-            $scope.$broadcast('UISelect:closeSelect');
-            bbTimeZone.setLocalStorage({ useBrowserTimeZone: _this.isAutomaticTimeZone });
-        };
-
-        var setTimeZone = function setTimeZone(timeZone) {
-            var isAutomaticTimeZone = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
-            displayTimeZone = timeZone;
-            bbTimeZone.setDisplay(timeZone);
-            _this.selectedTimeZone = _this.timeZones.find(function (tz) {
-                return tz.value === timeZone;
-            });
-            $rootScope.$broadcast('BBTimeZoneOptions:timeZoneChanged', timeZone);
-            if (!isAutomaticTimeZone) bbTimeZone.setLocalStorage({ displayTimeZone: timeZone });
-        };
-
-        var languageChangedHandler = function languageChangedHandler() {
-            _this.timeZones = bbTimeZoneOptions.composeTimeZoneList(_this.format, displayTimeZone);
-            _this.selectedTimeZone = _this.timeZones.find(function (tz) {
-                return tz.value === displayTimeZone;
-            });
-        };
-
-        $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
-    }
-})();
-'use strict';
-
-(function () {
-
-    angular.module('BB.i18n').constant('bbCustomTimeZones', {
-        GROUPED_TIME_ZONES: {
-            'Africa/Cairo': 'Cairo',
-            'Africa/Casablanca': 'Monrovia',
-            'Africa/Harare': 'Harare, Pretoria',
-            'Africa/Lagos': 'West Central Africa',
-            'Africa/Nairobi': 'Nairobi',
-            'America/Bogota': 'Bogota, Lima, Quito',
-            'America/Buenos_Aires': 'Buenos Aires, Georgetown',
-            'America/Caracas': 'Caracas, La Paz',
-            'America/Chicago': 'Central Time (US and Canada)',
-            'America/Chihuahua': 'Chihuahua, Mazatlan',
-            'America/Denver': 'Mountain Time (US and Canada)',
-            'America/El_Salvador': 'Central America',
-            'America/Halifax': 'Atlantic Time (Canada)',
-            'America/Indiana/Knox': 'Indiana (East)',
-            'America/Los_Angeles': 'Pacific Time (US and Canada); Tijuana',
-            'America/Mexico_City': 'Guadalajara, Mexico City, Monterrey',
-            'America/New_York': 'Eastern Time (US and Canada)',
-            'America/Phoenix': 'Arizona',
-            'America/Santiago': 'Santiago',
-            'America/Sao_Paulo': 'Brasilia',
-            'America/Thule': 'Greenland',
-            'Asia/Almaty': 'Almaty, Novosibirsk',
-            'Asia/Baghdad': 'Baghdad',
-            'Asia/Bangkok': 'Bangkok, Hanoi, Jakarta',
-            'Asia/Colombo': 'Sri Jayawardenepura',
-            'Asia/Dhaka': 'Astana, Dhaka',
-            'Asia/Dubai': 'Abu Dhabi, Muscat',
-            'Asia/Hong_Kong': 'Beijing, Chongqing, Hong Kong SAR, Urumqi',
-            'Asia/Irkutsk': 'Irkutsk, Ulaanbaatar',
-            'Asia/Jerusalem': 'Jerusalem',
-            'Asia/Kabul': 'Kabul',
-            'Asia/Karachi': 'Islamabad, Karachi, Tashkent',
-            'Asia/Kathmandu': 'Kathmandu',
-            'Asia/Kolkata': 'Chennai, Kolkata, Mumbai, New Delhi',
-            'Asia/Krasnoyarsk': 'Krasnoyarsk',
-            'Asia/Kuwait': 'Kuwait, Riyadh',
-            'Asia/Magadan': 'Magadan, Solomon Islands, New Caledonia',
-            'Asia/Rangoon': 'Yangon Rangoon',
-            'Asia/Seoul': 'Seoul',
-            'Asia/Singapore': 'Kuala Lumpur, Singapore',
-            'Asia/Taipei': 'Taipei',
-            'Asia/Tehran': 'Tehran',
-            'Asia/Tokyo': 'Osaka, Sapporo, Tokyo',
-            'Asia/Vladivostok': 'Vladivostok',
-            'Asia/Yakutsk': 'Yakutsk',
-            'Asia/Yekaterinburg': 'Ekaterinburg',
-            'Asia/Yerevan': 'Baku, Tbilisi, Yerevan',
-            'Atlantic/Azores': 'Azores',
-            'Atlantic/Cape_Verde': 'Cape Verde Islands',
-            'Australia/Adelaide': 'Adelaide',
-            'Australia/Brisbane': 'Brisbane',
-            'Australia/Canberra': 'Canberra, Melbourne, Sydney',
-            'Australia/Darwin': 'Darwin',
-            'Australia/Perth': 'Perth',
-            'Australia/Tasmania': 'Hobart',
-            'Canada/Newfoundland': 'Newfoundland and Labrador',
-            'Canada/Saskatchewan': 'Saskatchewan',
-            'Etc/GMT+12': 'International Date Line West',
-            'Europe/Amsterdam': 'Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna',
-            'Europe/Athens': 'Athens, Minsk',
-            'Europe/Belgrade': 'Belgrade, Bratislava, Budapest, Ljubljana, Prague',
-            'Europe/Bucharest': 'Bucharest',
-            'Europe/Helsinki': 'Helsinki, Kiev, Riga, Sofia, Tallinn, Vilnius',
-            'Europe/Istanbul': 'Istanbul',
-            'Europe/London': 'Edinburgh, Lisbon, London',
-            'Europe/Moscow': 'Moscow, St. Petersburg, Volgograd',
-            'Europe/Paris': 'Brussels, Copenhagen, Madrid, Paris',
-            'Europe/Sarajevo': 'Sarajevo, Skopje, Warsaw, Zagreb',
-            'Pacific/Auckland': 'Auckland, Wellington',
-            'Pacific/Fiji': 'Fiji Islands, Kamchatka, Marshall Islands',
-            'Pacific/Guam': 'Guam, Port Moresby',
-            'Pacific/Honolulu': 'Hawaii',
-            'Pacific/Pago_Pago': 'Midway Island, Samoa',
-            'Pacific/Tongatapu': 'Nuku\'alofa',
-            'US/Alaska': 'Alaska'
-        }
-    });
-})();
-'use strict';
-
-angular.module('BB.i18n').provider('bbi18nOptions', function (bbOptionsProvider) {
-    'ngInject';
-
-    var options = {
-        default_language: 'en',
-        use_browser_language: true,
-        available_languages: ['en'],
-        available_language_associations: {
-            'en_*': 'en',
-            'fr_*': 'fr'
-        },
-        timeZone: {
-            default: 'Europe/London',
-            useBrowser: false,
-            useCompany: true,
-            useCustomList: true,
-            replaceBrowser: { replace: '', replaceWith: '' },
-            filters: {
-                limitTo: [],
-                limitDaylightSaving: [],
-                limitStandard: [],
-                exclude: []
-            }
-        }
-    };
-
-    this.setOption = function (option, value) {
-        options = bbOptionsProvider.setOption(options, option, value);
-    };
-
-    this.getOption = function (option) {
-        return options[option];
-    };
-
-    this.$get = function () {
-        return options;
-    };
-});
-'use strict';
-
-angular.module('BB.i18n').service('bbLocale', function (bbi18nOptions, $log, $translate, $window) {
-    'ngInject';
-
-    var _localeCompanyUsed = false;
-
-    var determineLocale = function determineLocale() {
-
-        if ($translate.use() !== 'undefined' && angular.isDefined($translate.use()) && isAvailable($translate.use())) {
-            setLocale($translate.use(), '$translate.use() locale');
-        } else {
-            var browserLocale = $translate.negotiateLocale($translate.resolveClientLocale()); //browserLocale = $window.navigator.language;
-            var defaultLocale = bbi18nOptions.default_language;
-            var URIParamLocale = $window.getURIparam('locale');
-
-            if (URIParamLocale && isAvailable(URIParamLocale)) {
-                setLocale(URIParamLocale, 'URIParam locale');
-            } else if (bbi18nOptions.use_browser_language && isAvailable(browserLocale)) {
-                setLocale(browserLocale, 'browser locale');
-            } else {
-                setLocale(defaultLocale, 'default locale');
-            }
-        }
-
-        $translate.preferredLanguage(getLocale());
-    };
-
-    /*
-     * @param {String} locale
-     * @param {String} setWith
-     */
-    var setLocale = function setLocale(locale, setWith) {
-        if (setWith == null) {
-            setWith = '';
-        }
-        if (!isAvailable(locale)) {
-            return;
-        }
-
-        moment.locale(locale); // TODO we need angular wrapper for moment
-        $translate.use(locale);
-
-        //console.info('bbLocale.locale = ', locale, ', set with: ', setWith)
-
-        if (locale !== moment.locale() || locale !== $translate.use()) {
-            console.error('moment locale not available, preferred locale = ' + locale + ', moment.locale() = ', moment.locale(), '$translate.use() = ', $translate.use());
-        }
-    };
-
-    /*
-     * {String} locale
-     */
-    var isAvailable = function isAvailable(locale) {
-        return bbi18nOptions.available_languages.indexOf(locale) !== -1;
-    };
-
-    /*
-     * @returns {String}
-     */
-    var getLocale = function getLocale() {
-        return $translate.use();
-    };
-
-    /*
-     * It's a hacky way to map country code to specific locale. Reason is moment default is set to en_US
-     * @param {string} countryCode
-     */
-    var setLocaleUsingCountryCode = function setLocaleUsingCountryCode(countryCode) {
-        if (_localeCompanyUsed) {
-            return; //can be set only once
-        }
-        _localeCompanyUsed = true;
-
-        if (countryCode && countryCode.match(/^(gb|au)$/)) {
-            var locale = 'en-' + countryCode;
-            setLocale(locale, 'countryCode');
-        }
-    };
-
-    return {
-        determineLocale: determineLocale,
-        getLocale: getLocale,
-        setLocale: setLocale,
-        setLocaleUsingCountryCode: setLocaleUsingCountryCode
-    };
-});
-'use strict';
-
-(function () {
-
-    /**
-     * @ngdoc service
-     * @name BBAdminDashboard.bbTimeZone
-     * @description
-     * TimeZone factory
-     */
-    angular.module('BB.i18n').service('bbTimeZone', bbTimeZoneService);
-
-    function bbTimeZoneService($localStorage, $log, moment, bbi18nOptions, CompanyStoreService, bbCustomTimeZones, bbTimeZoneUtils) {
-        'ngInject';
-
-        var displayTimeZone = bbTimeZoneUtils.getKeyInCustomList(bbi18nOptions.timeZone.default, bbi18nOptions.timeZone.useCustomList);
-
-        return {
-            getDisplay: getDisplay,
-            getDisplayUTCOffset: getDisplayUTCOffset,
-            getCompany: getCompany,
-            getCompanyUTCOffset: getCompanyUTCOffset,
-
-            convertToCompany: convertToCompany,
-            convertToDisplay: convertToDisplay,
-
-            determine: determine,
-            setDisplay: setDisplay,
-            setLocalStorage: setLocalStorage
-        };
-
-        /**
-         * @param {moment|String} dateTime If string must be valid ISO string
-         * @returns {moment}
-         */
-        function convertToCompany(dateTime) {
-            return convertDateTime(dateTime, CompanyStoreService.time_zone);
-        }
-
-        /**
-         * @param {moment|String} dateTime If string must be valid ISO string
-         * @returns {moment}
-         */
-        function convertToDisplay(dateTime) {
-            return convertDateTime(dateTime, displayTimeZone);
-        }
-
-        function convertDateTime(dateTime, timeZone) {
-            if (!moment(dateTime).isValid()) $log.error('not valid dateTime', dateTime);
-            var converted = moment.tz(dateTime, timeZone);
-            return converted;
-        }
-
-        function getDisplay() {
-            return displayTimeZone;
-        }
-
-        function getDisplayUTCOffset() {
-            return moment().tz(displayTimeZone).utcOffset();
-        }
-
-        function getCompany() {
-            return CompanyStoreService.time_zone;
-        }
-
-        function getCompanyUTCOffset() {
-            return moment().tz(CompanyStoreService.time_zone).utcOffset();
-        }
-
-        function determine() {
-            var _bbi18nOptions$timeZo = bbi18nOptions.timeZone,
-                useBrowser = _bbi18nOptions$timeZo.useBrowser,
-                useCustomList = _bbi18nOptions$timeZo.useCustomList,
-                useCompany = _bbi18nOptions$timeZo.useCompany;
-
-            var localStorage = $localStorage.getObject('bbTimeZone');
-
-            if (localStorage.displayTimeZone) {
-                setDisplay(localStorage.displayTimeZone);
-                return;
-            }
-
-            if (useBrowser || localStorage.useBrowserTimeZone) {
-                var timeZone = bbTimeZoneUtils.getKeyInCustomList(moment.tz.guess(), useCustomList);
-                setDisplay(timeZone);
-                return;
-            }
-
-            if (useCompany && CompanyStoreService.time_zone) {
-                var _timeZone = bbTimeZoneUtils.getKeyInCustomList(CompanyStoreService.time_zone, useCustomList);
-                setDisplay(_timeZone);
-            }
-        }
-
-        function setDisplay(timeZone) {
-            moment.tz.setDefault(timeZone);
-            displayTimeZone = timeZone;
-        }
-
-        function setLocalStorage(localStorageObj) {
-            $localStorage.setObject('bbTimeZone', localStorageObj);
-        }
-    }
-})();
-'use strict';
-
-(function () {
-
-    /**
-     * @ngdoc service
-     * @name BBAdminDashboard.bbTimeZoneOptions
-     * @description
-     * TimeZone options factory
-     */
-    angular.module('BB.i18n').factory('bbTimeZoneOptions', timeZoneOptionsService);
-
-    function timeZoneOptionsService(bbi18nOptions, bbTimeZoneUtils) {
-        'ngInject';
-
-        var compose = function compose() {
-            for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
-                funcs[_key] = arguments[_key];
-            }
-
-            return function (value) {
-                return funcs.reduce(function (v, fn) {
-                    return fn(v);
-                }, value);
-            };
-        };
-        var initOptions = function initOptions() {
-            var timeZones = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-            var displayFormat = arguments[1];
-            var timeZone = arguments[2];
-
-            return {
-                timeZone: timeZone,
-                timeZones: timeZones,
-                displayFormat: displayFormat,
-                useCustomList: bbi18nOptions.timeZone.useCustomList,
-                filters: bbi18nOptions.timeZone.filters,
-                isDST: moment().isDST()
-            };
-        };
-
-        return {
-            composeTimeZoneList: composeTimeZoneList,
-            addMissingTimeZones: addMissingTimeZones
-        };
-
-        function composeTimeZoneList(displayFormat, timeZone) {
-            var options = initOptions(undefined, displayFormat, timeZone);
-            var composeTimeZones = compose(bbTimeZoneUtils.loadKeys, bbTimeZoneUtils.findFilterKeysInCustomList, bbTimeZoneUtils.filter, bbTimeZoneUtils.reject, bbTimeZoneUtils.filterDayLightOrStandard, bbTimeZoneUtils.ensureExists, bbTimeZoneUtils.mapModel, bbTimeZoneUtils.removeDuplicates, bbTimeZoneUtils.order);
-            return composeTimeZones(options).timeZones;
-        }
-
-        function addMissingTimeZones(timeZones, displayFormat, timeZone) {
-            var options = initOptions(timeZones, displayFormat, timeZone);
-            var composeTimeZones = compose(bbTimeZoneUtils.ensureExists, bbTimeZoneUtils.mapModel, bbTimeZoneUtils.removeDuplicates, bbTimeZoneUtils.order);
-            return options.filters.limitTo.length ? composeTimeZones(options).timeZones : timeZones;
-        }
-    }
-})();
-'use strict';
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-(function () {
-
-    /**
-     * @ngdoc service
-     * @name BBAdminDashboard.bbTimeZoneOptions
-     * @description
-     * TimeZone options factory
-     */
-    angular.module('BB.i18n').factory('bbTimeZoneUtils', bbTimeZoneUtils);
-
-    function bbTimeZoneUtils($translate, $log, moment, orderByFilter, bbi18nOptions, bbCustomTimeZones) {
-        'ngInject';
-
-        return {
-            loadKeys: loadKeys,
-            filter: filter,
-            reject: reject,
-            findFilterKeysInCustomList: findFilterKeysInCustomList,
-            filterDayLightOrStandard: filterDayLightOrStandard,
-            ensureExists: ensureExists,
-            mapModel: mapModel,
-            removeDuplicates: removeDuplicates,
-            order: order,
-
-            getKeyInCustomList: getKeyInCustomList,
-            getEqualInList: getEqualInList
-        };
-
-        function loadKeys(options) {
-            return Object.assign({}, options, {
-                timeZones: options.useCustomList ? Object.keys(bbCustomTimeZones.GROUPED_TIME_ZONES) : loadMomentNames()
-            });
-        }
-
-        function loadMomentNames() {
-            var timeZones = moment.tz.names();
-            var contains = function contains(timeZone) {
-                return function (strings) {
-                    return _.any(strings, function (string) {
-                        return timeZone.indexOf(string) !== -1;
-                    });
-                };
-            };
-            var isUpperCase = function isUpperCase(timeZone) {
-                return timeZone.match(/[^/]*$/)[0] === timeZone.match(/[^/]*$/)[0].toUpperCase();
-            };
-            return _.chain(timeZones).reject(contains(['GMT', 'Etc'])).reject(isUpperCase).value();
-        }
-
-        function findFilterKeysInCustomList(options) {
-            var getKey = function getKey(timeZoneKey) {
-                return getKeyInCustomList(timeZoneKey, options.useCustomList);
-            };
-            var mapFilters = function mapFilters(listOfFilters, typeOfFilter, filters) {
-                return filters[typeOfFilter] = _.map(listOfFilters, getKey);
-            };
-            return Object.assign({}, options, {
-                filters: _.mapObject(options.filters, mapFilters)
-            });
-        }
-
-        function filter(options) {
-            return Object.assign({}, options, {
-                timeZones: filterTimeZoneList(options.timeZones, options.filters.limitTo)
-            });
-        }
-
-        function reject(options) {
-            return Object.assign({}, options, {
-                timeZones: filterTimeZoneList(options.timeZones, options.filters.exclude, true)
-            });
-        }
-
-        function filterDayLightOrStandard(options) {
-            var _options$filters = options.filters,
-                limitDaylightSaving = _options$filters.limitDaylightSaving,
-                limitStandard = _options$filters.limitStandard;
-
-            return Object.assign({}, options, {
-                timeZones: filterTimeZoneList(options.timeZones, options.isDST ? limitDaylightSaving : limitStandard)
-            });
-        }
-
-        function filterTimeZoneList(timeZones, timeZonesToFilter) {
-            var exclude = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-
-            if (!angular.isArray(timeZonesToFilter)) {
-                $log.error('must be an Array:', timeZonesToFilter + ':' + (typeof timeZonesToFilter === 'undefined' ? 'undefined' : _typeof(timeZonesToFilter)));
-                return timeZones;
-            }
-
-            if (!timeZonesToFilter.length) {
-                return timeZones;
-            }
-
-            var contains = function contains(filters) {
-                return function (timeZone) {
-                    return _.any(filters, function (filter) {
-                        return timeZone.indexOf(filter) !== -1;
-                    });
-                };
-            };
-            if (exclude) {
-                return _.reject(timeZones, contains(timeZonesToFilter));
-            } else {
-                return _.filter(timeZones, contains(timeZonesToFilter));
-            }
-        }
-
-        function ensureExists(options) {
-            return Object.assign({}, options, {
-                timeZones: addMissingTimeZone(options.timeZones, options.timeZone)
-            });
-        }
-
-        function addMissingTimeZone(timeZones, timeZone) {
-            var mappedTimeZone = getEqualInList(timeZone, timeZones);
-            var allTimeZones = [].concat(_toConsumableArray(timeZones));
-            if (!allTimeZones.find(function (tz) {
-                return (tz.value || tz) === mappedTimeZone;
-            })) {
-                allTimeZones.push(mappedTimeZone);
-            }
-            return allTimeZones;
-        }
-
-        function mapModel(options) {
-            var mapTimeZone = function mapTimeZone(timeZone, index) {
-                return timeZone.value ? timeZone : mapTimeZoneItem(options, timeZone, index);
-            };
-            return Object.assign({}, options, {
-                timeZones: _.map(options.timeZones, mapTimeZone)
-            });
-        }
-
-        function mapTimeZoneItem(options, timeZoneKey, index) {
-            var city = timeZoneKey.match(/[^/]*$/)[0].replace(/-/g, '_');
-            var momentTz = moment.tz(timeZoneKey);
-            return {
-                id: index,
-                display: formatDisplayValue(options, city, momentTz),
-                value: timeZoneKey,
-                order: [parseInt(momentTz.format('Z')), momentTz.format('zz'), city]
-            };
-        }
-
-        function formatDisplayValue(options, city, momentTz) {
-
-            var format = angular.copy(options.displayFormat);
-
-            var formatMap = {
-                'tz-code': $translate.instant('I18N.TIMEZONE_LOCATIONS.CODES.' + momentTz.format('zz')),
-                'offset-hours': momentTz.format('Z'),
-                'location': $translate.instant('I18N.TIMEZONE_LOCATIONS.' + (options.useCustomList ? 'CUSTOM' : 'MOMENT') + '.' + city.toUpperCase())
-            };
-
-            if (!format) return '(GMT' + formatMap['offset-hours'] + ') ' + formatMap.location;
-            for (var formatKey in formatMap) {
-                format = format.replace(formatKey, formatMap[formatKey]);
-            }
-
-            return format;
-        }
-
-        function removeDuplicates(options) {
-            return Object.assign({}, options, {
-                timeZones: _.uniq(options.timeZones, function (timeZone) {
-                    return timeZone.display;
-                })
-            });
-        }
-
-        function order(options) {
-            return Object.assign({}, options, {
-                timeZones: orderByFilter(options.timeZones, ['order[0]', 'order[1]', 'order[2]'], false)
-            });
-        }
-
-        function getKeyInCustomList(timeZone) {
-            var useCustomList = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-            var selectedTimeZone = void 0;
-
-            if (!useCustomList) return timeZone;
-            if (bbCustomTimeZones.GROUPED_TIME_ZONES[timeZone]) return timeZone;
-
-            var city = timeZone.match(/[^/]*$/)[0].replace(/ /g, "_");
-
-            var _iteratorNormalCompletion = true;
-            var _didIteratorError = false;
-            var _iteratorError = undefined;
-
-            try {
-                for (var _iterator = Object.entries(bbCustomTimeZones.GROUPED_TIME_ZONES)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var _step$value = _slicedToArray(_step.value, 2),
-                        groupName = _step$value[0],
-                        groupCities = _step$value[1];
-
-                    if (groupName.match(/[^/]*$/)[0] === city) {
-                        selectedTimeZone = groupName;
-                        break;
-                    }
-
-                    groupCities = groupCities.split(/\s*,\s*/).map(function (tz) {
-                        return tz.replace(/ /g, "_");
-                    }).join(', ').split(/\s*,\s*/);
-                    var cityGroupIndex = groupCities.findIndex(function (groupCity) {
-                        return groupCity === city;
-                    });
-                    if (cityGroupIndex !== -1) {
-                        selectedTimeZone = groupName;
-                        break;
-                    }
-                }
-            } catch (err) {
-                _didIteratorError = true;
-                _iteratorError = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion && _iterator.return) {
-                        _iterator.return();
-                    }
-                } finally {
-                    if (_didIteratorError) {
-                        throw _iteratorError;
-                    }
-                }
-            }
-
-            return selectedTimeZone || timeZone;
-        }
-
-        function getEqualInList(timeZone, timeZones) {
-            var selectedTimeZone = void 0;
-
-            var overwrite = bbi18nOptions.timeZone.replaceBrowser;
-            if (overwrite.replace && overwrite.replaceWith) {
-                if (overwrite.replace === timeZone) {
-                    selectedTimeZone = overwrite.replaceWith;
-                    return selectedTimeZone;
-                }
-            }
-
-            var formatTz = function formatTz(timeZone, format) {
-                return moment.tz(timeZone).format(format);
-            };
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = timeZones[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var tz = _step2.value;
-
-                    if (formatTz(tz.value || tz, 'zz') === formatTz(timeZone, 'zz') && formatTz(tz.value || tz, 'ZZ') === formatTz(timeZone, 'ZZ')) {
-                        selectedTimeZone = tz.value || tz;
-                        break;
-                    }
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
-            return selectedTimeZone || timeZone;
-        }
-    }
-})();
-'use strict';
-
-/**
- * @ngdoc service
- * @name BB.i18n.RuntimeTranslate
- *
- * @description
- * Returns an instance of $translateProvider that allows late language binding (on runtime)
- */
-
-/**
- * @ngdoc service
- * @name BB.i18n.RuntimeTranslateProvider
- *
- * @description
- * Provider
- *
- * @example
- <pre>
- angular.module('ExampleModule').config ['RuntimeTranslateProvider', '$translateProvider', (RuntimeTranslateProvider, $translateProvider) ->
- RuntimeTranslateProvider.setProvider($translateProvider)
- ]
- </pre>
- */
-angular.module('BB.i18n').provider('RuntimeTranslate', function ($translateProvider) {
-  'ngInject';
-
-  var translateProvider = $translateProvider;
-  this.setProvider = function (provider) {
-    return translateProvider = provider;
-  };
-  this.$get = function () {
-    return translateProvider;
-  };
-});
-'use strict';
-
-angular.module('BB.i18n').config(function ($translateProvider) {
-    'ngInject';
-
-    var translations = {
-        I18N: {
-            LANGUAGE_PICKER: {
-                SELECT_LANG_PLACEHOLDER: 'Select...'
-            },
-            TIMEZONE: {
-                PREFERENCES: 'Preferences',
-                TIMEZONE_INFO: 'All times are shown in {{time_zone_name}}.',
-                SET_TIMEZONE_AUTOMATICALLY_LABEL: 'Set timezone automatically',
-                SET_TIMEZONE_AUTOMATICALLY_ON_LABEL: 'On',
-                SET_TIMEZONE_AUTOMATICALLY_OFF_LABEL: 'Off',
-                TIMEZONE_LABEL: 'Timezone',
-                SELECT_TIMEZONE_PLACEHOLDER: 'Select timezone'
-            },
-            TIMEZONE_LOCATIONS: {
-                CODES: {
-                    '+00': '+00',
-                    '+01': '+01',
-                    '+02': '+02',
-                    '+03': '+03',
-                    '+04': '+04',
-                    '+05': '+05',
-                    '+0530': '+0530',
-                    '+06': '+06',
-                    '+07': '+07',
-                    '+08': '+08',
-                    '+09': '+09',
-                    '+10': '+10',
-                    '+11': '+11',
-                    '+12': '+12',
-                    '+13': '+13',
-                    '+14': '+14',
-                    '-01': '-01',
-                    '-02': '-02',
-                    '-03': '-03',
-                    '-04': '-04',
-                    '-05': '-05',
-                    '-06': '-06',
-                    '-07': '-07',
-                    '-08': '-08',
-                    '-09': '-09',
-                    '-10': '-10',
-                    '-11': '-11',
-                    '-12': '-12',
-                    ACDT: 'ACDT',
-                    ACST: 'ACST',
-                    ACT: 'ACT',
-                    ACWST: 'ACWST',
-                    ADT: 'ADT',
-                    AEDT: 'AEDT',
-                    AEST: 'AEST',
-                    AFT: 'AFT',
-                    AKDT: 'AKDT',
-                    AKST: 'AKST',
-                    AMST: 'AMST',
-                    AMT: 'AMT',
-                    ART: 'ART',
-                    AST: 'AST',
-                    AWST: 'AWST',
-                    AZOST: 'AZOST',
-                    AZOT: 'AZOT',
-                    BDT: 'BDT',
-                    BNT: 'BNT',
-                    BOT: 'BOT',
-                    BRST: 'BRST',
-                    BRT: 'BRT',
-                    BST: 'BST',
-                    BTT: 'BTT',
-                    CAT: 'CAT',
-                    CCT: 'CCT',
-                    CDT: 'CDT',
-                    CEST: 'CEST',
-                    CET: 'CET',
-                    CHADT: 'CHADT',
-                    CHAST: 'CHAST',
-                    CHOST: 'CHOST',
-                    CHOT: 'CHOT',
-                    CHUT: 'CHUT',
-                    CKT: 'CKT',
-                    CLST: 'CLST',
-                    COT: 'COT',
-                    CST: 'CST',
-                    CVT: 'CVT',
-                    CXT: 'CXT',
-                    'ChST': 'ChST',
-                    EASST: 'EASST',
-                    EAT: 'EAT',
-                    ECT: 'ECT',
-                    EDT: 'EDT',
-                    EEST: 'EEST',
-                    EET: 'EET',
-                    EGST: 'EGST',
-                    EGT: 'EGT',
-                    EST: 'EST',
-                    FJST: 'FJST',
-                    FJT: 'FJT',
-                    FKST: 'FKST',
-                    FNT: 'FNT',
-                    GALT: 'GALT',
-                    GAMT: 'GAMT',
-                    GFT: 'GFT',
-                    GILT: 'GILT',
-                    GMT: 'GMT',
-                    GST: 'GST',
-                    GYT: 'GYT',
-                    HDT: 'HDT',
-                    HKT: 'HKT',
-                    HOVST: 'HOVST',
-                    HOVT: 'HOVT',
-                    HST: 'HST',
-                    ICT: 'ICT',
-                    IDT: 'IDT',
-                    IOT: 'IOT',
-                    IRDT: 'IRDT',
-                    IRST: 'IRST',
-                    IST: 'IST',
-                    JST: 'JST',
-                    KOST: 'KOST',
-                    KST: 'KST',
-                    LHDT: 'LHDT',
-                    LHST: 'LHST',
-                    LINT: 'LINT',
-                    MART: 'MART',
-                    MDT: 'MDT',
-                    MEST: 'MEST',
-                    MET: 'MET',
-                    MHT: 'MHT',
-                    MIST: 'MIST',
-                    MMT: 'MMT',
-                    MSK: 'MSK',
-                    MST: 'MST',
-                    MUT: 'MUT',
-                    MVT: 'MVT',
-                    MYT: 'MYT',
-                    NCT: 'NCT',
-                    NDT: 'NDT',
-                    NFT: 'NFT',
-                    NPT: 'NPT',
-                    NRT: 'NRT',
-                    NST: 'NST',
-                    NUT: 'NUT',
-                    NZDT: 'NZDT',
-                    NZST: 'NZST',
-                    PDT: 'PDT',
-                    PET: 'PET',
-                    PGT: 'PGT',
-                    PHOT: 'PHOT',
-                    PHT: 'PHT',
-                    PKT: 'PKT',
-                    PMDT: 'PMDT',
-                    PMST: 'PMST',
-                    PONT: 'PONT',
-                    PST: 'PST',
-                    PWT: 'PWT',
-                    PYST: 'PYST',
-                    PYT: 'PYT',
-                    RET: 'RET',
-                    SAST: 'SAST',
-                    SBT: 'SBT',
-                    SCT: 'SCT',
-                    SGT: 'SGT',
-                    SRT: 'SRT',
-                    SST: 'SST',
-                    TAHT: 'TAHT',
-                    TKT: 'TKT',
-                    TLT: 'TLT',
-                    TVT: 'TVT',
-                    UCT: 'UCT',
-                    ULAST: 'ULAST',
-                    ULAT: 'ULAT',
-                    UTC: 'UTC',
-                    UYT: 'UYT',
-                    VET: 'VET',
-                    VUT: 'VUT',
-                    WAKT: 'WAKT',
-                    WAST: 'WAST',
-                    WAT: 'WAT',
-                    WEST: 'WEST',
-                    WET: 'WET',
-                    WFT: 'WFT',
-                    WGST: 'WGST',
-                    WGT: 'WGT',
-                    WIB: 'WIB',
-                    WIT: 'WIT',
-                    WITA: 'WITA',
-                    WSDT: 'WSDT',
-                    WSST: 'WSST',
-                    XJT: 'XJT'
-                },
-                CUSTOM: {
-                    ADELAIDE: 'Adelaide',
-                    ALASKA: 'Alaska',
-                    ALMATY: 'Almaty, Novosibirsk',
-                    AMSTERDAM: 'Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna',
-                    ATHENS: 'Athens, Minsk',
-                    AUCKLAND: 'Auckland, Wellington',
-                    AZORES: 'Azores',
-                    BAGHDAD: 'Baghdad',
-                    BANGKOK: 'Bangkok, Hanoi, Jakarta',
-                    BELGRADE: 'Belgrade, Bratislava, Budapest, Ljubljana, Prague',
-                    BOGOTA: 'Bogota, Lima, Quito',
-                    BRISBANE: 'Brisbane',
-                    BUCHAREST: 'Bucharest',
-                    BUENOS_AIRES: 'Buenos Aires, Georgetown',
-                    CAIRO: 'Cairo',
-                    CANBERRA: 'Canberra, Melbourne, Sydney',
-                    CAPE_VERDE: 'Cape Verde Islands',
-                    CARACAS: 'Caracas, La Paz',
-                    CASABLANCA: 'Casablanca, Monrovia',
-                    CHICAGO: 'Central Time (US and Canada)',
-                    CHIHUAHUA: 'Chihuahua, La Paz, Mazatlan',
-                    COLOMBO: 'Sri Jayawardenepura',
-                    DARWIN: 'Darwin',
-                    DENVER: 'Mountain Time (US and Canada)',
-                    DHAKA: 'Astana, Dhaka',
-                    DUBAI: 'Abu Dhabi, Muscat',
-                    EL_SALVADOR: 'Central America',
-                    FIJI: 'Fiji Islands, Kamchatka, Marshall Islands',
-                    'GMT+12': 'International Date Line West',
-                    GUAM: 'Guam, Port Moresby',
-                    HALIFAX: 'Atlantic Time (Canada)',
-                    HARARE: 'Harare, Pretoria',
-                    HELSINKI: 'Helsinki, Kiev, Riga, Sofia, Tallinn, Vilnius',
-                    HONG_KONG: 'Beijing, Chongqing, Hong Kong SAR, Urumqi',
-                    HONOLULU: 'Hawaii',
-                    IRKUTSK: 'Irkutsk, Ulaanbaatar',
-                    ISTANBUL: 'Istanbul',
-                    JERUSALEM: 'Jerusalem',
-                    KABUL: 'Kabul',
-                    KARACHI: 'Islamabad, Karachi, Tashkent',
-                    KATHMANDU: 'Kathmandu',
-                    KNOX: 'Indiana (East)',
-                    KOLKATA: 'Chennai, Kolkata, Mumbai, New Delhi',
-                    KRASNOYARSK: 'Krasnoyarsk',
-                    KUWAIT: 'Kuwait, Riyadh',
-                    LAGOS: 'West Central Africa',
-                    LONDON: 'Dublin, Edinburgh, Lisbon, London',
-                    LOS_ANGELES: 'Pacific Time (US and Canada), Tijuana',
-                    MAGADAN: 'Magadan, Solomon Islands, New Caledonia',
-                    MEXICO_CITY: 'Guadalajara, Mexico City, Monterrey',
-                    MOSCOW: 'Moscow, St. Petersburg, Volgograd',
-                    NAIROBI: 'Nairobi',
-                    NEWFOUNDLAND: 'Newfoundland and Labrador',
-                    NEW_YORK: 'Eastern Time (US and Canada)',
-                    PAGO_PAGO: 'Midway Island, Samoa',
-                    PARIS: 'Brussels, Copenhagen, Madrid, Paris',
-                    PERTH: 'Perth',
-                    PHOENIX: 'Arizona',
-                    RANGOON: 'Yangon Rangoon',
-                    SANTIAGO: 'Santiago',
-                    SAO_PAULO: 'Brasilia',
-                    SARAJEVO: 'Sarajevo, Skopje, Warsaw, Zagreb',
-                    SASKATCHEWAN: 'Saskatchewan',
-                    SEOUL: 'Seoul',
-                    SINGAPORE: 'Kuala Lumpur, Singapore',
-                    TAIPEI: 'Taipei',
-                    TASMANIA: 'Hobart',
-                    TEHRAN: 'Tehran',
-                    THULE: 'Greenland',
-                    TOKYO: 'Osaka, Sapporo, Tokyo',
-                    TONGATAPU: 'Nuku\'alofa',
-                    VLADIVOSTOK: 'Vladivostok',
-                    YAKUTSK: 'Yakutsk',
-                    YEKATERINBURG: 'Ekaterinburg',
-                    YEREVAN: 'Baku, Tbilisi, Yerevan'
-                },
-                MOMENT: {
-                    ABIDJAN: 'Abidjan',
-                    ACCRA: 'Accra',
-                    ACRE: 'Acre',
-                    ADAK: 'Adak',
-                    ADDIS_ABABA: 'Addis Ababa',
-                    ADELAIDE: 'Adelaide',
-                    ADEN: 'Aden',
-                    ALASKA: 'Alaska',
-                    ALEUTIAN: 'Aleutian',
-                    ALGIERS: 'Algiers',
-                    ALMATY: 'Almaty',
-                    AMMAN: 'Amman',
-                    AMSTERDAM: 'Amsterdam',
-                    ANADYR: 'Anadyr',
-                    ANCHORAGE: 'Anchorage',
-                    ANDORRA: 'Andorra',
-                    ANGUILLA: 'Anguilla',
-                    ANTANANARIVO: 'Antananarivo',
-                    ANTIGUA: 'Antigua',
-                    APIA: 'Apia',
-                    AQTAU: 'Aqtau',
-                    AQTOBE: 'Aqtobe',
-                    ARAGUAINA: 'Araguaina',
-                    ARIZONA: 'Arizona',
-                    ARUBA: 'Aruba',
-                    ASHGABAT: 'Ashgabat',
-                    ASHKHABAD: 'Ashkhabad',
-                    ASMARA: 'Asmara',
-                    ASMERA: 'Asmera',
-                    ASTRAKHAN: 'Astrakhan',
-                    ASUNCION: 'Asuncion',
-                    ATHENS: 'Athens',
-                    ATIKOKAN: 'Atikokan',
-                    ATKA: 'Atka',
-                    ATLANTIC: 'Atlantic',
-                    ATYRAU: 'Atyrau',
-                    AUCKLAND: 'Auckland',
-                    AZORES: 'Azores',
-                    BAGHDAD: 'Baghdad',
-                    BAHIA: 'Bahia',
-                    BAHIA_BANDERAS: 'Bahia Banderas',
-                    BAHRAIN: 'Bahrain',
-                    BAJANORTE: 'BajaNorte',
-                    BAJASUR: 'BajaSur',
-                    BAKU: 'Baku',
-                    BAMAKO: 'Bamako',
-                    BANGKOK: 'Bangkok',
-                    BANGUI: 'Bangui',
-                    BANJUL: 'Banjul',
-                    BARBADOS: 'Barbados',
-                    BARNAUL: 'Barnaul',
-                    BEIRUT: 'Beirut',
-                    BELEM: 'Belem',
-                    BELFAST: 'Belfast',
-                    BELGRADE: 'Belgrade',
-                    BELIZE: 'Belize',
-                    BERLIN: 'Berlin',
-                    BERMUDA: 'Bermuda',
-                    BEULAH: 'Beulah',
-                    BISHKEK: 'Bishkek',
-                    BISSAU: 'Bissau',
-                    BLANC_SABLON: 'Blanc-Sablon',
-                    BLANTYRE: 'Blantyre',
-                    BOA_VISTA: 'Boa Vista',
-                    BOGOTA: 'Bogota',
-                    BOISE: 'Boise',
-                    BOUGAINVILLE: 'Bougainville',
-                    BRATISLAVA: 'Bratislava',
-                    BRAZZAVILLE: 'Brazzaville',
-                    BRISBANE: 'Brisbane',
-                    BROKEN_HILL: 'Broken Hill',
-                    BRUNEI: 'Brunei',
-                    BRUSSELS: 'Brussels',
-                    BUCHAREST: 'Bucharest',
-                    BUDAPEST: 'Budapest',
-                    BUENOS_AIRES: 'Buenos Aires',
-                    BUJUMBURA: 'Bujumbura',
-                    BUSINGEN: 'Busingen',
-                    CAIRO: 'Cairo',
-                    CALCUTTA: 'Calcutta',
-                    CAMBRIDGE_BAY: 'Cambridge Bay',
-                    CAMPO_GRANDE: 'Campo Grande',
-                    CANARY: 'Canary',
-                    CANBERRA: 'Canberra',
-                    CANCUN: 'Cancun',
-                    CAPE_VERDE: 'Cape Verde',
-                    CARACAS: 'Caracas',
-                    CASABLANCA: 'Casablanca',
-                    CASEY: 'Casey',
-                    CATAMARCA: 'Catamarca',
-                    CAYENNE: 'Cayenne',
-                    CAYMAN: 'Cayman',
-                    CENTER: 'Center',
-                    CENTRAL: 'Central',
-                    CEUTA: 'Ceuta',
-                    CHAGOS: 'Chagos',
-                    CHATHAM: 'Chatham',
-                    CHICAGO: 'Chicago',
-                    CHIHUAHUA: 'Chihuahua',
-                    CHISINAU: 'Chisinau',
-                    CHITA: 'Chita',
-                    CHOIBALSAN: 'Choibalsan',
-                    CHONGQING: 'Chongqing',
-                    CHRISTMAS: 'Christmas',
-                    CHUNGKING: 'Chungking',
-                    CHUUK: 'Chuuk',
-                    COCOS: 'Cocos',
-                    COLOMBO: 'Colombo',
-                    COMODRIVADAVIA: 'ComodRivadavia',
-                    COMORO: 'Comoro',
-                    CONAKRY: 'Conakry',
-                    CONTINENTAL: 'Continental',
-                    COPENHAGEN: 'Copenhagen',
-                    CORAL_HARBOUR: 'Coral Harbour',
-                    CORDOBA: 'Cordoba',
-                    COSTA_RICA: 'Costa Rica',
-                    CRESTON: 'Creston',
-                    CUBA: 'Cuba',
-                    CUIABA: 'Cuiaba',
-                    CURACAO: 'Curacao',
-                    CURRIE: 'Currie',
-                    DACCA: 'Dacca',
-                    DAKAR: 'Dakar',
-                    DAMASCUS: 'Damascus',
-                    DANMARKSHAVN: 'Danmarkshavn',
-                    DARWIN: 'Darwin',
-                    DAR_ES_SALAAM: 'Dar es Salaam',
-                    DAVIS: 'Davis',
-                    DAWSON: 'Dawson',
-                    DAWSON_CREEK: 'Dawson Creek',
-                    DENORONHA: 'DeNoronha',
-                    DENVER: 'Denver',
-                    DETROIT: 'Detroit',
-                    DHAKA: 'Dhaka',
-                    DILI: 'Dili',
-                    DJIBOUTI: 'Djibouti',
-                    DOMINICA: 'Dominica',
-                    DOUALA: 'Douala',
-                    DUBAI: 'Dubai',
-                    DUBLIN: 'Dublin',
-                    DUMONTDURVILLE: 'DumontDUrville',
-                    DUSHANBE: 'Dushanbe',
-                    EAST: 'East',
-                    EASTER: 'Easter',
-                    EASTERISLAND: 'EasterIsland',
-                    EASTERN: 'Eastern',
-                    EAST_INDIANA: 'East-Indiana',
-                    EAST_SASKATCHEWAN: 'East-Saskatchewan',
-                    EDMONTON: 'Edmonton',
-                    EFATE: 'Efate',
-                    EGYPT: 'Egypt',
-                    EIRE: 'Eire',
-                    EIRUNEPE: 'Eirunepe',
-                    EL_AAIUN: 'El Aaiun',
-                    EL_SALVADOR: 'El Salvador',
-                    ENDERBURY: 'Enderbury',
-                    ENSENADA: 'Ensenada',
-                    EUCLA: 'Eucla',
-                    FAEROE: 'Faeroe',
-                    FAKAOFO: 'Fakaofo',
-                    FAMAGUSTA: 'Famagusta',
-                    FAROE: 'Faroe',
-                    FIJI: 'Fiji',
-                    FORTALEZA: 'Fortaleza',
-                    FORT_NELSON: 'Fort Nelson',
-                    FORT_WAYNE: 'Fort Wayne',
-                    FREETOWN: 'Freetown',
-                    FUNAFUTI: 'Funafuti',
-                    GABORONE: 'Gaborone',
-                    GALAPAGOS: 'Galapagos',
-                    GAMBIER: 'Gambier',
-                    GAZA: 'Gaza',
-                    GB_EIRE: 'GB-Eire',
-                    GENERAL: 'General',
-                    GIBRALTAR: 'Gibraltar',
-                    GLACE_BAY: 'Glace Bay',
-                    GODTHAB: 'Godthab',
-                    GOOSE_BAY: 'Goose Bay',
-                    GRAND_TURK: 'Grand Turk',
-                    GREENWICH: 'Greenwich',
-                    GRENADA: 'Grenada',
-                    GUADALCANAL: 'Guadalcanal',
-                    GUADELOUPE: 'Guadeloupe',
-                    GUAM: 'Guam',
-                    GUATEMALA: 'Guatemala',
-                    GUAYAQUIL: 'Guayaquil',
-                    GUERNSEY: 'Guernsey',
-                    GUYANA: 'Guyana',
-                    HALIFAX: 'Halifax',
-                    HARARE: 'Harare',
-                    HARBIN: 'Harbin',
-                    HAVANA: 'Havana',
-                    HAWAII: 'Hawaii',
-                    HEBRON: 'Hebron',
-                    HELSINKI: 'Helsinki',
-                    HERMOSILLO: 'Hermosillo',
-                    HOBART: 'Hobart',
-                    HONGKONG: 'Hongkong',
-                    HONG_KONG: 'Hong Kong',
-                    HONOLULU: 'Honolulu',
-                    HOVD: 'Hovd',
-                    HO_CHI_MINH: 'Ho Chi Minh',
-                    ICELAND: 'Iceland',
-                    INDIANAPOLIS: 'Indianapolis',
-                    INDIANA_STARKE: 'Indiana-Starke',
-                    INUVIK: 'Inuvik',
-                    IQALUIT: 'Iqaluit',
-                    IRAN: 'Iran',
-                    IRKUTSK: 'Irkutsk',
-                    ISLE_OF_MAN: 'Isle of Man',
-                    ISRAEL: 'Israel',
-                    ISTANBUL: 'Istanbul',
-                    JAKARTA: 'Jakarta',
-                    JAMAICA: 'Jamaica',
-                    JAN_MAYEN: 'Jan Mayen',
-                    JAPAN: 'Japan',
-                    JAYAPURA: 'Jayapura',
-                    JERSEY: 'Jersey',
-                    JERUSALEM: 'Jerusalem',
-                    JOHANNESBURG: 'Johannesburg',
-                    JOHNSTON: 'Johnston',
-                    JUBA: 'Juba',
-                    JUJUY: 'Jujuy',
-                    JUNEAU: 'Juneau',
-                    KABUL: 'Kabul',
-                    KALININGRAD: 'Kaliningrad',
-                    KAMCHATKA: 'Kamchatka',
-                    KAMPALA: 'Kampala',
-                    KARACHI: 'Karachi',
-                    KASHGAR: 'Kashgar',
-                    KATHMANDU: 'Kathmandu',
-                    KATMANDU: 'Katmandu',
-                    KERGUELEN: 'Kerguelen',
-                    KHANDYGA: 'Khandyga',
-                    KHARTOUM: 'Khartoum',
-                    KIEV: 'Kiev',
-                    KIGALI: 'Kigali',
-                    KINSHASA: 'Kinshasa',
-                    KIRITIMATI: 'Kiritimati',
-                    KIROV: 'Kirov',
-                    KNOX: 'Knox',
-                    KNOX_IN: 'Knox IN',
-                    KOLKATA: 'Kolkata',
-                    KOSRAE: 'Kosrae',
-                    KRALENDIJK: 'Kralendijk',
-                    KRASNOYARSK: 'Krasnoyarsk',
-                    KUALA_LUMPUR: 'Kuala Lumpur',
-                    KUCHING: 'Kuching',
-                    KUWAIT: 'Kuwait',
-                    KWAJALEIN: 'Kwajalein',
-                    LAGOS: 'Lagos',
-                    LA_PAZ: 'La Paz',
-                    LA_RIOJA: 'La Rioja',
-                    LIBREVILLE: 'Libreville',
-                    LIBYA: 'Libya',
-                    LIMA: 'Lima',
-                    LINDEMAN: 'Lindeman',
-                    LISBON: 'Lisbon',
-                    LJUBLJANA: 'Ljubljana',
-                    LOME: 'Lome',
-                    LONDON: 'London',
-                    LONGYEARBYEN: 'Longyearbyen',
-                    LORD_HOWE: 'Lord Howe',
-                    LOS_ANGELES: 'Los Angeles',
-                    LOUISVILLE: 'Louisville',
-                    LOWER_PRINCES: 'Lower Princes',
-                    LUANDA: 'Luanda',
-                    LUBUMBASHI: 'Lubumbashi',
-                    LUSAKA: 'Lusaka',
-                    LUXEMBOURG: 'Luxembourg',
-                    MACAO: 'Macao',
-                    MACAU: 'Macau',
-                    MACEIO: 'Maceio',
-                    MACQUARIE: 'Macquarie',
-                    MADEIRA: 'Madeira',
-                    MADRID: 'Madrid',
-                    MAGADAN: 'Magadan',
-                    MAHE: 'Mahe',
-                    MAJURO: 'Majuro',
-                    MAKASSAR: 'Makassar',
-                    MALABO: 'Malabo',
-                    MALDIVES: 'Maldives',
-                    MALTA: 'Malta',
-                    MANAGUA: 'Managua',
-                    MANAUS: 'Manaus',
-                    MANILA: 'Manila',
-                    MAPUTO: 'Maputo',
-                    MARENGO: 'Marengo',
-                    MARIEHAMN: 'Mariehamn',
-                    MARIGOT: 'Marigot',
-                    MARQUESAS: 'Marquesas',
-                    MARTINIQUE: 'Martinique',
-                    MASERU: 'Maseru',
-                    MATAMOROS: 'Matamoros',
-                    MAURITIUS: 'Mauritius',
-                    MAWSON: 'Mawson',
-                    MAYOTTE: 'Mayotte',
-                    MAZATLAN: 'Mazatlan',
-                    MBABANE: 'Mbabane',
-                    MCMURDO: 'McMurdo',
-                    MELBOURNE: 'Melbourne',
-                    MENDOZA: 'Mendoza',
-                    MENOMINEE: 'Menominee',
-                    MERIDA: 'Merida',
-                    METLAKATLA: 'Metlakatla',
-                    MEXICO_CITY: 'Mexico City',
-                    MICHIGAN: 'Michigan',
-                    MIDWAY: 'Midway',
-                    MINSK: 'Minsk',
-                    MIQUELON: 'Miquelon',
-                    MOGADISHU: 'Mogadishu',
-                    MONACO: 'Monaco',
-                    MONCTON: 'Moncton',
-                    MONROVIA: 'Monrovia',
-                    MONTERREY: 'Monterrey',
-                    MONTEVIDEO: 'Montevideo',
-                    MONTICELLO: 'Monticello',
-                    MONTREAL: 'Montreal',
-                    MONTSERRAT: 'Montserrat',
-                    MOSCOW: 'Moscow',
-                    MOUNTAIN: 'Mountain',
-                    MUSCAT: 'Muscat',
-                    NAIROBI: 'Nairobi',
-                    NASSAU: 'Nassau',
-                    NAURU: 'Nauru',
-                    NAVAJO: 'Navajo',
-                    NDJAMENA: 'Ndjamena',
-                    NEWFOUNDLAND: 'Newfoundland',
-                    NEW_SALEM: 'New Salem',
-                    NEW_YORK: 'New York',
-                    NIAMEY: 'Niamey',
-                    NICOSIA: 'Nicosia',
-                    NIPIGON: 'Nipigon',
-                    NIUE: 'Niue',
-                    NOME: 'Nome',
-                    NORFOLK: 'Norfolk',
-                    NORONHA: 'Noronha',
-                    NORTH: 'North',
-                    NOUAKCHOTT: 'Nouakchott',
-                    NOUMEA: 'Noumea',
-                    NOVOKUZNETSK: 'Novokuznetsk',
-                    NOVOSIBIRSK: 'Novosibirsk',
-                    OJINAGA: 'Ojinaga',
-                    OMSK: 'Omsk',
-                    ORAL: 'Oral',
-                    OSLO: 'Oslo',
-                    OUAGADOUGOU: 'Ouagadougou',
-                    PACIFIC: 'Pacific',
-                    PACIFIC_NEW: 'Pacific-New',
-                    PAGO_PAGO: 'Pago Pago',
-                    PALAU: 'Palau',
-                    PALMER: 'Palmer',
-                    PANAMA: 'Panama',
-                    PANGNIRTUNG: 'Pangnirtung',
-                    PARAMARIBO: 'Paramaribo',
-                    PARIS: 'Paris',
-                    PERTH: 'Perth',
-                    PETERSBURG: 'Petersburg',
-                    PHNOM_PENH: 'Phnom Penh',
-                    PHOENIX: 'Phoenix',
-                    PITCAIRN: 'Pitcairn',
-                    PODGORICA: 'Podgorica',
-                    POHNPEI: 'Pohnpei',
-                    POLAND: 'Poland',
-                    PONAPE: 'Ponape',
-                    PONTIANAK: 'Pontianak',
-                    PORTO_ACRE: 'Porto Acre',
-                    PORTO_NOVO: 'Porto-Novo',
-                    PORTO_VELHO: 'Porto Velho',
-                    PORTUGAL: 'Portugal',
-                    PORT_AU_PRINCE: 'Port-au-Prince',
-                    PORT_MORESBY: 'Port Moresby',
-                    PORT_OF_SPAIN: 'Port of Spain',
-                    PRAGUE: 'Prague',
-                    PUERTO_RICO: 'Puerto Rico',
-                    PUNTA_ARENAS: 'Punta Arenas',
-                    PYONGYANG: 'Pyongyang',
-                    QATAR: 'Qatar',
-                    QUEENSLAND: 'Queensland',
-                    QYZYLORDA: 'Qyzylorda',
-                    RAINY_RIVER: 'Rainy River',
-                    RANGOON: 'Rangoon',
-                    RANKIN_INLET: 'Rankin Inlet',
-                    RAROTONGA: 'Rarotonga',
-                    RECIFE: 'Recife',
-                    REGINA: 'Regina',
-                    RESOLUTE: 'Resolute',
-                    REUNION: 'Reunion',
-                    REYKJAVIK: 'Reykjavik',
-                    RIGA: 'Riga',
-                    RIO_BRANCO: 'Rio Branco',
-                    RIO_GALLEGOS: 'Rio Gallegos',
-                    RIYADH: 'Riyadh',
-                    ROME: 'Rome',
-                    ROSARIO: 'Rosario',
-                    ROTHERA: 'Rothera',
-                    SAIGON: 'Saigon',
-                    SAIPAN: 'Saipan',
-                    SAKHALIN: 'Sakhalin',
-                    SALTA: 'Salta',
-                    SAMARA: 'Samara',
-                    SAMARKAND: 'Samarkand',
-                    SAMOA: 'Samoa',
-                    SANTAREM: 'Santarem',
-                    SANTA_ISABEL: 'Santa Isabel',
-                    SANTIAGO: 'Santiago',
-                    SANTO_DOMINGO: 'Santo Domingo',
-                    SAN_JUAN: 'San Juan',
-                    SAN_LUIS: 'San Luis',
-                    SAN_MARINO: 'San Marino',
-                    SAO_PAULO: 'Sao Paulo',
-                    SAO_TOME: 'Sao Tome',
-                    SARAJEVO: 'Sarajevo',
-                    SARATOV: 'Saratov',
-                    SASKATCHEWAN: 'Saskatchewan',
-                    SCORESBYSUND: 'Scoresbysund',
-                    SEOUL: 'Seoul',
-                    SHANGHAI: 'Shanghai',
-                    SHIPROCK: 'Shiprock',
-                    SIMFEROPOL: 'Simferopol',
-                    SINGAPORE: 'Singapore',
-                    SITKA: 'Sitka',
-                    SKOPJE: 'Skopje',
-                    SOFIA: 'Sofia',
-                    SOUTH: 'South',
-                    SOUTH_GEORGIA: 'South Georgia',
-                    SOUTH_POLE: 'South Pole',
-                    SREDNEKOLYMSK: 'Srednekolymsk',
-                    STANLEY: 'Stanley',
-                    STOCKHOLM: 'Stockholm',
-                    ST_BARTHELEMY: 'St Barthelemy',
-                    ST_HELENA: 'St Helena',
-                    ST_JOHNS: 'St Johns',
-                    ST_KITTS: 'St Kitts',
-                    ST_LUCIA: 'St Lucia',
-                    ST_THOMAS: 'St Thomas',
-                    ST_VINCENT: 'St Vincent',
-                    SWIFT_CURRENT: 'Swift Current',
-                    SYDNEY: 'Sydney',
-                    SYOWA: 'Syowa',
-                    TAHITI: 'Tahiti',
-                    TAIPEI: 'Taipei',
-                    TALLINN: 'Tallinn',
-                    TARAWA: 'Tarawa',
-                    TASHKENT: 'Tashkent',
-                    TASMANIA: 'Tasmania',
-                    TBILISI: 'Tbilisi',
-                    TEGUCIGALPA: 'Tegucigalpa',
-                    TEHRAN: 'Tehran',
-                    TELL_CITY: 'Tell City',
-                    TEL_AVIV: 'Tel Aviv',
-                    THIMBU: 'Thimbu',
-                    THIMPHU: 'Thimphu',
-                    THULE: 'Thule',
-                    THUNDER_BAY: 'Thunder Bay',
-                    TIJUANA: 'Tijuana',
-                    TIMBUKTU: 'Timbuktu',
-                    TIRANE: 'Tirane',
-                    TIRASPOL: 'Tiraspol',
-                    TOKYO: 'Tokyo',
-                    TOMSK: 'Tomsk',
-                    TONGATAPU: 'Tongatapu',
-                    TORONTO: 'Toronto',
-                    TORTOLA: 'Tortola',
-                    TRIPOLI: 'Tripoli',
-                    TROLL: 'Troll',
-                    TRUK: 'Truk',
-                    TUCUMAN: 'Tucuman',
-                    TUNIS: 'Tunis',
-                    TURKEY: 'Turkey',
-                    UJUNG_PANDANG: 'Ujung Pandang',
-                    ULAANBAATAR: 'Ulaanbaatar',
-                    ULAN_BATOR: 'Ulan Bator',
-                    ULYANOVSK: 'Ulyanovsk',
-                    UNIVERSAL: 'Universal',
-                    URUMQI: 'Urumqi',
-                    USHUAIA: 'Ushuaia',
-                    UST_NERA: 'Ust-Nera',
-                    UZHGOROD: 'Uzhgorod',
-                    VADUZ: 'Vaduz',
-                    VANCOUVER: 'Vancouver',
-                    VATICAN: 'Vatican',
-                    VEVAY: 'Vevay',
-                    VICTORIA: 'Victoria',
-                    VIENNA: 'Vienna',
-                    VIENTIANE: 'Vientiane',
-                    VILNIUS: 'Vilnius',
-                    VINCENNES: 'Vincennes',
-                    VIRGIN: 'Virgin',
-                    VLADIVOSTOK: 'Vladivostok',
-                    VOLGOGRAD: 'Volgograd',
-                    VOSTOK: 'Vostok',
-                    WAKE: 'Wake',
-                    WALLIS: 'Wallis',
-                    WARSAW: 'Warsaw',
-                    WEST: 'West',
-                    WHITEHORSE: 'Whitehorse',
-                    WINAMAC: 'Winamac',
-                    WINDHOEK: 'Windhoek',
-                    WINNIPEG: 'Winnipeg',
-                    YAKUTAT: 'Yakutat',
-                    YAKUTSK: 'Yakutsk',
-                    YANCOWINNA: 'Yancowinna',
-                    YANGON: 'Yangon',
-                    YAP: 'Yap',
-                    YEKATERINBURG: 'Yekaterinburg',
-                    YELLOWKNIFE: 'Yellowknife',
-                    YEREVAN: 'Yerevan',
-                    YUKON: 'Yukon',
-                    ZAGREB: 'Zagreb',
-                    ZAPOROZHYE: 'Zaporozhye',
-                    ZULU: 'Zulu',
-                    ZURICH: 'Zurich'
-                }
-            }
-        }
-    };
-
-    $translateProvider.translations('en', translations);
-});
-'use strict';
-
 (function () {
     angular.module('toggle-switch').directive('toggleSwitch', function () {
         'ngInject';
@@ -26407,618 +26745,494 @@ angular.module('BB.uib').run(function ($document, runtimeUibModal) {
 });
 'use strict';
 
-angular.module('BB.Directives').directive('bbPurchase', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: 'Purchase',
-        link: function link(scope, element, attrs) {
-            scope.init(scope.$eval(attrs.bbPurchase));
-        }
-    };
-});
+(function () {
+    angular.module('BB.Controllers').controller('Purchase', PurchaseCtrl);
 
-angular.module('BB.Controllers').controller('Purchase', function ($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, $translate, ReasonService, $document, bbAnalyticsPiwik) {
+    function PurchaseCtrl($scope, $rootScope, PurchaseService, $uibModal, $location, $timeout, BBModel, $q, QueryStringService, SSOService, AlertService, LoginService, $window, $sessionStorage, LoadingService, $translate, ReasonService, $document, bbAnalyticsPiwik) {
 
-    var setCancelReasonsToBB = void 0;
-    $scope.is_waitlist = false;
-    $scope.make_payment = false;
-    var loader = LoadingService.$loader($scope);
+        $scope.$on('booking:moved', function (event, purchase) {
+            $scope.purchase = purchase;
+        });
 
-    var setPurchaseCompany = function setPurchaseCompany(company) {
+        $scope.is_waitlist = false;
+        $scope.make_payment = false;
+        var loader = LoadingService.$loader($scope);
 
-        $scope.bb.company_id = company.id;
-        $scope.bb.company = new BBModel.Company(company);
-        $scope.company = $scope.bb.company;
-        $scope.bb.item_defaults.company = $scope.bb.company;
-        if (company.settings) {
-            if (company.settings.merge_resources) {
-                $scope.bb.item_defaults.merge_resources = true;
+        var setPurchaseCompany = function setPurchaseCompany(company) {
+            $scope.bb.company_id = company.id;
+            $scope.bb.company = new BBModel.Company(company);
+            $scope.company = $scope.bb.company;
+            $scope.bb.item_defaults.company = $scope.bb.company;
+            if (company.settings) {
+                if (company.settings.merge_resources) {
+                    $scope.bb.item_defaults.merge_resources = true;
+                }
+                if (company.settings.merge_people) {
+                    return $scope.bb.item_defaults.merge_people = true;
+                }
             }
-            if (company.settings.merge_people) {
-                return $scope.bb.item_defaults.merge_people = true;
-            }
-        }
-    };
+        };
 
-    var failMsg = function failMsg() {
-
-        if ($scope.fail_msg) {
-            return AlertService.danger({
-                msg: $scope.fail_msg
-            });
-        } else {
-            return AlertService.add("danger", {
-                msg: $translate.instant('CORE.ALERTS.GENERIC')
-            });
-        }
-    };
-
-    $scope.init = function (options) {
-
-        if (!options) {
-            options = {};
-        }
-
-        loader.notLoaded();
-        if (options.move_route) {
-            $scope.move_route = options.move_route;
-        }
-        if (options.move_all) {
-            $scope.move_all = options.move_all;
-        }
-        if (options.fail_msg) {
-            $scope.fail_msg = options.fail_msg;
-        }
-
-        // is there a purchase total already in scope?
-        if ($scope.bb.total) {
-            return $scope.load($scope.bb.total.long_id);
-        } else if ($scope.bb.purchase) {
-            $scope.purchase = $scope.bb.purchase;
-            $scope.bookings = $scope.bb.purchase.bookings;
-            if ($scope.purchase.confirm_messages) {
-                $scope.messages = $scope.purchase.confirm_messages;
-            }
-            if (!$scope.cancel_reasons) {
-                $scope.cancel_reasons = $scope.bb.cancel_reasons;
-            }
-            if (!$scope.move_reasons) {
-                $scope.move_reasons = $scope.bb.move_reasons;
-            }
-            return loader.setLoaded();
-        } else {
-            if (options.member_sso) {
-                return SSOService.memberLogin(options).then(function (login) {
-                    return $scope.load();
-                }, function (err) {
-                    loader.setLoaded();
-                    return failMsg();
+        var failMsg = function failMsg() {
+            if ($scope.fail_msg) {
+                return AlertService.danger({
+                    msg: $scope.fail_msg
                 });
             } else {
-                return $scope.load();
+                return AlertService.add("danger", {
+                    msg: $translate.instant('CORE.ALERTS.GENERIC')
+                });
             }
-        }
-    };
+        };
 
-    var getPurchase = function getPurchase(params) {
+        $scope.init = function (options) {
+            if (!options) {
+                options = {};
+            }
 
-        var deferred = $q.defer();
-        PurchaseService.query(params).then(function (purchase) {
-            deferred.resolve(purchase);
-            purchase.$get('company').then(function (company) {
-                return setPurchaseCompany(company);
-            });
-            $scope.purchase = purchase;
-            $scope.bb.purchase = purchase;
-            return $scope.price = !($scope.purchase.price === 0);
-        }, function (err) {
-            //get purchase
-            loader.setLoaded();
-            if (err && err.status === 401) {
-                if (LoginService.isLoggedIn()) {
-                    // TODO don't show fail message, display message that says you're logged in as someone else and offer switch user function (logout and show login)
-                    return failMsg();
-                } else {
-                    return loginRequired();
+            loader.notLoaded();
+            if (options.move_route) {
+                $scope.move_route = options.move_route;
+            }
+            if (options.move_all) {
+                $scope.move_all = options.move_all;
+            }
+            if (options.fail_msg) {
+                $scope.fail_msg = options.fail_msg;
+            }
+
+            // is there a purchase total already in scope?
+            if ($scope.bb.total) {
+                return $scope.load($scope.bb.total.long_id);
+            } else if ($scope.bb.purchase) {
+                $scope.purchase = $scope.bb.purchase;
+                $scope.bookings = $scope.bb.purchase.bookings;
+                if ($scope.purchase.confirm_messages) {
+                    $scope.messages = $scope.purchase.confirm_messages;
                 }
+                if (!$scope.cancel_reasons) {
+                    $scope.cancel_reasons = $scope.bb.cancel_reasons;
+                }
+                if (!$scope.move_reasons) {
+                    $scope.move_reasons = $scope.bb.move_reasons;
+                }
+                return loader.setLoaded();
             } else {
-                return failMsg();
+                if (options.member_sso) {
+                    return SSOService.memberLogin(options).then(function (login) {
+                        return $scope.load();
+                    }, function (err) {
+                        loader.setLoaded();
+                        return failMsg();
+                    });
+                } else {
+                    return $scope.load();
+                }
             }
-        });
-        return deferred.promise;
-    };
+        };
 
-    var getBookings = function getBookings(purchase) {
+        var getPurchase = function getPurchase(params) {
 
-        $scope.purchase.$getBookings().then(function (bookings) {
-            $scope.bookings = bookings;
-
-            if (bookings[0]) {
-                bookings[0].$getCompany().then(function (company) {
-                    $scope.purchase.bookings[0].company = company;
-                    if (company.$has("reasons")) {
-                        getReasons(company).then(function (reasons) {
-                            setCancelReasons();
-                            setMoveReasons();
-                            setMoveReasonsToBB();
-                            return setCancelReasonsToBB();
-                        });
+            var deferred = $q.defer();
+            PurchaseService.query(params).then(function (purchase) {
+                deferred.resolve(purchase);
+                purchase.$get('company').then(function (company) {
+                    return setPurchaseCompany(company);
+                });
+                $scope.purchase = purchase;
+                $scope.bb.purchase = purchase;
+                return $scope.price = !($scope.purchase.price === 0);
+            }, function (err) {
+                //get purchase
+                loader.setLoaded();
+                if (err && err.status === 401) {
+                    if (LoginService.isLoggedIn()) {
+                        // TODO don't show fail message, display message that says you're logged in as someone else and offer switch user function (logout and show login)
+                        return failMsg();
+                    } else {
+                        return loginRequired();
                     }
-                    return company.$getAddress().then(function (address) {
-                        return $scope.purchase.bookings[0].company.address = address;
+                } else {
+                    return failMsg();
+                }
+            });
+            return deferred.promise;
+        };
+
+        var getBookings = function getBookings(purchase) {
+
+            $scope.purchase.$getBookings().then(function (bookings) {
+                $scope.bookings = bookings;
+
+                if (bookings[0]) {
+                    bookings[0].$getCompany().then(function (company) {
+                        $scope.purchase.bookings[0].company = company;
+                        if (company.$has("reasons")) {
+                            getReasons(company).then(function (reasons) {
+                                setCancelReasons();
+                                setMoveReasons();
+                                setMoveReasonsToBB();
+                                return setCancelReasonsToBB();
+                            });
+                        }
+                        return company.$getAddress().then(function (address) {
+                            return $scope.purchase.bookings[0].company.address = address;
+                        });
+                    });
+                }
+
+                loader.setLoaded();
+                checkIfMoveBooking(bookings);
+                checkIfWaitlistBookings(bookings);
+
+                return Array.from($scope.bookings).map(function (booking) {
+                    return booking.$getAnswers().then(function (answers) {
+                        return booking.answers = answers;
                     });
                 });
+            }, function (err) {
+                //get booking
+                loader.setLoaded();
+                return failMsg();
+            });
+
+            if (purchase.$has('client')) {
+                purchase.$get('client').then(function (client) {
+                    return $scope.setClient(new BBModel.Client(client));
+                });
+            }
+            return $scope.purchase.getConfirmMessages().then(function (messages) {
+                $scope.purchase.confirm_messages = messages;
+                return $scope.messages = messages;
+            });
+        };
+
+        $scope.load = function (id) {
+
+            loader.notLoaded();
+
+            if (!id) {
+                id = getPurchaseID();
             }
 
-            loader.setLoaded();
-            checkIfMoveBooking(bookings);
-            checkIfWaitlistBookings(bookings);
-
-            return Array.from($scope.bookings).map(function (booking) {
-                return booking.$getAnswers().then(function (answers) {
-                    return booking.answers = answers;
-                });
-            });
-        }, function (err) {
-            //get booking
-            loader.setLoaded();
-            return failMsg();
-        });
-
-        if (purchase.$has('client')) {
-            purchase.$get('client').then(function (client) {
-                return $scope.setClient(new BBModel.Client(client));
-            });
-        }
-        return $scope.purchase.getConfirmMessages().then(function (messages) {
-            $scope.purchase.confirm_messages = messages;
-            return $scope.messages = messages;
-        });
-    };
-
-    $scope.load = function (id) {
-
-        loader.notLoaded();
-
-        if (!id) {
-            id = getPurchaseID();
-        }
-
-        if (!$scope.loaded && !!id) {
-            $rootScope.widget_started.then(function () {
-                return $scope.waiting_for_conn_started.then(function () {
-                    var company_id = getCompanyID();
-                    if (company_id) {
-                        var options = {
-                            root: $scope.bb.api_url
+            if (!$scope.loaded && !!id) {
+                $rootScope.widget_started.then(function () {
+                    return $scope.waiting_for_conn_started.then(function () {
+                        var company_id = getCompanyID();
+                        if (company_id) {
+                            var options = {
+                                root: $scope.bb.api_url
+                            };
+                            BBModel.Company.$query(company_id, options).then(function (company) {
+                                return setPurchaseCompany(company);
+                            });
+                        }
+                        var params = {
+                            purchase_id: id,
+                            url_root: $scope.bb.api_url
                         };
-                        BBModel.Company.$query(company_id, options).then(function (company) {
-                            return setPurchaseCompany(company);
-                        });
-                    }
-                    var params = {
-                        purchase_id: id,
-                        url_root: $scope.bb.api_url
-                    };
-                    var auth_token = $sessionStorage.getItem('auth_token');
-                    if (auth_token) {
-                        params.auth_token = auth_token;
-                    }
+                        var auth_token = $sessionStorage.getItem('auth_token');
+                        if (auth_token) {
+                            params.auth_token = auth_token;
+                        }
 
-                    return getPurchase(params).then(function (purchase) {
-                        return getBookings(purchase);
+                        return getPurchase(params).then(function (purchase) {
+                            return getBookings(purchase);
+                        });
+                    }, function (err) {
+                        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
                     });
                 }, function (err) {
                     return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
                 });
+            } else {
+                loader.setLoaded();
+            }
+
+            return $scope.loaded = true;
+        };
+
+        var checkIfMoveBooking = function checkIfMoveBooking(bookings) {
+
+            var id = void 0;
+            var matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
+            if (matches) {
+                id = parseInt(matches[1]);
+            }
+            if (id) {
+                var move_booking = Array.from(bookings).filter(function (b) {
+                    return b.id === id;
+                }).map(function (b) {
+                    return b;
+                });
+                if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
+                    return $scope.move(move_booking[0]);
+                }
+            }
+        };
+
+        var checkIfWaitlistBookings = function checkIfWaitlistBookings(bookings) {
+            return $scope.waitlist_bookings = Array.from(bookings).filter(function (booking) {
+                return booking.on_waitlist && booking.settings.sent_waitlist === 1;
+            }).map(function (booking) {
+                return booking;
+            });
+        };
+
+        var loginRequired = function loginRequired() {
+            if (!$scope.bb.login_required) {
+                return window.location = window.location.href + "&login=true";
+            }
+        };
+
+        var getCompanyID = function getCompanyID() {
+            var company_id = void 0;
+            var matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
+            if (matches) {
+                company_id = matches[1];
+            }
+            return company_id;
+        };
+
+        var getPurchaseID = function getPurchaseID() {
+            var id = void 0;
+            var matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
+            if (!matches) {
+                matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
+            }
+            if (!matches) {
+                matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
+            }
+
+            if (matches) {
+                id = matches[1];
+            } else {
+                if (QueryStringService('ref')) {
+                    id = QueryStringService('ref');
+                }
+            }
+            if (QueryStringService('booking_id')) {
+                id = QueryStringService('booking_id');
+            }
+            return id;
+        };
+
+        function setPiwik(category, title) {
+            bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+        }
+
+        $scope.bookWaitlistItem = function (booking) {
+            loader.notLoaded();
+            var params = {
+                purchase: $scope.purchase,
+                booking: booking
+            };
+            return PurchaseService.bookWaitlistItem(params).then(function (purchase) {
+                $scope.purchase = purchase;
+                $scope.total = $scope.purchase;
+                $scope.bb.purchase = purchase;
+                return $scope.purchase.$getBookings().then(function (bookings) {
+                    $scope.bookings = bookings;
+                    $scope.waitlist_bookings = function () {
+                        var result = [];
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
+
+                        try {
+                            for (var _iterator = Array.from($scope.bookings)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                booking = _step.value;
+
+                                if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
+                                    result.push(booking);
+                                }
+                            }
+                        } catch (err) {
+                            _didIteratorError = true;
+                            _iteratorError = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
+                                }
+                            } finally {
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
+                                }
+                            }
+                        }
+
+                        return result;
+                    }();
+                    if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
+                        $scope.make_payment = true;
+                    }
+                    return loader.setLoaded();
+                }, function (err) {
+                    loader.setLoaded();
+                    return failMsg();
+                });
             }, function (err) {
                 return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
             });
-        } else {
-            loader.setLoaded();
-        }
+        };
 
-        return $scope.loaded = true;
-    };
-
-    var checkIfMoveBooking = function checkIfMoveBooking(bookings) {
-
-        var id = void 0;
-        var matches = /^.*(?:\?|&)move_booking=(.*?)(?:&|$)/.exec($location.absUrl());
-        if (matches) {
-            id = parseInt(matches[1]);
-        }
-        if (id) {
-            var move_booking = Array.from(bookings).filter(function (b) {
-                return b.id === id;
-            }).map(function (b) {
-                return b;
+        // delete a single booking
+        $scope.delete = function (_booking) {
+            // BB analytics Event
+            if (bbAnalyticsPiwik.isEnabled()) setPiwik("View Booking", "Cancel Booking");
+            var modalInstance = $uibModal.open({
+                templateUrl: $scope.getPartial("_cancel_modal"),
+                controller: ModalDelete,
+                resolve: {
+                    booking: function booking() {
+                        return _booking;
+                    },
+                    cancel_reasons: function cancel_reasons() {
+                        return $scope.cancel_reasons;
+                    }
+                }
             });
-            if (move_booking.length > 0 && $scope.isMovable(bookings[0])) {
-                return $scope.move(move_booking[0]);
+
+            return modalInstance.result.then(function (booking) {
+                var cancel_reason = null;
+                if (booking.cancel_reason) {
+                    cancel_reason = booking.cancel_reason;
+                }
+                var data = {
+                    cancel_reason: cancel_reason
+                };
+                return booking.$del('self', {}, data).then(function (service) {
+                    $scope.bookings = _.without($scope.bookings, booking);
+                    return $rootScope.$broadcast("booking:cancelled");
+                });
+            });
+        };
+
+        // delete all bookings assoicated to the purchase
+        $scope.deleteAll = function () {
+            var modalInstance = $uibModal.open({
+                templateUrl: $scope.getPartial("_cancel_modal"),
+                controller: ModalDeleteAll,
+                resolve: {
+                    purchase: function purchase() {
+                        return $scope.purchase;
+                    }
+                }
+            });
+            return modalInstance.result.then(function (purchase) {
+                return PurchaseService.deleteAll(purchase).then(function (purchase) {
+                    $scope.purchase = purchase;
+                    $scope.bookings = [];
+                    return $rootScope.$broadcast("booking:cancelled");
+                });
+            });
+        };
+
+        $scope.isMovable = function (booking) {
+
+            if (booking.min_cancellation_time) {
+                return moment().isBefore(booking.min_cancellation_time);
             }
-        }
-    };
+            return booking.datetime.isAfter(moment());
+        };
 
-    var checkIfWaitlistBookings = function checkIfWaitlistBookings(bookings) {
-        return $scope.waitlist_bookings = Array.from(bookings).filter(function (booking) {
-            return booking.on_waitlist && booking.settings.sent_waitlist === 1;
-        }).map(function (booking) {
-            return booking;
-        });
-    };
+        $scope.createBasketItem = function (booking) {
 
-    var loginRequired = function loginRequired() {
+            var item = new BBModel.BasketItem(booking, $scope.bb);
+            item.setSrcBooking(booking);
+            return item;
+        };
 
-        if (!$scope.bb.login_required) {
-            return window.location = window.location.href + "&login=true";
-        }
-    };
+        $scope.checkAnswer = function (answer) {
+            return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
+        };
 
-    var getCompanyID = function getCompanyID() {
+        $scope.changeAttendees = function (route) {
+            return $scope.moveAll(route);
+        };
 
-        var company_id = void 0;
-        var matches = /^.*(?:\?|&)company_id=(.*?)(?:&|$)/.exec($location.absUrl());
-        if (matches) {
-            company_id = matches[1];
-        }
-        return company_id;
-    };
+        var getReasons = function getReasons(company) {
+            return ReasonService.query(company).then(function (reasons) {
+                $scope.company_reasons = reasons;
+                return $scope.company_reasons;
+            }, function (err) {
+                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong retrieving reasons');
+            });
+        };
 
-    var getPurchaseID = function getPurchaseID() {
+        var setCancelReasons = function setCancelReasons() {
 
-        var id = void 0;
-        var matches = /^.*(?:\?|&)id=(.*?)(?:&|$)/.exec($location.absUrl());
-        if (!matches) {
-            matches = /^.*print_purchase\/(.*?)(?:\?|$)/.exec($location.absUrl());
-        }
-        if (!matches) {
-            matches = /^.*print_purchase_jl\/(.*?)(?:\?|$)/.exec($location.absUrl());
-        }
+            $scope.cancel_reasons = _.filter($scope.company_reasons, function (r) {
+                return r.reason_type === 3;
+            });
+            return $scope.cancel_reasons;
+        };
 
-        if (matches) {
-            id = matches[1];
-        } else {
-            if (QueryStringService('ref')) {
-                id = QueryStringService('ref');
+        var setMoveReasons = function setMoveReasons() {
+
+            $scope.move_reasons = _.filter($scope.company_reasons, function (r) {
+                return r.reason_type === 5;
+            });
+            return $scope.move_reasons;
+        };
+
+        var setMoveReasonsToBB = function setMoveReasonsToBB() {
+            if ($scope.move_reasons) {
+                return $scope.bb.move_reasons = $scope.move_reasons;
             }
-        }
-        if (QueryStringService('booking_id')) {
-            id = QueryStringService('booking_id');
-        }
-        return id;
-    };
+        };
 
-    function setPiwik(category, title) {
-        bbAnalyticsPiwik.push(['trackEvent', [category], title]);
+        var setCancelReasonsToBB = function setCancelReasonsToBB() {
+
+            if ($scope.cancel_reasons) {
+                return $scope.bb.cancel_reasons = $scope.cancel_reasons;
+            }
+        };
     }
 
-    $scope.move = function (booking, route, options) {
-
-        if (bbAnalyticsPiwik.isEnabled()) setPiwik("View Booking", "Move Booking");
-
-        if (options == null) {
-            options = {};
-        }
-        if (!route) {
-            route = $scope.move_route;
-        }
-        if ($scope.move_all) {
-            return $scope.moveAll(route, options);
-        }
-
-        loader.notLoaded();
-        $scope.initWidget({
-            company_id: booking.company_id,
-            no_route: true
-        });
-        return $timeout(function () {
-            return $rootScope.connection_started.then(function () {
-                var proms = [];
-                $scope.bb.moving_booking = booking;
-                $scope.quickEmptybasket();
-                var new_item = new BBModel.BasketItem(booking, $scope.bb);
-                new_item.setSrcBooking(booking, $scope.bb);
-                new_item.ready = false;
-                Array.prototype.push.apply(proms, new_item.promises);
-                $scope.bb.basket.addItem(new_item);
-                $scope.setBasketItem(new_item);
-
-                return $q.all(proms).then(function () {
-                    loader.setLoaded();
-                    $rootScope.$broadcast("booking:move");
-                    return $scope.decideNextPage(route);
-                }, function (err) {
-                    loader.setLoaded();
-                    return failMsg();
-                });
-            }, function (err) {
-                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-            });
-        });
-    };
-
-    // potentially move all of the items in booking - move the whole lot to a basket
-    $scope.moveAll = function (route, options) {
-
-        if (options == null) {
-            options = {};
-        }
-        if (!route) {
-            route = $scope.move_route;
-        }
-        loader.notLoaded();
-        $scope.initWidget({
-            company_id: $scope.bookings[0].company_id,
-            no_route: true
-        });
-        return $timeout(function () {
-            return $rootScope.connection_started.then(function () {
-                var proms = [];
-                if ($scope.bookings.length === 1) {
-                    $scope.bb.moving_booking = $scope.bookings[0];
-                } else {
-                    $scope.bb.moving_booking = $scope.purchase;
-                }
-
-                if (_.every(_.map($scope.bookings, function (b) {
-                    return b.event_id;
-                }), function (event_id) {
-                    return event_id === $scope.bookings[0].event_id;
-                })) {
-                    $scope.bb.moving_purchase = $scope.purchase;
-                }
-
-                $scope.quickEmptybasket();
-                var _iteratorNormalCompletion = true;
-                var _didIteratorError = false;
-                var _iteratorError = undefined;
-
-                try {
-                    for (var _iterator = Array.from($scope.bookings)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                        var booking = _step.value;
-
-                        var new_item = new BBModel.BasketItem(booking, $scope.bb);
-                        new_item.setSrcBooking(booking);
-                        new_item.ready = false;
-                        new_item.move_done = false;
-                        Array.prototype.push.apply(proms, new_item.promises);
-                        $scope.bb.basket.addItem(new_item);
-                    }
-                } catch (err) {
-                    _didIteratorError = true;
-                    _iteratorError = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion && _iterator.return) {
-                            _iterator.return();
-                        }
-                    } finally {
-                        if (_didIteratorError) {
-                            throw _iteratorError;
-                        }
-                    }
-                }
-
-                $scope.bb.sortStackedItems();
-
-                $scope.setBasketItem($scope.bb.basket.items[0]);
-                return $q.all(proms).then(function () {
-                    loader.setLoaded();
-                    return $scope.decideNextPage(route);
-                }, function (err) {
-                    loader.setLoaded();
-                    return failMsg();
-                });
-            }, function (err) {
-                return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-            });
-        });
-    };
-
-    $scope.bookWaitlistItem = function (booking) {
-
-        loader.notLoaded();
-
-        var params = {
-            purchase: $scope.purchase,
-            booking: booking
+    // Simple modal controller for handling the 'delete' modal
+    var ModalDelete = function ModalDelete($scope, $rootScope, $uibModalInstance, booking, AlertService, cancel_reasons) {
+        $scope.booking = booking;
+        $scope.cancel_reasons = cancel_reasons;
+        $scope.confirmDelete = function () {
+            AlertService.clear();
+            return $uibModalInstance.close(booking);
         };
-        return PurchaseService.bookWaitlistItem(params).then(function (purchase) {
-            $scope.purchase = purchase;
-            $scope.total = $scope.purchase;
-            $scope.bb.purchase = purchase;
-            return $scope.purchase.$getBookings().then(function (bookings) {
-                $scope.bookings = bookings;
-                $scope.waitlist_bookings = function () {
-                    var result = [];
-                    var _iteratorNormalCompletion2 = true;
-                    var _didIteratorError2 = false;
-                    var _iteratorError2 = undefined;
 
-                    try {
-                        for (var _iterator2 = Array.from($scope.bookings)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            booking = _step2.value;
-
-                            if (booking.on_waitlist && booking.settings.sent_waitlist === 1) {
-                                result.push(booking);
-                            }
-                        }
-                    } catch (err) {
-                        _didIteratorError2 = true;
-                        _iteratorError2 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                _iterator2.return();
-                            }
-                        } finally {
-                            if (_didIteratorError2) {
-                                throw _iteratorError2;
-                            }
-                        }
-                    }
-
-                    return result;
-                }();
-                if ($scope.purchase.$has('new_payment') && $scope.purchase.due_now > 0) {
-                    $scope.make_payment = true;
-                }
-                return loader.setLoaded();
-            }, function (err) {
-                loader.setLoaded();
-                return failMsg();
-            });
-        }, function (err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-        });
+        return $scope.cancel = function () {
+            return $uibModalInstance.dismiss("cancel");
+        };
     };
 
-    // delete a single booking
-    $scope.delete = function (_booking) {
-        // BB analytics Event
-        if (bbAnalyticsPiwik.isEnabled()) setPiwik("View Booking", "Cancel Booking");
-        var modalInstance = $uibModal.open({
-            templateUrl: $scope.getPartial("_cancel_modal"),
-            controller: ModalDelete,
-            resolve: {
-                booking: function booking() {
-                    return _booking;
-                },
-                cancel_reasons: function cancel_reasons() {
-                    return $scope.cancel_reasons;
-                }
-            }
-        });
-
-        return modalInstance.result.then(function (booking) {
-            var cancel_reason = null;
-            if (booking.cancel_reason) {
-                cancel_reason = booking.cancel_reason;
-            }
-            var data = {
-                cancel_reason: cancel_reason
-            };
-            return booking.$del('self', {}, data).then(function (service) {
-                $scope.bookings = _.without($scope.bookings, booking);
-                return $rootScope.$broadcast("booking:cancelled");
-            });
-        });
+    // Simple modal controller for handling the 'delete all' modal
+    var ModalDeleteAll = function ModalDeleteAll($scope, $rootScope, $uibModalInstance, purchase) {
+        $scope.purchase = purchase;
+        $scope.confirmDelete = function () {
+            return $uibModalInstance.close(purchase);
+        };
+        return $scope.cancel = function () {
+            return $uibModalInstance.dismiss("cancel");
+        };
     };
+})();
+'use strict';
 
-    // delete all bookings assoicated to the purchase
-    $scope.deleteAll = function () {
+(function () {
+	angular.module('BB.Directives').directive('bbPurchase', bbPurchase);
 
-        var modalInstance = $uibModal.open({
-            templateUrl: $scope.getPartial("_cancel_modal"),
-            controller: ModalDeleteAll,
-            resolve: {
-                purchase: function purchase() {
-                    return $scope.purchase;
-                }
-            }
-        });
-        return modalInstance.result.then(function (purchase) {
-            return PurchaseService.deleteAll(purchase).then(function (purchase) {
-                $scope.purchase = purchase;
-                $scope.bookings = [];
-                return $rootScope.$broadcast("booking:cancelled");
-            });
-        });
-    };
-
-    $scope.isMovable = function (booking) {
-
-        if (booking.min_cancellation_time) {
-            return moment().isBefore(booking.min_cancellation_time);
-        }
-        return booking.datetime.isAfter(moment());
-    };
-
-    $scope.createBasketItem = function (booking) {
-
-        var item = new BBModel.BasketItem(booking, $scope.bb);
-        item.setSrcBooking(booking);
-        return item;
-    };
-
-    $scope.checkAnswer = function (answer) {
-        return typeof answer.value === 'boolean' || typeof answer.value === 'string' || typeof answer.value === "number";
-    };
-
-    $scope.changeAttendees = function (route) {
-        return $scope.moveAll(route);
-    };
-
-    var getReasons = function getReasons(company) {
-        return ReasonService.query(company).then(function (reasons) {
-            $scope.company_reasons = reasons;
-            return $scope.company_reasons;
-        }, function (err) {
-            return loader.setLoadedAndShowError(err, 'Sorry, something went wrong retrieving reasons');
-        });
-    };
-
-    var setCancelReasons = function setCancelReasons() {
-
-        $scope.cancel_reasons = _.filter($scope.company_reasons, function (r) {
-            return r.reason_type === 3;
-        });
-        return $scope.cancel_reasons;
-    };
-
-    var setMoveReasons = function setMoveReasons() {
-
-        $scope.move_reasons = _.filter($scope.company_reasons, function (r) {
-            return r.reason_type === 5;
-        });
-        return $scope.move_reasons;
-    };
-
-    var setMoveReasonsToBB = function setMoveReasonsToBB() {
-
-        if ($scope.move_reasons) {
-            return $scope.bb.move_reasons = $scope.move_reasons;
-        }
-    };
-
-    return setCancelReasonsToBB = function setCancelReasonsToBB() {
-
-        if ($scope.cancel_reasons) {
-            return $scope.bb.cancel_reasons = $scope.cancel_reasons;
-        }
-    };
-});
-
-// Simple modal controller for handling the 'delete' modal
-var ModalDelete = function ModalDelete($scope, $rootScope, $uibModalInstance, booking, AlertService, cancel_reasons) {
-    $scope.booking = booking;
-    $scope.cancel_reasons = cancel_reasons;
-
-    $scope.confirmDelete = function () {
-        AlertService.clear();
-        return $uibModalInstance.close(booking);
-    };
-
-    return $scope.cancel = function () {
-        return $uibModalInstance.dismiss("cancel");
-    };
-};
-
-// Simple modal controller for handling the 'delete all' modal
-var ModalDeleteAll = function ModalDeleteAll($scope, $rootScope, $uibModalInstance, purchase) {
-    $scope.purchase = purchase;
-
-    $scope.confirmDelete = function () {
-        return $uibModalInstance.close(purchase);
-    };
-
-    return $scope.cancel = function () {
-        return $uibModalInstance.dismiss("cancel");
-    };
-};
+	function bbPurchase() {
+		return {
+			restrict: 'AE',
+			replace: true,
+			scope: true,
+			controller: 'Purchase',
+			link: function link(scope, element, attrs) {
+				scope.init(scope.$eval(attrs.bbPurchase));
+			}
+		};
+	}
+})();
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -27825,39 +28039,45 @@ angular.module('BB.Models').factory("Purchase.TotalModel", function ($q, $window
 });
 'use strict';
 
-angular.module('BB.Services').factory("PurchaseBookingService", function ($q, halClient, BBModel) {
+(function () {
 
-    return {
-        update: function update(booking) {
-            var deferred = $q.defer();
-            var data = booking.getPostData();
-            booking.srcBooking.$put('self', {}, data).then(function (booking) {
-                return deferred.resolve(new BBModel.Purchase.Booking(booking));
-            }, function (err) {
-                return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-            });
-            return deferred.promise;
-        },
-        addSurveyAnswersToBooking: function addSurveyAnswersToBooking(booking) {
-            var deferred = $q.defer();
-            var data = booking.getPostData();
-            data.notify = false;
-            data.notify_admin = false;
-            booking.$put('self', {}, data).then(function (booking) {
-                return deferred.resolve(new BBModel.Purchase.Booking(booking));
-            }, function (err) {
-                return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-            });
-            return deferred.promise;
-        }
-    };
-});
-"use strict";
+    angular.module('BB.Services').factory("PurchaseBookingService", PurchaseBookingService);
 
-angular.module('BB.Services').factory("PurchaseService", function ($q, halClient, BBModel, $window, UriTemplate) {
+    function PurchaseBookingService($q, halClient, BBModel) {
+        return {
+            update: function update(booking) {
+                var deferred = $q.defer();
+                var data = booking.getPostData();
+                booking.$put('self', {}, data).then(function (booking) {
+                    return deferred.resolve(new BBModel.Purchase.Booking(booking));
+                }, function (err) {
+                    return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+                });
+                return deferred.promise;
+            },
+            addSurveyAnswersToBooking: function addSurveyAnswersToBooking(booking) {
+                var deferred = $q.defer();
+                var data = booking.getPostData();
+                data.notify = false;
+                data.notify_admin = false;
+                booking.$put('self', {}, data).then(function (booking) {
+                    return deferred.resolve(new BBModel.Purchase.Booking(booking));
+                }, function (err) {
+                    return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+                });
+                return deferred.promise;
+            }
+        };
+    }
+})();
+'use strict';
 
-    return {
-        query: function query(params) {
+(function () {
+
+    angular.module('BB.Services').factory('PurchaseService', PurchaseService);
+
+    function PurchaseService($q, halClient, BBModel, $window, UriTemplate) {
+        var query = function query(params) {
             var defer = $q.defer();
             var uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
             halClient.$get(uri, params).then(function (purchase) {
@@ -27867,8 +28087,9 @@ angular.module('BB.Services').factory("PurchaseService", function ($q, halClient
                 return defer.reject(err);
             });
             return defer.promise;
-        },
-        bookingRefQuery: function bookingRefQuery(params) {
+        };
+
+        var bookingRefQuery = function bookingRefQuery(params) {
             var defer = $q.defer();
             var uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
             halClient.$get(uri, params).then(function (purchase) {
@@ -27878,8 +28099,9 @@ angular.module('BB.Services').factory("PurchaseService", function ($q, halClient
                 return defer.reject(err);
             });
             return defer.promise;
-        },
-        update: function update(params) {
+        };
+
+        var update = function update(params) {
             var booking = void 0;
             var defer = $q.defer();
 
@@ -27955,9 +28177,9 @@ angular.module('BB.Services').factory("PurchaseService", function ($q, halClient
                 return defer.reject(err);
             });
             return defer.promise;
-        },
-        bookWaitlistItem: function bookWaitlistItem(params) {
+        };
 
+        var bookWaitlistItem = function bookWaitlistItem(params) {
             var defer = $q.defer();
 
             if (!params.purchase && !params.purchase_id) {
@@ -27989,9 +28211,9 @@ angular.module('BB.Services').factory("PurchaseService", function ($q, halClient
             }
 
             return defer.promise;
-        },
-        deleteAll: function deleteAll(purchase) {
+        };
 
+        var deleteAll = function deleteAll(purchase) {
             var defer = $q.defer();
 
             if (!purchase) {
@@ -28007,8 +28229,9 @@ angular.module('BB.Services').factory("PurchaseService", function ($q, halClient
             });
 
             return defer.promise;
-        },
-        deleteItem: function deleteItem(params) {
+        };
+
+        var deleteItem = function deleteItem(params) {
             var defer = $q.defer();
             var uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
             halClient.$del(uri, {}).then(function (purchase) {
@@ -28018,9 +28241,33 @@ angular.module('BB.Services').factory("PurchaseService", function ($q, halClient
                 return defer.reject(err);
             });
             return defer.promise;
-        }
-    };
-});
+        };
+
+        var updateBBPurchase = function updateBBPurchase(purchase, booking) {
+            purchase.bookings.forEach(function (purchaseBooking, index) {
+                if (booking.id === purchaseBooking.id) {
+                    purchase.bookings[index] = booking;
+                }
+            });
+            purchase.items.forEach(function (purchaseItem, index) {
+                if (booking.id === purchaseItem.id) {
+                    purchase.items[index] = booking;
+                }
+            });
+            return purchase;
+        };
+
+        return {
+            query: query,
+            bookingRefQuery: bookingRefQuery,
+            update: update,
+            bookWaitlistItem: bookWaitlistItem,
+            deleteAll: deleteAll,
+            deleteItem: deleteItem,
+            updateBBPurchase: updateBBPurchase
+        };
+    }
+})();
 'use strict';
 
 /***
@@ -32224,98 +32471,12 @@ angular.module('BB.Directives').directive('bbEvents', function () {
          * Set this page section as ready - see {@link BB.Directives:bbPage Page Control}
          */
         $scope.setReady = function () {
-
             $scope.item.setAskedQuestions();
-
             if ($scope.item.ready && !$scope.suppress_basket_update) {
                 return $scope.addItemToBasket();
             } else {
                 return true;
             }
-        };
-
-        /***
-         * @ngdoc method
-         * @name confirm_move
-         * @methodOf BB.Directives:bbItemDetails
-         * @description
-         * Confirm move question information has been correctly entered here
-         *
-         * @param {string=} route A specific route to load
-         */
-        $scope.confirm_move = function (route) {
-
-            confirming = true;
-            if (!$scope.item) {
-                $scope.item = $scope.bb.current_item;
-            }
-            $scope.item.moved_booking = false;
-            // we need to validate the question information has been correctly entered here
-            $scope.item.setAskedQuestions();
-            if ($scope.item.ready) {
-                loader.notLoaded();
-                if ($scope.bb.moving_purchase) {
-                    var params = {
-                        purchase: $scope.bb.moving_purchase,
-                        bookings: $scope.bb.basket.items
-                    };
-                    if ($scope.bb.current_item.move_reason) {
-                        params.move_reason = $scope.bb.current_item.move_reason;
-                    }
-                    return PurchaseService.update(params).then(function (purchase) {
-                        $scope.bb.purchase = purchase;
-                        return $scope.bb.purchase.$getBookings().then(function (bookings) {
-                            $scope.purchase = purchase;
-                            loader.setLoaded();
-                            $scope.item.move_done = true;
-                            $scope.item.moved_booking = true;
-                            $rootScope.$broadcast("booking:moved");
-                            $scope.decideNextPage(route);
-                            return $scope.showMoveMessage(bookings[0].datetime);
-                        });
-                    }, function (err) {
-                        loader.setLoaded();
-                        return AlertService.add("danger", { msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_FAIL_ALERT') });
-                    });
-                } else {
-                    if ($scope.bb.current_item.move_reason) {
-                        $scope.item.move_reason = $scope.bb.current_item.move_reason;
-                    }
-                    return PurchaseBookingService.update($scope.item).then(function (booking) {
-                        var b = new BBModel.Purchase.Booking(booking);
-
-                        if ($scope.bb.purchase) {
-                            for (var _i = 0; _i < $scope.bb.purchase.bookings.length; _i++) {
-                                var oldb = $scope.bb.purchase.bookings[_i];
-                                if (oldb.id === b.id) {
-                                    $scope.bb.purchase.bookings[_i] = b;
-                                }
-                            }
-                        }
-
-                        loader.setLoaded();
-                        $scope.bb.moved_booking = booking;
-                        $scope.item.move_done = true;
-                        $rootScope.$broadcast("booking:moved");
-                        $scope.decideNextPage(route);
-                        return $scope.showMoveMessage(b.datetime);
-                    }, function (err) {
-                        loader.setLoaded();
-                        return AlertService.add("danger", { msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_FAIL_ALERT') });
-                    });
-                }
-            } else {
-                return $scope.decideNextPage(route);
-            }
-        };
-
-        $scope.showMoveMessage = function (datetime) {
-
-            datetime = bbTimeZone.convertToDisplay(datetime);
-
-            AlertService.add("info", {
-                msg: $translate.instant('PUBLIC_BOOKING.ITEM_DETAILS.MOVE_BOOKING_SUCCESS_ALERT', { datetime: datetime })
-            });
         };
 
         /***
@@ -32383,9 +32544,7 @@ angular.module('BB.Directives').directive('bbEvents', function () {
             $scope.item.setAskedQuestions();
             if ($scope.item.ready) {
                 loader.notLoaded();
-
                 return PurchaseBookingService.update($scope.item).then(function (booking) {
-
                     var b = new BBModel.Purchase.Booking(booking);
                     if ($scope.bookings) {
                         for (var _i = 0; _i < $scope.bookings.length; _i++) {
@@ -32395,11 +32554,11 @@ angular.module('BB.Directives').directive('bbEvents', function () {
                             }
                         }
                     }
-
                     $scope.purchase.bookings = $scope.bookings;
                     $scope.item_details_updated = true;
                     return loader.setLoaded();
                 }, function (err) {
+                    $log.info(err);
                     return loader.setLoaded();
                 });
             }
@@ -39287,7 +39446,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
          * @param {string=} route A route of the selected slot
          */
         $scope.selectSlot = function (slot, day, route) {
-
             if (slot && slot.availability() > 0) {
 
                 $scope.bb.current_item.setTime(slot);
@@ -39328,7 +39486,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
          */
         $scope.highlightSlot = function (slot, day) {
             var current_item = $scope.bb.current_item;
-
 
             if (slot && slot.availability() > 0 && !slot.disabled) {
 
@@ -40212,26 +40369,44 @@ angular.module('BB.Directives').directive('bbTimes', function () {
 });
 'use strict';
 
-angular.module('BB.Controllers').controller('Total', function ($scope, $rootScope, $q, $location, $window, QueryStringService, LoadingService, BBModel) {
+(function () {
 
-    var loader = LoadingService.$loader($scope).notLoaded();
+    angular.module('BB.Controllers').controller('Total', TotalController);
 
-    $rootScope.connection_started.then(function () {
-        $scope.bb.payment_status = null;
+    function TotalController($scope, $rootScope, $q, $location, $window, $log, QueryStringService, LoadingService, BBModel) {
+        var loader = LoadingService.$loader($scope).notLoaded();
 
-        var id = QueryStringService('purchase_id');
+        $rootScope.$on('booking:moved', function (event, purchase) {
+            $scope.total = purchase;
+        });
 
-        if (id && !$scope.bb.total) {
-            BBModel.PurchaseTotal.$query({ url_root: $scope.bb.api_url, purchase_id: id }).then(function (total) {
+        var init = function init() {
+            $scope.bb.payment_status = null;
+            var id = QueryStringService('purchase_id');
+            if (id && !$scope.bb.total) {
+                getPurchaseTotal(id);
+            } else if ($scope.bb.total) {
+                getTotalFromBB();
+            } else {
+                loader.setLoaded();
+            }
+
+            // Reset ready for another booking
+            return $scope.reset();
+        };
+
+        var getPurchaseTotal = function getPurchaseTotal(purchaseTotalId) {
+            BBModel.PurchaseTotal.$query({ url_root: $scope.bb.api_url, purchase_id: purchaseTotalId }).then(function (total) {
                 $scope.total = total;
                 loader.setLoaded();
-
                 // emit checkout:success event if the amount paid matches the total price
                 if (total.paid === total.total_price) {
                     return $scope.$emit("checkout:success", total);
                 }
             });
-        } else {
+        };
+
+        var getTotalFromBB = function getTotalFromBB() {
             $scope.total = $scope.bb.total;
             loader.setLoaded();
 
@@ -40239,47 +40414,51 @@ angular.module('BB.Controllers').controller('Total', function ($scope, $rootScop
             if ($scope.total.paid === $scope.total.total_price) {
                 $scope.$emit("checkout:success", $scope.total);
             }
-        }
+        };
 
-        // Reset ready for another booking
-        return $scope.reset();
-    }, function (err) {
-        return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
-    });
+        /**
+         * @ngdoc method
+         * @name print
+         * @methodOf BB.Directives.bbTotal
+         * @description Open new window from partial url
+         */
+        $scope.print = function () {
+            $window.open($scope.bb.partial_url + 'print_purchase.html?id=' + $scope.total.long_id, '_blank', 'width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=0,top=0');
+            return true;
+        };
 
-    /**
-     * @ngdoc method
-     * @name print
-     * @methodOf BB.Directives.bbTotal
-     * @description Open new window from partial url
-     */
-    return $scope.print = function () {
-        $window.open($scope.bb.partial_url + 'print_purchase.html?id=' + $scope.total.long_id, '_blank', 'width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=0,top=0');
-        return true;
-    };
-});
+        $rootScope.connection_started.then(function () {
+            init();
+        }, function (err) {
+            loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
+        });
+    }
+})();
 'use strict';
 
-/**
- * @ngdoc directive
- * @name BB.Directives.bbTotal
- * @restrict AE
- * @scope true
- *
- * @description Loads a list of totals for the currently in scope company
- *
- * @param {hash} bbTotal A hash of options
- * @property {array} payment_status The payment status
- * @property {array} total The total
- */
-angular.module('BB.Directives').directive('bbTotal', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: 'Total'
-    };
-});
+(function () {
+
+	/**
+  * @ngdoc directive
+  * @name BB.Directives.bbTotal
+  * @restrict AE
+  * @scope true
+  *
+  * @description Loads a list of totals for the currently in scope company
+  *
+  * @param {hash} bbTotal A hash of options
+  * @property {array} payment_status The payment status
+  * @property {array} total The total
+  */
+	angular.module('BB.Directives').directive('bbTotal', function () {
+		return {
+			restrict: 'AE',
+			replace: true,
+			scope: true,
+			controller: 'Total'
+		};
+	});
+})();
 'use strict';
 
 /**
