@@ -1,0 +1,69 @@
+[pricepicker] {
+
+  position: relative;
+
+  input {
+    padding-left: 22px;
+  }
+
+  span {
+    position: absolute;
+    padding: 7px 12px;
+    pointer-events: none;
+  }
+
+}
+
+img.loader {
+  margin: auto;
+  display: block
+}
+
+div.loader {
+  margin: auto;
+  display: block;
+  background:url("images/BB_wait.gif");
+}
+
+.modal-content {
+  div.loader {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+[bb-loading-spinner] {
+  div.loader-wrapper {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    .loader {
+      width: 100px;
+      height: 100px;
+    }
+  }
+}
+
+.form-group.has-success .form-control[disabled],
+.form-group.has-success .form-control[readonly],
+#bb .has-success .form-control[disabled],
+#bb .has-success .form-control[readonly]  {
+  border-color: #EEE !important;
+
+
+}
+
+
+#bb  select.form-control[disabled]::-ms-expand,
+.form-group .form-control[disabled]::-ms-expand {  display: none; }
+
+#bb select.form-control[disabled],
+.form-group select.form-control[disabled]{
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.bb-display-mode {position: fixed}
+
