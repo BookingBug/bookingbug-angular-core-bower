@@ -1342,6 +1342,10 @@ String.prototype.parameterise = function (seperator) {
         type: 'warning',
         title: '',
         persist: true
+    }, {
+        key: 'SERVICE_HAS_NO_AVAILABILITY',
+        type: 'danger',
+        persist: true
     }]);
 })();
 'use strict';
@@ -10730,6 +10734,226 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
         return TimeSlot;
     }(BaseModel);
 });
+'use strict';
+
+angular.module('BB.Services').config(function ($translateProvider) {
+    'ngInject';
+
+    var translations = {
+        CORE: {
+            ALERTS: {
+                ERROR_HEADING: "Error",
+                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+                ATTENDEES_CHANGED: "Your booking has been successfully updated",
+                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
+                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
+                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+                FORM_INVALID: "Please complete all required fields",
+                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
+                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
+                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
+                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
+                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
+                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+                MISSING_LOCATION: "Please enter your location",
+                MISSING_POSTCODE: "Please enter a postcode",
+                PASSWORD_INVALID: "Sorry, your password is invalid",
+                PASSWORD_MISMATCH: "Your passwords don't match",
+                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+                PASSWORD_RESET_SUCESS: "Your password has been updated.",
+                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
+                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+                STORE_NOT_SELECTED: "You need to select a store",
+                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+                TOPUP_SUCCESS: "Your wallet has been topped up",
+                UPDATE_FAILED: "Update failed. Please try again",
+                UPDATE_SUCCESS: "Updated",
+                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+                BOOKING_CANCELLED: "Your booking has been cancelled.",
+                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
+                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
+                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again.",
+                SERVICE_HAS_NO_AVAILABILITY: "This service has no availability"
+            },
+            PAGINATION: {
+                SUMMARY: "{{start}} - {{end}} of {{total}}"
+            },
+            MODAL: {
+                CANCEL_BOOKING: {
+                    HEADER: "Cancel",
+                    QUESTION: "Are you sure you want to cancel this {{type}}?"
+                },
+                SCHEMA_FORM: {
+                    OK_BTN: "@:COMMON.BTN.OK",
+                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+                },
+                CANCEL_BLOCK: "Cancel Block",
+                SAVE_BLOCK: "Save Block",
+                EDIT_BLOCK: "Edit Block",
+                EDIT_BOOKING: "Edit Booking"
+            },
+            FILTERS: {
+                DISTANCE: {
+                    MILES: "miles",
+                    KILOMETRES: "km"
+                },
+                CURRENCY: {
+                    THOUSANDS_SEPARATOR: ",",
+                    DECIMAL_SEPARATOR: ".",
+                    CURRENCY_FORMAT: "%s%v"
+                },
+                PRETTY_PRICE: {
+                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+                },
+                TIME_PERIOD: {
+                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+                }
+            },
+            EVENT: {
+                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+                JOIN_WAITLIST: "Join waitlist"
+            }
+        },
+        COMMON: {
+            TERMINOLOGY: {
+                CATEGORY: "Category",
+                DURATION: "Duration",
+                RESOURCE: "Resource",
+                PERSON: "Person",
+                SERVICE: "Service",
+                WALLET: "Wallet",
+                SESSION: "Session",
+                EVENT: "Event",
+                EVENTS: "Events",
+                COURSE: "Course",
+                COURSES: "Courses",
+                DATE: "Date",
+                TIME: "Time",
+                DATE_TIME: "Date/Time",
+                WHEN: "When",
+                GIFT_CERTIFICATE: "Gift Certificate",
+                GIFT_CERTIFICATES: "Gift Certificates",
+                ITEM: "Item",
+                FILTER: "Filter",
+                ANY: "Any",
+                RESET: "Reset",
+                TOTAL: "Total",
+                TOTAL_DUE_NOW: "Total Due Now",
+                BOOKING_FEE: "Booking Fee",
+                PRICE: "Price",
+                PRICE_FREE: "Free",
+                PRINT: "Print",
+                AND: "and",
+                APPOINTMENT: "Appointment",
+                TICKETS: "Tickets",
+                TYPE: "Type",
+                EXPORT: "Export",
+                RECIPIENT: "Recipient",
+                BOOKING_REF: "Booking Reference",
+                MORNING: "Morning",
+                AFTERNOON: "Afternoon",
+                EVENING: "Evening",
+                AVAILABLE: "Available",
+                UNAVAILABLE: "Unavailable",
+                CALENDAR: "Calendar",
+                QUESTIONS: "Questions",
+                BOOKING: "Booking",
+                ADMITTANCE: "Admittance",
+                EDIT: "Edit",
+                CONFIRMATION: "Confirmation",
+                NAME: "Name",
+                FIRST_NAME: "First Name",
+                LAST_NAME: "Last Name",
+                ADDRESS1: "Address",
+                ADDRESS3: "Town",
+                ADDRESS4: "County",
+                POSTCODE: "Postcode",
+                PHONE: "Phone",
+                MOBILE: "Mobile",
+                EMAIL: "Email",
+                SCHEDULE: "Schedule",
+                SEARCH: "Search",
+                STAFF: "Staff",
+                RESOURCES: "Resources"
+            },
+            FORM: {
+                FIRST_NAME_REQUIRED: "Please enter your first name",
+                LAST_NAME_REQUIRED: "Please enter your last name",
+                ADDRESS_REQUIRED: "Please enter your address",
+                POSTCODE_INVALID: "Please enter a valid postcode",
+                PHONE_INVALID: "Please enter a valid phone number",
+                MOBILE_INVALID: "Please enter a valid mobile number",
+                EMAIL_REQUIRED: "Please enter your email",
+                EMAIL_INVALID: "Please enter a valid email address",
+                FIELD_REQUIRED: "This field is required",
+                PASSWORD: "Password",
+                PASSWORD_REQUIRED: "Please enter your password",
+                CONFIRM_PASSWORD: "Confirm password",
+                PASSWORD_MISMATCH: "Please ensure your passwords match",
+                PASSWORD_LENGTH: "Password must be at least 7 characters",
+                REQUIRED: "*Required",
+                INVALID: "Invalid",
+                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
+                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
+            },
+            BTN: {
+                CANCEL: "Cancel",
+                CLOSE: "Close",
+                NO: "No",
+                OK: "Ok",
+                YES: "Yes",
+                BACK: "Back",
+                NEXT: "Continue",
+                LOGIN: "Login",
+                CONFIRM: "Confirm",
+                SAVE: "Save",
+                SELECT: "Select",
+                BOOK: "Book",
+                BOOK_EVENT: "Book Event",
+                CANCEL_BOOKING: "Cancel Booking",
+                MOVE_BOOKING: "Move Booking",
+                SAVE_BOOKING: "Save Booking",
+                EDIT_BOOKING: "Edit Booking",
+                DO_NOT_CANCEL_BOOKING: "Do not cancel",
+                APPLY: "Apply",
+                CLEAR: "Clear",
+                PAY: "Pay",
+                CHECKOUT: "Checkout",
+                TOP_UP: "Top Up",
+                ADD: "Add",
+                SUBMIT: "Submit",
+                DETAILS: "Details",
+                MORE: "More",
+                LESS: "Less",
+                DELETE: "Delete",
+                BUY: "Buy",
+                EDIT_CLIENT: "Edit Client"
+            },
+            LANGUAGE: {
+                EN: "English",
+                DE: "Deutsch",
+                ES: "Español",
+                FR: "Français"
+            }
+        }
+    };
+
+    $translateProvider.translations('en', translations);
+});
 "use strict";
 
 angular.module('BB.Services').factory("AddressListService", function ($q, $window, halClient, UriTemplate) {
@@ -12322,6 +12546,7 @@ angular.module('BB.Services').factory('Dialog', function ($uibModal, $log, $docu
          */
         var getError = function getError(key) {
             var error = getAlert(key);
+
             // return generic error if we can't find the key
             if (!error) {
                 error = getAlert('GENERIC');
@@ -14359,6 +14584,7 @@ angular.module('BB.Services').factory('QueryStringService', function ($window) {
                         val = window.decodeURIComponent(val);
                     }
                 }
+
                 // Removed date check as it attempts to convert strings like '0027' to a date
                 // It should be on the onus of the user of the QueryStringService to attempt to instantinate
                 // as a moment object
@@ -14960,7 +15186,7 @@ angular.module('BB.Services').factory('SlotDates', function ($q, DayService) {
                         return deferred.reject(err);
                     });
                 } else {
-                    return deferred.reject(new Error('ERROR.NO_SLOT_AVAILABLE'));
+                    return deferred.reject(new Error('PUBLIC_BOOKING.WEEK_CALENDAR.NO_AVAILABILITY'));
                 }
             }
         }, function (err) {
@@ -15869,6 +16095,16 @@ angular.module('BB.Services').factory("BB.Service.company", function ($q, BBMode
     };
 });
 
+angular.module('BB.Services').factory("BB.Service.companies", function ($q, BBModel, UnwrapService) {
+    return {
+        unwrap: function unwrap(items) {
+            return Array.from(items).map(function (i) {
+                return new BBModel.Admin.Company(i);
+            });
+        }
+    };
+});
+
 angular.module('BB.Services').factory("BB.Service.parent", function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
@@ -16701,225 +16937,6 @@ angular.module('BB.Services').service('viewportSize', function ($window, $docume
     isMD: isMD,
     isLG: isLG
   };
-});
-'use strict';
-
-angular.module('BB.Services').config(function ($translateProvider) {
-    'ngInject';
-
-    var translations = {
-        CORE: {
-            ALERTS: {
-                ERROR_HEADING: "Error",
-                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
-                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
-                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
-                ATTENDEES_CHANGED: "Your booking has been successfully updated",
-                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
-                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
-                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
-                FORM_INVALID: "Please complete all required fields",
-                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
-                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
-                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
-                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
-                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
-                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
-                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
-                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
-                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
-                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
-                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
-                MISSING_LOCATION: "Please enter your location",
-                MISSING_POSTCODE: "Please enter a postcode",
-                PASSWORD_INVALID: "Sorry, your password is invalid",
-                PASSWORD_MISMATCH: "Your passwords don't match",
-                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
-                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
-                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
-                PASSWORD_RESET_SUCESS: "Your password has been updated.",
-                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
-                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
-                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
-                STORE_NOT_SELECTED: "You need to select a store",
-                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
-                TOPUP_SUCCESS: "Your wallet has been topped up",
-                UPDATE_FAILED: "Update failed. Please try again",
-                UPDATE_SUCCESS: "Updated",
-                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
-                BOOKING_CANCELLED: "Your booking has been cancelled.",
-                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
-                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
-                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
-                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
-                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
-                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again."
-            },
-            PAGINATION: {
-                SUMMARY: "{{start}} - {{end}} of {{total}}"
-            },
-            MODAL: {
-                CANCEL_BOOKING: {
-                    HEADER: "Cancel",
-                    QUESTION: "Are you sure you want to cancel this {{type}}?"
-                },
-                SCHEMA_FORM: {
-                    OK_BTN: "@:COMMON.BTN.OK",
-                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-                },
-                CANCEL_BLOCK: "Cancel Block",
-                SAVE_BLOCK: "Save Block",
-                EDIT_BLOCK: "Edit Block",
-                EDIT_BOOKING: "Edit Booking"
-            },
-            FILTERS: {
-                DISTANCE: {
-                    MILES: "miles",
-                    KILOMETRES: "km"
-                },
-                CURRENCY: {
-                    THOUSANDS_SEPARATOR: ",",
-                    DECIMAL_SEPARATOR: ".",
-                    CURRENCY_FORMAT: "%s%v"
-                },
-                PRETTY_PRICE: {
-                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-                },
-                TIME_PERIOD: {
-                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-                }
-            },
-            EVENT: {
-                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
-                JOIN_WAITLIST: "Join waitlist"
-            }
-        },
-        COMMON: {
-            TERMINOLOGY: {
-                CATEGORY: "Category",
-                DURATION: "Duration",
-                RESOURCE: "Resource",
-                PERSON: "Person",
-                SERVICE: "Service",
-                WALLET: "Wallet",
-                SESSION: "Session",
-                EVENT: "Event",
-                EVENTS: "Events",
-                COURSE: "Course",
-                COURSES: "Courses",
-                DATE: "Date",
-                TIME: "Time",
-                DATE_TIME: "Date/Time",
-                WHEN: "When",
-                GIFT_CERTIFICATE: "Gift Certificate",
-                GIFT_CERTIFICATES: "Gift Certificates",
-                ITEM: "Item",
-                FILTER: "Filter",
-                ANY: "Any",
-                RESET: "Reset",
-                TOTAL: "Total",
-                TOTAL_DUE_NOW: "Total Due Now",
-                BOOKING_FEE: "Booking Fee",
-                PRICE: "Price",
-                PRICE_FREE: "Free",
-                PRINT: "Print",
-                AND: "and",
-                APPOINTMENT: "Appointment",
-                TICKETS: "Tickets",
-                TYPE: "Type",
-                EXPORT: "Export",
-                RECIPIENT: "Recipient",
-                BOOKING_REF: "Booking Reference",
-                MORNING: "Morning",
-                AFTERNOON: "Afternoon",
-                EVENING: "Evening",
-                AVAILABLE: "Available",
-                UNAVAILABLE: "Unavailable",
-                CALENDAR: "Calendar",
-                QUESTIONS: "Questions",
-                BOOKING: "Booking",
-                ADMITTANCE: "Admittance",
-                EDIT: "Edit",
-                CONFIRMATION: "Confirmation",
-                NAME: "Name",
-                FIRST_NAME: "First Name",
-                LAST_NAME: "Last Name",
-                ADDRESS1: "Address",
-                ADDRESS3: "Town",
-                ADDRESS4: "County",
-                POSTCODE: "Postcode",
-                PHONE: "Phone",
-                MOBILE: "Mobile",
-                EMAIL: "Email",
-                SCHEDULE: "Schedule",
-                SEARCH: "Search",
-                STAFF: "Staff",
-                RESOURCES: "Resources"
-            },
-            FORM: {
-                FIRST_NAME_REQUIRED: "Please enter your first name",
-                LAST_NAME_REQUIRED: "Please enter your last name",
-                ADDRESS_REQUIRED: "Please enter your address",
-                POSTCODE_INVALID: "Please enter a valid postcode",
-                PHONE_INVALID: "Please enter a valid phone number",
-                MOBILE_INVALID: "Please enter a valid mobile number",
-                EMAIL_REQUIRED: "Please enter your email",
-                EMAIL_INVALID: "Please enter a valid email address",
-                FIELD_REQUIRED: "This field is required",
-                PASSWORD: "Password",
-                PASSWORD_REQUIRED: "Please enter your password",
-                CONFIRM_PASSWORD: "Confirm password",
-                PASSWORD_MISMATCH: "Please ensure your passwords match",
-                PASSWORD_LENGTH: "Password must be at least 7 characters",
-                REQUIRED: "*Required",
-                INVALID: "Invalid",
-                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
-                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
-            },
-            BTN: {
-                CANCEL: "Cancel",
-                CLOSE: "Close",
-                NO: "No",
-                OK: "Ok",
-                YES: "Yes",
-                BACK: "Back",
-                NEXT: "Continue",
-                LOGIN: "Login",
-                CONFIRM: "Confirm",
-                SAVE: "Save",
-                SELECT: "Select",
-                BOOK: "Book",
-                BOOK_EVENT: "Book Event",
-                CANCEL_BOOKING: "Cancel Booking",
-                MOVE_BOOKING: "Move Booking",
-                SAVE_BOOKING: "Save Booking",
-                EDIT_BOOKING: "Edit Booking",
-                DO_NOT_CANCEL_BOOKING: "Do not cancel",
-                APPLY: "Apply",
-                CLEAR: "Clear",
-                PAY: "Pay",
-                CHECKOUT: "Checkout",
-                TOP_UP: "Top Up",
-                ADD: "Add",
-                SUBMIT: "Submit",
-                DETAILS: "Details",
-                MORE: "More",
-                LESS: "Less",
-                DELETE: "Delete",
-                BUY: "Buy",
-                EDIT_CLIENT: "Edit Client"
-            },
-            LANGUAGE: {
-                EN: "English",
-                DE: "Deutsch",
-                ES: "Español",
-                FR: "Français"
-            }
-        }
-    };
-
-    $translateProvider.translations('en', translations);
 });
 'use strict';
 
@@ -20554,7 +20571,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         function BBWidgetService($q, BBModel, $urlMatcherFactory, $location, BreadcrumbService, PathHelper, GeneralOptions, $translate, moment) {
             _classCallCheck(this, BBWidgetService);
 
-            Object.assign(this, {
+            this.injections = {
                 moment: moment,
                 $q: $q,
                 BBModel: BBModel,
@@ -20564,18 +20581,52 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 PathHelper: PathHelper,
                 GeneralOptions: GeneralOptions,
                 $translate: $translate
-            });
+            };
 
-            this.uid = _.uniqueId('bbwidget_');
-            this.page_suffix = "";
-            this.steps = [];
-            this.allSteps = [];
-            this.item_defaults = {};
-            this.usingBasket = false;
-            this.confirmCheckout = false;
-            this.isAdmin = false;
-            this.payment_status = null;
+            Object.assign(this, this.injections, BBWidgetService.initValues());
         }
+
+        /*
+          Class function for the instance initial values
+         */
+
+
+        BBWidgetService.initValues = function initValues() {
+            return {
+                uid: _.uniqueId('bbwidget_'),
+                page_suffix: "",
+                steps: [],
+                allSteps: [],
+                item_defaults: {},
+                usingBasket: false,
+                confirmCheckout: false,
+                isAdmin: false,
+                payment_status: null
+            };
+        };
+
+        /*
+          Reconstruct the object
+         */
+
+
+        BBWidgetService.prototype.getNewInstance = function getNewInstance() {
+            var initValues = BBWidgetService.initValues();
+
+            initValues.injections = this.injections;
+
+            for (var key in this) {
+                if (angular.isUndefined(initValues[key])) {
+                    delete this[key];
+                } else {
+                    this[key] = initValues[key];
+                }
+            }
+
+            Object.assign(this, this.injections);
+
+            return this;
+        };
 
         /**
          * @ngdoc method
@@ -21257,7 +21308,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             $scope.bb.basket = basket;
             $scope.basket = basket;
             $scope.bb.basket.company_id = $scope.bb.company_id;
-            if ($scope.bb.stacked_items) {
+            if (Array.isArray($scope.bb.stacked_items) && $scope.bb.stacked_items.length > 0) {
                 return $scope.bb.setStackedItems(basket.timeItems());
             }
         };
@@ -21553,6 +21604,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         var setScope = function setScope($s) {
             $scope = $s;
             reinitialise();
+        };
+        var getScope = function getScope() {
+            return $scope;
         };
         var reinitialise = function reinitialise() {
             isFirstCall = true;
@@ -22169,7 +22223,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         };
         var initializeBBWidget = function initializeBBWidget() {
             guardScope();
-            $scope.bb = BBWidget;
+
+            /*
+              Create a new instance of BBWidget, which should be done for each new journey
+             */
+            $scope.bb = BBWidget.getNewInstance();
+
             AppConfig.uid = $scope.bb.uid;
             $scope.bb.stacked_items = [];
             $scope.bb.company_set = $scope.bb.company_id != null;
@@ -22199,6 +22258,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         };
 
         return {
+            getScope: getScope,
             clearClient: clearClient,
             initWidget: initWidget,
             setAffiliate: setAffiliate,
@@ -39194,7 +39254,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 (function () {
     angular.module('BB.Controllers').controller('TimeRangeList', TimeRangeListController);
 
-    function TimeRangeListController($scope, $element, $attrs, $rootScope, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService, bbAnalyticsPiwik, GeneralOptions) {
+    function TimeRangeListController($scope, $element, $attrs, $rootScope, AlertService, LoadingService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, viewportSize, ErrorService, bbAnalyticsPiwik, GeneralOptions, $translate) {
         'ngInject';
 
         // store the form data for the following scope properties
@@ -39738,14 +39798,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 });
 
                 promise.then(function (datetime_arr) {
-
                     var time_slots = void 0;
                     $scope.days = [];
 
                     if (_.every(_.values(datetime_arr), _.isEmpty)) {
                         $scope.no_slots_in_week = true;
+                        AlertService.danger(ErrorService.getError('SERVICE_HAS_NO_AVAILABILITY'));
                     } else {
                         $scope.no_slots_in_week = false;
+                        AlertService.clear();
                     }
 
                     var utc = moment().utc();
@@ -39831,13 +39892,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                                 }
                             }
 
-                            var requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, $scope.bb.current_item, $scope.bb.item_defaults);
+                            if ($scope.options.checkDefaultTime) {
 
-                            if (requested_slot.slot && requested_slot.match === "full") {
-                                $scope.skipThisStep();
-                                $scope.selectSlot(requested_slot.slot, day);
-                            } else if (requested_slot.slot) {
-                                $scope.highlightSlot(requested_slot.slot, day);
+                                var requested_slot = DateTimeUtilitiesService.checkDefaultTime(day.date, day.slots, $scope.bb.current_item, $scope.bb.item_defaults);
+
+                                if (requested_slot.slot && requested_slot.match === "full") {
+                                    $scope.skipThisStep();
+                                    $scope.selectSlot(requested_slot.slot, day);
+                                } else if (requested_slot.slot) {
+                                    $scope.highlightSlot(requested_slot.slot, day);
+                                }
                             }
                         }
                     } catch (err) {
@@ -39856,9 +39920,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                     }
 
                     loader.setLoaded();
-
                     $scope.$broadcast("time_slots:loaded", time_slots);
                 }, function (err) {
+
                     if (err.status === 404 && err.data && err.data.error && err.data.error === "No bookable events found") {
                         if ($scope.data_source && $scope.data_source.person) {
                             AlertService.warning(ErrorService.getError('NOT_BOOKABLE_PERSON'));
@@ -39882,7 +39946,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 setTimeRange(day);
                 return $scope.loadData();
             }, function (err) {
-                return loader.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
+                AlertService.danger(ErrorService.getError('SERVICE_HAS_NO_AVAILABILITY'));
+                loader.setLoaded();
             });
         };
         /***
@@ -40014,6 +40079,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             transclude: true,
             controller: 'TimeRangeList',
             link: function link(scope, element, attrs, controller, transclude) {
+
                 // focus on continue button after slot selected - for screen readers
                 scope.$on('time:selected', function () {
                     var btn = angular.element('#btn-continue');
@@ -40033,6 +40099,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 scope.tomorrow = moment().add(1, 'days').toDate();
 
                 scope.options = scope.$eval(attrs.bbTimeRanges) || {};
+                scope.options.checkDefaultTime = scope.options.checkDefaultTime !== undefined ? scope.options.checkDefaultTime : true;
 
                 return transclude(scope, function (clone) {
 
