@@ -1374,6 +1374,36 @@ String.prototype.parameterise = function (seperator) {
 })();
 'use strict';
 
+/***
+ * @ngdoc directive
+ * @name BB.Directives:bbWalletRemainder
+ * @restrict A
+ * @scope
+ *   basketTotal: '='
+ *   walletAmount: '='
+ * @description
+ *
+ * Calculates wallet remainder
+ *
+ */
+
+angular.module('BB.Directives').directive('bbWalletRemainder', function () {
+    return {
+        restrict: 'A',
+        scope: {
+            totalPrice: '=',
+            walletAmount: '='
+        },
+        controllerAs: 'vm',
+        bindToController: true,
+        template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
+        controller: function controller() {
+            return this.amountRemaining = this.walletAmount - this.totalPrice;
+        }
+    };
+});
+'use strict';
+
 // strips the postcode from the end of the address. i.e.
 // '15 some address, somwhere, SS1 4RP' becomes '15 some address, somwhere'
 angular.module('BB.Filters').filter('stripPostcode', function () {
@@ -2087,36 +2117,6 @@ angular.module('BB.Filters').filter('props', function ($translate) {
         }
 
         return out;
-    };
-});
-'use strict';
-
-/***
- * @ngdoc directive
- * @name BB.Directives:bbWalletRemainder
- * @restrict A
- * @scope
- *   basketTotal: '='
- *   walletAmount: '='
- * @description
- *
- * Calculates wallet remainder
- *
- */
-
-angular.module('BB.Directives').directive('bbWalletRemainder', function () {
-    return {
-        restrict: 'A',
-        scope: {
-            totalPrice: '=',
-            walletAmount: '='
-        },
-        controllerAs: 'vm',
-        bindToController: true,
-        template: '<span translate="PUBLIC_BOOKING.BASKET.WALLET.REMAINDER" translate-values="{remainder: vm.amountRemaining}"></span>',
-        controller: function controller() {
-            return this.amountRemaining = this.walletAmount - this.totalPrice;
-        }
     };
 });
 'use strict';
@@ -10245,7 +10245,7 @@ angular.module('BB.Models').factory("QuestionModel", function ($q, $filter, BBMo
         return Question;
     }(BaseModel);
 });
-"use strict";
+'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10253,18 +10253,26 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-angular.module('BB.Models').factory("ReasonModel", function ($q, BBModel, BaseModel) {
-  return function (_BaseModel) {
-    _inherits(Reason, _BaseModel);
+/**
+ * @ngdoc service
+ * @name BB.Models:Reason
+ *
+ * @description
+ * Representation of an Reason Object
+ *
+ */
+angular.module('BB.Models').factory('ReasonModel', function (BaseModel, BBModel) {
+    return function (_BaseModel) {
+        _inherits(Reason, _BaseModel);
 
-    function Reason() {
-      _classCallCheck(this, Reason);
+        function Reason(data) {
+            _classCallCheck(this, Reason);
 
-      return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
-    }
+            return _possibleConstructorReturn(this, _BaseModel.apply(this, arguments));
+        }
 
-    return Reason;
-  }(BaseModel);
+        return Reason;
+    }(BaseModel);
 });
 "use strict";
 
@@ -10733,226 +10741,6 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
 
         return TimeSlot;
     }(BaseModel);
-});
-'use strict';
-
-angular.module('BB.Services').config(function ($translateProvider) {
-    'ngInject';
-
-    var translations = {
-        CORE: {
-            ALERTS: {
-                ERROR_HEADING: "Error",
-                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
-                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
-                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
-                ATTENDEES_CHANGED: "Your booking has been successfully updated",
-                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
-                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
-                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
-                FORM_INVALID: "Please complete all required fields",
-                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
-                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
-                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
-                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
-                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
-                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
-                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
-                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
-                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
-                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
-                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
-                MISSING_LOCATION: "Please enter your location",
-                MISSING_POSTCODE: "Please enter a postcode",
-                PASSWORD_INVALID: "Sorry, your password is invalid",
-                PASSWORD_MISMATCH: "Your passwords don't match",
-                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
-                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
-                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
-                PASSWORD_RESET_SUCESS: "Your password has been updated.",
-                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
-                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
-                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
-                STORE_NOT_SELECTED: "You need to select a store",
-                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
-                TOPUP_SUCCESS: "Your wallet has been topped up",
-                UPDATE_FAILED: "Update failed. Please try again",
-                UPDATE_SUCCESS: "Updated",
-                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
-                BOOKING_CANCELLED: "Your booking has been cancelled.",
-                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
-                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
-                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
-                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
-                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
-                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again.",
-                SERVICE_HAS_NO_AVAILABILITY: "This service has no availability"
-            },
-            PAGINATION: {
-                SUMMARY: "{{start}} - {{end}} of {{total}}"
-            },
-            MODAL: {
-                CANCEL_BOOKING: {
-                    HEADER: "Cancel",
-                    QUESTION: "Are you sure you want to cancel this {{type}}?"
-                },
-                SCHEMA_FORM: {
-                    OK_BTN: "@:COMMON.BTN.OK",
-                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-                },
-                CANCEL_BLOCK: "Cancel Block",
-                SAVE_BLOCK: "Save Block",
-                EDIT_BLOCK: "Edit Block",
-                EDIT_BOOKING: "Edit Booking"
-            },
-            FILTERS: {
-                DISTANCE: {
-                    MILES: "miles",
-                    KILOMETRES: "km"
-                },
-                CURRENCY: {
-                    THOUSANDS_SEPARATOR: ",",
-                    DECIMAL_SEPARATOR: ".",
-                    CURRENCY_FORMAT: "%s%v"
-                },
-                PRETTY_PRICE: {
-                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-                },
-                TIME_PERIOD: {
-                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-                }
-            },
-            EVENT: {
-                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
-                JOIN_WAITLIST: "Join waitlist"
-            }
-        },
-        COMMON: {
-            TERMINOLOGY: {
-                CATEGORY: "Category",
-                DURATION: "Duration",
-                RESOURCE: "Resource",
-                PERSON: "Person",
-                SERVICE: "Service",
-                WALLET: "Wallet",
-                SESSION: "Session",
-                EVENT: "Event",
-                EVENTS: "Events",
-                COURSE: "Course",
-                COURSES: "Courses",
-                DATE: "Date",
-                TIME: "Time",
-                DATE_TIME: "Date/Time",
-                WHEN: "When",
-                GIFT_CERTIFICATE: "Gift Certificate",
-                GIFT_CERTIFICATES: "Gift Certificates",
-                ITEM: "Item",
-                FILTER: "Filter",
-                ANY: "Any",
-                RESET: "Reset",
-                TOTAL: "Total",
-                TOTAL_DUE_NOW: "Total Due Now",
-                BOOKING_FEE: "Booking Fee",
-                PRICE: "Price",
-                PRICE_FREE: "Free",
-                PRINT: "Print",
-                AND: "and",
-                APPOINTMENT: "Appointment",
-                TICKETS: "Tickets",
-                TYPE: "Type",
-                EXPORT: "Export",
-                RECIPIENT: "Recipient",
-                BOOKING_REF: "Booking Reference",
-                MORNING: "Morning",
-                AFTERNOON: "Afternoon",
-                EVENING: "Evening",
-                AVAILABLE: "Available",
-                UNAVAILABLE: "Unavailable",
-                CALENDAR: "Calendar",
-                QUESTIONS: "Questions",
-                BOOKING: "Booking",
-                ADMITTANCE: "Admittance",
-                EDIT: "Edit",
-                CONFIRMATION: "Confirmation",
-                NAME: "Name",
-                FIRST_NAME: "First Name",
-                LAST_NAME: "Last Name",
-                ADDRESS1: "Address",
-                ADDRESS3: "Town",
-                ADDRESS4: "County",
-                POSTCODE: "Postcode",
-                PHONE: "Phone",
-                MOBILE: "Mobile",
-                EMAIL: "Email",
-                SCHEDULE: "Schedule",
-                SEARCH: "Search",
-                STAFF: "Staff",
-                RESOURCES: "Resources"
-            },
-            FORM: {
-                FIRST_NAME_REQUIRED: "Please enter your first name",
-                LAST_NAME_REQUIRED: "Please enter your last name",
-                ADDRESS_REQUIRED: "Please enter your address",
-                POSTCODE_INVALID: "Please enter a valid postcode",
-                PHONE_INVALID: "Please enter a valid phone number",
-                MOBILE_INVALID: "Please enter a valid mobile number",
-                EMAIL_REQUIRED: "Please enter your email",
-                EMAIL_INVALID: "Please enter a valid email address",
-                FIELD_REQUIRED: "This field is required",
-                PASSWORD: "Password",
-                PASSWORD_REQUIRED: "Please enter your password",
-                CONFIRM_PASSWORD: "Confirm password",
-                PASSWORD_MISMATCH: "Please ensure your passwords match",
-                PASSWORD_LENGTH: "Password must be at least 7 characters",
-                REQUIRED: "*Required",
-                INVALID: "Invalid",
-                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
-                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
-            },
-            BTN: {
-                CANCEL: "Cancel",
-                CLOSE: "Close",
-                NO: "No",
-                OK: "Ok",
-                YES: "Yes",
-                BACK: "Back",
-                NEXT: "Continue",
-                LOGIN: "Login",
-                CONFIRM: "Confirm",
-                SAVE: "Save",
-                SELECT: "Select",
-                BOOK: "Book",
-                BOOK_EVENT: "Book Event",
-                CANCEL_BOOKING: "Cancel Booking",
-                MOVE_BOOKING: "Move Booking",
-                SAVE_BOOKING: "Save Booking",
-                EDIT_BOOKING: "Edit Booking",
-                DO_NOT_CANCEL_BOOKING: "Do not cancel",
-                APPLY: "Apply",
-                CLEAR: "Clear",
-                PAY: "Pay",
-                CHECKOUT: "Checkout",
-                TOP_UP: "Top Up",
-                ADD: "Add",
-                SUBMIT: "Submit",
-                DETAILS: "Details",
-                MORE: "More",
-                LESS: "Less",
-                DELETE: "Delete",
-                BUY: "Buy",
-                EDIT_CLIENT: "Edit Client"
-            },
-            LANGUAGE: {
-                EN: "English",
-                DE: "Deutsch",
-                ES: "Español",
-                FR: "Français"
-            }
-        }
-    };
-
-    $translateProvider.translations('en', translations);
 });
 "use strict";
 
@@ -11767,6 +11555,66 @@ angular.module('BB.Services').factory("BasketService", function ($q, $rootScope,
         }
     };
 });
+'use strict';
+
+(function (angular) {
+
+    /**
+     * @ngdoc service
+     * @module BB.Services
+     * @name BlockTimeOptions
+     *
+     * @description
+     * Returns a set of Date/Time configuration options
+     */
+
+    angular.module('BB.Services').provider('BlockTimeOptions', BlockTimeOptions);
+
+    function BlockTimeOptions() {
+
+        var options = {
+            showReasons: true,
+            blockTimeDurations: [{
+                label: '15 Minutes',
+                value: 15
+            }, {
+                label: '30 Minutes',
+                value: 30
+            }, {
+                label: '45 Minutes',
+                value: 45
+            }, {
+                label: '1 hour',
+                value: 60
+            }, {
+                label: '2 hours',
+                value: 120
+            }, {
+                label: '6 hours',
+                value: 360
+            }, {
+                label: '12 hours',
+                value: 720
+            }]
+        };
+
+        this.setOption = function (option, value) {
+            if (options.hasOwnProperty(option)) {
+                options[option] = value;
+            }
+        };
+
+        this.getOption = function (option) {
+            if (options.hasOwnProperty(option)) {
+                return options[option];
+            }
+        };
+
+        this.$get = function () {
+            return options;
+        };
+    }
+})(angular);
 "use strict";
 
 angular.module('BB.Services').factory("BreadcrumbService", function () {
@@ -12098,50 +11946,78 @@ angular.module('BB.Services').factory("CustomTextService", function ($q, BBModel
         }
     };
 });
-"use strict";
+'use strict';
 
-/***
- * @ngdoc service
- * @name BB.Services:DateTimeUtilities
- *
- * @description
- * Service for manipulating datetime objects
- *
- */ //
-
-angular.module('BB.Services').factory("DateTimeUtilitiesService", function (GeneralOptions, CompanyStoreService, bbTimeZone) {
+(function (angular) {
 
     /***
-     * @ngdoc method
-     * @name checkPerson
-     * @methodOf BB.Services:DateTimeUtilities
-     * @description
-     * Checks if basket_item has default person
-     * @param {Object} basket_item The basket item object
-     * @param {Object} item_defaults The item defaults object
+     * @ngdoc service
+     * @name BB.Services:DateTimeUtilities
      *
-     * @returns {boolean} Whether the basket item has a default person.
-     */
-    var checkPerson = function checkPerson(basket_item, item_defaults) {
-        return basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self || _.isBoolean(basket_item.person) || item_defaults.merge_people;
-    };
-
-    /***
-     * @ngdoc method
-     * @name checkResource
-     * @methodOf BB.Services:DateTimeUtilities
      * @description
-     * Checks if basket_item has default resource
-     * @param {Object} basket_item The basket item object
-     * @param {Object} item_defaults The item defaults object
+     * Service for manipulating datetime objects
      *
-     * @returns {boolean} Whether the basket item has a default resource.
      */
-    var checkResource = function checkResource(basket_item, item_defaults) {
-        return basket_item.defaults.resource && basket_item.defaults.resource.self === basket_item.resource.self || _.isBoolean(basket_item.resource) || item_defaults.merge_resources;
-    };
 
-    return {
+    angular.module('BB.Services').factory('DateTimeUtilitiesService', DateTimeUtilitiesService);
+
+    function DateTimeUtilitiesService(GeneralOptions, bbTimeZone) {
+
+        /***
+         * @ngdoc method
+         * @name checkPerson
+         * @methodOf BB.Services:DateTimeUtilities
+         * @description
+         * Checks if basket_item has default person
+         * @param {Object} basket_item The basket item object
+         * @param {Object} item_defaults The item defaults object
+         *
+         * @returns {boolean} Whether the basket item has a default person.
+         */
+        var checkPerson = function checkPerson(basket_item, item_defaults) {
+            return basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self || _.isBoolean(basket_item.person) || item_defaults.merge_people;
+        };
+
+        /***
+         * @ngdoc method
+         * @name checkResource
+         * @methodOf BB.Services:DateTimeUtilities
+         * @description
+         * Checks if basket_item has default resource
+         * @param {Object} basket_item The basket item object
+         * @param {Object} item_defaults The item defaults object
+         *
+         * @returns {boolean} Whether the basket item has a default resource.
+         */
+        var checkResource = function checkResource(basket_item, item_defaults) {
+            return basket_item.defaults.resource && basket_item.defaults.resource.self === basket_item.resource.self || _.isBoolean(basket_item.resource) || item_defaults.merge_resources;
+        };
+
+        return {
+            setTimeToMoment: setTimeToMoment,
+            convertTimeToMoment: convertTimeToMoment,
+            convertMomentToTime: convertMomentToTime,
+            checkDefaultTime: checkDefaultTime
+        };
+
+        function setTimeToMoment(date, time) {
+
+            // If time is 24:00, add 1 day to date
+            var _date = angular.copy(date);
+            if (time === '24:00') {
+                _date = _date.add(1, 'days');
+            }
+
+            var newDate = moment(time, 'HH:mm');
+            newDate.set({
+                'year': parseInt(_date.get('year')),
+                'month': parseInt(_date.get('month')),
+                'date': parseInt(_date.get('date')),
+                'second': 0
+            });
+            return newDate;
+        }
+
         /***
          * @ngdoc method
          * @name convertTimeToMoment
@@ -12153,16 +12029,12 @@ angular.module('BB.Services').factory("DateTimeUtilitiesService", function (Gene
          *
          * @returns {object} Moment object converted from date/time
          */
-        convertTimeToMoment: function convertTimeToMoment(date, time) {
+        function convertTimeToMoment(date, time) {
             if (!date || !moment.isMoment(date) || !angular.isNumber(time)) {
                 return;
             }
-            var datetime = moment();
-            // if user timezone different than company timezone
-            /*if (bbTimeZone.isCustomTimeZone()) {
-                datetime = datetime.tz(CompanyStoreService.time_zone);
-            }*/ ///TODO double check
 
+            var datetime = moment();
             datetime = bbTimeZone.convertToCompany(datetime);
 
             var val = parseInt(time);
@@ -12176,8 +12048,7 @@ angular.module('BB.Services').factory("DateTimeUtilitiesService", function (Gene
             datetime.year(date.year());
 
             return datetime;
-        },
-
+        }
 
         /***
          * @ngdoc method
@@ -12189,10 +12060,9 @@ angular.module('BB.Services').factory("DateTimeUtilitiesService", function (Gene
          *
          * @returns {integer} Datetime integer converted from moment object
          */
-        convertMomentToTime: function convertMomentToTime(datetime) {
+        function convertMomentToTime(datetime) {
             return datetime.minutes() + datetime.hours() * 60;
-        },
-
+        }
 
         /***
          * @ngdoc method
@@ -12206,7 +12076,7 @@ angular.module('BB.Services').factory("DateTimeUtilitiesService", function (Gene
          * @param {Object} item_defaults The item defaults object
          * @returns {Object} object describing matching slot
          */
-        checkDefaultTime: function checkDefaultTime(date, time_slots, basket_item, item_defaults) {
+        function checkDefaultTime(date, time_slots, basket_item, item_defaults) {
             var match = void 0,
                 slot = void 0;
             if (!basket_item.defaults.time) {
@@ -12257,8 +12127,8 @@ angular.module('BB.Services').factory("DateTimeUtilitiesService", function (Gene
                 slot: found_time_slot
             };
         }
-    };
-});
+    }
+})(angular);
 'use strict';
 
 angular.module('BB.Services').factory("DayService", function ($q, BBModel) {
@@ -13848,15 +13718,16 @@ angular.module('BB.Services').factory("MembershipLevelsService", function ($q, B
             }
         };
 
-        $scope.submit = function (form) {
+        $scope.submit = function (form, updateDatetime) {
             $scope.$broadcast('schemaFormValidate');
             $scope.loading = true;
 
             if ($scope.model.$update) {
 
-                /*if(bbTimeZone.isCustomTimeZone()){
-                    $scope.form_model.datetime = moment($scope.form_model.datetime).tz(CompanyStoreService.time_zone);
-                }*/ //TODO double check
+                // Ensure from_datetime is saved when editing a block time
+                if (updateDatetime) {
+                    $scope.form_model.datetime = $scope.form_model.from_datetime;
+                }
 
                 $scope.form_model.datetime = bbTimeZone.convertToCompany($scope.form_model.datetime);
 
@@ -13908,7 +13779,7 @@ angular.module('BB.Services').factory("MembershipLevelsService", function ($q, B
             }
         };
 
-        return $scope.cancelEvent = function (event, type) {
+        $scope.cancelEvent = function (event, type) {
             if (type == null) {
                 type = 'booking';
             }
@@ -14893,53 +14764,69 @@ angular.module('BB.Services').factory('QuestionService', function ($window, Quer
 });
 'use strict';
 
-angular.module('BB.Services').factory("ReasonService", function ($q, BBModel) {
-    return {
-        query: function query(company) {
-            var deferred = $q.defer();
-            if (!company.$has('reasons')) {
-                deferred.reject("Reasons not turned on for this Company.");
-            } else {
-                company.$get('reasons').then(function (resource) {
-                    return resource.$get('reasons').then(function (items) {
-                        var reasons = [];
-                        var _iteratorNormalCompletion = true;
-                        var _didIteratorError = false;
-                        var _iteratorError = undefined;
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-                        try {
-                            for (var _iterator = Array.from(items)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                var i = _step.value;
+var ReasonService = function () {
+    function ReasonService($q, BBModel) {
+        _classCallCheck(this, ReasonService);
 
-                                var reason = new BBModel.Reason(i);
-                                reasons.push(reason);
-                            }
-                        } catch (err) {
-                            _didIteratorError = true;
-                            _iteratorError = err;
-                        } finally {
-                            try {
-                                if (!_iteratorNormalCompletion && _iterator.return) {
-                                    _iterator.return();
-                                }
-                            } finally {
-                                if (_didIteratorError) {
-                                    throw _iteratorError;
-                                }
-                            }
-                        }
+        this.$q = $q;
+        this.BBModel = BBModel;
+    }
 
-                        return deferred.resolve(reasons);
-                    });
-                }, function (err) {
-                    return deferred.reject(err);
-                });
-            }
+    // static REJECT_REASON_MSG = 'Reasons are not enabled for this company.';
 
-            return deferred.promise;
-        }
+    ReasonService.prototype.mapReasons = function mapReasons(reasonItems) {
+        var _this = this;
+
+        var reasons = reasonItems.map(function (reason) {
+            return new _this.BBModel.Reason(reason);
+        });
+        return reasons;
     };
-});
+
+    ReasonService.prototype.getReasonsPromise = function getReasonsPromise(company, promise) {
+        var _this2 = this;
+
+        company.$getReasons().then(function (reasons) {
+            return promise.resolve(_this2.mapReasons(reasons));
+        }, function (err) {
+            return promise.reject(err);
+        });
+    };
+
+    ReasonService.prototype.query = function query(company) {
+        var _this3 = this;
+
+        var defer = this.$q.defer();
+
+        if (company.$has('reasons')) {
+            this.getReasonsPromise(company, defer);
+            return defer.promise;
+        }
+
+        if (!company.$has('reasons') && company.$has('parent')) {
+            company.$getParent().then(function (parentCompany) {
+                if (parentCompany.$has('reasons')) {
+                    _this3.getReasonsPromise(parentCompany, defer);
+                } else {
+                    defer.reject('Reasons are not enabled for this company.');
+                }
+            }), function (err) {
+                return reject(err);
+            };
+
+            return defer.promise;
+        }
+
+        defer.reject('Reasons are not enabled for this company.');
+        return defer.promise;
+    };
+
+    return ReasonService;
+}();
+
+angular.module('BB.Services').service('ReasonService', ReasonService);
 "use strict";
 
 angular.module("BB.Services").factory("RecaptchaService", function ($q, halClient, UriTemplate) {
@@ -15758,7 +15645,7 @@ angular.module('BB.Services').factory('TimeSlotService', function ($q, BBModel) 
 });
 'use strict';
 
-angular.module('BB.Services').factory("UnwrapService", function ($q, BBModel) {
+angular.module('BB.Services').factory('UnwrapService', function ($q, BBModel) {
     return {
         unwrapCollection: function unwrapCollection(model, key, resource) {
             var models = void 0;
@@ -15815,7 +15702,7 @@ angular.module('BB.Services').factory("UnwrapService", function ($q, BBModel) {
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.address", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.address', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Address, resource);
@@ -15823,7 +15710,7 @@ angular.module('BB.Services').factory("BB.Service.address", function ($q, BBMode
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.addresses", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.addresses', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15832,7 +15719,16 @@ angular.module('BB.Services').factory("BB.Service.addresses", function ($q, BBMo
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.person", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.reasons', function ($q, BBModel, UnwrapService) {
+    return {
+        promise: true,
+        unwrap: function unwrap(resource) {
+            return UnwrapService.unwrapCollection(BBModel.Reason, 'reasons', resource);
+        }
+    };
+});
+
+angular.module('BB.Services').factory('BB.Service.person', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Person, resource);
@@ -15840,7 +15736,7 @@ angular.module('BB.Services').factory("BB.Service.person", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.people", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.people', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15849,7 +15745,7 @@ angular.module('BB.Services').factory("BB.Service.people", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.resource", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.resource', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Resource, resource);
@@ -15857,7 +15753,7 @@ angular.module('BB.Services').factory("BB.Service.resource", function ($q, BBMod
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.resources", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.resources', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15866,7 +15762,7 @@ angular.module('BB.Services').factory("BB.Service.resources", function ($q, BBMo
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.service", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.service', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Service, resource);
@@ -15874,7 +15770,7 @@ angular.module('BB.Services').factory("BB.Service.service", function ($q, BBMode
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.services", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.services', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15883,7 +15779,7 @@ angular.module('BB.Services').factory("BB.Service.services", function ($q, BBMod
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.package_item", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.package_item', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.PackageItem, resource);
@@ -15891,7 +15787,7 @@ angular.module('BB.Services').factory("BB.Service.package_item", function ($q, B
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.package_items", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.package_items', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15900,7 +15796,7 @@ angular.module('BB.Services').factory("BB.Service.package_items", function ($q, 
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.bulk_purchase", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.bulk_purchase', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.BulkPurchase, resource);
@@ -15908,7 +15804,7 @@ angular.module('BB.Services').factory("BB.Service.bulk_purchase", function ($q, 
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.bulk_purchases", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.bulk_purchases', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15917,7 +15813,7 @@ angular.module('BB.Services').factory("BB.Service.bulk_purchases", function ($q,
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.event_group", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.event_group', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.EventGroup, resource);
@@ -15925,7 +15821,7 @@ angular.module('BB.Services').factory("BB.Service.event_group", function ($q, BB
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.event_groups", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.event_groups', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15934,7 +15830,7 @@ angular.module('BB.Services').factory("BB.Service.event_groups", function ($q, B
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.event_chain", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.event_chain', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.EventChain, resource);
@@ -15942,7 +15838,7 @@ angular.module('BB.Services').factory("BB.Service.event_chain", function ($q, BB
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.event_chains", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.event_chains', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.EventChain, resource);
@@ -15950,7 +15846,7 @@ angular.module('BB.Services').factory("BB.Service.event_chains", function ($q, B
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.category", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.category', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Category, resource);
@@ -15958,7 +15854,7 @@ angular.module('BB.Services').factory("BB.Service.category", function ($q, BBMod
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.categories", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.categories', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15967,7 +15863,7 @@ angular.module('BB.Services').factory("BB.Service.categories", function ($q, BBM
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.client", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.client', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Client, resource);
@@ -15975,7 +15871,7 @@ angular.module('BB.Services').factory("BB.Service.client", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.child_clients", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.child_clients', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15984,7 +15880,7 @@ angular.module('BB.Services').factory("BB.Service.child_clients", function ($q, 
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.clients", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.clients', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -15993,7 +15889,7 @@ angular.module('BB.Services').factory("BB.Service.clients", function ($q, BBMode
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.questions", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.questions', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapCollection(BBModel.Question, 'questions', resource);
@@ -16001,7 +15897,7 @@ angular.module('BB.Services').factory("BB.Service.questions", function ($q, BBMo
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.question", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.question', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Question, resource);
@@ -16009,7 +15905,7 @@ angular.module('BB.Services').factory("BB.Service.question", function ($q, BBMod
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.answers", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.answers', function ($q, BBModel, UnwrapService) {
     return {
         promise: false,
         unwrap: function unwrap(items) {
@@ -16077,7 +15973,7 @@ angular.module('BB.Services').factory("BB.Service.answers", function ($q, BBMode
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.administrators", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.administrators', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(items) {
             return Array.from(items).map(function (i) {
@@ -16087,7 +15983,7 @@ angular.module('BB.Services').factory("BB.Service.administrators", function ($q,
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.company", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.company', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Company, resource);
@@ -16105,7 +16001,7 @@ angular.module('BB.Services').factory("BB.Service.companies", function ($q, BBMo
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.parent", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.parent', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Company, resource);
@@ -16113,7 +16009,7 @@ angular.module('BB.Services').factory("BB.Service.parent", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.company_questions", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.company_questions', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16122,7 +16018,7 @@ angular.module('BB.Services').factory("BB.Service.company_questions", function (
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.company_question", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.company_question', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.BusinessQuestion, resource);
@@ -16130,7 +16026,7 @@ angular.module('BB.Services').factory("BB.Service.company_question", function ($
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.images", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.images', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16139,7 +16035,7 @@ angular.module('BB.Services').factory("BB.Service.images", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.bookings", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.bookings', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16148,7 +16044,7 @@ angular.module('BB.Services').factory("BB.Service.bookings", function ($q, BBMod
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.wallet", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.wallet', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Member.Wallet, resource);
@@ -16156,7 +16052,7 @@ angular.module('BB.Services').factory("BB.Service.wallet", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.product", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.product', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Product, resource);
@@ -16164,7 +16060,7 @@ angular.module('BB.Services').factory("BB.Service.product", function ($q, BBMode
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.products", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.products', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16189,7 +16085,7 @@ angular.module('BB.Services').factory("BB.Service.products", function ($q, BBMod
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.pre_paid_booking', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.PrePaidBooking, resource);
@@ -16197,7 +16093,7 @@ angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function ($
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.pre_paid_bookings', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16206,7 +16102,7 @@ angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function (
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.external_purchase", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.external_purchase', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.ExternalPurchase, resource);
@@ -16214,7 +16110,7 @@ angular.module('BB.Services').factory("BB.Service.external_purchase", function (
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.external_purchases", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.external_purchases', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16223,7 +16119,7 @@ angular.module('BB.Services').factory("BB.Service.external_purchases", function 
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.purchase_item", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.purchase_item', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.PurchaseItem, resource);
@@ -16231,7 +16127,7 @@ angular.module('BB.Services').factory("BB.Service.purchase_item", function ($q, 
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.purchase_items", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.purchase_items', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16240,7 +16136,7 @@ angular.module('BB.Services').factory("BB.Service.purchase_items", function ($q,
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.payment_callbacks", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.payment_callbacks', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16249,7 +16145,7 @@ angular.module('BB.Services').factory("BB.Service.payment_callbacks", function (
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.events", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.events', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16258,7 +16154,7 @@ angular.module('BB.Services').factory("BB.Service.events", function ($q, BBModel
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.all_children", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.all_children', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16267,7 +16163,7 @@ angular.module('BB.Services').factory("BB.Service.all_children", function ($q, B
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.child_services", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.child_services', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16276,7 +16172,7 @@ angular.module('BB.Services').factory("BB.Service.child_services", function ($q,
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.items", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.items', function ($q, BBModel, UnwrapService) {
     return {
         promise: true,
         unwrap: function unwrap(resource) {
@@ -16285,7 +16181,7 @@ angular.module('BB.Services').factory("BB.Service.items", function ($q, BBModel,
     };
 });
 
-angular.module('BB.Services').factory("BB.Service.item", function ($q, BBModel, UnwrapService) {
+angular.module('BB.Services').factory('BB.Service.item', function ($q, BBModel, UnwrapService) {
     return {
         unwrap: function unwrap(resource) {
             return UnwrapService.unwrapResource(BBModel.Item, resource);
@@ -16937,6 +16833,226 @@ angular.module('BB.Services').service('viewportSize', function ($window, $docume
     isMD: isMD,
     isLG: isLG
   };
+});
+'use strict';
+
+angular.module('BB.Services').config(function ($translateProvider) {
+    'ngInject';
+
+    var translations = {
+        CORE: {
+            ALERTS: {
+                ERROR_HEADING: "Error",
+                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+                ATTENDEES_CHANGED: "Your booking has been successfully updated",
+                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
+                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
+                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+                FORM_INVALID: "Please complete all required fields",
+                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
+                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
+                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
+                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
+                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
+                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+                MISSING_LOCATION: "Please enter your location",
+                MISSING_POSTCODE: "Please enter a postcode",
+                PASSWORD_INVALID: "Sorry, your password is invalid",
+                PASSWORD_MISMATCH: "Your passwords don't match",
+                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+                PASSWORD_RESET_SUCESS: "Your password has been updated.",
+                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
+                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+                STORE_NOT_SELECTED: "You need to select a store",
+                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+                TOPUP_SUCCESS: "Your wallet has been topped up",
+                UPDATE_FAILED: "Update failed. Please try again",
+                UPDATE_SUCCESS: "Updated",
+                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+                BOOKING_CANCELLED: "Your booking has been cancelled.",
+                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
+                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
+                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again.",
+                SERVICE_HAS_NO_AVAILABILITY: "This service has no availability"
+            },
+            PAGINATION: {
+                SUMMARY: "{{start}} - {{end}} of {{total}}"
+            },
+            MODAL: {
+                CANCEL_BOOKING: {
+                    HEADER: "Cancel",
+                    QUESTION: "Are you sure you want to cancel this {{type}}?"
+                },
+                SCHEMA_FORM: {
+                    OK_BTN: "@:COMMON.BTN.OK",
+                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+                },
+                CANCEL_BLOCK: "Cancel Block",
+                SAVE_BLOCK: "Save Block",
+                EDIT_BLOCK: "Edit Block",
+                EDIT_BOOKING: "Edit Booking"
+            },
+            FILTERS: {
+                DISTANCE: {
+                    MILES: "miles",
+                    KILOMETRES: "km"
+                },
+                CURRENCY: {
+                    THOUSANDS_SEPARATOR: ",",
+                    DECIMAL_SEPARATOR: ".",
+                    CURRENCY_FORMAT: "%s%v"
+                },
+                PRETTY_PRICE: {
+                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+                },
+                TIME_PERIOD: {
+                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+                }
+            },
+            EVENT: {
+                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+                JOIN_WAITLIST: "Join waitlist"
+            }
+        },
+        COMMON: {
+            TERMINOLOGY: {
+                CATEGORY: "Category",
+                DURATION: "Duration",
+                RESOURCE: "Resource",
+                PERSON: "Person",
+                SERVICE: "Service",
+                WALLET: "Wallet",
+                SESSION: "Session",
+                EVENT: "Event",
+                EVENTS: "Events",
+                COURSE: "Course",
+                COURSES: "Courses",
+                DATE: "Date",
+                TIME: "Time",
+                DATE_TIME: "Date/Time",
+                WHEN: "When",
+                GIFT_CERTIFICATE: "Gift Certificate",
+                GIFT_CERTIFICATES: "Gift Certificates",
+                ITEM: "Item",
+                FILTER: "Filter",
+                ANY: "Any",
+                RESET: "Reset",
+                TOTAL: "Total",
+                TOTAL_DUE_NOW: "Total Due Now",
+                BOOKING_FEE: "Booking Fee",
+                PRICE: "Price",
+                PRICE_FREE: "Free",
+                PRINT: "Print",
+                AND: "and",
+                APPOINTMENT: "Appointment",
+                TICKETS: "Tickets",
+                TYPE: "Type",
+                EXPORT: "Export",
+                RECIPIENT: "Recipient",
+                BOOKING_REF: "Booking Reference",
+                MORNING: "Morning",
+                AFTERNOON: "Afternoon",
+                EVENING: "Evening",
+                AVAILABLE: "Available",
+                UNAVAILABLE: "Unavailable",
+                CALENDAR: "Calendar",
+                QUESTIONS: "Questions",
+                BOOKING: "Booking",
+                ADMITTANCE: "Admittance",
+                EDIT: "Edit",
+                CONFIRMATION: "Confirmation",
+                NAME: "Name",
+                FIRST_NAME: "First Name",
+                LAST_NAME: "Last Name",
+                ADDRESS1: "Address",
+                ADDRESS3: "Town",
+                ADDRESS4: "County",
+                POSTCODE: "Postcode",
+                PHONE: "Phone",
+                MOBILE: "Mobile",
+                EMAIL: "Email",
+                SCHEDULE: "Schedule",
+                SEARCH: "Search",
+                STAFF: "Staff",
+                RESOURCES: "Resources"
+            },
+            FORM: {
+                FIRST_NAME_REQUIRED: "Please enter your first name",
+                LAST_NAME_REQUIRED: "Please enter your last name",
+                ADDRESS_REQUIRED: "Please enter your address",
+                POSTCODE_INVALID: "Please enter a valid postcode",
+                PHONE_INVALID: "Please enter a valid phone number",
+                MOBILE_INVALID: "Please enter a valid mobile number",
+                EMAIL_REQUIRED: "Please enter your email",
+                EMAIL_INVALID: "Please enter a valid email address",
+                FIELD_REQUIRED: "This field is required",
+                PASSWORD: "Password",
+                PASSWORD_REQUIRED: "Please enter your password",
+                CONFIRM_PASSWORD: "Confirm password",
+                PASSWORD_MISMATCH: "Please ensure your passwords match",
+                PASSWORD_LENGTH: "Password must be at least 7 characters",
+                REQUIRED: "*Required",
+                INVALID: "Invalid",
+                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
+                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
+            },
+            BTN: {
+                CANCEL: "Cancel",
+                CLOSE: "Close",
+                NO: "No",
+                OK: "Ok",
+                YES: "Yes",
+                BACK: "Back",
+                NEXT: "Continue",
+                LOGIN: "Login",
+                CONFIRM: "Confirm",
+                SAVE: "Save",
+                SELECT: "Select",
+                BOOK: "Book",
+                BOOK_EVENT: "Book Event",
+                CANCEL_BOOKING: "Cancel Booking",
+                MOVE_BOOKING: "Move Booking",
+                SAVE_BOOKING: "Save Booking",
+                EDIT_BOOKING: "Edit Booking",
+                DO_NOT_CANCEL_BOOKING: "Do not cancel",
+                APPLY: "Apply",
+                CLEAR: "Clear",
+                PAY: "Pay",
+                CHECKOUT: "Checkout",
+                TOP_UP: "Top Up",
+                ADD: "Add",
+                SUBMIT: "Submit",
+                DETAILS: "Details",
+                MORE: "More",
+                LESS: "Less",
+                DELETE: "Delete",
+                BUY: "Buy",
+                EDIT_CLIENT: "Edit Client"
+            },
+            LANGUAGE: {
+                EN: "English",
+                DE: "Deutsch",
+                ES: "Español",
+                FR: "Français"
+            }
+        }
+    };
+
+    $translateProvider.translations('en', translations);
 });
 'use strict';
 
@@ -18129,91 +18245,166 @@ angular.module('BB.Directives').directive('bbCustomConfirmationText', function (
                 maxDate: '=?',
                 format: '=?',
                 dateOnly: '=?',
+                dateReadonly: '=?',
+                timeDurationHelper: '=?',
+                duration: '=?',
                 bbDisabled: '=?'
             },
             restrict: 'A',
             templateUrl: 'bb_date_time_picker.html',
-            controller: function controller($scope, GeneralOptions) {
-                if ($scope.format == null) {
-                    $scope.format = 'dd/MM/yyyy';
-                }
-
-                if ($scope.bbDisabled == null) {
-                    $scope.bbDisabled = false;
-                }
-
-                // Default minuteStep value
-                if (!$scope.minuteStep || typeof $scope.minuteStep === 'undefined') {
-                    $scope.minuteStep = GeneralOptions.calendar_minute_step;
-                }
-
-                // Default showMeridian value
-                if (!$scope.showMeridian || typeof $scope.showMeridian === 'undefined') {
-                    $scope.showMeridian = GeneralOptions.twelve_hour_format;
-                }
-
-                // Watch for changes in the timepicker and reassemble the new datetime
-                $scope.$watch('datetimeWithNoTz', function (newValue, oldValue) {
-
-                    if (newValue != null && moment(newValue).isValid() && newValue.getTime() !== oldValue.getTime()) {
-                        var assembledDate = moment();
-                        assembledDate.set({
-                            'year': parseInt(newValue.getFullYear()),
-                            'month': parseInt(newValue.getMonth()),
-                            'date': parseInt(newValue.getDate()),
-                            'hour': parseInt(newValue.getHours()),
-                            'minute': parseInt(newValue.getMinutes()),
-                            'second': 0,
-                            'milliseconds': 0
-                        });
-
-                        return $scope.date = assembledDate;
-                    }
-                });
-
-                var clearTimezone = function clearTimezone(date) {
-
-                    if (date != null && moment(date).isValid()) {
-                        date = moment(date);
-                        var newDate = new Date();
-                        newDate.setFullYear(date.year());
-                        newDate.setMonth(date.month());
-                        newDate.setDate(date.date());
-                        newDate.setHours(date.hours());
-                        newDate.setMinutes(date.minutes());
-                        newDate.setSeconds(0);
-                        newDate.setMilliseconds(0);
-
-                        return newDate;
-                    }
-                    // otherwise undefined (important for timepicker)
-                    return undefined;
-                };
-
-                $scope.datetimeWithNoTz = clearTimezone($scope.date);
-
-                $scope.$watch('date', function (newValue, oldValue) {
-                    if (newValue !== oldValue && clearTimezone(newValue) !== oldValue) {
-                        return $scope.datetimeWithNoTz = clearTimezone(newValue);
-                    }
-                });
-
-                $scope.$watch('minDate', function (newValue, oldValue) {
-                    if (newValue !== oldValue) {
-                        return $scope.minDateClean = clearTimezone(newValue);
-                    }
-                });
-
-                $scope.$watch('maxDate', function (newValue, oldValue) {
-                    if (newValue !== oldValue) {
-                        return $scope.maxDateClean = clearTimezone(newValue);
-                    }
-                });
-
-                $scope.minDateClean = clearTimezone($scope.minDate);
-                return $scope.maxDateClean = clearTimezone($scope.maxDate);
-            }
+            controller: bbDateTimePickerController
         };
+
+        function bbDateTimePickerController($scope, GeneralOptions, BlockTimeOptions) {
+
+            if ($scope.format == null) {
+                $scope.format = 'dd/MM/yyyy';
+            }
+
+            if ($scope.bbDisabled == null) {
+                $scope.bbDisabled = false;
+            }
+
+            // Default minuteStep value
+            if (!$scope.minuteStep) {
+                $scope.minuteStep = GeneralOptions.calendar_minute_step;
+            }
+
+            // Default showMeridian value
+            if (!$scope.showMeridian) {
+                $scope.showMeridian = GeneralOptions.twelve_hour_format;
+            }
+
+            // Watch for changes in the timepicker and reassemble the new datetime
+            $scope.$watch('datetimeWithNoTz', function (newValue, oldValue) {
+                if (newValue != null && moment(newValue).isValid() && newValue.getTime() !== oldValue.getTime()) {
+                    var assembledDate = moment();
+                    assembledDate.set({
+                        'year': parseInt(newValue.getFullYear()),
+                        'month': parseInt(newValue.getMonth()),
+                        'date': parseInt(newValue.getDate()),
+                        'hour': parseInt(newValue.getHours()),
+                        'minute': parseInt(newValue.getMinutes()),
+                        'second': 0,
+                        'milliseconds': 0
+                    });
+
+                    return $scope.date = assembledDate;
+                }
+
+                if (newValue !== oldValue && $scope.timeDurationHelper) {
+                    $scope.currentDuration = findOrAddDuration();
+                    $scope.duration = $scope.currentDuration.value;
+                }
+            });
+
+            var clearTimezone = function clearTimezone(date) {
+
+                if (date != null && moment(date).isValid()) {
+                    date = moment(date);
+                    var newDate = new Date();
+                    newDate.setFullYear(date.year());
+                    newDate.setMonth(date.month());
+                    newDate.setDate(date.date());
+                    newDate.setHours(date.hours());
+                    newDate.setMinutes(date.minutes());
+                    newDate.setSeconds(0);
+                    newDate.setMilliseconds(0);
+
+                    return newDate;
+                }
+                // otherwise undefined (important for timepicker)
+                return undefined;
+            };
+
+            $scope.datetimeWithNoTz = clearTimezone($scope.date);
+
+            $scope.$watch('date', function (newValue, oldValue) {
+                if (newValue !== oldValue && clearTimezone(newValue) !== oldValue) {
+                    return $scope.datetimeWithNoTz = clearTimezone(newValue);
+                }
+            });
+
+            $scope.$watch('minDate', function (newValue, oldValue) {
+                if (newValue !== oldValue) {
+                    if (newValue !== oldValue && $scope.timeDurationHelper) {
+                        $scope.currentDuration = findOrAddDuration();
+                        $scope.duration = $scope.currentDuration.value;
+                    }
+                    return $scope.minDateClean = clearTimezone(newValue);
+                }
+            });
+
+            $scope.$watch('maxDate', function (newValue, oldValue) {
+                if (newValue !== oldValue) {
+                    return $scope.maxDateClean = clearTimezone(newValue);
+                }
+            });
+
+            $scope.minDateClean = clearTimezone($scope.minDate);
+            $scope.maxDateClean = clearTimezone($scope.maxDate);
+
+            if ($scope.timeDurationHelper) {
+                $scope.durations = getDurations();
+                $scope.currentDuration = findOrAddDuration();
+                $scope.duration = $scope.currentDuration.value;
+                $scope.onDurationHelperChanged = onDurationHelperChanged;
+            }
+
+            function getDurations() {
+                var maxDiff = $scope.maxDate.diff($scope.minDate, 'minutes');
+                var durations = BlockTimeOptions.blockTimeDurations.map(function (item) {
+                    if (item.value > maxDiff) item.disabled = true;
+                    return item;
+                });
+                return durations;
+            }
+
+            function findOrAddDuration() {
+                var getCurrent = function getCurrent() {
+                    return $scope.durations.find(function (item) {
+                        return item.value === getCurrentDuration().value;
+                    });
+                };
+                var currentDuration = getCurrent();
+                if (!currentDuration) {
+                    updateDurations();
+                    currentDuration = getCurrent();
+                }
+                return currentDuration;
+            }
+
+            function updateDurations() {
+                $scope.durations = $scope.durations.filter(function (item) {
+                    return !item.custom;
+                });
+                $scope.durations.push(getCurrentDuration());
+            }
+
+            function getCurrentDuration() {
+                var durationDifferenceInMinutes = $scope.date.diff($scope.minDate, 'minutes');
+                var hours = durationDifferenceInMinutes / 60 | 0;
+                var minutes = durationDifferenceInMinutes % 60 | 0;
+
+                var hoursLabel = hours ? hours + ' Hours' : '';
+                var minutesLabel = minutes ? minutes + ' Minutes' : '';
+
+                var duration = {
+                    custom: true,
+                    value: durationDifferenceInMinutes,
+                    label: hoursLabel + ' ' + minutesLabel
+                };
+                return duration;
+            }
+
+            function onDurationHelperChanged() {
+                $scope.duration = $scope.currentDuration.value;
+                $scope.durations = $scope.durations.filter(function (item) {
+                    return !item.custom;
+                });
+                $scope.date = $scope.minDate.clone().add($scope.currentDuration.value, 'minutes');
+            }
+        }
     }
 })();
 'use strict';
@@ -40217,6 +40408,8 @@ angular.module('BB.Controllers').controller('TimeList', TimeListCtrl);
 function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBModel, DateTimeUtilitiesService, LoadingService, ErrorService, $translate, bbWidgetPage) {
     'ngInject';
 
+    var _this = this;
+
     var loader = LoadingService.$loader($scope);
 
     if (!$scope.data_source) {
@@ -40226,6 +40419,11 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
     $scope.options = $scope.$eval($attrs.bbTimes) || {};
 
     var currentSlot = null;
+
+    /*
+      To solve the happened race condition by several calls of the loadDay via event & initialization
+     */
+    this.onInitCheckRequestedSlot = false;
 
     $rootScope.connection_started.then(function () {
 
@@ -40237,6 +40435,7 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
             $scope.setDate(moment());
         }
 
+        _this.onInitCheckRequestedSlot = true;
         return $scope.loadDay();
     }, function (err) {
         return loader.setLoadedAndShowError(err, 'Sorry, something went wrong');
@@ -40431,9 +40630,14 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
      */
     $scope.loadDay = function (options) {
 
-        if (!options) {
+        options = options || { check_requested_slot: true };
+
+        if (!_this.onInitCheckRequestedSlot && angular.isDefined(options.check_requested_slot)) {
+            options = { check_requested_slot: options.check_requested_slot };
+        } else if (_this.onInitCheckRequestedSlot) {
             options = { check_requested_slot: true };
         }
+
         if ($scope.data_source && ($scope.data_source.days_link || $scope.item_link_source) && $scope.selected_day) {
 
             loader.notLoaded();
@@ -40482,12 +40686,20 @@ function TimeListCtrl($attrs, $scope, $rootScope, TimeService, AlertService, BBM
                     for (var v = 0; v < $scope.add_padding.length; v++) {
                         var pad = $scope.add_padding[v];
                         if (!dtimes[pad]) {
-                            time_slots.splice(v, 0, new BBModel.TimeSlot({ time: pad, avail: 0 }, time_slots[0].service));
+                            time_slots.splice(v, 0, new BBModel.TimeSlot({
+                                time: pad,
+                                avail: 0
+                            }, time_slots[0].service));
                         }
                     }
                 }
 
                 if (options.check_requested_slot === true) {
+                    /*
+                      Setting the onInitCheckRequestedSlot flag to false to make other parts of system work properly
+                     */
+                    _this.onInitCheckRequestedSlot = false;
+
                     checkRequestedSlots(time_slots);
                 }
 
