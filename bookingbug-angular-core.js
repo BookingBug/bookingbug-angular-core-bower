@@ -2,7 +2,7 @@
 
 angular.module('BB', ['ngStorage', 'ngMessages', 'ngSanitize', 'ngFileUpload', 'ngCookies', 'ngAnimate', 'angularMoment', 'angular-carousel', 'angular-hal', 'angular-data.DSCacheFactory', 'angular.filter', 'pascalprecht.translate', 'schemaForm', 'ui.bootstrap', 'ui.map', 'ui.router.util', 'ui.select', 'ui-rangeSlider', 'uiGmapgoogle-maps', 'vcRecaptcha', 'BB.Controllers', 'BB.Filters', 'BB.Models', 'BB.Services', 'BB.Directives', 'BB.analytics', 'BB.i18n', 'BB.uib', 'BB.uiSelect']);
 
-angular.module('BB.Services', ['ngResource', 'ngSanitize', 'pascalprecht.translate']);
+angular.module('BB.Services', ['ngResource', 'ngSanitize', 'pascalprecht.translate', 'ngA11y']);
 
 angular.module('BB.Controllers', ['ngSanitize']);
 
@@ -112,6 +112,9 @@ angular.module('BB').run(function ($bbug, FormDataStoreService, $log, $rootScope
         document.createElement('footer');
     }
 });
+
+/** Eager service initialisation. */
+angular.module('BB.Services').run(function (accessibility, responsive) {});
 'use strict';
 
 angular.module('schemaForm').config(function (schemaFormProvider, schemaFormDecoratorsProvider, sfPathProvider) {
@@ -1350,6 +1353,115 @@ String.prototype.parameterise = function (seperator) {
 })();
 'use strict';
 
+/**
+ * Constant used to distinguish keyboard event codes.
+ */
+angular.module('BB').constant('KeyCode', {
+    BACKSPACE: 8,
+    TAB: 9,
+    ENTER: 13,
+    SHIFT: 16,
+    CONTROL: 17,
+    ALT: 18,
+    PAUSE_BREAK: 19,
+    CAPS_LOCK: 20,
+    ESC: 27,
+    SPACEBAR: 32,
+    PAGE_UP: 33,
+    PAGE_DOWN: 34,
+    END: 35,
+    HOME: 36,
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+    INSERT: 45,
+    DELETE: 46,
+    0: 48,
+    1: 49,
+    2: 50,
+    3: 51,
+    4: 52,
+    5: 53,
+    6: 54,
+    7: 55,
+    8: 56,
+    9: 57,
+    A: 65,
+    B: 66,
+    C: 67,
+    D: 68,
+    E: 69,
+    F: 70,
+    G: 71,
+    H: 72,
+    I: 73,
+    J: 74,
+    K: 75,
+    L: 76,
+    M: 77,
+    N: 78,
+    O: 79,
+    P: 80,
+    Q: 81,
+    R: 82,
+    S: 83,
+    T: 84,
+    U: 85,
+    V: 86,
+    W: 87,
+    X: 88,
+    Y: 89,
+    Z: 90,
+    LEFT_WINDOW_KEY: 91,
+    RIGHT_WINDOW_KEY: 92,
+    SELECT_KEY: 93,
+    NUMPAD_0: 96,
+    NUMPAD_1: 97,
+    NUMPAD_2: 98,
+    NUMPAD_3: 99,
+    NUMPAD_4: 100,
+    NUMPAD_5: 101,
+    NUMPAD_6: 102,
+    NUMPAD_7: 103,
+    NUMPAD_8: 104,
+    NUMPAD_9: 105,
+    MULTIPLY: 106,
+    ADD: 107,
+    SUBTRACT: 109,
+    DECIMAL_POINT: 110,
+    DIVIDE: 111,
+    F1: 112,
+    F2: 113,
+    F3: 114,
+    F4: 115,
+    F5: 116,
+    F6: 117,
+    F7: 118,
+    F8: 119,
+    F9: 120,
+    F10: 121,
+    F11: 122,
+    F12: 123,
+    F13: 124,
+    F14: 125,
+    F15: 126,
+    NUM_LOCK: 144,
+    SCROLL_LOCK: 145,
+    SEMI_COLON: 186,
+    EQUAL_SIGN: 187,
+    COMMA: 188,
+    DASH: 189,
+    PERIOD: 190,
+    FORWARD_SLASH: 191,
+    GRAVE_ACCENT: 192,
+    OPEN_BRACKET: 219,
+    BACK_SLASH: 220,
+    CLOSE_BRAKET: 221,
+    SINGLE_QUOTE: 222
+});
+'use strict';
+
 (function () {
 
     angular.module('BB').constant('routeStates', {
@@ -2119,6 +2231,215 @@ angular.module('BB.Filters').filter('props', function ($translate) {
         return out;
     };
 });
+"use strict";
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/**
+ * @ngdoc class
+ * @name Utils
+ *
+ * @description
+ * The main purpose of this class is to provide programmer with basic functions, which are frequently used and aren't
+ * present in the standard. Knowing that almost all of traditional utility libraries like underscore can be superseded
+ * by ES6 functions, there's a will to get rid off them.
+ *
+ */
+/* exported Utils */
+var Utils = function () {
+    function Utils() {
+        _classCallCheck(this, Utils);
+    }
+
+    /**
+     * @description
+     * Creates a deep copy of an object comprising of only those attributes that are needed by a caller.
+     *
+     * @param object Object from which properties will be taken.
+     * @param attributes The possible mix of string sequences and string arrays used to pick up all demanded attributes.
+     */
+    Utils.subset = function subset(object) {
+        // Makes deep copy.
+        var copy = angular.copy(object);
+
+        // User may pass arrays of attributes as well, which should be flattened to one long list of attributes.
+
+        for (var _len = arguments.length, attributes = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+            attributes[_key - 1] = arguments[_key];
+        }
+
+        var flattened = Utils.flatten(attributes);
+
+        // Takes only subset of attributes.
+        return flattened.reduce(function (output, attribute) {
+            output[attribute] = copy[attribute];
+            return output;
+        }, {});
+    };
+
+    /**
+     * @description
+     * Creates a full immutable object from the given object parameter.
+     *
+     * @param object Object which immutable copy will be returned.
+     */
+
+
+    Utils.makeImmutable = function makeImmutable(object) {
+        if (object instanceof Object && !(object instanceof Function) && !Object.isFrozen(object)) {
+            Object.freeze(object);
+
+            Object.getOwnPropertyNames(object).forEach(function (property) {
+                if (object.hasOwnProperty(property)) {
+                    Utils.makeImmutable(object[property]);
+                }
+            });
+        }
+
+        return object;
+    };
+
+    /**
+     * @description
+     * Gets writable subset view of the given object. All fields changed in a view are reflected in an original object.
+     *
+     * @param object Original object that may reflect changes.
+     * @param properties Subset of properties that we are interesting at looking at and changing.
+     */
+
+
+    Utils.writableSubsetView = function writableSubsetView(object) {
+        for (var _len2 = arguments.length, properties = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+            properties[_key2 - 1] = arguments[_key2];
+        }
+
+        // User may pass arrays of attributes as well, which should be flattened to one long list of attributes.
+        var flattened = Utils.flatten(properties);
+
+        // Take all properties if none of them were declared.
+        flattened = flattened.length === 0 ? Object.getOwnPropertyNames(object) : flattened;
+
+        var view = {};
+        flattened.forEach(function (property) {
+            // Changed to primitives are mirrored to the original object.
+            // Changes to object that are deeper in the hierarchy are handled by default.
+            if (object.hasOwnProperty(property)) {
+                Object.defineProperty(view, property, {
+                    enumerable: true,
+                    set: function set(value) {
+                        return object[property] = value;
+                    },
+                    get: function get() {
+                        return object[property];
+                    }
+                });
+            }
+        });
+
+        return view;
+    };
+
+    /**
+     * @description
+     * Gets readonly view of the given object. View cannot be changed accessed and it shows current state of the
+     * original object.
+     *
+     * @param object Original object that will be changed over time.
+     * @param attributes Subset of properties that we are interesting at looking at.
+     */
+
+
+    Utils.readonlySubsetView = function readonlySubsetView(object) {
+        for (var _len3 = arguments.length, attributes = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+            attributes[_key3 - 1] = arguments[_key3];
+        }
+
+        // User may pass arrays of attributes as well, which should be flattened to one long list of attributes.
+        var flattened = Utils.flatten(attributes);
+
+        var view = {};
+        makeReadonly(view, object, flattened.length === 0 ? undefined : flattened);
+
+        // Recursively add getters to every object in hierarchy.
+        function makeReadonly(view, object, propertySubset) {
+            var properties = propertySubset || Object.getOwnPropertyNames(object);
+
+            properties.forEach(function (property) {
+                if (object.hasOwnProperty(property)) {
+                    if (object[property] instanceof Object && !(object[property] instanceof Function)) {
+                        // In case of object, create new readonly object in view and repeat whole operation for it.
+                        Object.defineProperty(view, property, {
+                            value: {}, writable: false, enumerable: true
+                        });
+
+                        makeReadonly(view[property], object[property]);
+                    } else {
+                        // In case property is not a {} object just define property as a getter referencing observed value.
+                        Object.defineProperty(view, property, {
+                            get: function get() {
+                                return object[property];
+                            }, enumerable: true
+                        });
+                    }
+                }
+            });
+        }
+
+        return view;
+    };
+
+    /**
+     * @description
+     * This is an assign function that copies full descriptors.
+     *
+     * @param target Object to which all sources will be assigned (merged).
+     * @param sources All objects from which all properties will be copied.
+     */
+
+
+    Utils.completeAssign = function completeAssign(target) {
+        for (var _len4 = arguments.length, sources = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+            sources[_key4 - 1] = arguments[_key4];
+        }
+
+        sources.forEach(function (source) {
+            var descriptors = Object.keys(source).reduce(function (descriptors, key) {
+                descriptors[key] = Object.getOwnPropertyDescriptor(source, key);
+                return descriptors;
+            }, {});
+
+            // By default, Object.assign copies enumerable symbols. Let's copy all of them.
+            Object.getOwnPropertySymbols(source).forEach(function (symbol) {
+                descriptors[symbol] = Object.getOwnPropertyDescriptor(source, symbol);
+            });
+
+            Object.defineProperties(target, descriptors);
+        });
+
+        return target;
+    };
+
+    /**
+     * @description
+     * Flattens a nested array (the nesting can be to any depth).
+     *
+     * @param array Array of arrays to be flattened.
+     */
+
+
+    Utils.flatten = function flatten(array) {
+        while (array.find(function (element) {
+            return Array.isArray(element);
+        })) {
+            array = Array.concat.apply(Array, _toConsumableArray(array));
+        }
+        return array;
+    };
+
+    return Utils;
+}();
 'use strict';
 
 angular.module('BB.i18n').config(function (bbi18nOptionsProvider, tmhDynamicLocaleProvider, $translateProvider) {
@@ -10742,226 +11063,6 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
         return TimeSlot;
     }(BaseModel);
 });
-'use strict';
-
-angular.module('BB.Services').config(function ($translateProvider) {
-    'ngInject';
-
-    var translations = {
-        CORE: {
-            ALERTS: {
-                ERROR_HEADING: "Error",
-                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
-                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
-                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
-                ATTENDEES_CHANGED: "Your booking has been successfully updated",
-                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
-                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
-                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
-                FORM_INVALID: "Please complete all required fields",
-                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
-                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
-                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
-                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
-                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
-                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
-                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
-                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
-                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
-                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
-                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
-                MISSING_LOCATION: "Please enter your location",
-                MISSING_POSTCODE: "Please enter a postcode",
-                PASSWORD_INVALID: "Sorry, your password is invalid",
-                PASSWORD_MISMATCH: "Your passwords don't match",
-                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
-                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
-                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
-                PASSWORD_RESET_SUCESS: "Your password has been updated.",
-                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
-                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
-                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
-                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
-                STORE_NOT_SELECTED: "You need to select a store",
-                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
-                TOPUP_SUCCESS: "Your wallet has been topped up",
-                UPDATE_FAILED: "Update failed. Please try again",
-                UPDATE_SUCCESS: "Updated",
-                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
-                BOOKING_CANCELLED: "Your booking has been cancelled.",
-                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
-                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
-                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
-                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
-                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
-                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again.",
-                SERVICE_HAS_NO_AVAILABILITY: "This service has no availability"
-            },
-            PAGINATION: {
-                SUMMARY: "{{start}} - {{end}} of {{total}}"
-            },
-            MODAL: {
-                CANCEL_BOOKING: {
-                    HEADER: "Cancel",
-                    QUESTION: "Are you sure you want to cancel this {{type}}?"
-                },
-                SCHEMA_FORM: {
-                    OK_BTN: "@:COMMON.BTN.OK",
-                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
-                },
-                CANCEL_BLOCK: "Cancel Block",
-                SAVE_BLOCK: "Save Block",
-                EDIT_BLOCK: "Edit Block",
-                EDIT_BOOKING: "Edit Booking"
-            },
-            FILTERS: {
-                DISTANCE: {
-                    MILES: "miles",
-                    KILOMETRES: "km"
-                },
-                CURRENCY: {
-                    THOUSANDS_SEPARATOR: ",",
-                    DECIMAL_SEPARATOR: ".",
-                    CURRENCY_FORMAT: "%s%v"
-                },
-                PRETTY_PRICE: {
-                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
-                },
-                TIME_PERIOD: {
-                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
-                }
-            },
-            EVENT: {
-                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
-                JOIN_WAITLIST: "Join waitlist"
-            }
-        },
-        COMMON: {
-            TERMINOLOGY: {
-                CATEGORY: "Category",
-                DURATION: "Duration",
-                RESOURCE: "Resource",
-                PERSON: "Person",
-                SERVICE: "Service",
-                WALLET: "Wallet",
-                SESSION: "Session",
-                EVENT: "Event",
-                EVENTS: "Events",
-                COURSE: "Course",
-                COURSES: "Courses",
-                DATE: "Date",
-                TIME: "Time",
-                DATE_TIME: "Date/Time",
-                WHEN: "When",
-                GIFT_CERTIFICATE: "Gift Certificate",
-                GIFT_CERTIFICATES: "Gift Certificates",
-                ITEM: "Item",
-                FILTER: "Filter",
-                ANY: "Any",
-                RESET: "Reset",
-                TOTAL: "Total",
-                TOTAL_DUE_NOW: "Total Due Now",
-                BOOKING_FEE: "Booking Fee",
-                PRICE: "Price",
-                PRICE_FREE: "Free",
-                PRINT: "Print",
-                AND: "and",
-                APPOINTMENT: "Appointment",
-                TICKETS: "Tickets",
-                TYPE: "Type",
-                EXPORT: "Export",
-                RECIPIENT: "Recipient",
-                BOOKING_REF: "Booking Reference",
-                MORNING: "Morning",
-                AFTERNOON: "Afternoon",
-                EVENING: "Evening",
-                AVAILABLE: "Available",
-                UNAVAILABLE: "Unavailable",
-                CALENDAR: "Calendar",
-                QUESTIONS: "Questions",
-                BOOKING: "Booking",
-                ADMITTANCE: "Admittance",
-                EDIT: "Edit",
-                CONFIRMATION: "Confirmation",
-                NAME: "Name",
-                FIRST_NAME: "First Name",
-                LAST_NAME: "Last Name",
-                ADDRESS1: "Address",
-                ADDRESS3: "Town",
-                ADDRESS4: "County",
-                POSTCODE: "Postcode",
-                PHONE: "Phone",
-                MOBILE: "Mobile",
-                EMAIL: "Email",
-                SCHEDULE: "Schedule",
-                SEARCH: "Search",
-                STAFF: "Staff",
-                RESOURCES: "Resources"
-            },
-            FORM: {
-                FIRST_NAME_REQUIRED: "Please enter your first name",
-                LAST_NAME_REQUIRED: "Please enter your last name",
-                ADDRESS_REQUIRED: "Please enter your address",
-                POSTCODE_INVALID: "Please enter a valid postcode",
-                PHONE_INVALID: "Please enter a valid phone number",
-                MOBILE_INVALID: "Please enter a valid mobile number",
-                EMAIL_REQUIRED: "Please enter your email",
-                EMAIL_INVALID: "Please enter a valid email address",
-                FIELD_REQUIRED: "This field is required",
-                PASSWORD: "Password",
-                PASSWORD_REQUIRED: "Please enter your password",
-                CONFIRM_PASSWORD: "Confirm password",
-                PASSWORD_MISMATCH: "Please ensure your passwords match",
-                PASSWORD_LENGTH: "Password must be at least 7 characters",
-                REQUIRED: "*Required",
-                INVALID: "Invalid",
-                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
-                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
-            },
-            BTN: {
-                CANCEL: "Cancel",
-                CLOSE: "Close",
-                NO: "No",
-                OK: "Ok",
-                YES: "Yes",
-                BACK: "Back",
-                NEXT: "Continue",
-                LOGIN: "Login",
-                CONFIRM: "Confirm",
-                SAVE: "Save",
-                SELECT: "Select",
-                BOOK: "Book",
-                BOOK_EVENT: "Book Event",
-                CANCEL_BOOKING: "Cancel Booking",
-                MOVE_BOOKING: "Move Booking",
-                SAVE_BOOKING: "Save Booking",
-                EDIT_BOOKING: "Edit Booking",
-                DO_NOT_CANCEL_BOOKING: "Do not cancel",
-                APPLY: "Apply",
-                CLEAR: "Clear",
-                PAY: "Pay",
-                CHECKOUT: "Checkout",
-                TOP_UP: "Top Up",
-                ADD: "Add",
-                SUBMIT: "Submit",
-                DETAILS: "Details",
-                MORE: "More",
-                LESS: "Less",
-                DELETE: "Delete",
-                BUY: "Buy",
-                EDIT_CLIENT: "Edit Client"
-            },
-            LANGUAGE: {
-                EN: "English",
-                DE: "Deutsch",
-                ES: "Español",
-                FR: "Français"
-            }
-        }
-    };
-
-    $translateProvider.translations('en', translations);
-});
 "use strict";
 
 angular.module('BB.Services').factory("AddressListService", function ($q, $window, halClient, UriTemplate) {
@@ -12221,7 +12322,6 @@ angular.module('BB.Services').factory("CustomTextService", function ($q, BBModel
         };
 
         function setTimeToMoment(date, time) {
-
             // If time is 24:00, add 1 day to date
             var _date = angular.copy(date);
             if (time === '24:00') {
@@ -12266,7 +12366,6 @@ angular.module('BB.Services').factory("CustomTextService", function ($q, BBModel
             datetime.date(date.date());
             datetime.month(date.month());
             datetime.year(date.year());
-
             return datetime;
         }
 
@@ -13266,6 +13365,10 @@ angular.module('BB.Services').provider('FormTransform', function () {
  * @module BB.Services
  * @name GeneralOptions
  *
+ *  * @return {object} options
+ *
+ *    - **supportedSizes** – `{object}` – Holds information about responsive breakpoints, their names and size.
+ *
  * @description
  * Returns a set of General configuration options
  */
@@ -13300,7 +13403,13 @@ angular.module('BB.Services').provider('GeneralOptions', function () {
         mapMarkerHasLabel: true,
         maxAdvanceDatetimeDays: null,
         calendarDaysByScreenWidth: { lg: 7, md: 5, sm: 3, xs: 1 },
-        updateBasketErrorSuppressModal: false
+        updateBasketErrorSuppressModal: false,
+        supportedSizes: {
+            xs: 0,
+            sm: 768,
+            md: 992,
+            lg: 1200
+        }
     };
 
     this.setOption = function (option, value) {
@@ -14998,8 +15107,6 @@ var ReasonService = function () {
         this.BBModel = BBModel;
     }
 
-    // static REJECT_REASON_MSG = 'Reasons are not enabled for this company.';
-
     ReasonService.prototype.mapReasons = function mapReasons(reasonItems) {
         var _this = this;
 
@@ -15013,9 +15120,13 @@ var ReasonService = function () {
         var _this2 = this;
 
         company.$getReasons().then(function (reasons) {
-            return promise.resolve(_this2.mapReasons(reasons));
-        }, function (err) {
-            return promise.reject(err);
+            if (reasons.length) {
+                return promise.resolve(_this2.mapReasons(reasons));
+            } else {
+                return promise.reject(ReasonService.REASONS_NOT_CONFIGURED_MSG);
+            }
+        }).catch(function (error) {
+            return promise.reject(error);
         });
     };
 
@@ -15034,21 +15145,24 @@ var ReasonService = function () {
                 if (parentCompany.$has('reasons')) {
                     _this3.getReasonsPromise(parentCompany, defer);
                 } else {
-                    defer.reject('Reasons are not enabled for this company.');
+                    defer.reject(ReasonService.REASONS_DISABLED_MSG);
                 }
-            }), function (err) {
-                return reject(err);
-            };
+            }).catch(function (error) {
+                return reject(error);
+            });
 
             return defer.promise;
         }
 
-        defer.reject('Reasons are not enabled for this company.');
+        defer.reject(ReasonService.REASONS_DISABLED_MSG);
         return defer.promise;
     };
 
     return ReasonService;
 }();
+
+ReasonService.REASONS_DISABLED_MSG = 'Reasons are not enabled for this company.';
+ReasonService.REASONS_NOT_CONFIGURED_MSG = 'Reasons are not configured for this company.';
 
 angular.module('BB.Services').service('ReasonService', ReasonService);
 "use strict";
@@ -17057,6 +17171,226 @@ angular.module('BB.Services').service('viewportSize', function ($window, $docume
     isMD: isMD,
     isLG: isLG
   };
+});
+'use strict';
+
+angular.module('BB.Services').config(function ($translateProvider) {
+    'ngInject';
+
+    var translations = {
+        CORE: {
+            ALERTS: {
+                ERROR_HEADING: "Error",
+                ACCOUNT_DISABLED: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists.",
+                ALREADY_REGISTERED: "You have already registered with this email address. Please login or reset your password.",
+                APPT_AT_SAME_TIME: "Your appointment is already booked for this time",
+                ATTENDEES_CHANGED: "Your booking has been successfully updated",
+                EMAIL_IN_USE: "There's already an account registered with this email. Use the search field to find the customer's account.",
+                EMPTY_BASKET_FOR_CHECKOUT: "You need to add some items to the basket before you can checkout.",
+                FB_LOGIN_NOT_A_MEMBER: "Sorry, we couldn't find a login associated with this Facebook account. You will need to sign up using Facebook first",
+                FORM_INVALID: "Please complete all required fields",
+                GENERIC: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists.",
+                GEOLOCATION_ERROR_FORBIDDEN: "Sorry, we could not determine your location as your browser does not allow websites to request your physical location. Please check your browser settings.",
+                GEOLOCATION_ERROR: "Sorry, we could not determine your location. Please try searching instead.",
+                GIFT_CERTIFICATE_REQUIRED: "A valid Gift Certificate is required to proceed with this booking",
+                POSTCODE_INVALID: "@:COMMON.TERMINOLOGY.POSTCODE_INVALID",
+                ITEM_NO_LONGER_AVAILABLE: "Sorry. The item you were trying to book is no longer available. Please try again.",
+                NO_WAITLIST_SPACES_LEFT: "Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available",
+                LOCATION_NOT_FOUND: "Sorry, we don't recognise that location",
+                LOGIN_FAILED: "Sorry, your email or password was not recognised. Please try again or reset your password.",
+                SSO_LOGIN_FAILED: "Something went wrong when trying to log you in. Please try again.",
+                MAXIMUM_TICKETS: "Sorry, the maximum number of tickets per person has been reached.",
+                MISSING_LOCATION: "Please enter your location",
+                MISSING_POSTCODE: "Please enter a postcode",
+                PASSWORD_INVALID: "Sorry, your password is invalid",
+                PASSWORD_MISMATCH: "Your passwords don't match",
+                PASSWORD_RESET_FAILED: "Sorry, we couldn't update your password. Please try again.",
+                PASSWORD_RESET_REQ_FAILED: "Sorry, we didn't find an account registered with that email.",
+                PASSWORD_RESET_REQ_SUCCESS: "We have sent you an email with instructions on how to reset your password.",
+                PASSWORD_RESET_SUCESS: "Your password has been updated.",
+                PAYMENT_FAILED: "We were unable to take payment. Please contact your card issuer or try again using a different card",
+                PHONE_NUMBER_IN_USE: "There's already an account registered with this phone number. Use the search field to find the customer's account.",
+                REQ_TIME_NOT_AVAIL: "The requested time slot is not available. Please choose a different time.",
+                TIME_SLOT_NOT_SELECTED: "You need to select a time slot",
+                STORE_NOT_SELECTED: "You need to select a store",
+                TOPUP_FAILED: "Sorry, your topup failed. Please try again.",
+                TOPUP_SUCCESS: "Your wallet has been topped up",
+                UPDATE_FAILED: "Update failed. Please try again",
+                UPDATE_SUCCESS: "Updated",
+                WAITLIST_ACCEPTED: "Your booking is now confirmed!",
+                BOOKING_CANCELLED: "Your booking has been cancelled.",
+                NOT_BOOKABLE_PERSON: "Sorry, this person does not offer this service, please select another",
+                NOT_BOOKABLE_RESOURCE: "Sorry, resource does not offer this service, pelase select another",
+                SPEND_AT_LEAST: "You need to spend at least {{min_spend | pretty_price}} to make a booking.",
+                COUPON_APPLY_FAILED: "Sorry, your coupon could not be applied. Please try again.",
+                DEAL_APPLY_FAILED: "Sorry, your deal code could not be applied. Please try again.",
+                DEAL_REMOVE_FAILED: "Sorry, we were unable to remove that deal. Please try again.",
+                SERVICE_HAS_NO_AVAILABILITY: "This service has no availability"
+            },
+            PAGINATION: {
+                SUMMARY: "{{start}} - {{end}} of {{total}}"
+            },
+            MODAL: {
+                CANCEL_BOOKING: {
+                    HEADER: "Cancel",
+                    QUESTION: "Are you sure you want to cancel this {{type}}?"
+                },
+                SCHEMA_FORM: {
+                    OK_BTN: "@:COMMON.BTN.OK",
+                    CANCEL_BTN: "@:COMMON.BTN.CANCEL"
+                },
+                CANCEL_BLOCK: "Cancel Block",
+                SAVE_BLOCK: "Save Block",
+                EDIT_BLOCK: "Edit Block",
+                EDIT_BOOKING: "Edit Booking"
+            },
+            FILTERS: {
+                DISTANCE: {
+                    MILES: "miles",
+                    KILOMETRES: "km"
+                },
+                CURRENCY: {
+                    THOUSANDS_SEPARATOR: ",",
+                    DECIMAL_SEPARATOR: ".",
+                    CURRENCY_FORMAT: "%s%v"
+                },
+                PRETTY_PRICE: {
+                    FREE: "@:COMMON.TERMINOLOGY.PRICE_FREE"
+                },
+                TIME_PERIOD: {
+                    TIME_PERIOD: "{hours, plural, =0{} one{1 hour} other{# hours}}{show_seperator, plural, =0{} =1{, } other{}}{minutes, plural, =0{} one{1 minute} other{# minutes}}"
+                }
+            },
+            EVENT: {
+                SPACES_LEFT: "Only {N, plural, one{one space}, other{# spaces}} left",
+                JOIN_WAITLIST: "Join waitlist"
+            }
+        },
+        COMMON: {
+            TERMINOLOGY: {
+                CATEGORY: "Category",
+                DURATION: "Duration",
+                RESOURCE: "Resource",
+                PERSON: "Person",
+                SERVICE: "Service",
+                WALLET: "Wallet",
+                SESSION: "Session",
+                EVENT: "Event",
+                EVENTS: "Events",
+                COURSE: "Course",
+                COURSES: "Courses",
+                DATE: "Date",
+                TIME: "Time",
+                DATE_TIME: "Date/Time",
+                WHEN: "When",
+                GIFT_CERTIFICATE: "Gift Certificate",
+                GIFT_CERTIFICATES: "Gift Certificates",
+                ITEM: "Item",
+                FILTER: "Filter",
+                ANY: "Any",
+                RESET: "Reset",
+                TOTAL: "Total",
+                TOTAL_DUE_NOW: "Total Due Now",
+                BOOKING_FEE: "Booking Fee",
+                PRICE: "Price",
+                PRICE_FREE: "Free",
+                PRINT: "Print",
+                AND: "and",
+                APPOINTMENT: "Appointment",
+                TICKETS: "Tickets",
+                TYPE: "Type",
+                EXPORT: "Export",
+                RECIPIENT: "Recipient",
+                BOOKING_REF: "Booking Reference",
+                MORNING: "Morning",
+                AFTERNOON: "Afternoon",
+                EVENING: "Evening",
+                AVAILABLE: "Available",
+                UNAVAILABLE: "Unavailable",
+                CALENDAR: "Calendar",
+                QUESTIONS: "Questions",
+                BOOKING: "Booking",
+                ADMITTANCE: "Admittance",
+                EDIT: "Edit",
+                CONFIRMATION: "Confirmation",
+                NAME: "Name",
+                FIRST_NAME: "First Name",
+                LAST_NAME: "Last Name",
+                ADDRESS1: "Address",
+                ADDRESS3: "Town",
+                ADDRESS4: "County",
+                POSTCODE: "Postcode",
+                PHONE: "Phone",
+                MOBILE: "Mobile",
+                EMAIL: "Email",
+                SCHEDULE: "Schedule",
+                SEARCH: "Search",
+                STAFF: "Staff",
+                RESOURCES: "Resources"
+            },
+            FORM: {
+                FIRST_NAME_REQUIRED: "Please enter your first name",
+                LAST_NAME_REQUIRED: "Please enter your last name",
+                ADDRESS_REQUIRED: "Please enter your address",
+                POSTCODE_INVALID: "Please enter a valid postcode",
+                PHONE_INVALID: "Please enter a valid phone number",
+                MOBILE_INVALID: "Please enter a valid mobile number",
+                EMAIL_REQUIRED: "Please enter your email",
+                EMAIL_INVALID: "Please enter a valid email address",
+                FIELD_REQUIRED: "This field is required",
+                PASSWORD: "Password",
+                PASSWORD_REQUIRED: "Please enter your password",
+                CONFIRM_PASSWORD: "Confirm password",
+                PASSWORD_MISMATCH: "Please ensure your passwords match",
+                PASSWORD_LENGTH: "Password must be at least 7 characters",
+                REQUIRED: "*Required",
+                INVALID: "Invalid",
+                TERMS_AND_CONDITIONS: "I agree to the terms and conditions",
+                TERMS_AND_CONDITIONS_REQUIRED: "Please accept the terms and conditions"
+            },
+            BTN: {
+                CANCEL: "Cancel",
+                CLOSE: "Close",
+                NO: "No",
+                OK: "Ok",
+                YES: "Yes",
+                BACK: "Back",
+                NEXT: "Continue",
+                LOGIN: "Login",
+                CONFIRM: "Confirm",
+                SAVE: "Save",
+                SELECT: "Select",
+                BOOK: "Book",
+                BOOK_EVENT: "Book Event",
+                CANCEL_BOOKING: "Cancel Booking",
+                MOVE_BOOKING: "Move Booking",
+                SAVE_BOOKING: "Save Booking",
+                EDIT_BOOKING: "Edit Booking",
+                DO_NOT_CANCEL_BOOKING: "Do not cancel",
+                APPLY: "Apply",
+                CLEAR: "Clear",
+                PAY: "Pay",
+                CHECKOUT: "Checkout",
+                TOP_UP: "Top Up",
+                ADD: "Add",
+                SUBMIT: "Submit",
+                DETAILS: "Details",
+                MORE: "More",
+                LESS: "Less",
+                DELETE: "Delete",
+                BUY: "Buy",
+                EDIT_CLIENT: "Edit Client"
+            },
+            LANGUAGE: {
+                EN: "English",
+                DE: "Deutsch",
+                ES: "Español",
+                FR: "Français"
+            }
+        }
+    };
+
+    $translateProvider.translations('en', translations);
 });
 'use strict';
 
@@ -23811,15 +24145,17 @@ var bbFormDirective = function bbFormDirective($bbug, $window, ValidatorService,
             $formCtrl = ctrls[0];
             $bbPageCtrl = ctrls[1];
             scope.submitForm = submitForm;
-            if (attrs.disableAutoSubmit == null) elem.on("submit", submitForm); // doesn't work with ng-form just regular form
+
+            if (!attrs.disableAutoSubmit) {
+                elem.on("submit", submitForm); // doesn't work with ng-form just regular form
+            }
         };
 
         // marks child forms as submitted
         // See https://github.com/angular/angular.js/issues/10071
         var setSubmitted = function setSubmitted(form) {
-
             form.$setSubmitted();
-            form.submitted = true; // DEPRECATED - $submitted should be used in favour
+
             angular.forEach(form, function (item) {
                 if (item && item.$$parentForm === form && item.$setSubmitted) setSubmitted(item);
             });
@@ -28862,6 +29198,251 @@ angular.module('BB.Services').service("TimeSlotPermutationService", function (Da
 });
 'use strict';
 
+/**
+ * Accessibility service exposes some functions useful for making interface more accessible for disable users.
+ * Some of its methods are exposed to $root scope as they are meant to be used inside HTML templates.
+ */
+angular.module('BB.Services').service("accessibility", AccessibilityService);
+
+function AccessibilityService($rootScope, nga11yAnnounce) {
+
+    var accessibility = this;
+
+    function initialise() {
+        // Exposes read only properties to the view.
+        $rootScope.accessibility = Utils.readonlySubsetView(accessibility, 'announcePolite', 'announceAssertive');
+    }
+
+    /**
+     * Announces given message in a polite way - using aria live region with a polite option.
+     */
+    accessibility.announcePolite = function (message) {
+        nga11yAnnounce.politeAnnounce(message);
+    };
+
+    /**
+     * Announces given message in an assertive way - using aria live region with an assertive option.
+     */
+    accessibility.announceAssertive = function (message) {
+        nga11yAnnounce.assertiveAnnounce(message);
+    };
+
+    initialise();
+}
+'use strict';
+
+/**
+ * @ngdoc service
+ * @name BB.Services.service:ObserverService
+ *
+ * @description
+ * Generic service for creating observer objects. It is meant to be used on other services, granting them observer
+ * pattern utility. Observer pattern allows services to benefit from better performing communication between event
+ * producers and its clients (other services or controllers for instance).
+ *
+ */
+angular.module('BB.Services').service('ObserverService', function () {
+
+    // Unique symbol used for unambiguous object extension.
+    var handlers = Symbol('handlers');
+
+    /**
+     * @description
+     * The sole purpose of this function is to turn given entity into fully adapted observer object.
+     *
+     * @param service Service which is meant to become observer.
+     */
+    this.makeObservable = function (service) {
+        // If this object is already an observer, perform no further operation.
+        if (service[handlers]) {
+            throw new Error('Function "makeObservable" was already called on this service');
+        }
+
+        // Every observer objects must have an array of callback functions.
+        service[handlers] = new Set();
+
+        if (service.registerCallback) {
+            throw new Error('Function named "registerCallback" already exists in the service');
+        }
+        if (service.executeCallbacks) {
+            throw new Error('Function named "executeCallbacks" already exists in the service');
+        }
+
+        /**
+         * Extend object with callback registration and execution function.
+         * Every registered callback has to be explicitly deregistered using returned function.
+         */
+        service.registerCallback = registerCallbackFactory(service);
+        service.executeCallbacks = executeCallbacksFactory(service);
+    };
+
+    /**
+     * @description
+     * Factory function for registerCallbackHandler.
+     */
+    function registerCallbackFactory(service) {
+
+        /**
+         * @description
+         * Register callback function adding it to the set of registered handlers.
+         *
+         * @param handler Function which will be called back after event emission.
+         * @returns function Function used for unregistering handler passed as an argument.
+         */
+        return function (handler) {
+            service[handlers].add(handler);
+            return function () {
+                return service[handlers].delete(handler);
+            };
+        };
+    }
+
+    /**
+     * @description
+     * Factory function for executeCallbackHandlers.
+     */
+    function executeCallbacksFactory(service) {
+        /**
+         * @description
+         * Executes all callback functions in the order of their registration.
+         *
+         * @param data Custom data sent to each registered callback function.
+         */
+        return function (data) {
+            return service[handlers].forEach(function (handler) {
+                return handler(data);
+            });
+        };
+    }
+});
+'use strict';
+
+/**
+ * @ngdoc service
+ * @name BB.Services.service:responsive
+ * @requires ObserverService
+ *
+ * @description
+ * Stores the current screen size breakpoint as well as provides global scope with handy reference to itself.
+ * Listeners that are interested in screen size changes may register callback functions (see observer.service.js).
+ * Screen size breakpoint is relative to iframe.
+ *
+ * Example: In case of size: md
+ *  - xs: false
+ *  - sm: false
+ *  - md: true
+ *  - lg: false
+ *
+ *  - below.xs: false
+ *  - below.sm: false
+ *  - below.md: false
+ *  - below.lg: true
+ *
+ *  - above.xs: true
+ *  - above.sm: true
+ *  - above.md: false
+ *  - above.lg: false
+ *
+ *  Template text modifications.
+ *  <p>$root.responsive.above.md ? 'This paragraph will be shown for large screen sizes' : 'This one only for small'</p>
+ *
+ *  Dom manipulation. That component will be shown only for extra small screens.
+ *  <component ng-if="$root.responsive.xs"></component>
+ */
+angular.module('BB.Services').service('responsive', ResponsiveService);
+
+function ResponsiveService($window, $rootScope, ObserverService, GeneralOptions) {
+
+    var sizes = GeneralOptions.supportedSizes;
+
+    var SM_SIZE_BREAKPOINT = sizes.sm;
+    var MD_SIZE_BREAKPOINT = sizes.md;
+    var LG_SIZE_BREAKPOINT = sizes.lg;
+
+    /** Service API object. */
+    var responsive = this;
+
+    /** Service helper object for additional information about screen size. */
+    var state = { xs: false, sm: false, md: false, lg: false, below: {}, above: {} };
+
+    /**
+     * @description Function that must be called during the service is constructed. It assigns
+     * necessary handler to the window resize event and give access to the service itself to the global scope.
+     */
+    function initialise() {
+        // Responsive service emits an event when breakpoint changes.
+        ObserverService.makeObservable(responsive);
+
+        onResize();
+        angular.element($window).resize(onResize);
+
+        // View object making service state inaccessible for writing from the outside.
+        var readonlyView = Utils.readonlySubsetView(state);
+        Utils.completeAssign(responsive, readonlyView);
+
+        // Service is meant to be used in template files in most cases.
+        $rootScope.responsive = readonlyView;
+    }
+
+    function onResize() {
+        var width = $window.innerWidth;
+
+        var previousState = Utils.subset(state, responsive.getSupportedSizes());
+
+        state.xs = width < SM_SIZE_BREAKPOINT;
+        state.sm = width >= SM_SIZE_BREAKPOINT && width < MD_SIZE_BREAKPOINT;
+        state.md = width >= MD_SIZE_BREAKPOINT && width < LG_SIZE_BREAKPOINT;
+        state.lg = width >= LG_SIZE_BREAKPOINT;
+
+        state.below.sm = state.xs;
+        state.below.md = state.xs || state.sm;
+        state.below.lg = state.xs || state.sm || state.md;
+
+        state.above.xs = state.lg || state.md || state.sm;
+        state.above.sm = state.lg || state.md;
+        state.above.md = state.lg;
+
+        // Sets flag to true if any of the key field has changed.
+        var hasBreakpointChanged = responsive.getSupportedSizes().reduce(function (isDifference, size) {
+            return isDifference || previousState[size] !== state[size];
+        }, false);
+
+        // Is any of breakpoints has changed signal that fact to all listeners.
+        if (hasBreakpointChanged) {
+            responsive.executeCallbacks();
+        }
+    }
+
+    /**
+     * @description Returns current size of the viewport.
+     * @returns {String} Name of current size.
+     */
+    responsive.getCurrentSize = function () {
+        return responsive.getSupportedSizes().find(function (size) {
+            return state[size];
+        });
+    };
+
+    /**
+     * @description Returns supported screen size array.
+     * @returns {Array} Supported breakpoints name.
+     */
+    responsive.getSupportedSizes = function () {
+        return Object.keys(sizes);
+    };
+
+    /**
+     * @description Returns supported screen sizes' data.
+     * @returns {Object} Object consisting of size name and breakpoint value pairs.
+     */
+    responsive.getSupportedSizesData = function () {
+        return angular.copy(sizes);
+    };
+
+    initialise();
+}
+'use strict';
+
 //
 // Basket Directive
 // Example usage;
@@ -29550,46 +30131,6 @@ angular.module('BB.Directives').directive('bbBasketList', function () {
 });
 'use strict';
 
-angular.module('BB.Controllers').controller('BasketSummary', function ($scope) {
-
-    $scope.basket_items = $scope.bb.basket.items;
-
-    /***
-     * @ngdoc method
-     * @name confirm
-     * @methodOf BB.Directives:bbBasketSummary
-     * @description
-     * Marks the basket as reviewed and invokes the next step
-     */
-    return $scope.confirm = function () {
-        $scope.bb.basket.reviewed = true;
-        return $scope.decideNextPage();
-    };
-});
-'use strict';
-
-/***
- * @ngdoc directive
- * @name BB.Directives:bbBasketSummary
- * @restrict AE
- * @scope true
- *
- * @description
- * Loads a summary of the bookings and allows the user to  review and
- * confirm the previously entered information
- */ //
-
-
-angular.module('BB.Directives').directive('bbBasketSummary', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: 'BasketSummary'
-    };
-});
-'use strict';
-
 angular.module('BB.Controllers').controller('BulkPurchase', function ($scope, $rootScope, BBModel) {
 
     $rootScope.connection_started.then(function () {
@@ -29689,6 +30230,46 @@ angular.module('BB.Directives').directive('bbBulkPurchases', function () {
         replace: true,
         scope: true,
         controller: 'BulkPurchase'
+    };
+});
+'use strict';
+
+angular.module('BB.Controllers').controller('BasketSummary', function ($scope) {
+
+    $scope.basket_items = $scope.bb.basket.items;
+
+    /***
+     * @ngdoc method
+     * @name confirm
+     * @methodOf BB.Directives:bbBasketSummary
+     * @description
+     * Marks the basket as reviewed and invokes the next step
+     */
+    return $scope.confirm = function () {
+        $scope.bb.basket.reviewed = true;
+        return $scope.decideNextPage();
+    };
+});
+'use strict';
+
+/***
+ * @ngdoc directive
+ * @name BB.Directives:bbBasketSummary
+ * @restrict AE
+ * @scope true
+ *
+ * @description
+ * Loads a summary of the bookings and allows the user to  review and
+ * confirm the previously entered information
+ */ //
+
+
+angular.module('BB.Directives').directive('bbBasketSummary', function () {
+    return {
+        restrict: 'AE',
+        replace: true,
+        scope: true,
+        controller: 'BasketSummary'
     };
 });
 'use strict';
