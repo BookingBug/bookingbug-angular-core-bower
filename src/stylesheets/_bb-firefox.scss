@@ -1,0 +1,36 @@
+/**
+ * Styles and fixes specific for firefox browser.
+ */
+@-moz-document url-prefix() {
+
+  /* This style hides original ugly dropdown arrow and draws new one. Fat vector-like arrow.
+  select.form-control {
+    padding-right: 25px;
+    background: url("data:image/svg+xml,\
+      <svg version='1.1' xmlns='http://www.w3.org/2000/svg' width='14px'\
+           height='14px' viewBox='0 0 1200 1000' fill='rgb(51,51,51)'>\
+        <path d='M1100 411l-198 -199l-353 353l-353 -353l-197 199l551 551z'/>\
+      </svg>"
+    ) no-repeat calc(100% - 7px) 50%;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  */
+
+  /* This style hides original ugly dropdown arrow and draws new one. Google chrome like arrow. */
+  select.form-control {
+    padding-right: 25px;
+    background: url("data:image/svg+xml,\
+      <svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'><path d='M5 8l4 4 4-4z'/></svg>"
+    ) no-repeat calc(100% - 7px) 50%;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* This style gets rid off ugly outline inside dropdown lists. */
+  select:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 #000;
+  }
+
+}
