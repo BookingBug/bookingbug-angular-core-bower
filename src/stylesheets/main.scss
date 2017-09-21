@@ -1,9 +1,12 @@
 
 @import "../../bower_components/angular-bootstrap/ui-bootstrap-csp";
-// BookingBug mixins
 
+@import "bb-firefox";
+@import "bb-modals";
 @import "bb-toggle-switch";
 
+// Map step version 2
+@import "map.component";
 
 [pricepicker] {
 
@@ -29,7 +32,7 @@ img.loader {
 div.loader {
   margin: auto;
   display: block;
-  background:url("images/BB_wait.gif");
+  background: url("images/BB_wait.gif");
 }
 
 .modal-content {
@@ -37,10 +40,6 @@ div.loader {
     width: 100px;
     height: 100px;
   }
-}
-
-.modal {
-  overflow-y: scroll;
 }
 
 [bb-loading-spinner] {
@@ -60,20 +59,20 @@ div.loader {
 .form-group.has-success .form-control[disabled],
 .form-group.has-success .form-control[readonly],
 .has-success .form-control[disabled],
-.has-success .form-control[readonly]  {
+.has-success .form-control[readonly] {
   border-color: #EEE;
-
 
 }
 
-
 select.form-control[disabled]::-ms-expand,
-.form-group .form-control[disabled]::-ms-expand {  display: none; }
+.form-group .form-control[disabled]::-ms-expand {
+  display: none;
+}
 
 select.form-control[disabled],
-.form-group select.form-control[disabled]{
-    -webkit-appearance: none;
-    appearance: none;
+.form-group select.form-control[disabled] {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 #viewport_size {
@@ -85,18 +84,32 @@ select.form-control[disabled],
 // hide the language picker on quick_pick modal when on admin interface
 [bb-admin-booking] {
   [bb-language-picker] {
-    display : none;
+    display: none;
   }
 }
 
-.ui-select-bootstrap .ui-select-choices-row > a{
+.ui-select-bootstrap .ui-select-choices-row > a {
   white-space: normal;
 }
+
 .ui-select-toggle {
   display: flex;
   justify-content: space-between;
 }
-.ui-select-match-text{
-  overflow-x: hidden; 
+
+.ui-select-match-text {
+  overflow-x: hidden;
   text-overflow: ellipsis;
 }
+
+
+/**
+ *  The BBAlert service sets the error alert using the css class 'alert-error'.
+ *  That's wrong, because the css class used by Bootstrap is 'alert-danger'.
+ *
+ *  This patch provides compatibility but this logic should be changed
+ */
+.alert-error {
+  @include alert-variant($alert-danger-bg, $alert-danger-border, $alert-danger-text);
+}
+
