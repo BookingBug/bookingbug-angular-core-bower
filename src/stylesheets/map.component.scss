@@ -1,0 +1,44 @@
+map-component {
+  .container, .map-wrapper {
+    margin-bottom: 20px;
+  }
+
+  form {
+    button {
+      i {
+        height: 21px !important;
+      }
+    }
+
+    input {
+      width: 100% !important;
+      border-bottom-left-radius: 6px !important;
+      border-top-left-radius: 6px !important;
+    }
+  }
+
+  .panel-heading {
+    padding-left: 0;
+  }
+
+  .input-wrapper {
+    position: relative;
+
+    #reset-form {
+      position: absolute;
+      right: 10px;
+      top:0;
+      z-index: 5;
+      height:100%;
+      cursor: pointer;
+
+      i {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        @include translate(0, -50%);
+      }
+    }
+  }
+
+}
