@@ -13423,13 +13423,17 @@ function getURIparam( name ){
           return $scope.setLoaded($scope);
         });
         return promise.then(function(datetime_arr) {
-          var d, day, dtimes, i, j, k, len, len1, len2, pad, pair, ref, ref1, requested_slot, slot, time_slots, v;
+          var d, day, dtimes, i, j, k, len, len1, len2, pad, pair, ref, ref1, requested_slot, slot, time_slots, utc, utcHours, utcMinutes, utcSeconds, v;
           $scope.days = [];
           if (_.every(_.values(datetime_arr), _.isEmpty)) {
             $scope.no_slots_in_week = true;
           } else {
             $scope.no_slots_in_week = false;
           }
+          utc = moment().utc();
+          utcHours = utc.format('H');
+          utcMinutes = utc.format('m');
+          utcSeconds = utc.format('s');
           ref = _.sortBy(_.pairs(datetime_arr), function(pair) {
             return pair[0];
           });
@@ -13438,7 +13442,7 @@ function getURIparam( name ){
             d = pair[0];
             time_slots = pair[1];
             day = {
-              date: moment(d),
+              date: moment(d).add(utcHours, 'hours').add(utcMinutes, 'minutes').add(utcSeconds, 'seconds'),
               slots: time_slots
             };
             $scope.days.push(day);
