@@ -16098,13 +16098,15 @@ angular.module('BB.Directives')
             killWatch();
             num_spaces_plural = item.num_spaces > 1 ? "s" : "";
             spaces_left_plural = item.spaces_left > 1 ? "s" : "";
-            switch (item.chain.capacity_view) {
-              case "NUM_SPACES":
-                return scope.capacity_view_description = scope.ticket_spaces = item.num_spaces + " " + ticket_type + num_spaces_plural;
-              case "NUM_SPACES_LEFT":
-                return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " " + ticket_type + spaces_left_plural + " available";
-              case "NUM_SPACES_AND_SPACES_LEFT":
-                return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " of " + item.num_spaces + " " + ticket_type + num_spaces_plural + " available";
+            if (item.chain) {
+              switch (item.chain.capacity_view) {
+                case "NUM_SPACES":
+                  return scope.capacity_view_description = scope.ticket_spaces = item.num_spaces + " " + ticket_type + num_spaces_plural;
+                case "NUM_SPACES_LEFT":
+                  return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " " + ticket_type + spaces_left_plural + " available";
+                case "NUM_SPACES_AND_SPACES_LEFT":
+                  return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " of " + item.num_spaces + " " + ticket_type + num_spaces_plural + " available";
+              }
             }
           }
         });
