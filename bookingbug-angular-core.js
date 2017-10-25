@@ -15102,8 +15102,9 @@ angular.module('BB.Directives')
       compile: function(el, attr, trans) {
         return {
           pre: function(scope, element, attrs) {
-            var adminRequired, date_format, date_format_2;
+            var adminRequired, date_format, date_format_2, ticketRef;
             adminRequired = attrs.bbAdminRequired != null ? true : false;
+            ticketRef = attrs.ticketRef || "";
             date_format = 'DD/MM/YYYY';
             date_format_2 = 'dd/MM/yyyy';
             if ((attrs.bbDateFormat != null) && attrs.bbDateFormat === 'US') {
@@ -15156,7 +15157,7 @@ angular.module('BB.Directives')
                   ref1 = question.options;
                   for (j = 0, len2 = ref1.length; j < len2; j++) {
                     itemx = ref1[j];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + ticketRef + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
                   }
                   html += "</div>";
                 } else if (question.detail_type === "check") {
@@ -15173,7 +15174,7 @@ angular.module('BB.Directives')
                   ref2 = question.options;
                   for (k = 0, len3 = ref2.length; k < len3; k++) {
                     itemx = ref2[k];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + ticketRef + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
                   }
                   html += "</div>";
                 } else if (question.detail_type === "date") {
