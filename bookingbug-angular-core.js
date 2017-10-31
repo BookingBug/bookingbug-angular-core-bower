@@ -27957,17 +27957,19 @@ angular.module('BB.Directives')
         }
       }
     };
-    addAnswersFromDefaults = function(questions, answers) {
-      var i, len, name, question, results;
+    addAnswersFromDefaults = function(questions, defaultAnswers) {
+      var helpTextName, i, len, question, results, snakeCaseName;
       results = [];
       for (i = 0, len = questions.length; i < len; i++) {
         question = questions[i];
-        name = question.help_text;
-        if (answers[name]) {
-          question.answer = answers[name];
-        }
-        if (answers[question.id + '']) {
-          results.push(question.answer = answers[question.id + '']);
+        helpTextName = question.help_text;
+        snakeCaseName = convertToSnakeCase(question.name);
+        if (defaultAnswers[question.id + '']) {
+          results.push(question.answer = defaultAnswers[question.id + '']);
+        } else if (defaultAnswers[helpTextName]) {
+          results.push(question.answer = defaultAnswers[helpTextName]);
+        } else if (defaultAnswers[snakeCaseName]) {
+          results.push(question.answer = defaultAnswers[snakeCaseName]);
         } else {
           results.push(void 0);
         }
