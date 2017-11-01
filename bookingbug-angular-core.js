@@ -12507,7 +12507,7 @@ angular.module('BB.Services').factory("CustomTextService", function ($q, BBModel
                 return;
             }
 
-            var datetime = moment();
+            var datetime = moment(date);
             datetime = bbTimeZone.convertToCompany(datetime);
 
             var val = parseInt(time);
@@ -12516,9 +12516,10 @@ angular.module('BB.Services').factory("CustomTextService", function ($q, BBModel
             datetime.hour(hours);
             datetime.minutes(mins);
             datetime.seconds(0);
-            datetime.date(date.date());
-            datetime.month(date.month());
             datetime.year(date.year());
+            datetime.month(date.month());
+            datetime.date(date.date());
+
             return datetime;
         }
 
