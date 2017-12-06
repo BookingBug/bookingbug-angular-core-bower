@@ -1168,6 +1168,324 @@ String.prototype.parameterise = function (seperator) {
 };
 'use strict';
 
+(function () {
+
+    angular.module('BB').constant('BBAlerts', [{
+        key: 'GENERIC',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'LOCATION_NOT_FOUND',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'MISSING_LOCATION',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'MISSING_POSTCODE',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'POSTCODE_INVALID',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'ITEM_NO_LONGER_AVAILABLE',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'NO_WAITLIST_SPACES_LEFT',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'FORM_INVALID',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'GEOLOCATION_ERROR_FORBIDDEN',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'GEOLOCATION_ERROR',
+        type: 'error',
+        persist: true
+    }, {
+        key: 'EMPTY_BASKET_FOR_CHECKOUT',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'MAXIMUM_TICKETS',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'GIFT_CERTIFICATE_REQUIRED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'TIME_SLOT_NOT_SELECTED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'STORE_NOT_SELECTED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'APPT_AT_SAME_TIME',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'REQ_TIME_NOT_AVAIL',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'TOPUP_SUCCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'TOPUP_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'UPDATE_SUCCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'UPDATE_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'ALREADY_REGISTERED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'LOGIN_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'SSO_LOGIN_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_INVALID',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_REQ_SUCCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_REQ_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_SUCESS',
+        type: 'success',
+        persist: true
+    }, {
+        key: 'PASSWORD_RESET_FAILED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PASSWORD_MISMATCH',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'ATTENDEES_CHANGED',
+        type: 'info',
+        persist: true
+    }, {
+        key: 'PAYMENT_FAILED',
+        type: 'danger',
+        persist: true
+    }, {
+        key: 'ACCOUNT_DISABLED',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'FB_LOGIN_NOT_A_MEMBER',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'PHONE_NUMBER_IN_USE',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'EMAIL_IN_USE',
+        type: 'warning',
+        persist: true
+    }, {
+        key: 'WAITLIST_ACCEPTED',
+        type: 'success',
+        persist: false
+    }, {
+        key: 'BOOKING_CANCELLED',
+        type: 'success',
+        persist: false
+    }, {
+        key: 'NOT_BOOKABLE_PERSON',
+        type: 'warning',
+        persist: false
+    }, {
+        key: 'NOT_BOOKABLE_RESOURCE',
+        type: 'warning',
+        persist: false
+    }, {
+        key: 'COUPON_APPLY_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true
+    }, {
+        key: 'DEAL_APPLY_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true
+    }, {
+        key: 'DEAL_REMOVE_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true
+    }, {
+        key: 'SERVICE_HAS_NO_AVAILABILITY',
+        type: 'danger',
+        persist: true
+    }]);
+})();
+'use strict';
+
+/**
+ * Constant used to distinguish keyboard event codes.
+ */
+angular.module('BB').constant('KeyCode', {
+    BACKSPACE: 8,
+    TAB: 9,
+    ENTER: 13,
+    SHIFT: 16,
+    CONTROL: 17,
+    ALT: 18,
+    PAUSE_BREAK: 19,
+    CAPS_LOCK: 20,
+    ESC: 27,
+    SPACEBAR: 32,
+    PAGE_UP: 33,
+    PAGE_DOWN: 34,
+    END: 35,
+    HOME: 36,
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+    INSERT: 45,
+    DELETE: 46,
+    0: 48,
+    1: 49,
+    2: 50,
+    3: 51,
+    4: 52,
+    5: 53,
+    6: 54,
+    7: 55,
+    8: 56,
+    9: 57,
+    A: 65,
+    B: 66,
+    C: 67,
+    D: 68,
+    E: 69,
+    F: 70,
+    G: 71,
+    H: 72,
+    I: 73,
+    J: 74,
+    K: 75,
+    L: 76,
+    M: 77,
+    N: 78,
+    O: 79,
+    P: 80,
+    Q: 81,
+    R: 82,
+    S: 83,
+    T: 84,
+    U: 85,
+    V: 86,
+    W: 87,
+    X: 88,
+    Y: 89,
+    Z: 90,
+    LEFT_WINDOW_KEY: 91,
+    RIGHT_WINDOW_KEY: 92,
+    SELECT_KEY: 93,
+    NUMPAD_0: 96,
+    NUMPAD_1: 97,
+    NUMPAD_2: 98,
+    NUMPAD_3: 99,
+    NUMPAD_4: 100,
+    NUMPAD_5: 101,
+    NUMPAD_6: 102,
+    NUMPAD_7: 103,
+    NUMPAD_8: 104,
+    NUMPAD_9: 105,
+    MULTIPLY: 106,
+    ADD: 107,
+    SUBTRACT: 109,
+    DECIMAL_POINT: 110,
+    DIVIDE: 111,
+    F1: 112,
+    F2: 113,
+    F3: 114,
+    F4: 115,
+    F5: 116,
+    F6: 117,
+    F7: 118,
+    F8: 119,
+    F9: 120,
+    F10: 121,
+    F11: 122,
+    F12: 123,
+    F13: 124,
+    F14: 125,
+    F15: 126,
+    NUM_LOCK: 144,
+    SCROLL_LOCK: 145,
+    SEMI_COLON: 186,
+    EQUAL_SIGN: 187,
+    COMMA: 188,
+    DASH: 189,
+    PERIOD: 190,
+    FORWARD_SLASH: 191,
+    GRAVE_ACCENT: 192,
+    OPEN_BRACKET: 219,
+    BACK_SLASH: 220,
+    CLOSE_BRAKET: 221,
+    SINGLE_QUOTE: 222
+});
+'use strict';
+
+(function () {
+
+    angular.module('BB').constant('routeStates', {
+        Company: 0,
+        Category: 1,
+        Service: 2,
+        Person: 3,
+        Resource: 4,
+        Duration: 5,
+        Date: 6,
+        Time: 7,
+        Client: 8,
+        Summary: 9,
+        Basket: 10,
+        Checkout: 11,
+        Slot: 12,
+        Event: 13,
+        Login: 14,
+        Questions: 15,
+        Confirmation: 16
+    });
+})();
+'use strict';
+
 /***
  * @ngdoc directive
  * @name BB.Directives:bbWalletRemainder
@@ -2152,324 +2470,6 @@ angular.module('BB.i18n').run(function ($localStorage, bbi18nOptions, bbLocale, 
     bbLocale.determineLocale();
     bbTimeZone.determine();
 });
-'use strict';
-
-(function () {
-
-    angular.module('BB').constant('BBAlerts', [{
-        key: 'GENERIC',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'LOCATION_NOT_FOUND',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'MISSING_LOCATION',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'MISSING_POSTCODE',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'POSTCODE_INVALID',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'ITEM_NO_LONGER_AVAILABLE',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'NO_WAITLIST_SPACES_LEFT',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'FORM_INVALID',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'GEOLOCATION_ERROR_FORBIDDEN',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'GEOLOCATION_ERROR',
-        type: 'error',
-        persist: true
-    }, {
-        key: 'EMPTY_BASKET_FOR_CHECKOUT',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'MAXIMUM_TICKETS',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'GIFT_CERTIFICATE_REQUIRED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'TIME_SLOT_NOT_SELECTED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'STORE_NOT_SELECTED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'APPT_AT_SAME_TIME',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'REQ_TIME_NOT_AVAIL',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'TOPUP_SUCCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'TOPUP_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'UPDATE_SUCCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'UPDATE_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'ALREADY_REGISTERED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'LOGIN_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'SSO_LOGIN_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_INVALID',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_REQ_SUCCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_REQ_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_SUCESS',
-        type: 'success',
-        persist: true
-    }, {
-        key: 'PASSWORD_RESET_FAILED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PASSWORD_MISMATCH',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'ATTENDEES_CHANGED',
-        type: 'info',
-        persist: true
-    }, {
-        key: 'PAYMENT_FAILED',
-        type: 'danger',
-        persist: true
-    }, {
-        key: 'ACCOUNT_DISABLED',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'FB_LOGIN_NOT_A_MEMBER',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'PHONE_NUMBER_IN_USE',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'EMAIL_IN_USE',
-        type: 'warning',
-        persist: true
-    }, {
-        key: 'WAITLIST_ACCEPTED',
-        type: 'success',
-        persist: false
-    }, {
-        key: 'BOOKING_CANCELLED',
-        type: 'success',
-        persist: false
-    }, {
-        key: 'NOT_BOOKABLE_PERSON',
-        type: 'warning',
-        persist: false
-    }, {
-        key: 'NOT_BOOKABLE_RESOURCE',
-        type: 'warning',
-        persist: false
-    }, {
-        key: 'COUPON_APPLY_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true
-    }, {
-        key: 'DEAL_APPLY_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true
-    }, {
-        key: 'DEAL_REMOVE_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true
-    }, {
-        key: 'SERVICE_HAS_NO_AVAILABILITY',
-        type: 'danger',
-        persist: true
-    }]);
-})();
-'use strict';
-
-/**
- * Constant used to distinguish keyboard event codes.
- */
-angular.module('BB').constant('KeyCode', {
-    BACKSPACE: 8,
-    TAB: 9,
-    ENTER: 13,
-    SHIFT: 16,
-    CONTROL: 17,
-    ALT: 18,
-    PAUSE_BREAK: 19,
-    CAPS_LOCK: 20,
-    ESC: 27,
-    SPACEBAR: 32,
-    PAGE_UP: 33,
-    PAGE_DOWN: 34,
-    END: 35,
-    HOME: 36,
-    LEFT: 37,
-    UP: 38,
-    RIGHT: 39,
-    DOWN: 40,
-    INSERT: 45,
-    DELETE: 46,
-    0: 48,
-    1: 49,
-    2: 50,
-    3: 51,
-    4: 52,
-    5: 53,
-    6: 54,
-    7: 55,
-    8: 56,
-    9: 57,
-    A: 65,
-    B: 66,
-    C: 67,
-    D: 68,
-    E: 69,
-    F: 70,
-    G: 71,
-    H: 72,
-    I: 73,
-    J: 74,
-    K: 75,
-    L: 76,
-    M: 77,
-    N: 78,
-    O: 79,
-    P: 80,
-    Q: 81,
-    R: 82,
-    S: 83,
-    T: 84,
-    U: 85,
-    V: 86,
-    W: 87,
-    X: 88,
-    Y: 89,
-    Z: 90,
-    LEFT_WINDOW_KEY: 91,
-    RIGHT_WINDOW_KEY: 92,
-    SELECT_KEY: 93,
-    NUMPAD_0: 96,
-    NUMPAD_1: 97,
-    NUMPAD_2: 98,
-    NUMPAD_3: 99,
-    NUMPAD_4: 100,
-    NUMPAD_5: 101,
-    NUMPAD_6: 102,
-    NUMPAD_7: 103,
-    NUMPAD_8: 104,
-    NUMPAD_9: 105,
-    MULTIPLY: 106,
-    ADD: 107,
-    SUBTRACT: 109,
-    DECIMAL_POINT: 110,
-    DIVIDE: 111,
-    F1: 112,
-    F2: 113,
-    F3: 114,
-    F4: 115,
-    F5: 116,
-    F6: 117,
-    F7: 118,
-    F8: 119,
-    F9: 120,
-    F10: 121,
-    F11: 122,
-    F12: 123,
-    F13: 124,
-    F14: 125,
-    F15: 126,
-    NUM_LOCK: 144,
-    SCROLL_LOCK: 145,
-    SEMI_COLON: 186,
-    EQUAL_SIGN: 187,
-    COMMA: 188,
-    DASH: 189,
-    PERIOD: 190,
-    FORWARD_SLASH: 191,
-    GRAVE_ACCENT: 192,
-    OPEN_BRACKET: 219,
-    BACK_SLASH: 220,
-    CLOSE_BRAKET: 221,
-    SINGLE_QUOTE: 222
-});
-'use strict';
-
-(function () {
-
-    angular.module('BB').constant('routeStates', {
-        Company: 0,
-        Category: 1,
-        Service: 2,
-        Person: 3,
-        Resource: 4,
-        Duration: 5,
-        Date: 6,
-        Time: 7,
-        Client: 8,
-        Summary: 9,
-        Basket: 10,
-        Checkout: 11,
-        Slot: 12,
-        Event: 13,
-        Login: 14,
-        Questions: 15,
-        Confirmation: 16
-    });
-})();
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -31978,6 +31978,12 @@ angular.module('BB.Directives').directive('bbCompanies', function () {
             return moment().isAfter($scope.current_date);
         };
 
+        var checkForAndMarkSelectedDay = function checkForAndMarkSelectedDay(day) {
+            if (day.date.isSame($scope.selected_date)) {
+                $scope.selectDay(day);
+            }
+        };
+
         return $scope.loadData = function () {
             $scope.day_data = {};
             $scope.notLoaded($scope);
@@ -32004,6 +32010,9 @@ angular.module('BB.Directives').directive('bbCompanies', function () {
                     }
 
                     // group the day data by week
+                    // $scope.weeks = _.groupBy($scope.day_data, day => day.date.week());
+                    // $scope.weeks = _.toArray($scope.weeks);
+
                 } catch (err) {
                     _didIteratorError = true;
                     _iteratorError = err;
@@ -32019,10 +32028,13 @@ angular.module('BB.Directives').directive('bbCompanies', function () {
                     }
                 }
 
-                $scope.weeks = _.groupBy($scope.day_data, function (day) {
+                $scope.weeks = _.chain(days).each(function (day) {
+                    return checkForAndMarkSelectedDay(day);
+                }).groupBy(function (day) {
                     return day.date.week();
-                });
-                $scope.weeks = _.toArray($scope.weeks);
+                }).sortBy(function (week) {
+                    return week[0].date.unix();
+                }).toArray().value();
 
                 $scope.$emit('bbDayList:loaded');
 
