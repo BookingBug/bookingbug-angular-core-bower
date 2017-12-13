@@ -35034,6 +35034,7 @@ angular.module('BB.Directives').directive('bbLogin', function () {
                 if ($scope.options.default_zoom) {
                     $scope.myMap.setZoom($scope.default_zoom);
                 }
+                loader.setLoaded();
             });
             return checkDataStore();
         };
