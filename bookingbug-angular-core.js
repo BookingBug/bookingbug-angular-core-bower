@@ -19344,16 +19344,9 @@ angular.module('BB.Directives').directive('bbCustomConfirmationText', function (
 
                 if (date != null && moment(date).isValid()) {
                     date = moment(date);
-                    var newDate = new Date();
-                    newDate.setFullYear(date.year());
-                    newDate.setMonth(date.month());
-                    newDate.setDate(date.date());
-                    newDate.setHours(date.hours());
-                    newDate.setMinutes(date.minutes());
-                    newDate.setSeconds(0);
-                    newDate.setMilliseconds(0);
-
-                    return newDate;
+                    var newDate = moment(new Date());
+                    newDate.set(date.toObject());
+                    return newDate.toDate();
                 }
                 // otherwise undefined (important for timepicker)
                 return undefined;
