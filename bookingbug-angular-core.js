@@ -12997,7 +12997,7 @@ function getURIparam( name ){
     };
   });
 
-  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize) {
+  angular.module('BB.Controllers').controller('TimeRangeList', function($scope, $element, $attrs, $rootScope, $q, TimeService, AlertService, BBModel, FormDataStoreService, DateTimeUtilitiesService, SlotDates, ViewportSize, ErrorService) {
     var currentPostcode, isAddValid, isSubtractValid, setMinMaxDate, setTimeRange;
     $scope.controller = "public.controllers.TimeRangeList";
     currentPostcode = $scope.bb.postcode;
@@ -13488,14 +13488,13 @@ function getURIparam( name ){
           if (err.status === 404 && err.data && err.data.error && err.data.error === "No bookable events found") {
             if ($scope.data_source && $scope.data_source.person) {
               AlertService.warning(ErrorService.getError('NOT_BOOKABLE_PERSON'));
-              $scope.setLoaded($scope);
+              return $scope.setLoaded($scope);
             } else if ($scope.data_source && $scope.data_source.resource) {
               AlertService.warning(ErrorService.getError('NOT_BOOKABLE_RESOURCE'));
-              $scope.setLoaded($scope);
+              return $scope.setLoaded($scope);
             } else {
-
+              return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
             }
-            return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
           } else {
             return $scope.setLoadedAndShowError($scope, err, 'Sorry, something went wrong');
           }
