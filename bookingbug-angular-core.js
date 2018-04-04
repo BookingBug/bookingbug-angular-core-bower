@@ -60,6 +60,8 @@ angular.module('BB').config(function ($locationProvider, $httpProvider, $provide
         'App-Id': 'f6b16c23',
         'App-Key': 'f0bc4f65f4fbfe7b4b3b7264b655f5eb'
     };
+
+    $httpProvider.interceptors.push('addLocaleInterceptor');
 });
 
 window.bookingbug = {
@@ -11063,6 +11065,31 @@ angular.module('BB.Models').factory("TimeSlotModel", function ($q, $window, BBMo
         return TimeSlot;
     }(BaseModel);
 });
+'use strict';
+
+function AddLocaleInterceptor(tmhDynamicLocale) {
+    return {
+        request: function request(config) {
+            var locale = tmhDynamicLocale.get();
+
+            var queryStringSeparator = '?';
+
+            if (config.url.match(/\*?\.html/)) {
+                return config;
+            }
+
+            if (config.url.match(/\?/)) {
+                queryStringSeparator = '&';
+            }
+
+            config.url = '' + config.url + queryStringSeparator + 'locale=' + locale;
+
+            return config;
+        }
+    };
+}
+
+angular.module('BB').service('addLocaleInterceptor', AddLocaleInterceptor);
 "use strict";
 
 angular.module('BB.Services').factory("AddressListService", function ($q, $window, halClient, UriTemplate) {
@@ -26245,7 +26272,7 @@ function bbLanguagePickerLink(scope, element, attrs) {
     }
 }
 
-function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLocale, bbi18nOptions) {
+function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLocale, bbi18nOptions, $window) {
     'ngInject';
 
     /*jshint validthis: true */
@@ -26295,6 +26322,8 @@ function bbLanguagePickerController($rootScope, $scope, bbLocale, tmhDynamicLoca
     function setLanguage(lang) {
         this.language.selected = lang;
         this.pickLanguage(lang.identifier);
+
+        $window.location.reload();
     }
 
     /*
