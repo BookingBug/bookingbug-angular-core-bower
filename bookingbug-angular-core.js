@@ -912,238 +912,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-(function() {
-  window.Collection = (function() {
-    function Collection() {}
-
-    return Collection;
-
-  })();
-
-  window.Collection.Base = (function() {
-    function Base(res, items, params) {
-      var clean_params, key, m, n, val;
-      this.res = res;
-      this.items = items;
-      this.params = params;
-      this.callbacks = [];
-      clean_params = {};
-      for (key in params) {
-        val = params[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      this.jparams = JSON.stringify(clean_params);
-      if (res) {
-        for (n in res) {
-          m = res[n];
-          this[n] = m;
-        }
-      }
-    }
-
-    Base.prototype.checkItem = function(item) {
-      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
-      if (!this.matchesParams(item)) {
-        this.deleteItem(item);
-        return true;
-      } else {
-        ref = this.items;
-        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
-          existingItem = ref[index];
-          if (item.self === existingItem.self) {
-            this.items[index] = item;
-            ref1 = this.callbacks;
-            for (j = 0, len2 = ref1.length; j < len2; j++) {
-              call = ref1[j];
-              call[1](item, "update");
-            }
-            return true;
-          }
-        }
-      }
-      this.items.push(item);
-      ref2 = this.callbacks;
-      results = [];
-      for (k = 0, len3 = ref2.length; k < len3; k++) {
-        call = ref2[k];
-        results.push(call[1](item, "add"));
-      }
-      return results;
-    };
-
-    Base.prototype.deleteItem = function(item) {
-      var call, i, len, len1, ref, results;
-      len = this.items.length;
-      this.items = this.items.filter(function(x) {
-        return x.self !== item.self;
-      });
-      if (this.items.length !== len) {
-        ref = this.callbacks;
-        results = [];
-        for (i = 0, len1 = ref.length; i < len1; i++) {
-          call = ref[i];
-          results.push(call[1](item, "delete"));
-        }
-        return results;
-      }
-    };
-
-    Base.prototype.getItems = function() {
-      return this.items;
-    };
-
-    Base.prototype.addCallback = function(obj, fn) {
-      var call, i, len1, ref;
-      ref = this.callbacks;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        call = ref[i];
-        if (call[0] === obj) {
-          return;
-        }
-      }
-      return this.callbacks.push([obj, fn]);
-    };
-
-    Base.prototype.matchesParams = function(item) {
-      return true;
-    };
-
-    return Base;
-
-  })();
-
-  window.BaseCollections = (function() {
-    function BaseCollections() {
-      this.collections = [];
-    }
-
-    BaseCollections.prototype.count = function() {
-      return this.collections.length;
-    };
-
-    BaseCollections.prototype.add = function(col) {
-      return this.collections.push(col);
-    };
-
-    BaseCollections.prototype.checkItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.checkItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.deleteItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.deleteItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.find = function(prms) {
-      var clean_params, col, i, jprms, key, len1, ref, val;
-      clean_params = {};
-      for (key in prms) {
-        val = prms[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      jprms = JSON.stringify(clean_params);
-      ref = this.collections;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        if (jprms === col.jparams) {
-          return col;
-        }
-      }
-    };
-
-    BaseCollections.prototype["delete"] = function(col) {
-      return this.collections = _.without(this.collections, col);
-    };
-
-    return BaseCollections;
-
-  })();
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Day = (function(superClass) {
-    extend(Day, superClass);
-
-    function Day() {
-      return Day.__super__.constructor.apply(this, arguments);
-    }
-
-    Day.prototype.checkItem = function(item) {
-      return Day.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Day;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("DayCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Space = (function(superClass) {
-    extend(Space, superClass);
-
-    function Space() {
-      return Space.__super__.constructor.apply(this, arguments);
-    }
-
-    Space.prototype.checkItem = function(item) {
-      return Space.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Space;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("SpaceCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
 
 angular
 .module('angular-hal', []).provider('data_cache', function() {
@@ -1853,3765 +1621,236 @@ function getURIparam( name ){
     return results[1];
 }
 (function() {
-  var app;
+  window.Collection = (function() {
+    function Collection() {}
 
-  app = angular.module('BB.Filters');
+    return Collection;
 
-  angular.module('BB.Filters').filter('stripPostcode', function() {
-    return function(address) {
-      var match;
-      match = address.toLowerCase().match(/[a-z]+\d/);
-      if (match) {
-        address = address.substr(0, match.index);
-      }
-      address = $.trim(address);
-      if (/,$/.test(address)) {
-        address = address.slice(0, -1);
-      }
-      return address;
-    };
-  });
+  })();
 
-  angular.module('BB.Filters').filter('labelNumber', function() {
-    return function(input, labels) {
-      var response;
-      response = input;
-      if (labels[input]) {
-        response = labels[input];
-      }
-      return response;
-    };
-  });
-
-  angular.module('BB.Filters').filter('interpolate', [
-    'version', function(version) {
-      return function(text) {
-        return String(text).replace(/\%VERSION\%/mg, version);
-      };
-    }
-  ]);
-
-  angular.module('BB.Filters').filter('rag', function() {
-    return function(value, v1, v2) {
-      if (value <= v1) {
-        return "red";
-      } else if (value <= v2) {
-        return "amber";
-      } else {
-        return "green";
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time', function($window) {
-    return function(v) {
-      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
-    };
-  });
-
-  angular.module('BB.Filters').filter('address_single_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var addr;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        addr = "";
-        addr += address.address1;
-        if (address.address2 && address.address2.length > 0) {
-          addr += ", ";
-          addr += address.address2;
-        }
-        if (address.address3 && address.address3.length > 0) {
-          addr += ", ";
-          addr += address.address3;
-        }
-        if (address.address4 && address.address4.length > 0) {
-          addr += ", ";
-          addr += address.address4;
-        }
-        if (address.address5 && address.address5.length > 0) {
-          addr += ", ";
-          addr += address.address5;
-        }
-        if (address.postcode && address.postcode.length > 0) {
-          addr += ", ";
-          addr += address.postcode;
-        }
-        return addr;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('address_multi_line', function() {
-    return (function(_this) {
-      return function(address) {
-        var str;
-        if (!address) {
-          return;
-        }
-        if (!address.address1) {
-          return;
-        }
-        str = "";
-        if (address.address1) {
-          str += address.address1;
-        }
-        if (address.address2 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address2) {
-          str += address.address2;
-        }
-        if (address.address3 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address3) {
-          str += address.address3;
-        }
-        if (address.address4 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address4) {
-          str += address.address4;
-        }
-        if (address.address5 && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.address5) {
-          str += address.address5;
-        }
-        if (address.postcode && str.length > 0) {
-          str += "<br/>";
-        }
-        if (address.postcode) {
-          str += address.postcode;
-        }
-        return str;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('map_lat_long', function() {
-    return (function(_this) {
-      return function(address) {
-        var cord;
-        if (!address) {
-          return;
-        }
-        if (!address.map_url) {
-          return;
-        }
-        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
-        return cord[0];
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('currency', function($filter) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        return $filter('icurrency')(number, currencyCode);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('icurrency', function($window, SettingsService) {
-    return (function(_this) {
-      return function(number, currencyCode) {
-        var currency, decimal, format, thousand;
-        currencyCode || (currencyCode = SettingsService.getCurrency());
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
-          thousand = ",";
-          decimal = ".";
-          format = "%s%v";
-        } else {
-          thousand = ".";
-          decimal = ",";
-          format = "%s%v";
-        }
-        number = number / 100.0;
-        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('raw_currency', function() {
-    return (function(_this) {
-      return function(number) {
-        return number / 100.0;
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('pretty_price', function($filter) {
-    return function(price, symbol) {
-      return $filter('ipretty_price')(price, symbol);
-    };
-  });
-
-  angular.module('BB.Filters').filter('ipretty_price', function($window, SettingsService) {
-    return function(price, symbol) {
-      var currency;
-      if (!symbol) {
-        currency = {
-          USD: "$",
-          GBP: "£",
-          AUD: "$",
-          EUR: "€",
-          CAD: "$",
-          MIXED: "~"
-        };
-        symbol = currency[SettingsService.getCurrency()];
-      }
-      price /= 100.0;
-      if (parseFloat(price) === 0) {
-        return 'Free';
-      } else if (parseFloat(price) % 1 === 0) {
-        return symbol + parseFloat(price);
-      } else {
-        return symbol + $window.sprintf("%.2f", parseFloat(price));
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period', function() {
-    return function(v, options) {
-      var hour_string, hours, min_string, mins, separator, str, val;
-      if (!angular.isNumber(v)) {
-        return;
-      }
-      hour_string = options && options.abbr_units ? "hr" : "hour";
-      min_string = options && options.abbr_units ? "min" : "minute";
-      separator = options && angular.isString(options.separator) ? options.separator : "and";
-      val = parseInt(v);
-      if (val < 60) {
-        str = val + " " + min_string;
-        if (val > 1) {
-          str += "s";
-        }
-        return str;
-      }
-      hours = parseInt(val / 60);
-      mins = val % 60;
-      if (mins === 0) {
-        if (hours === 1) {
-          return "1 " + hour_string;
-        } else {
-          return hours + " " + hour_string + "s";
-        }
-      } else {
-        str = hours + " " + hour_string;
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0) {
-          return str;
-        }
-        if (separator.length > 0) {
-          str += " " + separator;
-        }
-        str += " " + mins + " " + min_string;
-        if (mins > 1) {
-          str += "s";
-        }
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
-    return function(time, options) {
-      var h, m, omit_mins_on_hour, separator, suffix, t;
-      if (!angular.isNumber(time)) {
-        return;
-      }
-      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
-      separator = options && options.separator ? options.separator : ":";
-      t = time;
-      h = Math.floor(t / 60);
-      m = t % 60;
-      suffix = 'am';
-      if (h >= 12) {
-        suffix = 'pm';
-      }
-      if (h > 12) {
-        h -= 12;
-      }
-      if (m === 0 && omit_mins_on_hour) {
-        time = "" + h;
-      } else {
-        time = ("" + h + separator) + $window.sprintf("%02d", m);
-      }
-      time += suffix;
-      return time;
-    };
-  });
-
-  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
-    return function(v) {
-      var hours, mins, secs, str, val;
-      val = parseInt(v);
-      if (val < 60) {
-        return "" + val + " seconds";
-      }
-      hours = Math.floor(val / 3600);
-      mins = Math.floor(val % 3600 / 60);
-      secs = Math.floor(val % 60);
-      str = "";
-      if (hours > 0) {
-        str += hours + " hour";
-        if (hours > 1) {
-          str += "s";
-        }
-        if (mins === 0 && secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      if (mins > 0) {
-        str += mins + " minute";
-        if (mins > 1) {
-          str += "s";
-        }
-        if (secs === 0) {
-          return str;
-        }
-        str += " and ";
-      }
-      str += secs + " second";
-      if (secs > 0) {
-        str += "s";
-      }
-      return str;
-    };
-  });
-
-  angular.module('BB.Filters').filter('round_up', function() {
-    return function(number, interval) {
-      var result;
-      result = number / interval;
-      result = parseInt(result);
-      result = result * interval;
-      if ((number % interval) > 0) {
-        result = result + interval;
-      }
-      return result;
-    };
-  });
-
-  angular.module('BB.Filters').filter('exclude_days', function() {
-    return function(days, excluded) {
-      return _.filter(days, function(day) {
-        return excluded.indexOf(day.date.format('dddd')) === -1;
-      });
-    };
-  });
-
-  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
-    return function(phone_number) {
-      var cc;
-      if (!phone_number) {
-        return;
-      }
-      cc = SettingsService.getCountryCode();
-      switch (cc) {
-        case "gb":
-          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
-        case "us":
-          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
-        default:
-          return phone_number;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
-    var hardcoded_formats;
-    hardcoded_formats = {
-      datetime: {
-        us: 'MM/DD/YYYY, h:mm a',
-        uk: 'DD/MM/YYYY, HH:mm'
-      },
-      date: {
-        us: 'MM/DD/YYYY',
-        uk: 'DD/MM/YYYY'
-      },
-      time: {
-        us: 'h:mm a',
-        uk: 'HH:mm'
-      }
-    };
-    return function(date, format, show_time_zone) {
-      var cc, new_date;
-      if (format == null) {
-        format = "LLL";
-      }
-      if (show_time_zone == null) {
-        show_time_zone = false;
-      }
-      if (hardcoded_formats[format]) {
-        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
-        format = hardcoded_formats[format][cc];
-      }
-      if (date && moment.isMoment(date)) {
-        new_date = date.clone();
-        new_date.tz(SettingsService.getDisplayTimeZone());
-        if (show_time_zone) {
-          format += ' zz';
-        }
-        return new_date.format(format);
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('range', function() {
-    return function(input, min, max) {
-      var i, j, ref, ref1;
-      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
-        input.push(i);
-      }
-      return input;
-    };
-  });
-
-  angular.module('BB.Filters').filter('international_number', function() {
-    return (function(_this) {
-      return function(number, prefix) {
-        if (number && prefix) {
-          return prefix + " " + number;
-        } else if (number) {
-          return "" + number;
-        } else {
-          return "";
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter("startFrom", function() {
-    return function(input, start) {
-      if (input === undefined) {
-        return input;
-      } else {
-        return input.slice(+start);
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('add', function() {
-    return (function(_this) {
-      return function(item, value) {
-        if (item && value) {
-          item = parseInt(item);
-          return item + value;
-        }
-      };
-    })(this);
-  });
-
-  angular.module('BB.Filters').filter('spaces_remaining', function() {
-    return function(spaces) {
-      if (spaces < 1) {
-        return 0;
-      } else {
-        return spaces;
-      }
-    };
-  });
-
-  angular.module('BB.Filters').filter('key_translate', function() {
-    return function(input) {
-      var add_underscore, remove_punctuations, upper_case;
-      upper_case = angular.uppercase(input);
-      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-      add_underscore = remove_punctuations.replace(/\ /g, "_");
-      return add_underscore;
-    };
-  });
-
-  angular.module('BB.Filters').filter('nl2br', function() {
-    return function(str) {
-      if (str) {
-        return str.replace(/\n/g, '<br/>');
-      }
-    };
-  });
-
-  app.filter('clearTimezone', function() {
-    return function(val, offset) {
-      if (val !== null && val.length > 19) {
-        return val.substring(0, 19);
-      }
-      return val;
-    };
-  });
-
-  app.filter("format_answer", function() {
-    return function(answer) {
-      if (typeof answer === "boolean") {
-        answer = answer === true ? "Yes" : "No";
-      } else if (moment(answer, 'YYYY-MM-DD', true).isValid()) {
-        answer = moment(answer).format("D MMMM YYYY");
-      }
-      return answer;
-    };
-  });
-
-  angular.module('BB.Filters').filter('serviceListFilter', function() {
-    return function(items, condition) {
-      var pattern;
-      if (items) {
-        pattern = new RegExp(condition, "i");
-        return items.filter(function(item) {
-          return item.name && item.name.match(pattern) || item.description && item.description.match(pattern);
-        });
-      } else {
-        return [];
-      }
-    };
-  });
-
-}).call(this);
-
-'use strict'
-
-// This is a customisation of the accordion-group directive in ui bootstrap
-// v0.12.0 to fix an issue in ie8. Replace has been changed from true to false
-
-angular.module('BB.Directives')
-
-// The accordion-group directive indicates a block of html that will expand and collapse in an accordion
-.directive('bbAccordionGroup', function() {
-  return {
-    require:'^accordion',         // We need this directive to be inside an accordion
-    restrict:'EA',
-    transclude:true,              // It transcludes the contents of the directive into the template
-    replace: false,                // The element containing the directive will be replaced with the template
-    templateUrl:'accordion-group.html',
-    scope: {
-      heading: '@',               // Interpolate the heading attribute onto this scope
-      isOpen: '=?',
-      isDisabled: '=?'
-    },
-    controller: function() {
-      this.setHeading = function(element) {
-        this.heading = element;
-      };
-    },
-    link: function(scope, element, attrs, accordionCtrl) {
-      accordionCtrl.addGroup(scope);
-
-      scope.$watch('isOpen', function(value) {
-        if ( value ) {
-          accordionCtrl.closeOthers(scope);
-        }
-      });
-
-      scope.toggleOpen = function() {
-        if ( !scope.isDisabled ) {
-          scope.isOpen = !scope.isOpen;
-        }
-      };
-    }
-  };
-})
-
-// Use accordion-heading below an accordion-group to provide a heading containing HTML
-// <accordion-group>
-//   <accordion-heading>Heading containing HTML - <img src="..."></accordion-heading>
-// </accordion-group>
-.directive('bbAccordionHeading', function() {
-  return {
-    restrict: 'EA',
-    transclude: true,   // Grab the contents to be used as the heading
-    template: '',       // In effect remove this element!
-    replace: true,
-    require: '^bbAccordionGroup',
-    link: function(scope, element, attr, accordionGroupCtrl, transclude) {
-      // Pass the heading to the accordion-group controller
-      // so that it can be transcluded into the right place in the template
-      // [The second parameter to transclude causes the elements to be cloned so that they work in ng-repeat]
-      accordionGroupCtrl.setHeading(transclude(scope, function() {}));
-    }
-  };
-})
-
-// Use in the accordion-group template to indicate where you want the heading to be transcluded
-// You must provide the property on the accordion-group controller that will hold the transcluded element
-// <div class="accordion-group">
-//   <div class="accordion-heading" ><a ... accordion-transclude="heading">...</a></div>
-//   ...
-// </div>
-.directive('bbAccordionTransclude', function() {
-  return {
-    require: '^bbAccordionGroup',
-    link: function(scope, element, attr, controller) {
-      scope.$watch(function() { return controller[attr.bbAccordionTransclude]; }, function(heading) {
-        if ( heading ) {
-          element.html('');
-          element.append(heading);
-        }
-      });
-    }
-  };
-});
-
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      templateUrl: function(element, attrs) {
-        if (_.has(attrs, 'mini')) {
-          return PathSvc.directivePartial("_basket_mini");
-        } else {
-          return PathSvc.directivePartial("basket");
-        }
-      },
-      controllerAs: 'BasketCtrl',
-      controller: function($scope, $modal, BasketService) {
-        var BasketInstanceCtrl;
-        $scope.setUsingBasket(true);
-        this.empty = function() {
-          return $scope.$eval('emptyBasket()');
-        };
-        this.view = function() {
-          return $scope.$eval('viewBasket()');
-        };
-        $scope.showBasketDetails = function() {
-          var modalInstance;
-          if (($scope.bb.current_page === "basket") || ($scope.bb.current_page === "checkout")) {
-            return false;
+  window.Collection.Base = (function() {
+    function Base(res, items, params) {
+      var clean_params, key, m, n, val;
+      this.res = res;
+      this.items = items;
+      this.params = params;
+      this.callbacks = [];
+      clean_params = {};
+      for (key in params) {
+        val = params[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
           } else {
-            return modalInstance = $modal.open({
-              templateUrl: $scope.getPartial("_basket_details"),
-              scope: $scope,
-              controller: BasketInstanceCtrl,
-              resolve: {
-                basket: function() {
-                  return $scope.bb.basket;
-                }
-              }
-            });
+            clean_params[key] = val;
           }
-        };
-        BasketInstanceCtrl = function($scope, $rootScope, $modalInstance, basket) {
-          $scope.basket = basket;
-          return $scope.cancel = function() {
-            return $modalInstance.dismiss("cancel");
-          };
-        };
-        $scope.$watch(function() {
-          var len;
-          $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
-          if (!len) {
-            $scope.basketStatus = "empty";
-          } else {
-            if (len === 1) {
-              $scope.basketStatus = "1 item in your basket";
-            } else {
-              $scope.basketStatus = len + " items in your basket";
-            }
-          }
-        });
-      },
-      link: function(scope, element, attrs) {
-        return element.bind('click', function(e) {
-          return e.preventDefault();
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbMinSpend', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      controller: function($scope, $element, $attrs, AlertService, $filter) {
-        var checkMinSpend, options;
-        options = $scope.$eval($attrs.bbMinSpend || {});
-        $scope.min_spend = options.min_spend || 0;
-        $scope.setReady = function() {
-          return checkMinSpend();
-        };
-        return checkMinSpend = function() {
-          var i, item, len1, price, ref;
-          price = 0;
-          ref = $scope.bb.stacked_items;
-          for (i = 0, len1 = ref.length; i < len1; i++) {
-            item = ref[i];
-            price += item.service.price;
-          }
-          if (price >= $scope.min_spend) {
-            AlertService.clear();
-            return true;
-          } else {
-            AlertService.clear();
-            price = $filter('ipretty_price')($scope.min_spend);
-            AlertService.add("warning", {
-              msg: "You need to spend at least " + price + " to make a booking."
-            });
-            return false;
-          }
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc directive
-* @name BB.Directives.directive:bbDateTimePicker
-* @scope
-* @restrict A
-*
-* @description
-* DateTime picker that combines date & timepicker and consolidates
-* the Use of Moment.js in the App and Date in the pickers
-*
-* @param {object}  date   A moment.js date object
-* @param {boolean}  showMeridian   Switch to show/hide meridian (optional, default:false)
-* @param {number}  minuteStep Step for the timepicker (optional, default:10)
-* @param {object}  minDate Min date value for datetimepicker
-* @param {object}  maxDate Max date value for datetimepicker
- */
-
-(function() {
-  angular.module('BB.Directives').directive('bbDateTimePicker', function(PathSvc) {
-    return {
-      scope: {
-        date: '=',
-        showMeridian: '=?',
-        minuteStep: '=?',
-        minDate: '=?',
-        maxDate: '=?',
-        format: '=?',
-        bbDisabled: '=?'
-      },
-      restrict: 'A',
-      templateUrl: 'bb_date_time_picker.html',
-      controller: function($scope, $filter, $timeout, GeneralOptions) {
-        var filterDate;
-        if ($scope.format == null) {
-          $scope.format = 'dd/MM/yyyy';
         }
-        if ($scope.bbDisabled == null) {
-          $scope.bbDisabled = false;
-        }
-        if (!$scope.minuteStep || typeof $scope.minuteStep === 'undefined') {
-          $scope.minuteStep = GeneralOptions.calendar_minute_step;
-        }
-        if (!$scope.showMeridian || typeof $scope.showMeridian === 'undefined') {
-          $scope.showMeridian = GeneralOptions.twelve_hour_format;
-        }
-        $scope.$watch('datetimeWithNoTz', function(newValue, oldValue) {
-          var assembledDate, maxDateClean, minDateDate;
-          newValue = new Date(newValue);
-          if ((newValue != null) && moment(newValue).isValid()) {
-            assembledDate = moment();
-            assembledDate.set({
-              'year': parseInt(newValue.getFullYear()),
-              'month': parseInt(newValue.getMonth()),
-              'date': parseInt(newValue.getDate()),
-              'hour': parseInt(newValue.getHours()),
-              'minute': parseInt(newValue.getMinutes()),
-              'second': 0
-            });
-            if ($scope.minDateClean != null) {
-              minDateDate = new Date($scope.minDateClean);
-              if ((newValue.getTime() / 1000) < (minDateDate.getTime() / 1000)) {
-                if (newValue.getFullYear() < minDateDate.getFullYear()) {
-                  assembledDate.year(parseInt(minDateDate.getFullYear()));
-                }
-                if (newValue.getMonth() < minDateDate.getMonth()) {
-                  assembledDate.month(parseInt(minDateDate.getMonth()));
-                }
-                if (newValue.getDate() < minDateDate.getDate()) {
-                  assembledDate.date(parseInt(minDateDate.getDate()));
-                }
-                if (newValue.getHours() < minDateDate.getHours()) {
-                  assembledDate.hours(parseInt(minDateDate.getHours()));
-                }
-                if (newValue.getMinutes() < minDateDate.getMinutes()) {
-                  assembledDate.minutes(parseInt(minDateDate.getMinutes()));
-                }
-                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
-              }
-            }
-            if ($scope.maxDateClean != null) {
-              maxDateClean = new Date($scope.maxDateClean);
-              if ((newValue.getTime() / 1000) > (maxDateClean.getTime() / 1000)) {
-                if (newValue.getFullYear() > minDateDate.getFullYear()) {
-                  assembledDate.year(parseInt(minDateDate.getFullYear()));
-                }
-                if (newValue.getMonth() > minDateDate.getMonth()) {
-                  assembledDate.month(parseInt(minDateDate.getMonth()));
-                }
-                if (newValue.getDate() > minDateDate.getDate()) {
-                  assembledDate.date(parseInt(minDateDate.getDate()));
-                }
-                if (newValue.getHours() > maxDateClean.getHours()) {
-                  assembledDate.hours(parseInt(maxDateClean.getHours()));
-                }
-                if (newValue.getMinutes() > maxDateClean.getMinutes()) {
-                  assembledDate.minutes(parseInt(maxDateClean.getMinutes()));
-                }
-                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
-              }
-            }
-            $scope.date = assembledDate.format();
-          }
-        });
-        $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
-        $scope.$watch('date', function(newValue, oldValue) {
-          if (newValue !== oldValue) {
-            return $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
-          }
-        });
-        $scope.$watch('minDate', function(newValue, oldValue) {
-          if (newValue !== oldValue) {
-            return $scope.minDateClean = filterDate(newValue);
-          }
-        });
-        $scope.$watch('maxDate', function(newValue, oldValue) {
-          if (newValue !== oldValue) {
-            return $scope.maxDateClean = filterDate(newValue);
-          }
-        });
-        filterDate = function(date) {
-          if ((date != null) && moment(date).isValid()) {
-            return $filter('clearTimezone')(moment(date).format());
-          }
-          return null;
-        };
-        $scope.minDateClean = filterDate($scope.minDate);
-        return $scope.maxDateClean = filterDate($scope.maxDate);
       }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      controller: 'Breadcrumbs',
-      templateUrl: function(element, attrs) {
-        if (_.has(attrs, 'complex')) {
-          return PathSvc.directivePartial("_breadcrumb_complex");
-        } else {
-          return PathSvc.directivePartial("_breadcrumb");
+      this.jparams = JSON.stringify(clean_params);
+      if (res) {
+        for (n in res) {
+          m = res[n];
+          this[n] = m;
         }
-      },
-      link: function(scope) {}
-    };
-  });
+      }
+    }
 
-  angular.module('BB.Controllers').controller('Breadcrumbs', function($scope) {
-    var atDisablePoint, currentStep, lastStep, loadStep;
-    loadStep = $scope.loadStep;
-    $scope.steps = $scope.bb.steps;
-    $scope.allSteps = $scope.bb.allSteps;
-    $scope.loadStep = function(number) {
-      if (!lastStep() && !currentStep(number) && !atDisablePoint()) {
-        return loadStep(number);
-      }
-    };
-    lastStep = function() {
-      return $scope.bb.current_step === $scope.bb.allSteps.length;
-    };
-    currentStep = function(step) {
-      return step === $scope.bb.current_step;
-    };
-    atDisablePoint = function() {
-      if (!angular.isDefined($scope.bb.disableGoingBackAtStep)) {
-        return false;
-      }
-      return $scope.bb.current_step >= $scope.bb.disableGoingBackAtStep;
-    };
-    return $scope.isDisabledStep = function(step) {
-      if (lastStep() || currentStep(step.number) || !step.passed || atDisablePoint()) {
+    Base.prototype.checkItem = function(item) {
+      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
+      if (!this.matchesParams(item)) {
+        this.deleteItem(item);
         return true;
       } else {
-        return false;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbContentNew', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: true,
-      templateUrl: PathSvc.directivePartial("content_main"),
-      controller: function($scope) {
-        $scope.initPage = function() {
-          return $scope.$eval('setPageLoaded()');
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
-    var e, ie8orLess;
-    ie8orLess = false;
-    try {
-      ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
-    } catch (error) {
-      e = error;
-      ie8orLess = false;
-    }
-    return {
-      restrict: 'A',
-      priority: -1,
-      require: 'ngModel',
-      link: function(scope, element, attrs, ngModel) {
-        var callDateHandler, data, dateFormat, f, format, getTimeRangeScope, getter, origDateParser, replacementDateParser, timeRangeScope, yearNow;
-        origDateParser = null;
-        data = element.controller('ngModel');
-        if (attrs.datepickerPopup != null) {
-          format = {
-            date_us: "MM/dd/yyyy",
-            date_uk: "dd/MM/yyyy"
-          };
-          if (scope.bb.company.country_code === "us") {
-            attrs.datepickerPopup = format.date_us;
-          } else {
-            attrs.datepickerPopup = format.date_uk;
-          }
-        }
-        dateFormat = !!attrs.bbDatepickerPopup ? attrs.bbDatepickerPopup : 'DD/MM/YYYY';
-        yearNow = moment(new Date()).year();
-        getter = $parse(attrs.ngModel);
-        timeRangeScope = scope;
-        getTimeRangeScope = function(scope) {
-          if (scope) {
-            if (scope.controller && scope.controller.indexOf('TimeRangeList') > 0) {
-              return timeRangeScope = scope;
-            } else {
-              return getTimeRangeScope(scope.$parent);
-            }
-          }
-        };
-        getTimeRangeScope(scope);
-        if (ie8orLess) {
-          $bbug(element).on('keydown keyup keypress', function(ev) {
-            ev.preventDefault();
-            return ev.stopPropagation();
-          });
-        }
-        if (ie8orLess || scope.display.xs) {
-          $bbug(element).attr('readonly', 'true');
-        }
-        $bbug(element).on('keydown', function(e) {
-          if (e.keyCode === 13) {
-            replacementDateParser($bbug(e.target).val(), true);
-            $document.trigger('click');
-            return $bbug(element).blur();
-          }
-        });
-        $bbug(element).on('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          return $timeout(function() {
-            return scope.opened = true;
-          });
-        });
-        $bbug(element).on('focus', function() {
-          if ($(this).attr("readonly")) {
-            return this.blur();
-          }
-        });
-        callDateHandler = function(date) {
-          var isDate, watch;
-          watch = scope.$watch(getter, function(newVal, oldVal) {
-            if (!newVal) {
-              return getter.assign(timeRangeScope, date);
-            }
-          });
-          $timeout(watch, 0);
-          isDate = _.isDate(date);
-          if (isDate) {
-            getter.assign(timeRangeScope, date);
-            ngModel.$setValidity('date', true);
-            scope.$eval(attrs.onDateChange);
-          }
-          return isDate;
-        };
-        replacementDateParser = function(viewValue, returnKey) {
-          var mDate;
-          if (callDateHandler(viewValue)) {
-            return viewValue;
-          }
-          if (ie8orLess) {
-            return viewValue;
-          }
-          mDate = moment(viewValue, dateFormat);
-          if (!mDate.isValid()) {
-            mDate = moment(new Date());
-          }
-          if (/\/YY$/.test(dateFormat)) {
-            dateFormat += 'YY';
-          }
-          if (mDate.year() === 0) {
-            mDate.year(yearNow);
-          }
-          viewValue = mDate.format('MM/DD/YYYY');
-          viewValue = viewValue.replace(/\/00/, '/20');
-          if (/\/02\d{2}$/.test(viewValue)) {
-            return;
-          }
-          if (returnKey) {
-            if (mDate.year().toString().length === 2) {
-              mDate.year(mDate.year() + 2000);
-            }
-            return callDateHandler(mDate._d);
-          } else {
-            return origDateParser.call(this, viewValue);
-          }
-        };
-        f = function() {
-          if (_.isFunction(data.$parsers[0])) {
-            origDateParser = data.$parsers[0];
-            data.$parsers[0] = replacementDateParser;
-          } else {
-            return setTimeout(f, 10);
-          }
-        };
-        return f();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, $window) {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var checkLoginState, loginToBBWithFBUser, options, statusChangeCallback;
-        options = scope.$eval(attrs.bbFbLogin) || {};
-        $rootScope.connection_started.then(function() {
-          return checkLoginState();
-        });
-        statusChangeCallback = function(response) {
-          var params;
-          if (response.status === 'connected') {
-            params = {};
-            params.access_token = response.authResponse.accessToken;
-            if (options.login_only) {
-              params.login_only = options.login_only;
-            }
-            loginToBBWithFBUser(params);
-          } else if (response.status === 'not_authorized') {
-            scope.loginFB();
-          } else {
-            scope.loginFB();
-          }
-        };
-        checkLoginState = function() {
-          FB.getLoginStatus(function(response) {
-            statusChangeCallback(response);
-          });
-        };
-        loginToBBWithFBUser = function(params) {
-          return LoginService.FBLogin(scope.bb.company, params).then(function(member) {
-            $rootScope.member = member;
-            scope.setClient($rootScope.member);
-            if (scope.bb.destination) {
-              return scope.redirectTo(scope.bb.destination);
-            } else {
-              scope.setLoaded(scope);
-              return scope.decideNextPage();
-            }
-          }, function(err) {
-            if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
-              return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
-            } else {
-              return AlertService.raise('LOGIN_FAILED');
-            }
-          });
-        };
-        return scope.loginFB = function() {
-          return FB.login((function(response) {
-            var params;
-            if (response.status === 'connected') {
-              params = {};
-              params.access_token = response.authResponse.accessToken;
-              if (options.login_only) {
-                params.login_only = options.login_only;
-              }
-              loginToBBWithFBUser(params);
-            } else if (response.status === 'not_authorized') {
-              AlertService.raise('LOGIN_FAILED');
-            } else {
-              AlertService.raise('LOGIN_FAILED');
-            }
-          }), {
-            scope: 'public_profile,email'
-          });
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbFileUpload
-  * @restrict AE
-  * @scope true
-  *
-  * @description
-  * File upload
-  *
-  * @example
-    <example>
-      <div
-        bb-file-upload
-        item="item"
-        max-size="100KB"
-        pertty-accept="images, .pdf, .doc/docx"
-        accept="application/pdf,application/msword,image/*">
-      </div>
-    </example>
-   */
-  angular.module('BB.Directives').directive('bbFileUpload', function() {
-    return {
-      restrict: 'A',
-      replace: false,
-      scope: {
-        accept: '@',
-        prettyAccept: '@',
-        maxSize: '@',
-        item: '='
-      },
-      controller: 'FileUpload',
-      templateUrl: 'file_upload.html'
-    };
-  });
-
-  angular.module('BB.Controllers').controller('FileUpload', function($scope, Upload) {
-    $scope.controller = "public.controllers.FileUpload";
-
-    /***
-    * @ngdoc method
-    * @name uploadFile
-    * @methodOf BB.Directives:bbItemDetails
-    * @description
-    * Upload a file
-    * For more information see https://github.com/danialfarid/ng-file-upload
-    * To use this module:
-    *
-    * @param {object} item basket item
-    * @param {object} file uploaded file
-    * @param {number} existing attachment id
-    * @param {array} errFiles errors array
-     */
-    return $scope.uploadFile = function(item, file, err_files, existing, uuid) {
-      var accepted_files, att_id, att_uuid, file_is_valid, method, onError, onProgress, onSuccess, url;
-      $scope.err_file = err_files && err_files[0];
-      $scope.show_error = false;
-      $scope.file_type_error = false;
-      $scope.my_file = file;
-      accepted_files = $scope.accept.replace(/\'/g, '').split(',');
-      file_is_valid = file && (0 <= accepted_files.indexOf(file.type) || 0 <= file.type.indexOf('image'));
-      if (file_is_valid) {
-        if (existing) {
-          att_id = existing;
-        } else {
-          att_id = null;
-        }
-        if (uuid) {
-          att_uuid = uuid;
-        } else {
-          att_uuid = null;
-        }
-        method = "POST";
-        if (att_id) {
-          method = "PUT";
-        }
-        url = item.$href('add_attachment');
-        onSuccess = function(response) {
-          file.result = response.data;
-          item.attachment = response.data;
-          item.attachment_id = response.data.id;
-          item.attachment_uuid = response.data.uuid;
-          return file.progress = 100;
-        };
-        onError = function(response) {
-          $scope.show_error = true;
-          return file.progress = 100;
-        };
-        onProgress = function(evt) {
-          return file.progress = Math.min(100, parseInt(99.0 * evt.loaded / evt.total));
-        };
-        Upload.rename(file, file.name.replace(/[^\x00-\x7F]/g, ''));
-        file.upload = Upload.upload({
-          url: url,
-          method: method,
-          data: {
-            attachment_id: att_id,
-            attachment_uuid: att_uuid
-          },
-          file: file
-        });
-        return file.upload.then(onSuccess, onError, onProgress);
-      } else if (file_is_valid === false) {
-        return $scope.file_type_error = true;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbFormDataStore', function(FormDataStoreService) {
-    return {
-      require: '?bbWidget',
-      link: function(scope) {
-        return FormDataStoreService.register(scope);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('ngConfirmClick', function() {
-    return {
-      link: function(scope, element, attr) {
-        var clickAction, msg;
-        msg = attr.ngConfirmClick || "Are you sure?";
-        clickAction = attr.ngConfirmedClick;
-        return element.bind('click', (function(_this) {
-          return function(event) {
-            if (window.confirm(msg)) {
-              return scope.$eval(clickAction);
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('ngValidInclude', function($compile) {
-    return {
-      link: function(scope, element, attr) {
-        return scope[attr.watchValue].then((function(_this) {
-          return function(logged) {
-            element.attr('ng-include', attr.ngValidInclude);
-            element.attr('ng-valid-include', null);
-            return $compile(element)(scope);
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('ngDelayed', function($compile) {
-    return {
-      link: function(scope, element, attr) {
-        return scope[attr.ngDelayedWatch].then((function(_this) {
-          return function(logged) {
-            element.attr(attr.ngDelayed, attr.ngDelayedValue);
-            element.attr('ng-delayed-value', null);
-            element.attr('ng-delayed-watch', null);
-            element.attr('ng-delayed', null);
-            $compile(element)(scope);
-            if (attr.ngDelayedReady) {
-              return scope[attr.ngDelayedReady].resolve(true);
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('ngInitial', function() {
-    return {
-      restrict: 'A',
-      controller: [
-        '$scope', '$element', '$attrs', '$parse', function($scope, $element, $attrs, $parse) {
-          var getter, setter, val;
-          val = $attrs.ngInitial || $attrs.value;
-          getter = $parse($attrs.ngModel);
-          setter = getter.assign;
-          if (val === "true") {
-            val = true;
-          } else if (val === "false") {
-            val = false;
-          }
-          return setter($scope, val);
-        }
-      ]
-    };
-  });
-
-  app.directive('bbPrintPage', function($window, $timeout) {
-    return {
-      restrict: 'A',
-      link: function(scope, element, attr) {
-        if (attr.bbPrintPage) {
-          return scope.$watch(attr.bbPrintPage, (function(_this) {
-            return function(newVal, oldVal) {
-              return $timeout(function() {
-                return $window.print();
-              }, 3000);
-            };
-          })(this));
-        }
-      }
-    };
-  });
-
-  app.directive('bbInclude', function($compile, $rootScope) {
-    return {
-      link: function(scope, element, attr) {
-        var track_page;
-        track_page = attr.bbTrackPage != null ? true : false;
-        return scope.$watch('bb.path_setup', (function(_this) {
-          return function(newval, oldval) {
-            if (newval) {
-              element.attr('ng-include', "'" + scope.getPartial(attr.bbInclude) + "'");
-              element.attr('bb-include', null);
-              $compile(element)(scope);
-              if (track_page) {
-                return $rootScope.$broadcast("page:loaded", attr.bbInclude);
-              }
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('bbRaiseAlertWhenInvalid', function($compile) {
-    return {
-      require: '^form',
-      link: function(scope, element, attr, ctrl) {
-        var options;
-        ctrl.raise_alerts = true;
-        options = scope.$eval(attr.bbRaiseAlertWhenInvalid);
-        if (options && options.alert) {
-          return ctrl.alert = options.alert;
-        }
-      }
-    };
-  });
-
-  app.directive('bbHeader', function($compile) {
-    return {
-      link: function(scope, element, attr) {
-        scope.bb.waitForRoutes();
-        return scope.$watch('bb.path_setup', (function(_this) {
-          return function(newval, oldval) {
-            if (newval) {
-              element.attr('ng-include', "'" + scope.getPartial(attr.bbHeader) + "'");
-              element.attr('bb-header', null);
-              return $compile(element)(scope);
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('bbDate', function() {
-    return {
-      restrict: 'AE',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var date, track_service;
-        track_service = attrs.bbTrackService != null;
-        if (attrs.bbDate) {
-          date = moment(scope.$eval(attrs.bbDate));
-        } else if (scope.bb && scope.bb.current_item && scope.bb.current_item.date) {
-          date = scope.bb.current_item.date.date;
-        } else {
-          date = moment();
-        }
-        if (track_service && scope.bb.current_item && scope.bb.current_item.service) {
-          scope.min_date = scope.bb.current_item.service.min_advance_datetime;
-          scope.max_date = scope.bb.current_item.service.max_advance_datetime;
-        }
-        scope.$broadcast('dateChanged', moment(date));
-        scope.bb_date = {
-          date: date,
-          js_date: date.toDate(),
-          addDays: function(type, amount) {
-            this.date = moment(this.date).add(amount, type);
-            this.js_date = this.date.toDate();
-            return scope.$broadcast('dateChanged', moment(this.date));
-          },
-          subtractDays: function(type, amount) {
-            return this.addDays(type, -amount);
-          },
-          setDate: function(date) {
-            this.date = date;
-            this.js_date = date.toDate();
-            return scope.$broadcast('dateChanged', moment(this.date));
-          }
-        };
-        scope.$on("currentItemUpdate", function(event) {
-          if (scope.bb.current_item.service && track_service) {
-            scope.min_date = scope.bb.current_item.service.min_advance_datetime;
-            scope.max_date = scope.bb.current_item.service.max_advance_datetime;
-            if (scope.bb_date.date.isBefore(scope.min_date, 'day')) {
-              scope.bb_date.setDate(scope.min_date.clone());
-            }
-            if (scope.bb_date.date.isAfter(scope.max_date, 'day')) {
-              return scope.bb_date.setDate(scope.max_date.clone());
-            }
-          }
-        });
-        return scope.$watch('bb_date.js_date', function(newval, oldval) {
-          var ndate;
-          ndate = moment(newval);
-          if (!scope.bb_date.date.isSame(ndate)) {
-            scope.bb_date.date = ndate;
-            if (moment(ndate).isValid()) {
-              return scope.$broadcast('dateChanged', moment(ndate));
-            }
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbDebounce', function($timeout) {
-    return {
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        var delay;
-        delay = 400;
-        if (attrs.bbDebounce) {
-          delay = attrs.bbDebounce;
-        }
-        return element.bind('click', (function(_this) {
-          return function() {
-            $timeout(function() {
-              return element.attr('disabled', true);
-            }, 0);
-            return $timeout(function() {
-              return element.attr('disabled', false);
-            }, delay);
-          };
-        })(this));
-      }
-    };
-  });
-
-  app.directive('bbLocalNumber', function($filter) {
-    return {
-      restrict: 'A',
-      scope: {},
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var prettyifyNumber, storeNumber;
-        scope.userinput_mobile = null;
-        storeNumber = function(value) {
-          if (value) {
-            scope.userinput_mobile = value;
-          }
-          return value;
-        };
-        prettyifyNumber = function(value) {
-          if (scope.userinput_mobile) {
-            return value = scope.userinput_mobile;
-          } else {
-            return $filter('local_phone_number')(value);
-          }
-        };
-        ctrl.$parsers.push(storeNumber);
-        return ctrl.$formatters.push(prettyifyNumber);
-      }
-    };
-  });
-
-  app.directive('bbPadWithZeros', function() {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var how_many, options, padNumber;
-        options = scope.$eval(attrs.bbPadWithZeros) || {};
-        how_many = options.how_many || 2;
-        padNumber = function(value) {
-          var i, index, padding, ref;
-          value = String(value);
-          if (value && value.length < how_many) {
-            padding = "";
-            for (index = i = 1, ref = how_many - value.length; 1 <= ref ? i <= ref : i >= ref; index = 1 <= ref ? ++i : --i) {
-              padding += "0";
-            }
-            value = padding.concat(value);
-          }
-          return value;
-        };
-        return ctrl.$formatters.push(padNumber);
-      }
-    };
-  });
-
-  app.directive('bbFormResettable', function($parse) {
-    return {
-      restrict: 'A',
-      controller: function($scope, $element, $attrs) {
-        $scope.inputs = [];
-        $scope.resetForm = function(options) {
-          var i, input, len, ref, results;
-          if (options && options.clear_submitted) {
-            $scope[$attrs.name].submitted = false;
-          }
-          ref = $scope.inputs;
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            input = ref[i];
-            input.getter.assign($scope, null);
-            results.push(input.controller.$setPristine());
-          }
-          return results;
-        };
-        return {
-          registerInput: function(input, ctrl) {
-            var getter;
-            getter = $parse(input);
-            return $scope.inputs.push({
-              getter: getter,
-              controller: ctrl
-            });
-          }
-        };
-      }
-    };
-  });
-
-  app.directive('bbResettable', function() {
-    return {
-      restrict: 'A',
-      require: ['ngModel', '^bbFormResettable'],
-      link: function(scope, element, attrs, ctrls) {
-        var formResettableCtrl, ngModelCtrl;
-        ngModelCtrl = ctrls[0];
-        formResettableCtrl = ctrls[1];
-        return formResettableCtrl.registerInput(attrs.ngModel, ngModelCtrl);
-      }
-    };
-  });
-
-  app.directive('bbDateSplit', function($parse) {
-    return {
-      restrict: 'A',
-      require: ['ngModel'],
-      link: function(scope, element, attrs, ctrls) {
-        var ngModel, question;
-        ngModel = ctrls[0];
-        question = scope.$eval(attrs.bbDateSplit);
-        question.date = {
-          day: null,
-          month: null,
-          year: null,
-          date: null,
-          joinDate: function() {
-            var date_string;
-            if (this.day && this.month && this.year) {
-              date_string = this.day + '/' + this.month + '/' + this.year;
-              this.date = moment(date_string, "DD/MM/YYYY");
-              date_string = this.date.toISODate();
-              ngModel.$setViewValue(date_string);
-              return ngModel.$render();
-            }
-          },
-          splitDate: function(date) {
-            if (date && date.isValid()) {
-              this.day = date.date();
-              this.month = date.month() + 1;
-              this.year = date.year();
-              return this.date = date;
-            }
-          }
-        };
-        if (question.answer) {
-          question.date.splitDate(moment(question.answer));
-        }
-        if (ngModel.$viewValue) {
-          return question.date.splitDate(moment(ngModel.$viewValue));
-        }
-      }
-    };
-  });
-
-  app.directive('bbCommPref', function() {
-    return {
-      restrict: 'A',
-      require: ['ngModel'],
-      link: function(scope, element, attrs, ctrls) {
-        var comm_pref, ng_model_ctrl, parser;
-        ng_model_ctrl = ctrls[0];
-        comm_pref = scope.$eval(attrs.bbCommPref) || false;
-        if ((scope.bb.current_item.settings.send_email_followup != null) && (scope.bb.current_item.settings.send_sms_followup != null)) {
-          comm_pref = scope.bb.current_item.settings.send_email_followup;
-        } else {
-          scope.bb.current_item.settings.send_email_followup = comm_pref;
-          scope.bb.current_item.settings.send_sms_followup = comm_pref;
-        }
-        ng_model_ctrl.$setViewValue(comm_pref);
-        parser = function(value) {
-          scope.bb.current_item.settings.send_email_followup = value;
-          scope.bb.current_item.settings.send_sms_followup = value;
-          return value;
-        };
-        return ng_model_ctrl.$parsers.push(parser);
-      }
-    };
-  });
-
-  app.directive('bbCountTicketTypes', function($rootScope) {
-    return {
-      restrict: 'A',
-      scope: false,
-      link: function(scope, element, attrs) {
-        var countTicketTypes;
-        $rootScope.connection_started.then(function() {
-          return countTicketTypes();
-        });
-        scope.$on("basket:updated", function(event, basket) {
-          return countTicketTypes();
-        });
-        return countTicketTypes = function(items) {
-          var counts, i, item, len;
-          items = scope.bb.basket.timeItems();
-          counts = [];
-          for (i = 0, len = items.length; i < len; i++) {
-            item = items[i];
-            if (item.tickets) {
-              if (counts[item.tickets.name]) {
-                counts[item.tickets.name] += item.tickets.qty;
-              } else {
-                counts[item.tickets.name] = item.tickets.qty;
-              }
-              item.number = counts[item.tickets.name];
-            }
-          }
-          return scope.counts = counts;
-        };
-      }
-    };
-  });
-
-  app.directive('bbCapitaliseFirstLetter', function() {
-    return {
-      restrict: 'A',
-      require: ['ngModel'],
-      link: function(scope, element, attrs, ctrls) {
-        var ngModel;
-        ngModel = ctrls[0];
-        return scope.$watch(attrs.ngModel, function(newval, oldval) {
-          var string;
-          if (newval) {
-            string = scope.$eval(attrs.ngModel);
-            string = string.charAt(0).toUpperCase() + string.slice(1);
-            ngModel.$setViewValue(string);
-            ngModel.$render();
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbApiUrl', function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
-    return {
-      restrict: 'A',
-      scope: {
-        'apiUrl': '@bbApiUrl'
-      },
-      compile: function(tElem, tAttrs) {
-        return {
-          pre: function(scope, element, attrs) {
-            var src, url;
-            $rootScope.bb || ($rootScope.bb = {});
-            $rootScope.bb.api_url = scope.apiUrl;
-            url = document.createElement('a');
-            url.href = scope.apiUrl;
-            if (($sniffer.msie && $sniffer.msie <= 9) || ($sniffer.webkit && $sniffer.webkit < 537)) {
-              if (!(url.host === '' || url.host === $location.host() || url.host === (($location.host()) + ":" + ($location.port())))) {
-                if (url.protocol[url.protocol.length - 1] === ':') {
-                  src = url.protocol + "//" + url.host + "/ClientProxy.html";
-                } else {
-                  src = url.protocol + "://" + url.host + "/ClientProxy.html";
-                }
-                $rootScope.iframe_proxy_ready = false;
-                return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;'></iframe>"))(scope, (function(_this) {
-                  return function(cloned, scope) {
-                    cloned.bind("load", function() {
-                      $rootScope.iframe_proxy_ready = true;
-                      return $rootScope.$broadcast('iframe_proxy_ready', {
-                        iframe_proxy_ready: true
-                      });
-                    });
-                    return element.append(cloned);
-                  };
-                })(this));
-              }
-            }
-          }
-        };
-      }
-    };
-  });
-
-  app.directive('bbPriceFilter', function(PathSvc) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: false,
-      require: '^?bbServices',
-      templateUrl: function(element, attrs) {
-        return PathSvc.directivePartial("_price_filter");
-      },
-      controller: function($scope, $attrs) {
-        var setPricefilter, suitable_max;
-        $scope.$watch('items', function(new_val, old_val) {
-          if (new_val) {
-            return setPricefilter(new_val);
-          }
-        });
-        setPricefilter = function(items) {
-          $scope.price_array = _.uniq(_.map(items, function(item) {
-            return item.price / 100 || 0;
-          }));
-          $scope.price_array.sort(function(a, b) {
-            return a - b;
-          });
-          return suitable_max();
-        };
-        suitable_max = function() {
-          var max_number, min_number, top_number;
-          top_number = _.last($scope.price_array);
-          max_number = (function() {
-            switch (false) {
-              case !(top_number < 1):
-                return 0;
-              case !(top_number < 11):
-                return 10;
-              case !(top_number < 51):
-                return 50;
-              case !(top_number < 101):
-                return 100;
-              case !(top_number < 1000):
-                return (Math.ceil(top_number / 100)) * 100;
-            }
-          })();
-          min_number = 0;
-          $scope.price_options = {
-            min: min_number,
-            max: max_number
-          };
-          return $scope.filters.price = {
-            min: min_number,
-            max: max_number
-          };
-        };
-        $scope.$watch('filters.price.min', function(new_val, old_val) {
-          if (new_val !== old_val) {
-            return $scope.filterChanged();
-          }
-        });
-        return $scope.$watch('filters.price.max', function(new_val, old_val) {
-          if (new_val !== old_val) {
-            return $scope.filterChanged();
-          }
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbBookingExport', function() {
-    return {
-      restrict: 'AE',
-      scope: true,
-      template: '<div bb-include="_popout_export_booking" style="display: inline-block"></div>',
-      link: function(scope, el, attrs) {
-        var setHTML;
-        scope.$watch('total', function(new_val, old_val) {
-          if (new_val) {
-            return setHTML(new_val);
-          }
-        });
-        scope.$watch('purchase', function(new_val, old_val) {
-          if (new_val) {
-            return setHTML(new_val);
-          }
-        });
-        return setHTML = function(purchase_total) {
-          return scope.html = ("<div class='text-center'><a href='" + (purchase_total.webcalLink()) + "'><img src='images/outlook.png' alt='outlook calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Outlook</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.gcalLink()) + "'><img src='images/google.png' alt='google calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Google</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.icalLink()) + "'><img src='images/ical.png' alt='ical calendar icon' height='30' width='30' /><div class='clearfix'></div><span>iCal</span></a></div>");
-        };
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbDynamicFooter', function($timeout, $bbug) {
-    return function(scope, el, attrs) {
-      scope.$on("page:loaded", function() {
-        return $bbug('.content').css('height', 'auto');
-      });
-      scope.$watch(function() {
-        return $bbug('.content')[0].scrollHeight;
-      }, function(new_val, old_val) {
-        if (new_val !== old_val) {
-          return scope.setContentHeight();
-        }
-      });
-      scope.setContentHeight = function() {
-        var content_height, min_content_height;
-        $bbug('.content').css('height', 'auto');
-        content_height = $bbug('.content')[0].scrollHeight;
-        min_content_height = $bbug(window).innerHeight() - $bbug('.content').offset().top - $bbug('.footer').height();
-        if (content_height < min_content_height) {
-          return $bbug('.content').css('height', min_content_height + 'px');
-        }
-      };
-      return $bbug(window).on('resize', function() {
-        return scope.setContentHeight();
-      });
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbBlurOnReturn
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Removes focus from an input[type=text] element when return key is pressed
-  * @example
-  * <input type='text' bb-blur-on-return></div>
-   */
-
-  angular.module('BB.Directives').directive('bbBlurOnReturn', function($timeout) {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, el, attrs) {
-        return el.keydown(function(e) {
-          var key;
-          key = e.which || e.keyCode;
-          if (key === 13 || key === '13') {
-            return $timeout(function() {
-              if (e.target) {
-                return e.target.blur();
-              }
-            }, 10);
-          }
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app, isEmpty;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbQuestionLine', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        var e, elm, html, index;
-        if (scope.question.detail_type === "heading") {
-          elm = "";
-          if (scope.question.name.length > 0) {
-            elm += "<div class='bb-question-heading'>" + scope.question.name + "</div>";
-          }
-          if (scope.question.help_text && scope.question.help_text.length > 0) {
-            elm += "<div class='bb-question-help-text'>" + scope.question.help_text + "</div>";
-          }
-          element.html(elm);
-        }
-        if (scope.idmaps && ((scope.idmaps[scope.question.detail_type] && scope.idmaps[scope.question.detail_type].block) || (scope.idmaps[scope.question.id] && scope.idmaps[scope.question.id].block))) {
-          index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
-          html = scope.$parent.idmaps[index].html;
-          return e = $compile(html)(scope, (function(_this) {
-            return function(cloned, scope) {
-              return element.replaceWith(cloned);
-            };
-          })(this));
-        }
-      }
-    };
-  });
-
-  app.directive('bbQuestion', function($compile, $timeout) {
-    return {
-      priority: 0,
-      replace: true,
-      transclude: false,
-      restrict: 'A',
-      compile: function(el, attr, trans) {
-        return {
-          pre: function(scope, element, attrs) {
-            var adminRequired, date_format, date_format_2, ticketRef;
-            adminRequired = attrs.bbAdminRequired != null ? true : false;
-            ticketRef = attrs.ticketRef || "";
-            date_format = 'DD/MM/YYYY';
-            date_format_2 = 'dd/MM/yyyy';
-            if ((attrs.bbDateFormat != null) && attrs.bbDateFormat === 'US') {
-              date_format = 'MM/DD/YYYY';
-              date_format_2 = 'MM/dd/yyyy';
-            }
-            return scope.$watch(attrs.bbQuestion, function(question) {
-              var e, html, i, index, itemx, j, k, lastName, len1, len2, len3, name, placeholder, ref, ref1, ref2;
-              if (question) {
-                html = '';
-                lastName = '';
-                placeholder = '';
-                if (attrs.defaultPlaceholder != null) {
-                  if (question.detail_type === "text_area" | question.detail_type === "text_field") {
-                    if (question["default"]) {
-                      placeholder = question["default"];
-                    }
-                    if (question.answer === question["default"]) {
-                      question.answer = "";
-                    }
-                  }
-                }
-                scope.recalc = (function(_this) {
-                  return function() {
-                    if (angular.isDefined(scope.recalc_price)) {
-                      if (!question.outcome) {
-                        scope.recalc_price();
-                      }
-                    }
-                    if (angular.isDefined(scope.recalc_question)) {
-                      return scope.recalc_question();
-                    }
-                  };
-                })(this);
-                if (scope.idmaps && (scope.idmaps[question.detail_type] || scope.idmaps[question.id])) {
-                  index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
-                  html = scope.idmaps[index].html;
-                } else if (question.detail_type === "select" || question.detail_type === "select-price") {
-                  html = "<select ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'>";
-                  ref = question.options;
-                  for (i = 0, len1 = ref.length; i < len1; i++) {
-                    itemx = ref[i];
-                    html += "<option data_id='" + itemx.id + "' value='" + (itemx.name.replace(/'/g, "&apos;")) + "'>" + itemx.display_name + "</option>";
-                  }
-                  html += "</select>";
-                } else if (question.detail_type === "text_area") {
-                  html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
-                } else if (question.detail_type === "radio") {
-                  html = '<div class="radio-group">';
-                  ref1 = question.options;
-                  for (j = 0, len2 = ref1.length; j < len2; j++) {
-                    itemx = ref1[j];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + ticketRef + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
-                  }
-                  html += "</div>";
-                } else if (question.detail_type === "check") {
-                  name = question.name;
-                  if (name === lastName) {
-                    name = "";
-                  }
-                  lastName = question.name;
-                  html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
-                } else if (question.detail_type === "check-price") {
-                  html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
-                } else if (question.detail_type === "radio-price") {
-                  html = '<div class="radio-group">';
-                  ref2 = question.options;
-                  for (k = 0, len3 = ref2.length; k < len3; k++) {
-                    itemx = ref2[k];
-                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + ticketRef + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
-                  }
-                  html += "</div>";
-                } else if (question.detail_type === "date") {
-                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' ng-change='recalc()' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
-                } else {
-                  html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
-                }
-                if (html) {
-                  return e = $compile(html)(scope, (function(_this) {
-                    return function(cloned, scope) {
-                      return element.replaceWith(cloned);
-                    };
-                  })(this));
-                }
-              }
-            });
-          },
-          post: function(scope, $e, $a, parentControl) {}
-        };
-      }
-    };
-  });
-
-  app.directive('bbQuestionSetup', function() {
-    return {
-      restrict: 'A',
-      terminal: true,
-      priority: 1000,
-      link: function(scope, element, attrs) {
-        var block, child, def, i, id, idmaps, index, len1, ref;
-        idmaps = {};
-        def = null;
-        ref = element.children();
+        ref = this.items;
         for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
-          child = ref[index];
-          id = $(child).attr("bb-question-id");
-          block = false;
-          if ($(child).attr("bb-replace-block")) {
-            block = true;
-          }
-          child.innerHTML = child.innerHTML.replace(/question_form/g, "question_form_" + index);
-          idmaps[id] = {
-            id: id,
-            html: child.innerHTML,
-            block: block
-          };
-        }
-        scope.idmaps = idmaps;
-        return element.replaceWith("");
-      }
-    };
-  });
-
-  app.directive("bbFocus", [
-    function() {
-      var FOCUS_CLASS;
-      FOCUS_CLASS = "bb-focused";
-      return {
-        restrict: "A",
-        require: "ngModel",
-        link: function(scope, element, attrs, ctrl) {
-          ctrl.$focused = false;
-          return element.bind("focus", function(evt) {
-            element.addClass(FOCUS_CLASS);
-            return scope.$apply(function() {
-              return ctrl.$focused = true;
-            });
-          }).bind("blur", function(evt) {
-            element.removeClass(FOCUS_CLASS);
-            return scope.$apply(function() {
-              return ctrl.$focused = false;
-            });
-          });
-        }
-      };
-    }
-  ]);
-
-  app.directive('bbCurrencyField', function($filter) {
-    return {
-      restrict: 'A',
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl) {
-        var convertToCurrency, convertToInteger;
-        convertToCurrency = function(value) {
-          return value / 100;
-        };
-        convertToInteger = function(value) {
-          return value * 100;
-        };
-        ctrl.$formatters.push(convertToCurrency);
-        return ctrl.$parsers.push(convertToInteger);
-      }
-    };
-  });
-
-  isEmpty = function(value) {
-    return angular.isUndefined(value) || value === "" || value === null || value !== value;
-  };
-
-  app.directive("ngMin", function() {
-    return {
-      restrict: "A",
-      require: "ngModel",
-      link: function(scope, elem, attr, ctrl) {
-        var minValidator;
-        minValidator = function(value) {
-          var min;
-          min = scope.$eval(attr.ngMin) || 0;
-          ctrl.$setValidity("ngMin", isEmpty(value) || value >= min);
-          return value;
-        };
-        ctrl.$parsers.push(minValidator);
-        ctrl.$formatters.push(minValidator);
-      }
-    };
-  });
-
-  app.directive("ngMax", function() {
-    return {
-      restrict: "A",
-      require: "ngModel",
-      link: function(scope, elem, attr, ctrl) {
-        var maxValidator;
-        maxValidator = function(value) {
-          var max;
-          max = scope.$eval(attr.ngMax);
-          ctrl.$setValidity("ngMax", isEmpty(value) || value <= max);
-          return value;
-        };
-        ctrl.$parsers.push(maxValidator);
-        ctrl.$formatters.push(maxValidator);
-      }
-    };
-  });
-
-  app.directive("creditCardNumber", function() {
-    var getCardType, isValid, linker;
-    getCardType = function(ccnumber) {
-      if (!ccnumber) {
-        return '';
-      }
-      ccnumber = ccnumber.toString().replace(/\s+/g, '');
-      if (/^(34)|^(37)/.test(ccnumber)) {
-        return "american_express";
-      }
-      if (/^(62)|^(88)/.test(ccnumber)) {
-        return "china_unionpay";
-      }
-      if (/^30[0-5]/.test(ccnumber)) {
-        return "diners_club_carte_blanche";
-      }
-      if (/^(2014)|^(2149)/.test(ccnumber)) {
-        return "diners_club_enroute";
-      }
-      if (/^36/.test(ccnumber)) {
-        return "diners_club_international";
-      }
-      if (/^(6011)|^(622(1(2[6-9]|[3-9][0-9])|[2-8][0-9]{2}|9([01][0-9]|2[0-5])))|^(64[4-9])|^65/.test(ccnumber)) {
-        return "discover";
-      }
-      if (/^35(2[89]|[3-8][0-9])/.test(ccnumber)) {
-        return "jcb";
-      }
-      if (/^(6304)|^(6706)|^(6771)|^(6709)/.test(ccnumber)) {
-        return "laser";
-      }
-      if (/^(5018)|^(5020)|^(5038)|^(5893)|^(6304)|^(6759)|^(6761)|^(6762)|^(6763)|^(0604)/.test(ccnumber)) {
-        return "maestro";
-      }
-      if (/^5[1-5]/.test(ccnumber)) {
-        return "master";
-      }
-      if (/^4/.test(ccnumber)) {
-        return "visa";
-      }
-      if (/^(4026)|^(417500)|^(4405)|^(4508)|^(4844)|^(4913)|^(4917)/.test(ccnumber)) {
-        return "visa_electron";
-      }
-    };
-    isValid = function(ccnumber) {
-      var len, mul, prodArr, sum;
-      if (!ccnumber) {
-        return false;
-      }
-      ccnumber = ccnumber.toString().replace(/\s+/g, '');
-      len = ccnumber.length;
-      mul = 0;
-      prodArr = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]];
-      sum = 0;
-      while (len--) {
-        sum += prodArr[mul][parseInt(ccnumber.charAt(len), 10)];
-        mul ^= 1;
-      }
-      return sum % 10 === 0 && sum > 0;
-    };
-    linker = function(scope, element, attributes, ngModel) {
-      return scope.$watch(function() {
-        return ngModel.$modelValue;
-      }, function(newValue) {
-        ngModel.$setValidity('card_number', isValid(newValue));
-        scope.cardType = getCardType(newValue);
-        if ((newValue != null) && newValue.length === 16) {
-          if (ngModel.$invalid) {
-            element.parent().addClass('has-error');
-            return element.parent().removeClass('has-success');
-          } else {
-            element.parent().removeClass('has-error');
-            return element.parent().addClass('has-success');
-          }
-        } else {
-          return element.parent().removeClass('has-success');
-        }
-      });
-    };
-    return {
-      restrict: "C",
-      require: "ngModel",
-      link: linker,
-      scope: {
-        'cardType': '='
-      }
-    };
-  });
-
-  app.directive("cardSecurityCode", function() {
-    var linker;
-    linker = function(scope, element, attributes) {
-      return scope.$watch('cardType', function(newValue) {
-        if (newValue === 'american_express') {
-          element.attr('maxlength', 4);
-          return element.attr('placeholder', "••••");
-        } else {
-          element.attr('maxlength', 3);
-          return element.attr('placeholder', "•••");
-        }
-      });
-    };
-    return {
-      restrict: "AC",
-      link: linker,
-      scope: {
-        'cardType': '='
-      }
-    };
-  });
-
-  app.directive('bbInputGroupManager', function(ValidatorService) {
-    return {
-      restrict: 'A',
-      controller: function($scope, $element, $attrs) {
-        $scope.input_manger = {
-          input_groups: {},
-          inputs: [],
-          registerInput: function(input, name) {
-            if (this.inputs.indexOf(input.$name) >= 0) {
-              return;
+          existingItem = ref[index];
+          if (item.self === existingItem.self) {
+            this.items[index] = item;
+            ref1 = this.callbacks;
+            for (j = 0, len2 = ref1.length; j < len2; j++) {
+              call = ref1[j];
+              call[1](item, "update");
             }
-            this.inputs.push(input.$name);
-            if (!this.input_groups[name]) {
-              this.input_groups[name] = {
-                inputs: [],
-                valid: false
-              };
-            }
-            return this.input_groups[name].inputs.push(input);
-          },
-          validateInputGroup: function(name) {
-            var i, input, is_valid, j, len1, len2, ref, ref1;
-            is_valid = false;
-            ref = this.input_groups[name].inputs;
-            for (i = 0, len1 = ref.length; i < len1; i++) {
-              input = ref[i];
-              is_valid = input.$modelValue;
-              if (is_valid) {
-                break;
-              }
-            }
-            if (is_valid === !this.input_groups[name].valid) {
-              ref1 = this.input_groups[name].inputs;
-              for (j = 0, len2 = ref1.length; j < len2; j++) {
-                input = ref1[j];
-                input.$setValidity(input.$name, is_valid);
-              }
-              return this.input_groups[name].valid = is_valid;
-            }
-          }
-        };
-        return $element.on("submit", function() {
-          var input_group, results;
-          results = [];
-          for (input_group in $scope.input_manger.input_groups) {
-            results.push($scope.input_manger.validateInputGroup(input_group));
-          }
-          return results;
-        });
-      }
-    };
-  });
-
-  app.directive("bbInputGroup", function() {
-    return {
-      restrict: "A",
-      require: 'ngModel',
-      link: function(scope, elem, attrs, ngModel) {
-        if (scope.input_manger.inputs.indexOf(ngModel.$name) >= 0) {
-          return;
-        }
-        scope.input_manger.registerInput(ngModel, attrs.bbInputGroup);
-        return scope.$watch(attrs.ngModel, function(newval, oldval) {
-          if (newval === !oldval) {
-            return scope.input_manger.validateInputGroup(attrs.bbInputGroup);
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbQuestionLabel', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      scope: false,
-      link: function(scope, element, attrs) {
-        return scope.$watch(attrs.bbQuestionLabel, function(question) {
-          if (question) {
-            if (question.detail_type === "check" || question.detail_type === "check-price") {
-              return element.html("");
-            }
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbQuestionLink', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var id;
-        id = parseInt(attrs.bbQuestionLink);
-        return scope.$watch("question_set", function(newval, oldval) {
-          var i, len1, q, ref, results;
-          if (newval) {
-            ref = scope.question_set;
-            results = [];
-            for (i = 0, len1 = ref.length; i < len1; i++) {
-              q = ref[i];
-              if (q.id === id) {
-                scope.question = q;
-                element.attr('ng-model', "question.answer");
-                element.attr('bb-question-link', null);
-                results.push($compile(element)(scope));
-              } else {
-                results.push(void 0);
-              }
-            }
-            return results;
-          }
-        });
-      }
-    };
-  });
-
-  app.directive('bbQuestionSet', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var set;
-        set = attrs.bbQuestionSet;
-        element.addClass('ng-hide');
-        return scope.$watch(set, function(newval, oldval) {
-          if (newval) {
-            scope.question_set = newval;
-            return element.removeClass('ng-hide');
-          }
-        });
-      }
-    };
-  });
-
-  app.directive("bbMatchInput", function() {
-    return {
-      restrict: "A",
-      require: 'ngModel',
-      link: function(scope, element, attrs, ctrl, ngModel) {
-        var compare;
-        scope.$watch(attrs.bbMatchInput, function() {
-          scope.val_1 = scope.$eval(attrs.bbMatchInput);
-          return compare(ctrl.$viewValue);
-        });
-        compare = function(value) {
-          ctrl.$setValidity('match', scope.val_1 === value);
-          return value;
-        };
-        return ctrl.$parsers.push(compare);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive("bbIntTelNumber", function($parse) {
-    return {
-      restrict: "A",
-      require: "ngModel",
-      link: function(scope, element, attrs, ctrl) {
-        var format, isValid, options, parse;
-        options = scope.$eval(attrs.bbIntTelNumber);
-        element.intlTelInput(options);
-        isValid = function(value) {
-          if (value) {
-            return element.intlTelInput("isValidNumber");
-          } else {
             return true;
           }
-        };
-        format = function(value) {
-          var str;
-          str = "";
-          if (scope.$eval(attrs.ngModel + '_prefix') != null) {
-            str += "+" + scope.$eval(attrs.ngModel + '_prefix') + " ";
-          }
-          if (scope.$eval(attrs.ngModel) != null) {
-            str += scope.$eval(attrs.ngModel);
-          }
-          if (str[0] === "+") {
-            element.intlTelInput("setNumber", "+" + (scope.$eval(attrs.ngModel + '_prefix')) + " " + (scope.$eval(attrs.ngModel)));
-            ctrl.$setValidity("phone", isValid(value));
-          }
-          return str;
-        };
-        parse = function(value) {
-          var getter, prefix;
-          prefix = element.intlTelInput("getSelectedCountryData").dialCode;
-          getter = $parse(attrs.ngModel + '_prefix');
-          getter.assign(scope, prefix);
-          ctrl.$setValidity("phone", isValid(value));
-          return value;
-        };
-        ctrl.$formatters.push(format);
-        return ctrl.$parsers.push(parse);
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbLoader', function($rootScope, $compile, PathSvc, TemplateSvc) {
-    return {
-      restrict: 'A',
-      replace: false,
-      scope: {},
-      controllerAs: 'LoaderCtrl',
-      controller: function($scope) {
-        var addScopeId, hideLoader, parentScopeId, removeScopeId, scopeIdArr, showLoader;
-        parentScopeId = $scope.$parent.$id;
-        scopeIdArr = [];
-        addScopeId = function(id) {
-          scopeIdArr.push(id);
-          scopeIdArr = _.uniq(scopeIdArr);
-        };
-        removeScopeId = function(id) {
-          scopeIdArr = _.without(scopeIdArr, id);
-          return scopeIdArr.length;
-        };
-        showLoader = function(e, cscope) {
-          var sid;
-          sid = cscope.$id;
-          while (cscope) {
-            if (cscope.$id === parentScopeId) {
-              addScopeId(sid);
-              $scope.scopeLoaded = false;
-              break;
-            }
-            cscope = cscope.$parent;
-          }
-        };
-        hideLoader = function(e, cscope) {
-          if (!removeScopeId(cscope.$id)) {
-            $scope.scopeLoaded = true;
-          }
-        };
-        $rootScope.$on('show:loader', showLoader);
-        $rootScope.$on('hide:loader', hideLoader);
-        $scope.scopeLoaded = false;
-      },
-      link: function(scope, element, attrs) {
-        TemplateSvc.get(PathSvc.directivePartial("loader")).then(function(html) {
-          var str;
-          if (_.isString(attrs.bbLoader)) {
-            str = attrs.bbLoader.slice(1);
-            if (/^#/.test(attrs.bbLoader)) {
-              html.attr('id', str);
-            } else if (/^\./.test(attrs.bbLoader)) {
-              html.addClass(str);
-            }
-          }
-          element.prepend(html);
-          $compile(html)(scope);
-        });
-      }
-    };
-  });
-
-  app.directive('bbLoadingSpinner', function($compile) {
-    return {
-      transclude: true,
-      link: function(scope, element, attrs, controller, transclude) {
-        var loadingScopes;
-        loadingScopes = {};
-        scope.isLoading = false;
-        return scope.$on('isLoading', function(event, isLoading) {
-          event.stopPropagation();
-          loadingScopes[event.targetScope.$id] = isLoading;
-          return scope.isLoading = _.every(_.values(loadingScopes));
-        });
-      },
-      template: "<div ng-show=\"isLoading\" class=\"loader-wrapper\">\n  <div class=\"loader\"></div>\n</div>\n<div ng-transclude></div>"
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Directives').directive('bbContent', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        element.attr('ng-include', "bb_main");
-        element.attr('onLoad', "initPage()");
-        element.attr('bb-content', null);
-        element.attr('ng-hide', "hide_page");
-        scope.initPage = (function(_this) {
-          return function() {
-            scope.setPageLoaded();
-            return scope.setLoadingPage(false);
-          };
-        })(this);
-        return $compile(element)(scope);
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbLoading', function($compile, $timeout, $bbug) {
-    return {
-      link: function(scope, element, attrs) {
-        var positionLoadingIcon;
-        scope.scopeLoaded = scope.areScopesLoaded(scope);
-        element.attr("ng-hide", "scopeLoaded");
-        element.attr("bb-loading", null);
-        positionLoadingIcon = function() {
-          var center, loading_icon, modal_open, wait_graphic;
-          loading_icon = $bbug('.bb-loader').find('#loading_icon');
-          wait_graphic = $bbug('.bb-loader').find('#wait_graphic');
-          modal_open = $bbug('[ng-app]').find('body').hasClass('modal-open');
-          if (modal_open) {
-            return $timeout(function() {
-              var center;
-              center = $bbug('[ng-app]').find('.modal-dialog').height() || $bbug('[ng-app]').find('.modal-content').height() || $bbug('[ng-app]').find('.modal').height();
-              center = (center / 2) - (wait_graphic.height() / 2);
-              return loading_icon.css("padding-top", center + "px");
-            }, 50);
-          } else {
-            center = ($(window).innerHeight() / 2) - (wait_graphic.height() / 2);
-            return loading_icon.css("padding-top", center + "px");
-          }
-        };
-        positionLoadingIcon();
-        $bbug(window).on("resize", function() {
-          return positionLoadingIcon();
-        });
-        scope.$on("page:loaded", function() {
-          return positionLoadingIcon();
-        });
-        $compile(element)(scope);
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbWaitFor', function($compile) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      priority: 800,
-      link: function(scope, element, attrs) {
-        var name, prom;
-        name = attrs.bbWaitVar;
-        name || (name = "allDone");
-        scope[name] = false;
-        prom = scope.$eval(attrs.bbWaitFor);
-        prom.then(function() {
-          return scope[name] = true;
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        var always_scroll, bb_transition_time, evnts, isElementInView, scrollToCallback;
-        evnts = attrs.bbScrollTo.split(',');
-        always_scroll = (attrs.bbAlwaysScroll != null) || false;
-        bb_transition_time = attrs.bbTransitionTime != null ? parseInt(attrs.bbTransitionTime, 10) : 500;
-        if (angular.isArray(evnts)) {
-          angular.forEach(evnts, function(evnt) {
-            return scope.$on(evnt, function(e) {
-              return scrollToCallback(evnt);
-            });
-          });
-        } else {
-          scope.$on(evnts, function(e) {
-            return scrollToCallback(evnts);
-          });
-        }
-        isElementInView = function(el) {
-          return el.offset().top > $bbug('body').scrollTop() && el.offset().top < ($bbug('body').scrollTop() + $bbug(window).height());
-        };
-        return scrollToCallback = function(evnt) {
-          var current_step, scroll_to_element;
-          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
-            scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
-          } else {
-            scroll_to_element = $bbug(element);
-          }
-          current_step = BreadcrumbService.getCurrentStep();
-          if (scroll_to_element) {
-            if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!isElementInView(scroll_to_element) && scroll_to_element.offset().top !== 0)) {
-              if ('parentIFrame' in $window) {
-                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
-              } else {
-                return $bbug("html, body").animate({
-                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
-                }, bb_transition_time);
-              }
-            }
-          }
-        };
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbSlotGrouper', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, element, attrs) {
-        var i, len, slot, slots;
-        slots = scope.$eval(attrs.slots);
-        if (!slots) {
-          return;
-        }
-        scope.grouped_slots = [];
-        for (i = 0, len = slots.length; i < len; i++) {
-          slot = slots[i];
-          if (slot.time >= scope.$eval(attrs.startTime) && slot.time < scope.$eval(attrs.endTime)) {
-            scope.grouped_slots.push(slot);
-          }
-        }
-        return scope.has_slots = scope.grouped_slots.length > 0;
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbForm
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with forms to add enhanced validation. When using with ng-form, submitForm
-  * needs to be called manually as submit event is not raised.
-  
-  *
-  * @example
-  * <div ng-form name="example_form" bb-form></div>
-  * <form name="example_form" bb-form></form>
-  *
-   */
-
-  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
-    return {
-      restrict: 'A',
-      require: '^form',
-      scope: true,
-      link: function(scope, elem, attrs, ctrls) {
-        scope.form = ctrls;
-        elem.on("submit", function() {
-          scope.submitForm();
-          return scope.$apply();
-        });
-        return scope.submitForm = function() {
-          var property;
-          scope.form.submitted = true;
-          for (property in scope.form) {
-            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
-              scope.form[property].submitted = true;
-            }
-          }
-          $timeout(function() {
-            var invalid_form_group, invalid_input;
-            invalid_form_group = elem.find('.has-error:first');
-            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
-              if ('parentIFrame' in $window) {
-                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
-              } else {
-                $bbug("html, body").animate({
-                  scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
-                }, 1000);
-              }
-              invalid_input = invalid_form_group.find('.ng-invalid');
-              return invalid_input.focus();
-            }
-          }, 100);
-          return ValidatorService.validateForm(scope.form);
-        };
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
-    return {
-      restrict: 'A',
-      scope: true,
-      replace: true,
-      controller: function($scope, $element, $attrs) {
-        $scope.isDraggable = $document.width() > 480;
-        return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
-          var map_item;
-          if (!new_val) {
-            return;
-          }
-          map_item = new_val;
-          $scope.map = {
-            center: {
-              latitude: map_item.lat,
-              longitude: map_item.long
-            },
-            zoom: 15
-          };
-          $scope.options = {
-            scrollwheel: false,
-            draggable: $scope.isDraggable
-          };
-          return $scope.marker = {
-            id: 0,
-            coords: {
-              latitude: map_item.lat,
-              longitude: map_item.long
-            }
-          };
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbMergeDuplicateQuestions', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      controller: function($scope, $rootScope) {
-        $scope.questions = {};
-        return $rootScope.$on("item_details:loaded", function() {
-          var i, item, j, len, len1, question, ref, ref1;
-          ref = $scope.bb.stacked_items;
-          for (i = 0, len = ref.length; i < len; i++) {
-            item = ref[i];
-            if (item.item_details && item.item_details.questions) {
-              item.item_details.hide_questions = false;
-              ref1 = item.item_details.questions;
-              for (j = 0, len1 = ref1.length; j < len1; j++) {
-                question = ref1[j];
-                if ($scope.questions[question.id]) {
-                  item.setCloneAnswers($scope.questions[question.id].item);
-                  item.item_details.hide_questions = true;
-                  break;
-                } else {
-                  $scope.questions[question.id] = {
-                    question: question,
-                    item: item
-                  };
-                }
-              }
-            }
-          }
-          return $scope.has_questions = _.pluck($scope.questions, 'question').length > 0;
-        });
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbModal
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Use with modal templates to ensure modal height does not exceed window height
-  
-  *
-  * @example
-  * <div bb-modal></div>
-   */
-
-  angular.module('BB.Directives').directive('bbModal', function($window, $bbug, $timeout) {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, elem, attrs) {
-        var deregisterWatcher;
-        return $timeout(function() {
-          return elem.parent().parent().parent().css("z-index", 999999);
-        }, deregisterWatcher = scope.$watch(function() {
-          var height, modal_padding, new_height;
-          height = elem.height();
-          if ($bbug(window).width() >= 769) {
-            modal_padding = 200;
-          } else {
-            modal_padding = 20;
-          }
-          if (height > $bbug(window).height()) {
-            new_height = $bbug(window).height() - modal_padding;
-            elem.css({
-              "height": new_height + "px",
-              "overflow-y": "scroll"
-            });
-            return deregisterWatcher();
-          }
-        }));
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbBackgroundImage
-  * @restrict A
-  * @scope true
-  *
-  * @description
-  * Adds a background-image to an element
-  
-  * @param
-  * {string} url
-  *
-  * @example
-  * <div bb-background-image='images/example.jpg'></div>
-   */
-
-  angular.module('BB.Directives').directive('bbBackgroundImage', function() {
-    return {
-      restrict: 'A',
-      scope: true,
-      link: function(scope, el, attrs) {
-        var killWatch;
-        if (!attrs.bbBackgroundImage || attrs.bbBackgroundImage === "") {
-          return;
-        }
-        return killWatch = scope.$watch(attrs.bbBackgroundImage, function(new_val, old_val) {
-          if (new_val) {
-            killWatch();
-            return el.css('background-image', 'url("' + new_val + '")');
-          }
-        });
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbCapacityView
-  * @restrict A
-  * @description
-  * Assigns an appropriate description of ticket availability based
-  * on the value of the "Select spaces view" dropdown in the admin console
-  * @param
-  * {object} The event object
-  * @attribute ticket-type-singular
-  * {String} Custom name for the ticket
-  * @example
-  * <span bb-capacity-view='event' ticket-type-singular='seat'></span>
-  * @example_result
-  * <span bb-capacity-view='event' ticket-type-singular='seat' class='ng-binding'>5 of 10 seats available</span>
-   */
-
-  angular.module('BB.Directives').directive('bbCapacityView', function() {
-    return {
-      restrict: 'A',
-      template: '{{capacity_view_description}}',
-      link: function(scope, el, attrs) {
-        var killWatch, ticket_type;
-        ticket_type = attrs.ticketTypeSingular || "ticket";
-        return killWatch = scope.$watch(attrs.bbCapacityView, function(item) {
-          var num_spaces_plural, spaces_left_plural;
-          if (item) {
-            killWatch();
-            num_spaces_plural = item.num_spaces > 1 ? "s" : "";
-            spaces_left_plural = item.spaces_left > 1 ? "s" : "";
-            if (item.chain) {
-              switch (item.chain.capacity_view) {
-                case "NUM_SPACES":
-                  return scope.capacity_view_description = scope.ticket_spaces = item.num_spaces + " " + ticket_type + num_spaces_plural;
-                case "NUM_SPACES_LEFT":
-                  return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " " + ticket_type + spaces_left_plural + " available";
-                case "NUM_SPACES_AND_SPACES_LEFT":
-                  return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " of " + item.num_spaces + " " + ticket_type + num_spaces_plural + " available";
-              }
-            }
-          }
-        });
-      }
-    };
-  });
-
-
-  /***
-  * @ngdoc directive
-  * @name BB.Directives:bbTimeZone
-  * @restrict A
-  * @description
-  * Timezone name helper
-  * @param {String} time_zone_name The name of the time zone
-  * @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
-  * @example
-  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in {{time_zone_name}}.</span>
-  * @example_result
-  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
-   */
-
-  angular.module('BB.Directives').directive('bbTimeZone', function(SettingsService) {
-    return {
-      restrict: 'A',
-      link: function(scope, el, attrs) {
-        var company_time_zone;
-        company_time_zone = SettingsService.getTimeZone();
-        scope.time_zone_name = moment().tz(company_time_zone).format('zz');
-        if (!SettingsService.getUseLocalTimeZone() && moment.tz.guess() !== company_time_zone) {
-          return scope.is_time_zone_diff = true;
         }
       }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB').directive('bbMemberLogin', function(PathSvc) {
-    return {
-      restrict: 'A',
-      controller: 'MemberLogin',
-      templateUrl: function(elem, attrs) {
-        if (attrs.bbCustomLoginForm != null) {
-          return PathSvc.directivePartial("_member_login_form");
-        } else {
-          return PathSvc.directivePartial("_member_login_schema_form");
-        }
+      this.items.push(item);
+      ref2 = this.callbacks;
+      results = [];
+      for (k = 0, len3 = ref2.length; k < len3; k++) {
+        call = ref2[k];
+        results.push(call[1](item, "add"));
       }
+      return results;
     };
-  });
 
-  angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
-    $scope.login = {};
-    $scope.validator = ValidatorService;
-    $rootScope.connection_started.then(function() {
-      if (LoginService.checkLogin()) {
-        $scope.setClient($rootScope.member);
-        if ($scope.bb.destination) {
-          return $scope.redirectTo($scope.bb.destination);
-        } else {
-          $scope.setLoaded($scope);
-          $scope.skipThisStep();
-          return $scope.decideNextPage();
-        }
-      } else {
-        return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
-          return root.$get("new_login").then(function(new_login) {
-            $scope.form = new_login.form;
-            return $scope.schema = new_login.schema;
-          }, function(err) {
-            return console.log('err ', err);
-          });
-        }, function(err) {
-          return console.log('err ', err);
-        });
-      }
-    });
-    $scope.submit = function() {
-      $scope.login.role = 'member';
-      return $scope.company.$post('login', {}, $scope.login).then(function(login) {
-        if (login.$has('members')) {
-          return login.$get('members').then(function(members) {
-            return $scope.handleLogin(members[0]);
-          });
-        } else if (login.$has('member')) {
-          return login.$get('member').then(function(member) {
-            return $scope.handleLogin(member);
-          });
-        }
-      }, function(err) {
-        if (err.data.error === "Account has been disabled") {
-          return AlertService.raise('ACCOUNT_DISABLED');
-        } else {
-          return AlertService.raise('LOGIN_FAILED');
-        }
+    Base.prototype.deleteItem = function(item) {
+      var call, i, len, len1, ref, results;
+      len = this.items.length;
+      this.items = this.items.filter(function(x) {
+        return x.self !== item.self;
       });
-    };
-    return $scope.handleLogin = function(member) {
-      member = LoginService.setLogin(member, $scope.login.persist_login);
-      $scope.setClient(member);
-      if ($scope.bb.destination) {
-        return $scope.redirectTo($scope.bb.destination);
-      } else {
-        $scope.skipThisStep();
-        return $scope.decideNextPage();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc, $timeout) {
-    return {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      require: ['^?bbEvents', '^?bbMultiCompanyEvents'],
-      templateUrl: function(element, attrs) {
-        return PathSvc.directivePartial("_month_picker");
-      },
-      link: function(scope, el, attrs) {
-        var stopWatch;
-        scope.picker_settings = scope.$eval(attrs.bbMonthPicker) || {};
-        scope.picker_settings.months_to_show = scope.picker_settings.months_to_show || 3;
-        return stopWatch = scope.$watch(attrs.dayData, function(dates) {
-          if (dates) {
-            scope.processDates(dates);
-            return stopWatch();
-          }
-        });
-      },
-      controller: function($scope) {
-        $scope.processDates = function(dates) {
-          var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
-          datehash = {};
-          for (i = 0, len = dates.length; i < len; i++) {
-            date = dates[i];
-            datehash[date.date.format("DDMMYY")] = date;
-            if (!$scope.first_available_day && date.spaces > 0) {
-              $scope.first_available_day = date.date;
-            }
-          }
-          if ($scope.picker_settings.start_at_first_available_day) {
-            cur_month = $scope.first_available_day.clone().startOf('month');
-          } else {
-            cur_month = moment().startOf('month');
-          }
-          last_date = _.last(dates);
-          diff = last_date.date.diff(cur_month, 'months');
-          diff = diff > 0 ? diff + 1 : 1;
-          $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
-          months = [];
-          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
-            date = cur_month.clone().startOf('week');
-            month = {
-              weeks: []
-            };
-            month.index = m - 1;
-            for (w = k = 1; k <= 6; w = ++k) {
-              week = {
-                days: []
-              };
-              for (d = l = 1; l <= 7; d = ++l) {
-                if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
-                  month.start_date = date.clone();
-                }
-                day_data = datehash[date.format("DDMMYY")];
-                day = {
-                  date: date.clone(),
-                  data: day_data,
-                  available: day_data && day_data.spaces && day_data.spaces > 0,
-                  today: moment().isSame(date, 'day'),
-                  past: date.isBefore(moment(), 'day'),
-                  disabled: !month.start_date || !date.isSame(month.start_date, 'month')
-                };
-                week.days.push(day);
-                if ($scope.selected_date && day.date.isSame($scope.selected_date, 'day')) {
-                  day.selected = true;
-                  $scope.selected_day = day;
-                }
-                date.add(1, 'day');
-              }
-              month.weeks.push(week);
-            }
-            months.push(month);
-            cur_month.add(1, 'month');
-          }
-          $scope.months = months;
-          return $scope.slick_config = {
-            nextArrow: ".month-next",
-            prevArrow: ".month-prev",
-            slidesToShow: $scope.months.length >= $scope.picker_settings.months_to_show ? $scope.picker_settings.months_to_show : $scope.months.length,
-            infinite: false,
-            responsive: [
-              {
-                breakpoint: 1200,
-                settings: {
-                  slidesToShow: $scope.months.length >= 2 ? 2 : $scope.months.length
-                }
-              }, {
-                breakpoint: 992,
-                settings: {
-                  slidesToShow: 1
-                }
-              }
-            ],
-            method: {},
-            event: {
-              init: function(event, slick) {
-                return $timeout(function() {
-                  var len1, n, ref1, results;
-                  if ($scope.selected_day != null) {
-                    ref1 = $scope.months;
-                    results = [];
-                    for (n = 0, len1 = ref1.length; n < len1; n++) {
-                      m = ref1[n];
-                      if (m.start_date.month() === $scope.selected_day.date.month()) {
-                        results.push(slick.slickGoTo(m.index));
-                      } else {
-                        results.push(void 0);
-                      }
-                    }
-                    return results;
-                  }
-                });
-              }
-            }
-          };
-        };
-        $scope.$on('event_list_filter_date:changed', function(event, date) {
-          var newDay;
-          newDay = $scope.getDay(date);
-          if ($scope.selected_day) {
-            if ($scope.selected_day.date.isSame(date)) {
-              return $scope.selected_day.selected = !$scope.selected_day.selected;
-            } else {
-              $scope.selected_day.selected = false;
-              if (newDay) {
-                $scope.selected_day = newDay;
-                return $scope.selected_day.selected = true;
-              }
-            }
-          } else {
-            if (newDay) {
-              $scope.selected_day = newDay;
-              return $scope.selected_day.selected = true;
-            }
-          }
-        });
-        $scope.$on('event_list_filter_date:cleared', function() {
-          if ($scope.selected_day) {
-            return $scope.selected_day.selected = false;
-          }
-        });
-        $scope.toggleDay = function(day) {
-          if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
-            return;
-          }
-          if ($scope.selected_day && $scope.selected_day.date.isSame(day.date)) {
-            $scope.selected_day.selected = !$scope.selected_day.selected;
-          }
-          if ($scope.selected_day && !$scope.selected_day.date.isSame(day.date)) {
-            $scope.selected_day.selected = false;
-            $scope.selected_day = day;
-            $scope.selected_day.selected = true;
-          }
-          if (!$scope.selected_day) {
-            $scope.selected_day = day;
-            $scope.selected_day.selected = true;
-          }
-          return $scope.showDay(day.date);
-        };
-        return $scope.getDay = function(date) {
-          var day, i, j, k, len, len1, len2, month, ref, ref1, ref2, week;
-          ref = $scope.months;
-          for (i = 0, len = ref.length; i < len; i++) {
-            month = ref[i];
-            ref1 = month.weeks;
-            for (j = 0, len1 = ref1.length; j < len1; j++) {
-              week = ref1[j];
-              ref2 = week.days;
-              for (k = 0, len2 = ref2.length; k < len2; k++) {
-                day = ref2[k];
-                if (day.date.isSame(date) && !day.disabled) {
-                  return day;
-                }
-              }
-            }
-          }
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('ngOptions', function($sniffer, $rootScope) {
-    return {
-      restrict: 'A',
-      link: function(scope, el, attrs) {
-        var size;
-        size = parseInt(attrs['size'], 10);
-        if (!isNaN(size) && size > 1 && $sniffer.msie) {
-          return $rootScope.$on('loading:finished', function() {
-            el.focus();
-            return $('body').focus();
-          });
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('script', function($compile, halClient) {
-    return {
-      transclude: false,
-      restrict: 'E',
-      link: function(scope, element, attrs) {
-        var body, json, res;
-        if (attrs.type === 'text/hal-object') {
-          body = element[0].innerText;
-          json = $bbug.parseJSON(body);
-          return res = halClient.$parse(json);
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
-    return {
-      restrict: 'EA',
-      replace: true,
-      scope: {
-        total: '=',
-        bb: '=',
-        decideNextPage: '=',
-        notLoaded: '=',
-        setLoaded: '='
-      },
-      link: function(scope, element, attributes) {
-        var getButtonFormTemplate, getTemplate, killWatch, setClassAndValue;
-        getTemplate = function(type, scope) {
-          switch (type) {
-            case 'button_form':
-              return getButtonFormTemplate(scope);
-            case 'page':
-              return TemplateSvc.get("payment.html");
-            case 'location':
-              return "<a href='{{payment_link}}'>{{label}}</a>";
-            default:
-              return "";
-          }
-        };
-        getButtonFormTemplate = function(scope) {
-          var src;
-          src = $sce.parseAsResourceUrl("'" + scope.payment_link + "'")();
-          return $http.get(src, {}).then(function(response) {
-            return response.data;
-          });
-        };
-        setClassAndValue = function(scope, element, attributes) {
-          var c, i, inputs, j, len, main_tag, ref, results;
-          switch (scope.link_type) {
-            case 'button_form':
-              inputs = element.find("input");
-              main_tag = ((function() {
-                var j, len, results;
-                results = [];
-                for (j = 0, len = inputs.length; j < len; j++) {
-                  i = inputs[j];
-                  if ($(i).attr('type') === 'submit') {
-                    results.push(i);
-                  }
-                }
-                return results;
-              })())[0];
-              if (attributes.value) {
-                $(main_tag).attr('value', attributes.value);
-              }
-              break;
-            case 'page':
-            case 'location':
-              main_tag = element.find("a")[0];
-          }
-          if (attributes["class"]) {
-            ref = attributes["class"].split(" ");
-            results = [];
-            for (j = 0, len = ref.length; j < len; j++) {
-              c = ref[j];
-              $(main_tag).addClass(c);
-              results.push($(element).removeClass(c));
-            }
-            return results;
-          }
-        };
-        return killWatch = scope.$watch('total', function(total) {
-          var url;
-          if (total && total.$has('new_payment')) {
-            killWatch();
-            scope.bb.payment_status = "pending";
-            scope.bb.total = scope.total;
-            scope.link_type = scope.total.$link('new_payment').type;
-            scope.label = attributes.value || "Make Payment";
-            scope.payment_link = scope.total.$href('new_payment');
-            url = scope.total.$href('new_payment');
-            return $q.when(getTemplate(scope.link_type, scope)).then(function(template) {
-              element.html(template).show();
-              $compile(element.contents())(scope);
-              return setClassAndValue(scope, element, attributes);
-            }, function(err) {
-              $log.warn(err.data);
-              return element.remove();
-            });
-          }
-        });
-      }
-    };
-  });
-
-  angular.module('BB.Directives').directive('bbPaypalExpressButton', function($compile, $sce, $http, $templateCache, $q, $log, $window, UriTemplate) {
-    return {
-      restrict: 'EA',
-      replace: true,
-      template: "<a ng-href=\"{{href}}\" ng-click=\"showLoader()\">Pay</a>",
-      scope: {
-        total: '=',
-        bb: '=',
-        decideNextPage: '=',
-        paypalOptions: '=bbPaypalExpressButton',
-        notLoaded: '='
-      },
-      link: function(scope, element, attributes) {
-        var paypalOptions, total;
-        total = scope.total;
-        paypalOptions = scope.paypalOptions;
-        scope.href = new UriTemplate(total.$link('paypal_express').href).fillFromObject(paypalOptions);
-        return scope.showLoader = function() {
-          if (scope.notLoaded) {
-            return scope.notLoaded(scope);
-          }
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbPaypal', function(PathSvc) {
-    return {
-      restrict: 'A',
-      replace: true,
-      scope: {
-        ppDetails: "=bbPaypal"
-      },
-      templateUrl: PathSvc.directivePartial("paypal_button"),
-      link: function(scope, element, attrs) {
-        var keys;
-        scope.inputs = [];
-        if (!scope.ppDetails) {
-          return;
-        }
-        keys = _.keys(scope.ppDetails);
-        return _.each(keys, function(keyName) {
-          var obj;
-          obj = {
-            name: keyName,
-            value: scope.ppDetails[keyName]
-          };
-          return scope.inputs.push(obj);
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('pricepicker', function() {
-    var controller, link;
-    controller = function($scope) {
-      return $scope.$watch('price', function(price) {
-        if (price != null) {
-          return $scope.updateModel(price);
-        }
-      });
-    };
-    link = function(scope, element, attrs, ngModel) {
-      ngModel.$render = function() {
-        if (ngModel.$viewValue) {
-          return scope.price = ngModel.$viewValue;
-        }
-      };
-      return scope.updateModel = function(value) {
-        return ngModel.$setViewValue(value);
-      };
-    };
-    return {
-      require: 'ngModel',
-      link: link,
-      controller: controller,
-      scope: {
-        currency: '@'
-      },
-      template: "<span>{{0 | currency: currency | limitTo: 1}}</span>\n<input type=\"number\" ng-model=\"price\" class=\"form-control\" step=\"0.01\">"
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
-    var scopeIt;
-    this.compat = (function() {
-      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
-      check = document.createElement('style');
-      if (typeof check.sheet !== 'undefined') {
-        DOMStyle = 'sheet';
-      } else if (typeof check.getSheet !== 'undefined') {
-        DOMStyle = 'getSheet';
-      } else {
-        DOMStyle = 'styleSheet';
-      }
-      scopeSupported = void 0 !== check.scoped;
-      document.body.appendChild(check);
-      testSheet = check[DOMStyle];
-      if (testSheet.addRule) {
-        testSheet.addRule('c', 'blink');
-      } else {
-        testSheet.insertRule('c{}', 0);
-      }
-      DOMRules = testSheet.rules ? 'rules' : 'cssRules';
-      testStyle = testSheet[DOMRules][0];
-      try {
-        testStyle.selectorText = 'd';
-      } catch (error) {
-        e = error;
-      }
-      changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
-      check.parentNode.removeChild(check);
-      return {
-        scopeSupported: scopeSupported,
-        rules: DOMRules,
-        sheet: DOMStyle,
-        changeSelectorTextAllowed: changeSelectorTextAllowed
-      };
-    })();
-    scopeIt = (function(_this) {
-      return function(element) {
-        var allRules, glue, id, idCounter, index, par, results, rule, selector, sheet, styleNode, styleRule;
-        styleNode = element[0];
-        idCounter = 0;
-        sheet = styleNode[_this.compat.sheet];
-        if (!sheet) {
-          return;
-        }
-        allRules = sheet[_this.compat.rules];
-        par = styleNode.parentNode;
-        id = par.id || (par.id = 'scopedByScopedPolyfill_' + ++idCounter);
-        glue = '';
-        index = allRules.length || 0;
-        while (par) {
-          if (par.id) {
-            glue = '#' + par.id + ' ' + glue;
-          }
-          par = par.parentNode;
-        }
+      if (this.items.length !== len) {
+        ref = this.callbacks;
         results = [];
-        while (index--) {
-          rule = allRules[index];
-          if (rule.selectorText) {
-            if (!rule.selectorText.match(new RegExp(glue))) {
-              selector = glue + ' ' + rule.selectorText.split(',').join(', ' + glue);
-              selector = selector.replace(/[\ ]+:root/gi, '');
-              if (_this.compat.changeSelectorTextAllowed) {
-                results.push(rule.selectorText = selector);
-              } else {
-                if (!rule.type || 1 === rule.type) {
-                  styleRule = rule.style.cssText;
-                  if (styleRule) {
-                    if (sheet.removeRule) {
-                      sheet.removeRule(index);
-                    } else {
-                      sheet.deleteRule(index);
-                    }
-                    if (sheet.addRule) {
-                      results.push(sheet.addRule(selector, styleRule));
-                    } else {
-                      results.push(sheet.insertRule(selector + '{' + styleRule + '}', index));
-                    }
-                  } else {
-                    results.push(void 0);
-                  }
-                } else {
-                  results.push(void 0);
-                }
-              }
-            } else {
-              results.push(void 0);
-            }
-          } else {
-            results.push(void 0);
-          }
+        for (i = 0, len1 = ref.length; i < len1; i++) {
+          call = ref[i];
+          results.push(call[1](item, "delete"));
         }
         return results;
-      };
-    })(this);
-    return {
-      restrict: 'A',
-      link: function(scope, element, attrs) {
-        scope.scopeSupported = this.compat.scopeSupported;
-        if (!this.compat.scopeSupported) {
-          return $timeout(function() {
-            return scopeIt(element);
-          });
-        }
-      },
-      controller: function($scope, $element, $timeout) {
-        if (!$scope.scopeSupported) {
-          this.updateCss = function() {
-            return $timeout(function() {
-              return scopeIt($element);
-            });
-          };
+      }
+    };
+
+    Base.prototype.getItems = function() {
+      return this.items;
+    };
+
+    Base.prototype.addCallback = function(obj, fn) {
+      var call, i, len1, ref;
+      ref = this.callbacks;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        call = ref[i];
+        if (call[0] === obj) {
+          return;
         }
       }
+      return this.callbacks.push([obj, fn]);
     };
-  });
 
-}).call(this);
-
-(function() {
-  var app;
-
-  app = angular.module('BB.Directives');
-
-  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
-    return {
-      transclude: false,
-      restrict: 'A',
-      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
-      link: function(scope, elem, attrs) {
-        var getCurrentSize, isVisible, markers, t, update;
-        markers = elem.find('span');
-        $bbug(elem).addClass("bb-display-mode");
-        scope.display = {};
-        isVisible = function(element) {
-          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
-        };
-        getCurrentSize = function() {
-          var currentSize, element, i, len;
-          currentSize = false;
-          for (i = 0, len = markers.length; i < len; i++) {
-            element = markers[i];
-            if (isVisible(element)) {
-              currentSize = element.className.slice(8, 11);
-              ViewportSize.setViewportSize(element.className.slice(8, 11));
-              break;
-            }
-          }
-          return currentSize;
-        };
-        update = (function(_this) {
-          return function() {
-            var nsize;
-            nsize = getCurrentSize();
-            if (nsize !== _this.currentSize) {
-              _this.currentSize = nsize;
-              scope.display.xs = false;
-              scope.display.sm = false;
-              scope.display.md = false;
-              scope.display.lg = false;
-              scope.display.not_xs = true;
-              scope.display.not_sm = true;
-              scope.display.not_md = true;
-              scope.display.not_lg = true;
-              scope.display[nsize] = true;
-              scope.display["not_" + nsize] = false;
-              return true;
-            }
-            return false;
-          };
-        })(this);
-        t = null;
-        angular.element($window).bind('resize', (function(_this) {
-          return function() {
-            window.clearTimeout(t);
-            return t = setTimeout(function() {
-              if (update()) {
-                return scope.$apply();
-              }
-            }, 50);
-          };
-        })(this));
-        return angular.element($window).bind('load', (function(_this) {
-          return function() {
-            if (update()) {
-              return scope.$apply();
-            }
-          };
-        })(this));
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('bbToggleEdit', function($compile, $window, $document) {
-    return {
-      restrict: 'AE',
-      link: function(scope, element, attr) {
-        scope.editing = false;
-        element.on('dblclick', (function(_this) {
-          return function(event) {
-            return scope.$apply(function() {
-              return scope.editing = true;
-            });
-          };
-        })(this));
-        $document.on('click', (function(_this) {
-          return function() {
-            if (!element.is(':hover')) {
-              return scope.$apply(function() {
-                return scope.editing = false;
-              });
-            }
-          };
-        })(this));
-        return true;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Directives').directive('popover', function() {
-    var openElement, openScope;
-    openElement = null;
-    openScope = null;
-    $('div[ng-controller="BBCtrl"]').off('.bbtooltip').on('click.bbtooltip', function(e) {
-      var target;
-      target = $(e.target).closest('[popover]')[0];
-      if (!target && openElement && openScope) {
-        $(openElement).next('.popover').remove();
-        openScope.tt_isOpen = false;
-      }
+    Base.prototype.matchesParams = function(item) {
       return true;
-    });
+    };
+
+    return Base;
+
+  })();
+
+  window.BaseCollections = (function() {
+    function BaseCollections() {
+      this.collections = [];
+    }
+
+    BaseCollections.prototype.count = function() {
+      return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function(col) {
+      return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.checkItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.deleteItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.deleteItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.find = function(prms) {
+      var clean_params, col, i, jprms, key, len1, ref, val;
+      clean_params = {};
+      for (key in prms) {
+        val = prms[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      jprms = JSON.stringify(clean_params);
+      ref = this.collections;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        if (jprms === col.jparams) {
+          return col;
+        }
+      }
+    };
+
+    BaseCollections.prototype["delete"] = function(col) {
+      return this.collections = _.without(this.collections, col);
+    };
+
+    return BaseCollections;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Day = (function(superClass) {
+    extend(Day, superClass);
+
+    function Day() {
+      return Day.__super__.constructor.apply(this, arguments);
+    }
+
+    Day.prototype.checkItem = function(item) {
+      return Day.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Day;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("DayCollections", function() {
     return {
-      restrict: 'EA',
-      priority: -1000,
-      link: function(scope, element) {
-        element.on('click.bbtooltip', function(e) {
-          if (openElement === $(e.target).closest('[popover]')[0]) {
-            e.preventDefault();
-            return;
-          }
-          if (openElement && openScope) {
-            $(openElement).next('.popover').remove();
-            openScope.tt_isOpen = false;
-          }
-          openElement = element[0];
-          return openScope = scope;
-        });
-        return scope.$on('$destroy', function() {
-          return $(element).off('.bbtooltip');
-        });
+      $get: function() {
+        return new window.BaseCollections();
       }
     };
   });
 
 }).call(this);
 
-(function (angular) {
-  'use strict';
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
-  /* Directives */
-  var app = angular.module('BB.Directives');
+  window.Collection.Space = (function(superClass) {
+    extend(Space, superClass);
 
-  app.directive('appVersion', function(version) {
-    return function(scope, elm, attrs) {
-      elm.text(version);
+    function Space() {
+      return Space.__super__.constructor.apply(this, arguments);
+    }
+
+    Space.prototype.checkItem = function(item) {
+      return Space.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Space;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("SpaceCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
     };
   });
-}(window.angular));
+
+}).call(this);
 
 (function() {
   'use strict';
@@ -17444,6 +13683,3767 @@ angular.module('BB.Directives')
         return true;
       };
     })(this);
+  });
+
+}).call(this);
+
+'use strict'
+
+// This is a customisation of the accordion-group directive in ui bootstrap
+// v0.12.0 to fix an issue in ie8. Replace has been changed from true to false
+
+angular.module('BB.Directives')
+
+// The accordion-group directive indicates a block of html that will expand and collapse in an accordion
+.directive('bbAccordionGroup', function() {
+  return {
+    require:'^accordion',         // We need this directive to be inside an accordion
+    restrict:'EA',
+    transclude:true,              // It transcludes the contents of the directive into the template
+    replace: false,                // The element containing the directive will be replaced with the template
+    templateUrl:'accordion-group.html',
+    scope: {
+      heading: '@',               // Interpolate the heading attribute onto this scope
+      isOpen: '=?',
+      isDisabled: '=?'
+    },
+    controller: function() {
+      this.setHeading = function(element) {
+        this.heading = element;
+      };
+    },
+    link: function(scope, element, attrs, accordionCtrl) {
+      accordionCtrl.addGroup(scope);
+
+      scope.$watch('isOpen', function(value) {
+        if ( value ) {
+          accordionCtrl.closeOthers(scope);
+        }
+      });
+
+      scope.toggleOpen = function() {
+        if ( !scope.isDisabled ) {
+          scope.isOpen = !scope.isOpen;
+        }
+      };
+    }
+  };
+})
+
+// Use accordion-heading below an accordion-group to provide a heading containing HTML
+// <accordion-group>
+//   <accordion-heading>Heading containing HTML - <img src="..."></accordion-heading>
+// </accordion-group>
+.directive('bbAccordionHeading', function() {
+  return {
+    restrict: 'EA',
+    transclude: true,   // Grab the contents to be used as the heading
+    template: '',       // In effect remove this element!
+    replace: true,
+    require: '^bbAccordionGroup',
+    link: function(scope, element, attr, accordionGroupCtrl, transclude) {
+      // Pass the heading to the accordion-group controller
+      // so that it can be transcluded into the right place in the template
+      // [The second parameter to transclude causes the elements to be cloned so that they work in ng-repeat]
+      accordionGroupCtrl.setHeading(transclude(scope, function() {}));
+    }
+  };
+})
+
+// Use in the accordion-group template to indicate where you want the heading to be transcluded
+// You must provide the property on the accordion-group controller that will hold the transcluded element
+// <div class="accordion-group">
+//   <div class="accordion-heading" ><a ... accordion-transclude="heading">...</a></div>
+//   ...
+// </div>
+.directive('bbAccordionTransclude', function() {
+  return {
+    require: '^bbAccordionGroup',
+    link: function(scope, element, attr, controller) {
+      scope.$watch(function() { return controller[attr.bbAccordionTransclude]; }, function(heading) {
+        if ( heading ) {
+          element.html('');
+          element.append(heading);
+        }
+      });
+    }
+  };
+});
+
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbBasket', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      templateUrl: function(element, attrs) {
+        if (_.has(attrs, 'mini')) {
+          return PathSvc.directivePartial("_basket_mini");
+        } else {
+          return PathSvc.directivePartial("basket");
+        }
+      },
+      controllerAs: 'BasketCtrl',
+      controller: function($scope, $modal, BasketService) {
+        var BasketInstanceCtrl;
+        $scope.setUsingBasket(true);
+        this.empty = function() {
+          return $scope.$eval('emptyBasket()');
+        };
+        this.view = function() {
+          return $scope.$eval('viewBasket()');
+        };
+        $scope.showBasketDetails = function() {
+          var modalInstance;
+          if (($scope.bb.current_page === "basket") || ($scope.bb.current_page === "checkout")) {
+            return false;
+          } else {
+            return modalInstance = $modal.open({
+              templateUrl: $scope.getPartial("_basket_details"),
+              scope: $scope,
+              controller: BasketInstanceCtrl,
+              resolve: {
+                basket: function() {
+                  return $scope.bb.basket;
+                }
+              }
+            });
+          }
+        };
+        BasketInstanceCtrl = function($scope, $rootScope, $modalInstance, basket) {
+          $scope.basket = basket;
+          return $scope.cancel = function() {
+            return $modalInstance.dismiss("cancel");
+          };
+        };
+        $scope.$watch(function() {
+          var len;
+          $scope.basketItemCount = len = $scope.bb.basket ? $scope.bb.basket.length() : 0;
+          if (!len) {
+            $scope.basketStatus = "empty";
+          } else {
+            if (len === 1) {
+              $scope.basketStatus = "1 item in your basket";
+            } else {
+              $scope.basketStatus = len + " items in your basket";
+            }
+          }
+        });
+      },
+      link: function(scope, element, attrs) {
+        return element.bind('click', function(e) {
+          return e.preventDefault();
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbMinSpend', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      controller: function($scope, $element, $attrs, AlertService, $filter) {
+        var checkMinSpend, options;
+        options = $scope.$eval($attrs.bbMinSpend || {});
+        $scope.min_spend = options.min_spend || 0;
+        $scope.setReady = function() {
+          return checkMinSpend();
+        };
+        return checkMinSpend = function() {
+          var i, item, len1, price, ref;
+          price = 0;
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len1 = ref.length; i < len1; i++) {
+            item = ref[i];
+            price += item.service.price;
+          }
+          if (price >= $scope.min_spend) {
+            AlertService.clear();
+            return true;
+          } else {
+            AlertService.clear();
+            price = $filter('ipretty_price')($scope.min_spend);
+            AlertService.add("warning", {
+              msg: "You need to spend at least " + price + " to make a booking."
+            });
+            return false;
+          }
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc directive
+* @name BB.Directives.directive:bbDateTimePicker
+* @scope
+* @restrict A
+*
+* @description
+* DateTime picker that combines date & timepicker and consolidates
+* the Use of Moment.js in the App and Date in the pickers
+*
+* @param {object}  date   A moment.js date object
+* @param {boolean}  showMeridian   Switch to show/hide meridian (optional, default:false)
+* @param {number}  minuteStep Step for the timepicker (optional, default:10)
+* @param {object}  minDate Min date value for datetimepicker
+* @param {object}  maxDate Max date value for datetimepicker
+ */
+
+(function() {
+  angular.module('BB.Directives').directive('bbDateTimePicker', function(PathSvc) {
+    return {
+      scope: {
+        date: '=',
+        showMeridian: '=?',
+        minuteStep: '=?',
+        minDate: '=?',
+        maxDate: '=?',
+        format: '=?',
+        bbDisabled: '=?'
+      },
+      restrict: 'A',
+      templateUrl: 'bb_date_time_picker.html',
+      controller: function($scope, $filter, $timeout, GeneralOptions) {
+        var filterDate;
+        if ($scope.format == null) {
+          $scope.format = 'dd/MM/yyyy';
+        }
+        if ($scope.bbDisabled == null) {
+          $scope.bbDisabled = false;
+        }
+        if (!$scope.minuteStep || typeof $scope.minuteStep === 'undefined') {
+          $scope.minuteStep = GeneralOptions.calendar_minute_step;
+        }
+        if (!$scope.showMeridian || typeof $scope.showMeridian === 'undefined') {
+          $scope.showMeridian = GeneralOptions.twelve_hour_format;
+        }
+        $scope.$watch('datetimeWithNoTz', function(newValue, oldValue) {
+          var assembledDate, maxDateClean, minDateDate;
+          newValue = new Date(newValue);
+          if ((newValue != null) && moment(newValue).isValid()) {
+            assembledDate = moment();
+            assembledDate.set({
+              'year': parseInt(newValue.getFullYear()),
+              'month': parseInt(newValue.getMonth()),
+              'date': parseInt(newValue.getDate()),
+              'hour': parseInt(newValue.getHours()),
+              'minute': parseInt(newValue.getMinutes()),
+              'second': 0
+            });
+            if ($scope.minDateClean != null) {
+              minDateDate = new Date($scope.minDateClean);
+              if ((newValue.getTime() / 1000) < (minDateDate.getTime() / 1000)) {
+                if (newValue.getFullYear() < minDateDate.getFullYear()) {
+                  assembledDate.year(parseInt(minDateDate.getFullYear()));
+                }
+                if (newValue.getMonth() < minDateDate.getMonth()) {
+                  assembledDate.month(parseInt(minDateDate.getMonth()));
+                }
+                if (newValue.getDate() < minDateDate.getDate()) {
+                  assembledDate.date(parseInt(minDateDate.getDate()));
+                }
+                if (newValue.getHours() < minDateDate.getHours()) {
+                  assembledDate.hours(parseInt(minDateDate.getHours()));
+                }
+                if (newValue.getMinutes() < minDateDate.getMinutes()) {
+                  assembledDate.minutes(parseInt(minDateDate.getMinutes()));
+                }
+                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
+              }
+            }
+            if ($scope.maxDateClean != null) {
+              maxDateClean = new Date($scope.maxDateClean);
+              if ((newValue.getTime() / 1000) > (maxDateClean.getTime() / 1000)) {
+                if (newValue.getFullYear() > minDateDate.getFullYear()) {
+                  assembledDate.year(parseInt(minDateDate.getFullYear()));
+                }
+                if (newValue.getMonth() > minDateDate.getMonth()) {
+                  assembledDate.month(parseInt(minDateDate.getMonth()));
+                }
+                if (newValue.getDate() > minDateDate.getDate()) {
+                  assembledDate.date(parseInt(minDateDate.getDate()));
+                }
+                if (newValue.getHours() > maxDateClean.getHours()) {
+                  assembledDate.hours(parseInt(maxDateClean.getHours()));
+                }
+                if (newValue.getMinutes() > maxDateClean.getMinutes()) {
+                  assembledDate.minutes(parseInt(maxDateClean.getMinutes()));
+                }
+                $scope.datetimeWithNoTz = $filter('clearTimezone')(assembledDate.format());
+              }
+            }
+            $scope.date = assembledDate.format();
+          }
+        });
+        $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
+        $scope.$watch('date', function(newValue, oldValue) {
+          if (newValue !== oldValue) {
+            return $scope.datetimeWithNoTz = $filter('clearTimezone')(moment($scope.date).format());
+          }
+        });
+        $scope.$watch('minDate', function(newValue, oldValue) {
+          if (newValue !== oldValue) {
+            return $scope.minDateClean = filterDate(newValue);
+          }
+        });
+        $scope.$watch('maxDate', function(newValue, oldValue) {
+          if (newValue !== oldValue) {
+            return $scope.maxDateClean = filterDate(newValue);
+          }
+        });
+        filterDate = function(date) {
+          if ((date != null) && moment(date).isValid()) {
+            return $filter('clearTimezone')(moment(date).format());
+          }
+          return null;
+        };
+        $scope.minDateClean = filterDate($scope.minDate);
+        return $scope.maxDateClean = filterDate($scope.maxDate);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbBreadcrumb', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      controller: 'Breadcrumbs',
+      templateUrl: function(element, attrs) {
+        if (_.has(attrs, 'complex')) {
+          return PathSvc.directivePartial("_breadcrumb_complex");
+        } else {
+          return PathSvc.directivePartial("_breadcrumb");
+        }
+      },
+      link: function(scope) {}
+    };
+  });
+
+  angular.module('BB.Controllers').controller('Breadcrumbs', function($scope) {
+    var atDisablePoint, currentStep, lastStep, loadStep;
+    loadStep = $scope.loadStep;
+    $scope.steps = $scope.bb.steps;
+    $scope.allSteps = $scope.bb.allSteps;
+    $scope.loadStep = function(number) {
+      if (!lastStep() && !currentStep(number) && !atDisablePoint()) {
+        return loadStep(number);
+      }
+    };
+    lastStep = function() {
+      return $scope.bb.current_step === $scope.bb.allSteps.length;
+    };
+    currentStep = function(step) {
+      return step === $scope.bb.current_step;
+    };
+    atDisablePoint = function() {
+      if (!angular.isDefined($scope.bb.disableGoingBackAtStep)) {
+        return false;
+      }
+      return $scope.bb.current_step >= $scope.bb.disableGoingBackAtStep;
+    };
+    return $scope.isDisabledStep = function(step) {
+      if (lastStep() || currentStep(step.number) || !step.passed || atDisablePoint()) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbContentNew', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: true,
+      templateUrl: PathSvc.directivePartial("content_main"),
+      controller: function($scope) {
+        $scope.initPage = function() {
+          return $scope.$eval('setPageLoaded()');
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbDatepickerPopup', function($parse, $document, $timeout, $bbug) {
+    var e, ie8orLess;
+    ie8orLess = false;
+    try {
+      ie8orLess = window.parseInt(/MSIE\s*(\d)/.exec(window.navigator.userAgent)[1]);
+    } catch (error) {
+      e = error;
+      ie8orLess = false;
+    }
+    return {
+      restrict: 'A',
+      priority: -1,
+      require: 'ngModel',
+      link: function(scope, element, attrs, ngModel) {
+        var callDateHandler, data, dateFormat, f, format, getTimeRangeScope, getter, origDateParser, replacementDateParser, timeRangeScope, yearNow;
+        origDateParser = null;
+        data = element.controller('ngModel');
+        if (attrs.datepickerPopup != null) {
+          format = {
+            date_us: "MM/dd/yyyy",
+            date_uk: "dd/MM/yyyy"
+          };
+          if (scope.bb.company.country_code === "us") {
+            attrs.datepickerPopup = format.date_us;
+          } else {
+            attrs.datepickerPopup = format.date_uk;
+          }
+        }
+        dateFormat = !!attrs.bbDatepickerPopup ? attrs.bbDatepickerPopup : 'DD/MM/YYYY';
+        yearNow = moment(new Date()).year();
+        getter = $parse(attrs.ngModel);
+        timeRangeScope = scope;
+        getTimeRangeScope = function(scope) {
+          if (scope) {
+            if (scope.controller && scope.controller.indexOf('TimeRangeList') > 0) {
+              return timeRangeScope = scope;
+            } else {
+              return getTimeRangeScope(scope.$parent);
+            }
+          }
+        };
+        getTimeRangeScope(scope);
+        if (ie8orLess) {
+          $bbug(element).on('keydown keyup keypress', function(ev) {
+            ev.preventDefault();
+            return ev.stopPropagation();
+          });
+        }
+        if (ie8orLess || scope.display.xs) {
+          $bbug(element).attr('readonly', 'true');
+        }
+        $bbug(element).on('keydown', function(e) {
+          if (e.keyCode === 13) {
+            replacementDateParser($bbug(e.target).val(), true);
+            $document.trigger('click');
+            return $bbug(element).blur();
+          }
+        });
+        $bbug(element).on('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          return $timeout(function() {
+            return scope.opened = true;
+          });
+        });
+        $bbug(element).on('focus', function() {
+          if ($(this).attr("readonly")) {
+            return this.blur();
+          }
+        });
+        callDateHandler = function(date) {
+          var isDate, watch;
+          watch = scope.$watch(getter, function(newVal, oldVal) {
+            if (!newVal) {
+              return getter.assign(timeRangeScope, date);
+            }
+          });
+          $timeout(watch, 0);
+          isDate = _.isDate(date);
+          if (isDate) {
+            getter.assign(timeRangeScope, date);
+            ngModel.$setValidity('date', true);
+            scope.$eval(attrs.onDateChange);
+          }
+          return isDate;
+        };
+        replacementDateParser = function(viewValue, returnKey) {
+          var mDate;
+          if (callDateHandler(viewValue)) {
+            return viewValue;
+          }
+          if (ie8orLess) {
+            return viewValue;
+          }
+          mDate = moment(viewValue, dateFormat);
+          if (!mDate.isValid()) {
+            mDate = moment(new Date());
+          }
+          if (/\/YY$/.test(dateFormat)) {
+            dateFormat += 'YY';
+          }
+          if (mDate.year() === 0) {
+            mDate.year(yearNow);
+          }
+          viewValue = mDate.format('MM/DD/YYYY');
+          viewValue = viewValue.replace(/\/00/, '/20');
+          if (/\/02\d{2}$/.test(viewValue)) {
+            return;
+          }
+          if (returnKey) {
+            if (mDate.year().toString().length === 2) {
+              mDate.year(mDate.year() + 2000);
+            }
+            return callDateHandler(mDate._d);
+          } else {
+            return origDateParser.call(this, viewValue);
+          }
+        };
+        f = function() {
+          if (_.isFunction(data.$parsers[0])) {
+            origDateParser = data.$parsers[0];
+            data.$parsers[0] = replacementDateParser;
+          } else {
+            return setTimeout(f, 10);
+          }
+        };
+        return f();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module("BB.Directives").directive("bbFbLogin", function(LoginService, $rootScope, AlertService, $window) {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var checkLoginState, loginToBBWithFBUser, options, statusChangeCallback;
+        options = scope.$eval(attrs.bbFbLogin) || {};
+        $rootScope.connection_started.then(function() {
+          return checkLoginState();
+        });
+        statusChangeCallback = function(response) {
+          var params;
+          if (response.status === 'connected') {
+            params = {};
+            params.access_token = response.authResponse.accessToken;
+            if (options.login_only) {
+              params.login_only = options.login_only;
+            }
+            loginToBBWithFBUser(params);
+          } else if (response.status === 'not_authorized') {
+            scope.loginFB();
+          } else {
+            scope.loginFB();
+          }
+        };
+        checkLoginState = function() {
+          FB.getLoginStatus(function(response) {
+            statusChangeCallback(response);
+          });
+        };
+        loginToBBWithFBUser = function(params) {
+          return LoginService.FBLogin(scope.bb.company, params).then(function(member) {
+            $rootScope.member = member;
+            scope.setClient($rootScope.member);
+            if (scope.bb.destination) {
+              return scope.redirectTo(scope.bb.destination);
+            } else {
+              scope.setLoaded(scope);
+              return scope.decideNextPage();
+            }
+          }, function(err) {
+            if (err.data.error === "FACEBOOK-LOGIN-MEMBER-NOT-FOUND") {
+              return AlertService.raise('FB_LOGIN_NOT_A_MEMBER');
+            } else {
+              return AlertService.raise('LOGIN_FAILED');
+            }
+          });
+        };
+        return scope.loginFB = function() {
+          return FB.login((function(response) {
+            var params;
+            if (response.status === 'connected') {
+              params = {};
+              params.access_token = response.authResponse.accessToken;
+              if (options.login_only) {
+                params.login_only = options.login_only;
+              }
+              loginToBBWithFBUser(params);
+            } else if (response.status === 'not_authorized') {
+              AlertService.raise('LOGIN_FAILED');
+            } else {
+              AlertService.raise('LOGIN_FAILED');
+            }
+          }), {
+            scope: 'public_profile,email'
+          });
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbFileUpload
+  * @restrict AE
+  * @scope true
+  *
+  * @description
+  * File upload
+  *
+  * @example
+    <example>
+      <div
+        bb-file-upload
+        item="item"
+        max-size="100KB"
+        pertty-accept="images, .pdf, .doc/docx"
+        accept="application/pdf,application/msword,image/*">
+      </div>
+    </example>
+   */
+  angular.module('BB.Directives').directive('bbFileUpload', function() {
+    return {
+      restrict: 'A',
+      replace: false,
+      scope: {
+        accept: '@',
+        prettyAccept: '@',
+        maxSize: '@',
+        item: '='
+      },
+      controller: 'FileUpload',
+      templateUrl: 'file_upload.html'
+    };
+  });
+
+  angular.module('BB.Controllers').controller('FileUpload', function($scope, Upload) {
+    $scope.controller = "public.controllers.FileUpload";
+
+    /***
+    * @ngdoc method
+    * @name uploadFile
+    * @methodOf BB.Directives:bbItemDetails
+    * @description
+    * Upload a file
+    * For more information see https://github.com/danialfarid/ng-file-upload
+    * To use this module:
+    *
+    * @param {object} item basket item
+    * @param {object} file uploaded file
+    * @param {number} existing attachment id
+    * @param {array} errFiles errors array
+     */
+    return $scope.uploadFile = function(item, file, err_files, existing, uuid) {
+      var accepted_files, att_id, att_uuid, file_is_valid, method, onError, onProgress, onSuccess, url;
+      $scope.err_file = err_files && err_files[0];
+      $scope.show_error = false;
+      $scope.file_type_error = false;
+      $scope.my_file = file;
+      accepted_files = $scope.accept.replace(/\'/g, '').split(',');
+      file_is_valid = file && (0 <= accepted_files.indexOf(file.type) || 0 <= file.type.indexOf('image'));
+      if (file_is_valid) {
+        if (existing) {
+          att_id = existing;
+        } else {
+          att_id = null;
+        }
+        if (uuid) {
+          att_uuid = uuid;
+        } else {
+          att_uuid = null;
+        }
+        method = "POST";
+        if (att_id) {
+          method = "PUT";
+        }
+        url = item.$href('add_attachment');
+        onSuccess = function(response) {
+          file.result = response.data;
+          item.attachment = response.data;
+          item.attachment_id = response.data.id;
+          item.attachment_uuid = response.data.uuid;
+          return file.progress = 100;
+        };
+        onError = function(response) {
+          $scope.show_error = true;
+          return file.progress = 100;
+        };
+        onProgress = function(evt) {
+          return file.progress = Math.min(100, parseInt(99.0 * evt.loaded / evt.total));
+        };
+        Upload.rename(file, file.name.replace(/[^\x00-\x7F]/g, ''));
+        file.upload = Upload.upload({
+          url: url,
+          method: method,
+          data: {
+            attachment_id: att_id,
+            attachment_uuid: att_uuid
+          },
+          file: file
+        });
+        return file.upload.then(onSuccess, onError, onProgress);
+      } else if (file_is_valid === false) {
+        return $scope.file_type_error = true;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbFormDataStore', function(FormDataStoreService) {
+    return {
+      require: '?bbWidget',
+      link: function(scope) {
+        return FormDataStoreService.register(scope);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('ngConfirmClick', function() {
+    return {
+      link: function(scope, element, attr) {
+        var clickAction, msg;
+        msg = attr.ngConfirmClick || "Are you sure?";
+        clickAction = attr.ngConfirmedClick;
+        return element.bind('click', (function(_this) {
+          return function(event) {
+            if (window.confirm(msg)) {
+              return scope.$eval(clickAction);
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('ngValidInclude', function($compile) {
+    return {
+      link: function(scope, element, attr) {
+        return scope[attr.watchValue].then((function(_this) {
+          return function(logged) {
+            element.attr('ng-include', attr.ngValidInclude);
+            element.attr('ng-valid-include', null);
+            return $compile(element)(scope);
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('ngDelayed', function($compile) {
+    return {
+      link: function(scope, element, attr) {
+        return scope[attr.ngDelayedWatch].then((function(_this) {
+          return function(logged) {
+            element.attr(attr.ngDelayed, attr.ngDelayedValue);
+            element.attr('ng-delayed-value', null);
+            element.attr('ng-delayed-watch', null);
+            element.attr('ng-delayed', null);
+            $compile(element)(scope);
+            if (attr.ngDelayedReady) {
+              return scope[attr.ngDelayedReady].resolve(true);
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('ngInitial', function() {
+    return {
+      restrict: 'A',
+      controller: [
+        '$scope', '$element', '$attrs', '$parse', function($scope, $element, $attrs, $parse) {
+          var getter, setter, val;
+          val = $attrs.ngInitial || $attrs.value;
+          getter = $parse($attrs.ngModel);
+          setter = getter.assign;
+          if (val === "true") {
+            val = true;
+          } else if (val === "false") {
+            val = false;
+          }
+          return setter($scope, val);
+        }
+      ]
+    };
+  });
+
+  app.directive('bbPrintPage', function($window, $timeout) {
+    return {
+      restrict: 'A',
+      link: function(scope, element, attr) {
+        if (attr.bbPrintPage) {
+          return scope.$watch(attr.bbPrintPage, (function(_this) {
+            return function(newVal, oldVal) {
+              return $timeout(function() {
+                return $window.print();
+              }, 3000);
+            };
+          })(this));
+        }
+      }
+    };
+  });
+
+  app.directive('bbInclude', function($compile, $rootScope) {
+    return {
+      link: function(scope, element, attr) {
+        var track_page;
+        track_page = attr.bbTrackPage != null ? true : false;
+        return scope.$watch('bb.path_setup', (function(_this) {
+          return function(newval, oldval) {
+            if (newval) {
+              element.attr('ng-include', "'" + scope.getPartial(attr.bbInclude) + "'");
+              element.attr('bb-include', null);
+              $compile(element)(scope);
+              if (track_page) {
+                return $rootScope.$broadcast("page:loaded", attr.bbInclude);
+              }
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('bbRaiseAlertWhenInvalid', function($compile) {
+    return {
+      require: '^form',
+      link: function(scope, element, attr, ctrl) {
+        var options;
+        ctrl.raise_alerts = true;
+        options = scope.$eval(attr.bbRaiseAlertWhenInvalid);
+        if (options && options.alert) {
+          return ctrl.alert = options.alert;
+        }
+      }
+    };
+  });
+
+  app.directive('bbHeader', function($compile) {
+    return {
+      link: function(scope, element, attr) {
+        scope.bb.waitForRoutes();
+        return scope.$watch('bb.path_setup', (function(_this) {
+          return function(newval, oldval) {
+            if (newval) {
+              element.attr('ng-include', "'" + scope.getPartial(attr.bbHeader) + "'");
+              element.attr('bb-header', null);
+              return $compile(element)(scope);
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('bbDate', function() {
+    return {
+      restrict: 'AE',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var date, track_service;
+        track_service = attrs.bbTrackService != null;
+        if (attrs.bbDate) {
+          date = moment(scope.$eval(attrs.bbDate));
+        } else if (scope.bb && scope.bb.current_item && scope.bb.current_item.date) {
+          date = scope.bb.current_item.date.date;
+        } else {
+          date = moment();
+        }
+        if (track_service && scope.bb.current_item && scope.bb.current_item.service) {
+          scope.min_date = scope.bb.current_item.service.min_advance_datetime;
+          scope.max_date = scope.bb.current_item.service.max_advance_datetime;
+        }
+        scope.$broadcast('dateChanged', moment(date));
+        scope.bb_date = {
+          date: date,
+          js_date: date.toDate(),
+          addDays: function(type, amount) {
+            this.date = moment(this.date).add(amount, type);
+            this.js_date = this.date.toDate();
+            return scope.$broadcast('dateChanged', moment(this.date));
+          },
+          subtractDays: function(type, amount) {
+            return this.addDays(type, -amount);
+          },
+          setDate: function(date) {
+            this.date = date;
+            this.js_date = date.toDate();
+            return scope.$broadcast('dateChanged', moment(this.date));
+          }
+        };
+        scope.$on("currentItemUpdate", function(event) {
+          if (scope.bb.current_item.service && track_service) {
+            scope.min_date = scope.bb.current_item.service.min_advance_datetime;
+            scope.max_date = scope.bb.current_item.service.max_advance_datetime;
+            if (scope.bb_date.date.isBefore(scope.min_date, 'day')) {
+              scope.bb_date.setDate(scope.min_date.clone());
+            }
+            if (scope.bb_date.date.isAfter(scope.max_date, 'day')) {
+              return scope.bb_date.setDate(scope.max_date.clone());
+            }
+          }
+        });
+        return scope.$watch('bb_date.js_date', function(newval, oldval) {
+          var ndate;
+          ndate = moment(newval);
+          if (!scope.bb_date.date.isSame(ndate)) {
+            scope.bb_date.date = ndate;
+            if (moment(ndate).isValid()) {
+              return scope.$broadcast('dateChanged', moment(ndate));
+            }
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbDebounce', function($timeout) {
+    return {
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        var delay;
+        delay = 400;
+        if (attrs.bbDebounce) {
+          delay = attrs.bbDebounce;
+        }
+        return element.bind('click', (function(_this) {
+          return function() {
+            $timeout(function() {
+              return element.attr('disabled', true);
+            }, 0);
+            return $timeout(function() {
+              return element.attr('disabled', false);
+            }, delay);
+          };
+        })(this));
+      }
+    };
+  });
+
+  app.directive('bbLocalNumber', function($filter) {
+    return {
+      restrict: 'A',
+      scope: {},
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var prettyifyNumber, storeNumber;
+        scope.userinput_mobile = null;
+        storeNumber = function(value) {
+          if (value) {
+            scope.userinput_mobile = value;
+          }
+          return value;
+        };
+        prettyifyNumber = function(value) {
+          if (scope.userinput_mobile) {
+            return value = scope.userinput_mobile;
+          } else {
+            return $filter('local_phone_number')(value);
+          }
+        };
+        ctrl.$parsers.push(storeNumber);
+        return ctrl.$formatters.push(prettyifyNumber);
+      }
+    };
+  });
+
+  app.directive('bbPadWithZeros', function() {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var how_many, options, padNumber;
+        options = scope.$eval(attrs.bbPadWithZeros) || {};
+        how_many = options.how_many || 2;
+        padNumber = function(value) {
+          var i, index, padding, ref;
+          value = String(value);
+          if (value && value.length < how_many) {
+            padding = "";
+            for (index = i = 1, ref = how_many - value.length; 1 <= ref ? i <= ref : i >= ref; index = 1 <= ref ? ++i : --i) {
+              padding += "0";
+            }
+            value = padding.concat(value);
+          }
+          return value;
+        };
+        return ctrl.$formatters.push(padNumber);
+      }
+    };
+  });
+
+  app.directive('bbFormResettable', function($parse) {
+    return {
+      restrict: 'A',
+      controller: function($scope, $element, $attrs) {
+        $scope.inputs = [];
+        $scope.resetForm = function(options) {
+          var i, input, len, ref, results;
+          if (options && options.clear_submitted) {
+            $scope[$attrs.name].submitted = false;
+          }
+          ref = $scope.inputs;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            input = ref[i];
+            input.getter.assign($scope, null);
+            results.push(input.controller.$setPristine());
+          }
+          return results;
+        };
+        return {
+          registerInput: function(input, ctrl) {
+            var getter;
+            getter = $parse(input);
+            return $scope.inputs.push({
+              getter: getter,
+              controller: ctrl
+            });
+          }
+        };
+      }
+    };
+  });
+
+  app.directive('bbResettable', function() {
+    return {
+      restrict: 'A',
+      require: ['ngModel', '^bbFormResettable'],
+      link: function(scope, element, attrs, ctrls) {
+        var formResettableCtrl, ngModelCtrl;
+        ngModelCtrl = ctrls[0];
+        formResettableCtrl = ctrls[1];
+        return formResettableCtrl.registerInput(attrs.ngModel, ngModelCtrl);
+      }
+    };
+  });
+
+  app.directive('bbDateSplit', function($parse) {
+    return {
+      restrict: 'A',
+      require: ['ngModel'],
+      link: function(scope, element, attrs, ctrls) {
+        var ngModel, question;
+        ngModel = ctrls[0];
+        question = scope.$eval(attrs.bbDateSplit);
+        question.date = {
+          day: null,
+          month: null,
+          year: null,
+          date: null,
+          joinDate: function() {
+            var date_string;
+            if (this.day && this.month && this.year) {
+              date_string = this.day + '/' + this.month + '/' + this.year;
+              this.date = moment(date_string, "DD/MM/YYYY");
+              date_string = this.date.toISODate();
+              ngModel.$setViewValue(date_string);
+              return ngModel.$render();
+            }
+          },
+          splitDate: function(date) {
+            if (date && date.isValid()) {
+              this.day = date.date();
+              this.month = date.month() + 1;
+              this.year = date.year();
+              return this.date = date;
+            }
+          }
+        };
+        if (question.answer) {
+          question.date.splitDate(moment(question.answer));
+        }
+        if (ngModel.$viewValue) {
+          return question.date.splitDate(moment(ngModel.$viewValue));
+        }
+      }
+    };
+  });
+
+  app.directive('bbCommPref', function() {
+    return {
+      restrict: 'A',
+      require: ['ngModel'],
+      link: function(scope, element, attrs, ctrls) {
+        var comm_pref, ng_model_ctrl, parser;
+        ng_model_ctrl = ctrls[0];
+        comm_pref = scope.$eval(attrs.bbCommPref) || false;
+        if ((scope.bb.current_item.settings.send_email_followup != null) && (scope.bb.current_item.settings.send_sms_followup != null)) {
+          comm_pref = scope.bb.current_item.settings.send_email_followup;
+        } else {
+          scope.bb.current_item.settings.send_email_followup = comm_pref;
+          scope.bb.current_item.settings.send_sms_followup = comm_pref;
+        }
+        ng_model_ctrl.$setViewValue(comm_pref);
+        parser = function(value) {
+          scope.bb.current_item.settings.send_email_followup = value;
+          scope.bb.current_item.settings.send_sms_followup = value;
+          return value;
+        };
+        return ng_model_ctrl.$parsers.push(parser);
+      }
+    };
+  });
+
+  app.directive('bbCountTicketTypes', function($rootScope) {
+    return {
+      restrict: 'A',
+      scope: false,
+      link: function(scope, element, attrs) {
+        var countTicketTypes;
+        $rootScope.connection_started.then(function() {
+          return countTicketTypes();
+        });
+        scope.$on("basket:updated", function(event, basket) {
+          return countTicketTypes();
+        });
+        return countTicketTypes = function(items) {
+          var counts, i, item, len;
+          items = scope.bb.basket.timeItems();
+          counts = [];
+          for (i = 0, len = items.length; i < len; i++) {
+            item = items[i];
+            if (item.tickets) {
+              if (counts[item.tickets.name]) {
+                counts[item.tickets.name] += item.tickets.qty;
+              } else {
+                counts[item.tickets.name] = item.tickets.qty;
+              }
+              item.number = counts[item.tickets.name];
+            }
+          }
+          return scope.counts = counts;
+        };
+      }
+    };
+  });
+
+  app.directive('bbCapitaliseFirstLetter', function() {
+    return {
+      restrict: 'A',
+      require: ['ngModel'],
+      link: function(scope, element, attrs, ctrls) {
+        var ngModel;
+        ngModel = ctrls[0];
+        return scope.$watch(attrs.ngModel, function(newval, oldval) {
+          var string;
+          if (newval) {
+            string = scope.$eval(attrs.ngModel);
+            string = string.charAt(0).toUpperCase() + string.slice(1);
+            ngModel.$setViewValue(string);
+            ngModel.$render();
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbApiUrl', function($rootScope, $compile, $sniffer, $timeout, $window, $location) {
+    return {
+      restrict: 'A',
+      scope: {
+        'apiUrl': '@bbApiUrl'
+      },
+      compile: function(tElem, tAttrs) {
+        return {
+          pre: function(scope, element, attrs) {
+            var src, url;
+            $rootScope.bb || ($rootScope.bb = {});
+            $rootScope.bb.api_url = scope.apiUrl;
+            url = document.createElement('a');
+            url.href = scope.apiUrl;
+            if (($sniffer.msie && $sniffer.msie <= 9) || ($sniffer.webkit && $sniffer.webkit < 537)) {
+              if (!(url.host === '' || url.host === $location.host() || url.host === (($location.host()) + ":" + ($location.port())))) {
+                if (url.protocol[url.protocol.length - 1] === ':') {
+                  src = url.protocol + "//" + url.host + "/ClientProxy.html";
+                } else {
+                  src = url.protocol + "://" + url.host + "/ClientProxy.html";
+                }
+                $rootScope.iframe_proxy_ready = false;
+                return $compile("<iframe id='ieapiframefix' name='" + url.hostname + ("' src='" + src + "' style='visibility:false;display:none;'></iframe>"))(scope, (function(_this) {
+                  return function(cloned, scope) {
+                    cloned.bind("load", function() {
+                      $rootScope.iframe_proxy_ready = true;
+                      return $rootScope.$broadcast('iframe_proxy_ready', {
+                        iframe_proxy_ready: true
+                      });
+                    });
+                    return element.append(cloned);
+                  };
+                })(this));
+              }
+            }
+          }
+        };
+      }
+    };
+  });
+
+  app.directive('bbPriceFilter', function(PathSvc) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: false,
+      require: '^?bbServices',
+      templateUrl: function(element, attrs) {
+        return PathSvc.directivePartial("_price_filter");
+      },
+      controller: function($scope, $attrs) {
+        var setPricefilter, suitable_max;
+        $scope.$watch('items', function(new_val, old_val) {
+          if (new_val) {
+            return setPricefilter(new_val);
+          }
+        });
+        setPricefilter = function(items) {
+          $scope.price_array = _.uniq(_.map(items, function(item) {
+            return item.price / 100 || 0;
+          }));
+          $scope.price_array.sort(function(a, b) {
+            return a - b;
+          });
+          return suitable_max();
+        };
+        suitable_max = function() {
+          var max_number, min_number, top_number;
+          top_number = _.last($scope.price_array);
+          max_number = (function() {
+            switch (false) {
+              case !(top_number < 1):
+                return 0;
+              case !(top_number < 11):
+                return 10;
+              case !(top_number < 51):
+                return 50;
+              case !(top_number < 101):
+                return 100;
+              case !(top_number < 1000):
+                return (Math.ceil(top_number / 100)) * 100;
+            }
+          })();
+          min_number = 0;
+          $scope.price_options = {
+            min: min_number,
+            max: max_number
+          };
+          return $scope.filters.price = {
+            min: min_number,
+            max: max_number
+          };
+        };
+        $scope.$watch('filters.price.min', function(new_val, old_val) {
+          if (new_val !== old_val) {
+            return $scope.filterChanged();
+          }
+        });
+        return $scope.$watch('filters.price.max', function(new_val, old_val) {
+          if (new_val !== old_val) {
+            return $scope.filterChanged();
+          }
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbBookingExport', function() {
+    return {
+      restrict: 'AE',
+      scope: true,
+      template: '<div bb-include="_popout_export_booking" style="display: inline-block"></div>',
+      link: function(scope, el, attrs) {
+        var setHTML;
+        scope.$watch('total', function(new_val, old_val) {
+          if (new_val) {
+            return setHTML(new_val);
+          }
+        });
+        scope.$watch('purchase', function(new_val, old_val) {
+          if (new_val) {
+            return setHTML(new_val);
+          }
+        });
+        return setHTML = function(purchase_total) {
+          return scope.html = ("<div class='text-center'><a href='" + (purchase_total.webcalLink()) + "'><img src='images/outlook.png' alt='outlook calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Outlook</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.gcalLink()) + "'><img src='images/google.png' alt='google calendar icon' height='30' width='30' /><div class='clearfix'></div><span>Google</span></a></div><p></p>") + ("<div class='text-center'><a href='" + (purchase_total.icalLink()) + "'><img src='images/ical.png' alt='ical calendar icon' height='30' width='30' /><div class='clearfix'></div><span>iCal</span></a></div>");
+        };
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbDynamicFooter', function($timeout, $bbug) {
+    return function(scope, el, attrs) {
+      scope.$on("page:loaded", function() {
+        return $bbug('.content').css('height', 'auto');
+      });
+      scope.$watch(function() {
+        return $bbug('.content')[0].scrollHeight;
+      }, function(new_val, old_val) {
+        if (new_val !== old_val) {
+          return scope.setContentHeight();
+        }
+      });
+      scope.setContentHeight = function() {
+        var content_height, min_content_height;
+        $bbug('.content').css('height', 'auto');
+        content_height = $bbug('.content')[0].scrollHeight;
+        min_content_height = $bbug(window).innerHeight() - $bbug('.content').offset().top - $bbug('.footer').height();
+        if (content_height < min_content_height) {
+          return $bbug('.content').css('height', min_content_height + 'px');
+        }
+      };
+      return $bbug(window).on('resize', function() {
+        return scope.setContentHeight();
+      });
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbBlurOnReturn
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Removes focus from an input[type=text] element when return key is pressed
+  * @example
+  * <input type='text' bb-blur-on-return></div>
+   */
+
+  angular.module('BB.Directives').directive('bbBlurOnReturn', function($timeout) {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, el, attrs) {
+        return el.keydown(function(e) {
+          var key;
+          key = e.which || e.keyCode;
+          if (key === 13 || key === '13') {
+            return $timeout(function() {
+              if (e.target) {
+                return e.target.blur();
+              }
+            }, 10);
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app, isEmpty;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbQuestionLine', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        var e, elm, html, index;
+        if (scope.question.detail_type === "heading") {
+          elm = "";
+          if (scope.question.name.length > 0) {
+            elm += "<div class='bb-question-heading'>" + scope.question.name + "</div>";
+          }
+          if (scope.question.help_text && scope.question.help_text.length > 0) {
+            elm += "<div class='bb-question-help-text'>" + scope.question.help_text + "</div>";
+          }
+          element.html(elm);
+        }
+        if (scope.idmaps && ((scope.idmaps[scope.question.detail_type] && scope.idmaps[scope.question.detail_type].block) || (scope.idmaps[scope.question.id] && scope.idmaps[scope.question.id].block))) {
+          index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
+          html = scope.$parent.idmaps[index].html;
+          return e = $compile(html)(scope, (function(_this) {
+            return function(cloned, scope) {
+              return element.replaceWith(cloned);
+            };
+          })(this));
+        }
+      }
+    };
+  });
+
+  app.directive('bbQuestion', function($compile, $timeout) {
+    return {
+      priority: 0,
+      replace: true,
+      transclude: false,
+      restrict: 'A',
+      compile: function(el, attr, trans) {
+        return {
+          pre: function(scope, element, attrs) {
+            var adminRequired, date_format, date_format_2, ticketRef;
+            adminRequired = attrs.bbAdminRequired != null ? true : false;
+            ticketRef = attrs.ticketRef || "";
+            date_format = 'DD/MM/YYYY';
+            date_format_2 = 'dd/MM/yyyy';
+            if ((attrs.bbDateFormat != null) && attrs.bbDateFormat === 'US') {
+              date_format = 'MM/DD/YYYY';
+              date_format_2 = 'MM/dd/yyyy';
+            }
+            return scope.$watch(attrs.bbQuestion, function(question) {
+              var e, html, i, index, itemx, j, k, lastName, len1, len2, len3, name, placeholder, ref, ref1, ref2;
+              if (question) {
+                html = '';
+                lastName = '';
+                placeholder = '';
+                if (attrs.defaultPlaceholder != null) {
+                  if (question.detail_type === "text_area" | question.detail_type === "text_field") {
+                    if (question["default"]) {
+                      placeholder = question["default"];
+                    }
+                    if (question.answer === question["default"]) {
+                      question.answer = "";
+                    }
+                  }
+                }
+                scope.recalc = (function(_this) {
+                  return function() {
+                    if (angular.isDefined(scope.recalc_price)) {
+                      if (!question.outcome) {
+                        scope.recalc_price();
+                      }
+                    }
+                    if (angular.isDefined(scope.recalc_question)) {
+                      return scope.recalc_question();
+                    }
+                  };
+                })(this);
+                if (scope.idmaps && (scope.idmaps[question.detail_type] || scope.idmaps[question.id])) {
+                  index = scope.idmaps[scope.question.id] ? scope.question.id : scope.question.detail_type;
+                  html = scope.idmaps[index].html;
+                } else if (question.detail_type === "select" || question.detail_type === "select-price") {
+                  html = "<select ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'>";
+                  ref = question.options;
+                  for (i = 0, len1 = ref.length; i < len1; i++) {
+                    itemx = ref[i];
+                    html += "<option data_id='" + itemx.id + "' value='" + (itemx.name.replace(/'/g, "&apos;")) + "'>" + itemx.display_name + "</option>";
+                  }
+                  html += "</select>";
+                } else if (question.detail_type === "text_area") {
+                  html = "<textarea placeholder='" + placeholder + "' ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' rows=3 class='form-question form-control'>" + question['answer'] + "</textarea>";
+                } else if (question.detail_type === "radio") {
+                  html = '<div class="radio-group">';
+                  ref1 = question.options;
+                  for (j = 0, len2 = ref1.length; j < len2; j++) {
+                    itemx = ref1[j];
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + ticketRef + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.name + "</label></div>";
+                  }
+                  html += "</div>";
+                } else if (question.detail_type === "check") {
+                  name = question.name;
+                  if (name === lastName) {
+                    name = "";
+                  }
+                  lastName = question.name;
+                  html = "<div class='checkbox' ng-class='{\"selected\": question.answer}'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1>" + name + "</label></div>";
+                } else if (question.detail_type === "check-price") {
+                  html = "<div class='checkbox'><label><input name='q" + question.id + "' id='" + question.id + "' ng-model='question.answer' ng-checked='question.answer == \"1\"' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='checkbox' value=1> ({{question.price | currency:'GBP'}})</label></div>";
+                } else if (question.detail_type === "radio-price") {
+                  html = '<div class="radio-group">';
+                  ref2 = question.options;
+                  for (k = 0, len3 = ref2.length; k < len3; k++) {
+                    itemx = ref2[k];
+                    html += "<div class='radio'><label class='radio-label'><input ng-model='question.answer' name='q" + question.id + ticketRef + "' id='" + question.id + "' ng-change='recalc()' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' type='radio' value=\"" + itemx.name + "\"/>" + itemx.display_name + "</label></div>";
+                  }
+                  html += "</div>";
+                } else if (question.detail_type === "date") {
+                  html = "<div class='input-group date-picker'> <input type='text' class='form-question form-control' name='q" + question.id + "' id='" + question.id + "' bb-datepicker-popup='" + date_format + "' datepicker-popup='" + date_format_2 + "' ng-model='question.answer' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' ng-change='recalc()' datepicker-options='{\"starting-day\": 1}' show-weeks='false' show-button-bar='false' is-open='opened' /> <span class='input-group-btn' ng-click='$event.preventDefault();$event.stopPropagation();opened=true'> <button class='btn btn-default' type='submit'><span class='glyphicon glyphicon-calendar'></span></button> </span> </div>";
+                } else {
+                  html = "<input type='text' placeholder='" + placeholder + "'  ng-model='question.answer' name='q" + question.id + "' id='" + question.id + "' ng-required='question.currentlyShown && ((" + adminRequired + " && question.required) || (question.required && !bb.isAdmin))' class='form-question form-control'/>";
+                }
+                if (html) {
+                  return e = $compile(html)(scope, (function(_this) {
+                    return function(cloned, scope) {
+                      return element.replaceWith(cloned);
+                    };
+                  })(this));
+                }
+              }
+            });
+          },
+          post: function(scope, $e, $a, parentControl) {}
+        };
+      }
+    };
+  });
+
+  app.directive('bbQuestionSetup', function() {
+    return {
+      restrict: 'A',
+      terminal: true,
+      priority: 1000,
+      link: function(scope, element, attrs) {
+        var block, child, def, i, id, idmaps, index, len1, ref;
+        idmaps = {};
+        def = null;
+        ref = element.children();
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          child = ref[index];
+          id = $(child).attr("bb-question-id");
+          block = false;
+          if ($(child).attr("bb-replace-block")) {
+            block = true;
+          }
+          child.innerHTML = child.innerHTML.replace(/question_form/g, "question_form_" + index);
+          idmaps[id] = {
+            id: id,
+            html: child.innerHTML,
+            block: block
+          };
+        }
+        scope.idmaps = idmaps;
+        return element.replaceWith("");
+      }
+    };
+  });
+
+  app.directive("bbFocus", [
+    function() {
+      var FOCUS_CLASS;
+      FOCUS_CLASS = "bb-focused";
+      return {
+        restrict: "A",
+        require: "ngModel",
+        link: function(scope, element, attrs, ctrl) {
+          ctrl.$focused = false;
+          return element.bind("focus", function(evt) {
+            element.addClass(FOCUS_CLASS);
+            return scope.$apply(function() {
+              return ctrl.$focused = true;
+            });
+          }).bind("blur", function(evt) {
+            element.removeClass(FOCUS_CLASS);
+            return scope.$apply(function() {
+              return ctrl.$focused = false;
+            });
+          });
+        }
+      };
+    }
+  ]);
+
+  app.directive('bbCurrencyField', function($filter) {
+    return {
+      restrict: 'A',
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl) {
+        var convertToCurrency, convertToInteger;
+        convertToCurrency = function(value) {
+          return value / 100;
+        };
+        convertToInteger = function(value) {
+          return value * 100;
+        };
+        ctrl.$formatters.push(convertToCurrency);
+        return ctrl.$parsers.push(convertToInteger);
+      }
+    };
+  });
+
+  isEmpty = function(value) {
+    return angular.isUndefined(value) || value === "" || value === null || value !== value;
+  };
+
+  app.directive("ngMin", function() {
+    return {
+      restrict: "A",
+      require: "ngModel",
+      link: function(scope, elem, attr, ctrl) {
+        var minValidator;
+        minValidator = function(value) {
+          var min;
+          min = scope.$eval(attr.ngMin) || 0;
+          ctrl.$setValidity("ngMin", isEmpty(value) || value >= min);
+          return value;
+        };
+        ctrl.$parsers.push(minValidator);
+        ctrl.$formatters.push(minValidator);
+      }
+    };
+  });
+
+  app.directive("ngMax", function() {
+    return {
+      restrict: "A",
+      require: "ngModel",
+      link: function(scope, elem, attr, ctrl) {
+        var maxValidator;
+        maxValidator = function(value) {
+          var max;
+          max = scope.$eval(attr.ngMax);
+          ctrl.$setValidity("ngMax", isEmpty(value) || value <= max);
+          return value;
+        };
+        ctrl.$parsers.push(maxValidator);
+        ctrl.$formatters.push(maxValidator);
+      }
+    };
+  });
+
+  app.directive("creditCardNumber", function() {
+    var getCardType, isValid, linker;
+    getCardType = function(ccnumber) {
+      if (!ccnumber) {
+        return '';
+      }
+      ccnumber = ccnumber.toString().replace(/\s+/g, '');
+      if (/^(34)|^(37)/.test(ccnumber)) {
+        return "american_express";
+      }
+      if (/^(62)|^(88)/.test(ccnumber)) {
+        return "china_unionpay";
+      }
+      if (/^30[0-5]/.test(ccnumber)) {
+        return "diners_club_carte_blanche";
+      }
+      if (/^(2014)|^(2149)/.test(ccnumber)) {
+        return "diners_club_enroute";
+      }
+      if (/^36/.test(ccnumber)) {
+        return "diners_club_international";
+      }
+      if (/^(6011)|^(622(1(2[6-9]|[3-9][0-9])|[2-8][0-9]{2}|9([01][0-9]|2[0-5])))|^(64[4-9])|^65/.test(ccnumber)) {
+        return "discover";
+      }
+      if (/^35(2[89]|[3-8][0-9])/.test(ccnumber)) {
+        return "jcb";
+      }
+      if (/^(6304)|^(6706)|^(6771)|^(6709)/.test(ccnumber)) {
+        return "laser";
+      }
+      if (/^(5018)|^(5020)|^(5038)|^(5893)|^(6304)|^(6759)|^(6761)|^(6762)|^(6763)|^(0604)/.test(ccnumber)) {
+        return "maestro";
+      }
+      if (/^5[1-5]/.test(ccnumber)) {
+        return "master";
+      }
+      if (/^4/.test(ccnumber)) {
+        return "visa";
+      }
+      if (/^(4026)|^(417500)|^(4405)|^(4508)|^(4844)|^(4913)|^(4917)/.test(ccnumber)) {
+        return "visa_electron";
+      }
+    };
+    isValid = function(ccnumber) {
+      var len, mul, prodArr, sum;
+      if (!ccnumber) {
+        return false;
+      }
+      ccnumber = ccnumber.toString().replace(/\s+/g, '');
+      len = ccnumber.length;
+      mul = 0;
+      prodArr = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]];
+      sum = 0;
+      while (len--) {
+        sum += prodArr[mul][parseInt(ccnumber.charAt(len), 10)];
+        mul ^= 1;
+      }
+      return sum % 10 === 0 && sum > 0;
+    };
+    linker = function(scope, element, attributes, ngModel) {
+      return scope.$watch(function() {
+        return ngModel.$modelValue;
+      }, function(newValue) {
+        ngModel.$setValidity('card_number', isValid(newValue));
+        scope.cardType = getCardType(newValue);
+        if ((newValue != null) && newValue.length === 16) {
+          if (ngModel.$invalid) {
+            element.parent().addClass('has-error');
+            return element.parent().removeClass('has-success');
+          } else {
+            element.parent().removeClass('has-error');
+            return element.parent().addClass('has-success');
+          }
+        } else {
+          return element.parent().removeClass('has-success');
+        }
+      });
+    };
+    return {
+      restrict: "C",
+      require: "ngModel",
+      link: linker,
+      scope: {
+        'cardType': '='
+      }
+    };
+  });
+
+  app.directive("cardSecurityCode", function() {
+    var linker;
+    linker = function(scope, element, attributes) {
+      return scope.$watch('cardType', function(newValue) {
+        if (newValue === 'american_express') {
+          element.attr('maxlength', 4);
+          return element.attr('placeholder', "••••");
+        } else {
+          element.attr('maxlength', 3);
+          return element.attr('placeholder', "•••");
+        }
+      });
+    };
+    return {
+      restrict: "AC",
+      link: linker,
+      scope: {
+        'cardType': '='
+      }
+    };
+  });
+
+  app.directive('bbInputGroupManager', function(ValidatorService) {
+    return {
+      restrict: 'A',
+      controller: function($scope, $element, $attrs) {
+        $scope.input_manger = {
+          input_groups: {},
+          inputs: [],
+          registerInput: function(input, name) {
+            if (this.inputs.indexOf(input.$name) >= 0) {
+              return;
+            }
+            this.inputs.push(input.$name);
+            if (!this.input_groups[name]) {
+              this.input_groups[name] = {
+                inputs: [],
+                valid: false
+              };
+            }
+            return this.input_groups[name].inputs.push(input);
+          },
+          validateInputGroup: function(name) {
+            var i, input, is_valid, j, len1, len2, ref, ref1;
+            is_valid = false;
+            ref = this.input_groups[name].inputs;
+            for (i = 0, len1 = ref.length; i < len1; i++) {
+              input = ref[i];
+              is_valid = input.$modelValue;
+              if (is_valid) {
+                break;
+              }
+            }
+            if (is_valid === !this.input_groups[name].valid) {
+              ref1 = this.input_groups[name].inputs;
+              for (j = 0, len2 = ref1.length; j < len2; j++) {
+                input = ref1[j];
+                input.$setValidity(input.$name, is_valid);
+              }
+              return this.input_groups[name].valid = is_valid;
+            }
+          }
+        };
+        return $element.on("submit", function() {
+          var input_group, results;
+          results = [];
+          for (input_group in $scope.input_manger.input_groups) {
+            results.push($scope.input_manger.validateInputGroup(input_group));
+          }
+          return results;
+        });
+      }
+    };
+  });
+
+  app.directive("bbInputGroup", function() {
+    return {
+      restrict: "A",
+      require: 'ngModel',
+      link: function(scope, elem, attrs, ngModel) {
+        if (scope.input_manger.inputs.indexOf(ngModel.$name) >= 0) {
+          return;
+        }
+        scope.input_manger.registerInput(ngModel, attrs.bbInputGroup);
+        return scope.$watch(attrs.ngModel, function(newval, oldval) {
+          if (newval === !oldval) {
+            return scope.input_manger.validateInputGroup(attrs.bbInputGroup);
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbQuestionLabel', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      scope: false,
+      link: function(scope, element, attrs) {
+        return scope.$watch(attrs.bbQuestionLabel, function(question) {
+          if (question) {
+            if (question.detail_type === "check" || question.detail_type === "check-price") {
+              return element.html("");
+            }
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbQuestionLink', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var id;
+        id = parseInt(attrs.bbQuestionLink);
+        return scope.$watch("question_set", function(newval, oldval) {
+          var i, len1, q, ref, results;
+          if (newval) {
+            ref = scope.question_set;
+            results = [];
+            for (i = 0, len1 = ref.length; i < len1; i++) {
+              q = ref[i];
+              if (q.id === id) {
+                scope.question = q;
+                element.attr('ng-model', "question.answer");
+                element.attr('bb-question-link', null);
+                results.push($compile(element)(scope));
+              } else {
+                results.push(void 0);
+              }
+            }
+            return results;
+          }
+        });
+      }
+    };
+  });
+
+  app.directive('bbQuestionSet', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var set;
+        set = attrs.bbQuestionSet;
+        element.addClass('ng-hide');
+        return scope.$watch(set, function(newval, oldval) {
+          if (newval) {
+            scope.question_set = newval;
+            return element.removeClass('ng-hide');
+          }
+        });
+      }
+    };
+  });
+
+  app.directive("bbMatchInput", function() {
+    return {
+      restrict: "A",
+      require: 'ngModel',
+      link: function(scope, element, attrs, ctrl, ngModel) {
+        var compare;
+        scope.$watch(attrs.bbMatchInput, function() {
+          scope.val_1 = scope.$eval(attrs.bbMatchInput);
+          return compare(ctrl.$viewValue);
+        });
+        compare = function(value) {
+          ctrl.$setValidity('match', scope.val_1 === value);
+          return value;
+        };
+        return ctrl.$parsers.push(compare);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive("bbIntTelNumber", function($parse) {
+    return {
+      restrict: "A",
+      require: "ngModel",
+      link: function(scope, element, attrs, ctrl) {
+        var format, isValid, options, parse;
+        options = scope.$eval(attrs.bbIntTelNumber);
+        element.intlTelInput(options);
+        isValid = function(value) {
+          if (value) {
+            return element.intlTelInput("isValidNumber");
+          } else {
+            return true;
+          }
+        };
+        format = function(value) {
+          var str;
+          str = "";
+          if (scope.$eval(attrs.ngModel + '_prefix') != null) {
+            str += "+" + scope.$eval(attrs.ngModel + '_prefix') + " ";
+          }
+          if (scope.$eval(attrs.ngModel) != null) {
+            str += scope.$eval(attrs.ngModel);
+          }
+          if (str[0] === "+") {
+            element.intlTelInput("setNumber", "+" + (scope.$eval(attrs.ngModel + '_prefix')) + " " + (scope.$eval(attrs.ngModel)));
+            ctrl.$setValidity("phone", isValid(value));
+          }
+          return str;
+        };
+        parse = function(value) {
+          var getter, prefix;
+          prefix = element.intlTelInput("getSelectedCountryData").dialCode;
+          getter = $parse(attrs.ngModel + '_prefix');
+          getter.assign(scope, prefix);
+          ctrl.$setValidity("phone", isValid(value));
+          return value;
+        };
+        ctrl.$formatters.push(format);
+        return ctrl.$parsers.push(parse);
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbLoader', function($rootScope, $compile, PathSvc, TemplateSvc) {
+    return {
+      restrict: 'A',
+      replace: false,
+      scope: {},
+      controllerAs: 'LoaderCtrl',
+      controller: function($scope) {
+        var addScopeId, hideLoader, parentScopeId, removeScopeId, scopeIdArr, showLoader;
+        parentScopeId = $scope.$parent.$id;
+        scopeIdArr = [];
+        addScopeId = function(id) {
+          scopeIdArr.push(id);
+          scopeIdArr = _.uniq(scopeIdArr);
+        };
+        removeScopeId = function(id) {
+          scopeIdArr = _.without(scopeIdArr, id);
+          return scopeIdArr.length;
+        };
+        showLoader = function(e, cscope) {
+          var sid;
+          sid = cscope.$id;
+          while (cscope) {
+            if (cscope.$id === parentScopeId) {
+              addScopeId(sid);
+              $scope.scopeLoaded = false;
+              break;
+            }
+            cscope = cscope.$parent;
+          }
+        };
+        hideLoader = function(e, cscope) {
+          if (!removeScopeId(cscope.$id)) {
+            $scope.scopeLoaded = true;
+          }
+        };
+        $rootScope.$on('show:loader', showLoader);
+        $rootScope.$on('hide:loader', hideLoader);
+        $scope.scopeLoaded = false;
+      },
+      link: function(scope, element, attrs) {
+        TemplateSvc.get(PathSvc.directivePartial("loader")).then(function(html) {
+          var str;
+          if (_.isString(attrs.bbLoader)) {
+            str = attrs.bbLoader.slice(1);
+            if (/^#/.test(attrs.bbLoader)) {
+              html.attr('id', str);
+            } else if (/^\./.test(attrs.bbLoader)) {
+              html.addClass(str);
+            }
+          }
+          element.prepend(html);
+          $compile(html)(scope);
+        });
+      }
+    };
+  });
+
+  app.directive('bbLoadingSpinner', function($compile) {
+    return {
+      transclude: true,
+      link: function(scope, element, attrs, controller, transclude) {
+        var loadingScopes;
+        loadingScopes = {};
+        scope.isLoading = false;
+        return scope.$on('isLoading', function(event, isLoading) {
+          event.stopPropagation();
+          loadingScopes[event.targetScope.$id] = isLoading;
+          return scope.isLoading = _.every(_.values(loadingScopes));
+        });
+      },
+      template: "<div ng-show=\"isLoading\" class=\"loader-wrapper\">\n  <div class=\"loader\"></div>\n</div>\n<div ng-transclude></div>"
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Directives').directive('bbContent', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        element.attr('ng-include', "bb_main");
+        element.attr('onLoad', "initPage()");
+        element.attr('bb-content', null);
+        element.attr('ng-hide', "hide_page");
+        scope.initPage = (function(_this) {
+          return function() {
+            scope.setPageLoaded();
+            return scope.setLoadingPage(false);
+          };
+        })(this);
+        return $compile(element)(scope);
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbLoading', function($compile, $timeout, $bbug) {
+    return {
+      link: function(scope, element, attrs) {
+        var positionLoadingIcon;
+        scope.scopeLoaded = scope.areScopesLoaded(scope);
+        element.attr("ng-hide", "scopeLoaded");
+        element.attr("bb-loading", null);
+        positionLoadingIcon = function() {
+          var center, loading_icon, modal_open, wait_graphic;
+          loading_icon = $bbug('.bb-loader').find('#loading_icon');
+          wait_graphic = $bbug('.bb-loader').find('#wait_graphic');
+          modal_open = $bbug('[ng-app]').find('body').hasClass('modal-open');
+          if (modal_open) {
+            return $timeout(function() {
+              var center;
+              center = $bbug('[ng-app]').find('.modal-dialog').height() || $bbug('[ng-app]').find('.modal-content').height() || $bbug('[ng-app]').find('.modal').height();
+              center = (center / 2) - (wait_graphic.height() / 2);
+              return loading_icon.css("padding-top", center + "px");
+            }, 50);
+          } else {
+            center = ($(window).innerHeight() / 2) - (wait_graphic.height() / 2);
+            return loading_icon.css("padding-top", center + "px");
+          }
+        };
+        positionLoadingIcon();
+        $bbug(window).on("resize", function() {
+          return positionLoadingIcon();
+        });
+        scope.$on("page:loaded", function() {
+          return positionLoadingIcon();
+        });
+        $compile(element)(scope);
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbWaitFor', function($compile) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      priority: 800,
+      link: function(scope, element, attrs) {
+        var name, prom;
+        name = attrs.bbWaitVar;
+        name || (name = "allDone");
+        scope[name] = false;
+        prom = scope.$eval(attrs.bbWaitFor);
+        prom.then(function() {
+          return scope[name] = true;
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbScrollTo', function($rootScope, AppConfig, BreadcrumbService, $bbug, $window, SettingsService) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        var always_scroll, bb_transition_time, evnts, isElementInView, scrollToCallback;
+        evnts = attrs.bbScrollTo.split(',');
+        always_scroll = (attrs.bbAlwaysScroll != null) || false;
+        bb_transition_time = attrs.bbTransitionTime != null ? parseInt(attrs.bbTransitionTime, 10) : 500;
+        if (angular.isArray(evnts)) {
+          angular.forEach(evnts, function(evnt) {
+            return scope.$on(evnt, function(e) {
+              return scrollToCallback(evnt);
+            });
+          });
+        } else {
+          scope.$on(evnts, function(e) {
+            return scrollToCallback(evnts);
+          });
+        }
+        isElementInView = function(el) {
+          return el.offset().top > $bbug('body').scrollTop() && el.offset().top < ($bbug('body').scrollTop() + $bbug(window).height());
+        };
+        return scrollToCallback = function(evnt) {
+          var current_step, scroll_to_element;
+          if (evnt === "page:loaded" && scope.display && scope.display.xs && $bbug('[data-scroll-id="' + AppConfig.uid + '"]').length) {
+            scroll_to_element = $bbug('[data-scroll-id="' + AppConfig.uid + '"]');
+          } else {
+            scroll_to_element = $bbug(element);
+          }
+          current_step = BreadcrumbService.getCurrentStep();
+          if (scroll_to_element) {
+            if ((evnt === "page:loaded" && current_step > 1) || always_scroll || (evnt === "widget:restart") || (!isElementInView(scroll_to_element) && scroll_to_element.offset().top !== 0)) {
+              if ('parentIFrame' in $window) {
+                return parentIFrame.scrollToOffset(0, scroll_to_element.offset().top - SettingsService.getScrollOffset());
+              } else {
+                return $bbug("html, body").animate({
+                  scrollTop: scroll_to_element.offset().top - SettingsService.getScrollOffset()
+                }, bb_transition_time);
+              }
+            }
+          }
+        };
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbSlotGrouper', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, element, attrs) {
+        var i, len, slot, slots;
+        slots = scope.$eval(attrs.slots);
+        if (!slots) {
+          return;
+        }
+        scope.grouped_slots = [];
+        for (i = 0, len = slots.length; i < len; i++) {
+          slot = slots[i];
+          if (slot.time >= scope.$eval(attrs.startTime) && slot.time < scope.$eval(attrs.endTime)) {
+            scope.grouped_slots.push(slot);
+          }
+        }
+        return scope.has_slots = scope.grouped_slots.length > 0;
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbForm
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with forms to add enhanced validation. When using with ng-form, submitForm
+  * needs to be called manually as submit event is not raised.
+  
+  *
+  * @example
+  * <div ng-form name="example_form" bb-form></div>
+  * <form name="example_form" bb-form></form>
+  *
+   */
+
+  angular.module('BB.Directives').directive('bbForm', function($bbug, $window, SettingsService, ValidatorService, $timeout) {
+    return {
+      restrict: 'A',
+      require: '^form',
+      scope: true,
+      link: function(scope, elem, attrs, ctrls) {
+        scope.form = ctrls;
+        elem.on("submit", function() {
+          scope.submitForm();
+          return scope.$apply();
+        });
+        return scope.submitForm = function() {
+          var property;
+          scope.form.submitted = true;
+          for (property in scope.form) {
+            if (angular.isObject(scope.form[property]) && scope.form[property].hasOwnProperty('$valid')) {
+              scope.form[property].submitted = true;
+            }
+          }
+          $timeout(function() {
+            var invalid_form_group, invalid_input;
+            invalid_form_group = elem.find('.has-error:first');
+            if (invalid_form_group && invalid_form_group.length > 0 && !scope.form.raise_alerts) {
+              if ('parentIFrame' in $window) {
+                parentIFrame.scrollToOffset(0, invalid_form_group.offset().top - SettingsService.getScrollOffset());
+              } else {
+                $bbug("html, body").animate({
+                  scrollTop: invalid_form_group.offset().top - SettingsService.getScrollOffset()
+                }, 1000);
+              }
+              invalid_input = invalid_form_group.find('.ng-invalid');
+              return invalid_input.focus();
+            }
+          }, 100);
+          return ValidatorService.validateForm(scope.form);
+        };
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbAddressMap', function($document) {
+    return {
+      restrict: 'A',
+      scope: true,
+      replace: true,
+      controller: function($scope, $element, $attrs) {
+        $scope.isDraggable = $document.width() > 480;
+        return $scope.$watch($attrs.bbAddressMap, function(new_val, old_val) {
+          var map_item;
+          if (!new_val) {
+            return;
+          }
+          map_item = new_val;
+          $scope.map = {
+            center: {
+              latitude: map_item.lat,
+              longitude: map_item.long
+            },
+            zoom: 15
+          };
+          $scope.options = {
+            scrollwheel: false,
+            draggable: $scope.isDraggable
+          };
+          return $scope.marker = {
+            id: 0,
+            coords: {
+              latitude: map_item.lat,
+              longitude: map_item.long
+            }
+          };
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbMergeDuplicateQuestions', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      controller: function($scope, $rootScope) {
+        $scope.questions = {};
+        return $rootScope.$on("item_details:loaded", function() {
+          var i, item, j, len, len1, question, ref, ref1;
+          ref = $scope.bb.stacked_items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
+            if (item.item_details && item.item_details.questions) {
+              item.item_details.hide_questions = false;
+              ref1 = item.item_details.questions;
+              for (j = 0, len1 = ref1.length; j < len1; j++) {
+                question = ref1[j];
+                if ($scope.questions[question.id]) {
+                  item.setCloneAnswers($scope.questions[question.id].item);
+                  item.item_details.hide_questions = true;
+                  break;
+                } else {
+                  $scope.questions[question.id] = {
+                    question: question,
+                    item: item
+                  };
+                }
+              }
+            }
+          }
+          return $scope.has_questions = _.pluck($scope.questions, 'question').length > 0;
+        });
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbModal
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Use with modal templates to ensure modal height does not exceed window height
+  
+  *
+  * @example
+  * <div bb-modal></div>
+   */
+
+  angular.module('BB.Directives').directive('bbModal', function($window, $bbug, $timeout) {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, elem, attrs) {
+        var deregisterWatcher;
+        return $timeout(function() {
+          return elem.parent().parent().parent().css("z-index", 999999);
+        }, deregisterWatcher = scope.$watch(function() {
+          var height, modal_padding, new_height;
+          height = elem.height();
+          if ($bbug(window).width() >= 769) {
+            modal_padding = 200;
+          } else {
+            modal_padding = 20;
+          }
+          if (height > $bbug(window).height()) {
+            new_height = $bbug(window).height() - modal_padding;
+            elem.css({
+              "height": new_height + "px",
+              "overflow-y": "scroll"
+            });
+            return deregisterWatcher();
+          }
+        }));
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbBackgroundImage
+  * @restrict A
+  * @scope true
+  *
+  * @description
+  * Adds a background-image to an element
+  
+  * @param
+  * {string} url
+  *
+  * @example
+  * <div bb-background-image='images/example.jpg'></div>
+   */
+
+  angular.module('BB.Directives').directive('bbBackgroundImage', function() {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, el, attrs) {
+        var killWatch;
+        if (!attrs.bbBackgroundImage || attrs.bbBackgroundImage === "") {
+          return;
+        }
+        return killWatch = scope.$watch(attrs.bbBackgroundImage, function(new_val, old_val) {
+          if (new_val) {
+            killWatch();
+            return el.css('background-image', 'url("' + new_val + '")');
+          }
+        });
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbCapacityView
+  * @restrict A
+  * @description
+  * Assigns an appropriate description of ticket availability based
+  * on the value of the "Select spaces view" dropdown in the admin console
+  * @param
+  * {object} The event object
+  * @attribute ticket-type-singular
+  * {String} Custom name for the ticket
+  * @example
+  * <span bb-capacity-view='event' ticket-type-singular='seat'></span>
+  * @example_result
+  * <span bb-capacity-view='event' ticket-type-singular='seat' class='ng-binding'>5 of 10 seats available</span>
+   */
+
+  angular.module('BB.Directives').directive('bbCapacityView', function() {
+    return {
+      restrict: 'A',
+      template: '{{capacity_view_description}}',
+      link: function(scope, el, attrs) {
+        var killWatch, ticket_type;
+        ticket_type = attrs.ticketTypeSingular || "ticket";
+        return killWatch = scope.$watch(attrs.bbCapacityView, function(item) {
+          var num_spaces_plural, spaces_left_plural;
+          if (item) {
+            killWatch();
+            num_spaces_plural = item.num_spaces > 1 ? "s" : "";
+            spaces_left_plural = item.spaces_left > 1 ? "s" : "";
+            if (item.chain) {
+              switch (item.chain.capacity_view) {
+                case "NUM_SPACES":
+                  return scope.capacity_view_description = scope.ticket_spaces = item.num_spaces + " " + ticket_type + num_spaces_plural;
+                case "NUM_SPACES_LEFT":
+                  return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " " + ticket_type + spaces_left_plural + " available";
+                case "NUM_SPACES_AND_SPACES_LEFT":
+                  return scope.capacity_view_description = scope.ticket_spaces = item.spaces_left + " of " + item.num_spaces + " " + ticket_type + num_spaces_plural + " available";
+              }
+            }
+          }
+        });
+      }
+    };
+  });
+
+
+  /***
+  * @ngdoc directive
+  * @name BB.Directives:bbTimeZone
+  * @restrict A
+  * @description
+  * Timezone name helper
+  * @param {String} time_zone_name The name of the time zone
+  * @param {Boolean} is_time_zone_diff Indicates if the users time zone is different to the company time zone
+  * @example
+  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in {{time_zone_name}}.</span>
+  * @example_result
+  * <span bb-time-zone ng-show="is_time_zone_diff">All times are shown in British Summer Time.</span>
+   */
+
+  angular.module('BB.Directives').directive('bbTimeZone', function(SettingsService) {
+    return {
+      restrict: 'A',
+      link: function(scope, el, attrs) {
+        var company_time_zone;
+        company_time_zone = SettingsService.getTimeZone();
+        scope.time_zone_name = moment().tz(company_time_zone).format('zz');
+        if (!SettingsService.getUseLocalTimeZone() && moment.tz.guess() !== company_time_zone) {
+          return scope.is_time_zone_diff = true;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB').directive('bbMemberLogin', function(PathSvc) {
+    return {
+      restrict: 'A',
+      controller: 'MemberLogin',
+      templateUrl: function(elem, attrs) {
+        if (attrs.bbCustomLoginForm != null) {
+          return PathSvc.directivePartial("_member_login_form");
+        } else {
+          return PathSvc.directivePartial("_member_login_schema_form");
+        }
+      }
+    };
+  });
+
+  angular.module('BB.Controllers').controller('MemberLogin', function($scope, $log, $rootScope, $templateCache, $q, halClient, BBModel, $sessionStorage, $window, AlertService, LoginService, ValidatorService) {
+    $scope.login = {};
+    $scope.validator = ValidatorService;
+    $rootScope.connection_started.then(function() {
+      if (LoginService.checkLogin()) {
+        $scope.setClient($rootScope.member);
+        if ($scope.bb.destination) {
+          return $scope.redirectTo($scope.bb.destination);
+        } else {
+          $scope.setLoaded($scope);
+          $scope.skipThisStep();
+          return $scope.decideNextPage();
+        }
+      } else {
+        return halClient.$get($scope.bb.api_url + "/api/v1").then(function(root) {
+          return root.$get("new_login").then(function(new_login) {
+            $scope.form = new_login.form;
+            return $scope.schema = new_login.schema;
+          }, function(err) {
+            return console.log('err ', err);
+          });
+        }, function(err) {
+          return console.log('err ', err);
+        });
+      }
+    });
+    $scope.submit = function() {
+      $scope.login.role = 'member';
+      return $scope.company.$post('login', {}, $scope.login).then(function(login) {
+        if (login.$has('members')) {
+          return login.$get('members').then(function(members) {
+            return $scope.handleLogin(members[0]);
+          });
+        } else if (login.$has('member')) {
+          return login.$get('member').then(function(member) {
+            return $scope.handleLogin(member);
+          });
+        }
+      }, function(err) {
+        if (err.data.error === "Account has been disabled") {
+          return AlertService.raise('ACCOUNT_DISABLED');
+        } else {
+          return AlertService.raise('LOGIN_FAILED');
+        }
+      });
+    };
+    return $scope.handleLogin = function(member) {
+      member = LoginService.setLogin(member, $scope.login.persist_login);
+      $scope.setClient(member);
+      if ($scope.bb.destination) {
+        return $scope.redirectTo($scope.bb.destination);
+      } else {
+        $scope.skipThisStep();
+        return $scope.decideNextPage();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbMonthPicker', function(PathSvc, $timeout) {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      require: ['^?bbEvents', '^?bbMultiCompanyEvents'],
+      templateUrl: function(element, attrs) {
+        return PathSvc.directivePartial("_month_picker");
+      },
+      link: function(scope, el, attrs) {
+        var stopWatch;
+        scope.picker_settings = scope.$eval(attrs.bbMonthPicker) || {};
+        scope.picker_settings.months_to_show = scope.picker_settings.months_to_show || 3;
+        return stopWatch = scope.$watch(attrs.dayData, function(dates) {
+          if (dates) {
+            scope.processDates(dates);
+            return stopWatch();
+          }
+        });
+      },
+      controller: function($scope) {
+        $scope.processDates = function(dates) {
+          var cur_month, d, date, datehash, day, day_data, diff, i, j, k, l, last_date, len, m, month, months, ref, w, week;
+          datehash = {};
+          for (i = 0, len = dates.length; i < len; i++) {
+            date = dates[i];
+            datehash[date.date.format("DDMMYY")] = date;
+            if (!$scope.first_available_day && date.spaces > 0) {
+              $scope.first_available_day = date.date;
+            }
+          }
+          if ($scope.picker_settings.start_at_first_available_day) {
+            cur_month = $scope.first_available_day.clone().startOf('month');
+          } else {
+            cur_month = moment().startOf('month');
+          }
+          last_date = _.last(dates);
+          diff = last_date.date.diff(cur_month, 'months');
+          diff = diff > 0 ? diff + 1 : 1;
+          $scope.num_months = $scope.picker_settings && $scope.picker_settings.months ? $scope.picker_settings.months : diff;
+          months = [];
+          for (m = j = 1, ref = $scope.num_months; 1 <= ref ? j <= ref : j >= ref; m = 1 <= ref ? ++j : --j) {
+            date = cur_month.clone().startOf('week');
+            month = {
+              weeks: []
+            };
+            month.index = m - 1;
+            for (w = k = 1; k <= 6; w = ++k) {
+              week = {
+                days: []
+              };
+              for (d = l = 1; l <= 7; d = ++l) {
+                if (date.isSame(date.clone().startOf('month'), 'day') && !month.start_date) {
+                  month.start_date = date.clone();
+                }
+                day_data = datehash[date.format("DDMMYY")];
+                day = {
+                  date: date.clone(),
+                  data: day_data,
+                  available: day_data && day_data.spaces && day_data.spaces > 0,
+                  today: moment().isSame(date, 'day'),
+                  past: date.isBefore(moment(), 'day'),
+                  disabled: !month.start_date || !date.isSame(month.start_date, 'month')
+                };
+                week.days.push(day);
+                if ($scope.selected_date && day.date.isSame($scope.selected_date, 'day')) {
+                  day.selected = true;
+                  $scope.selected_day = day;
+                }
+                date.add(1, 'day');
+              }
+              month.weeks.push(week);
+            }
+            months.push(month);
+            cur_month.add(1, 'month');
+          }
+          $scope.months = months;
+          return $scope.slick_config = {
+            nextArrow: ".month-next",
+            prevArrow: ".month-prev",
+            slidesToShow: $scope.months.length >= $scope.picker_settings.months_to_show ? $scope.picker_settings.months_to_show : $scope.months.length,
+            infinite: false,
+            responsive: [
+              {
+                breakpoint: 1200,
+                settings: {
+                  slidesToShow: $scope.months.length >= 2 ? 2 : $scope.months.length
+                }
+              }, {
+                breakpoint: 992,
+                settings: {
+                  slidesToShow: 1
+                }
+              }
+            ],
+            method: {},
+            event: {
+              init: function(event, slick) {
+                return $timeout(function() {
+                  var len1, n, ref1, results;
+                  if ($scope.selected_day != null) {
+                    ref1 = $scope.months;
+                    results = [];
+                    for (n = 0, len1 = ref1.length; n < len1; n++) {
+                      m = ref1[n];
+                      if (m.start_date.month() === $scope.selected_day.date.month()) {
+                        results.push(slick.slickGoTo(m.index));
+                      } else {
+                        results.push(void 0);
+                      }
+                    }
+                    return results;
+                  }
+                });
+              }
+            }
+          };
+        };
+        $scope.$on('event_list_filter_date:changed', function(event, date) {
+          var newDay;
+          newDay = $scope.getDay(date);
+          if ($scope.selected_day) {
+            if ($scope.selected_day.date.isSame(date)) {
+              return $scope.selected_day.selected = !$scope.selected_day.selected;
+            } else {
+              $scope.selected_day.selected = false;
+              if (newDay) {
+                $scope.selected_day = newDay;
+                return $scope.selected_day.selected = true;
+              }
+            }
+          } else {
+            if (newDay) {
+              $scope.selected_day = newDay;
+              return $scope.selected_day.selected = true;
+            }
+          }
+        });
+        $scope.$on('event_list_filter_date:cleared', function() {
+          if ($scope.selected_day) {
+            return $scope.selected_day.selected = false;
+          }
+        });
+        $scope.toggleDay = function(day) {
+          if (!day || day.data && (day.data.spaces === 0 || day.disabled || !day.available) || (!day.data && !day._d)) {
+            return;
+          }
+          if ($scope.selected_day && $scope.selected_day.date.isSame(day.date)) {
+            $scope.selected_day.selected = !$scope.selected_day.selected;
+          }
+          if ($scope.selected_day && !$scope.selected_day.date.isSame(day.date)) {
+            $scope.selected_day.selected = false;
+            $scope.selected_day = day;
+            $scope.selected_day.selected = true;
+          }
+          if (!$scope.selected_day) {
+            $scope.selected_day = day;
+            $scope.selected_day.selected = true;
+          }
+          return $scope.showDay(day.date);
+        };
+        return $scope.getDay = function(date) {
+          var day, i, j, k, len, len1, len2, month, ref, ref1, ref2, week;
+          ref = $scope.months;
+          for (i = 0, len = ref.length; i < len; i++) {
+            month = ref[i];
+            ref1 = month.weeks;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              week = ref1[j];
+              ref2 = week.days;
+              for (k = 0, len2 = ref2.length; k < len2; k++) {
+                day = ref2[k];
+                if (day.date.isSame(date) && !day.disabled) {
+                  return day;
+                }
+              }
+            }
+          }
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('ngOptions', function($sniffer, $rootScope) {
+    return {
+      restrict: 'A',
+      link: function(scope, el, attrs) {
+        var size;
+        size = parseInt(attrs['size'], 10);
+        if (!isNaN(size) && size > 1 && $sniffer.msie) {
+          return $rootScope.$on('loading:finished', function() {
+            el.focus();
+            return $('body').focus();
+          });
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('script', function($compile, halClient) {
+    return {
+      transclude: false,
+      restrict: 'E',
+      link: function(scope, element, attrs) {
+        var body, json, res;
+        if (attrs.type === 'text/hal-object') {
+          body = element[0].innerText;
+          json = $bbug.parseJSON(body);
+          return res = halClient.$parse(json);
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbPaymentButton', function($compile, $sce, $http, $templateCache, $q, $log, TemplateSvc) {
+    return {
+      restrict: 'EA',
+      replace: true,
+      scope: {
+        total: '=',
+        bb: '=',
+        decideNextPage: '=',
+        notLoaded: '=',
+        setLoaded: '='
+      },
+      link: function(scope, element, attributes) {
+        var getButtonFormTemplate, getTemplate, killWatch, setClassAndValue;
+        getTemplate = function(type, scope) {
+          switch (type) {
+            case 'button_form':
+              return getButtonFormTemplate(scope);
+            case 'page':
+              return TemplateSvc.get("payment.html");
+            case 'location':
+              return "<a href='{{payment_link}}'>{{label}}</a>";
+            default:
+              return "";
+          }
+        };
+        getButtonFormTemplate = function(scope) {
+          var src;
+          src = $sce.parseAsResourceUrl("'" + scope.payment_link + "'")();
+          return $http.get(src, {}).then(function(response) {
+            return response.data;
+          });
+        };
+        setClassAndValue = function(scope, element, attributes) {
+          var c, i, inputs, j, len, main_tag, ref, results;
+          switch (scope.link_type) {
+            case 'button_form':
+              inputs = element.find("input");
+              main_tag = ((function() {
+                var j, len, results;
+                results = [];
+                for (j = 0, len = inputs.length; j < len; j++) {
+                  i = inputs[j];
+                  if ($(i).attr('type') === 'submit') {
+                    results.push(i);
+                  }
+                }
+                return results;
+              })())[0];
+              if (attributes.value) {
+                $(main_tag).attr('value', attributes.value);
+              }
+              break;
+            case 'page':
+            case 'location':
+              main_tag = element.find("a")[0];
+          }
+          if (attributes["class"]) {
+            ref = attributes["class"].split(" ");
+            results = [];
+            for (j = 0, len = ref.length; j < len; j++) {
+              c = ref[j];
+              $(main_tag).addClass(c);
+              results.push($(element).removeClass(c));
+            }
+            return results;
+          }
+        };
+        return killWatch = scope.$watch('total', function(total) {
+          var url;
+          if (total && total.$has('new_payment')) {
+            killWatch();
+            scope.bb.payment_status = "pending";
+            scope.bb.total = scope.total;
+            scope.link_type = scope.total.$link('new_payment').type;
+            scope.label = attributes.value || "Make Payment";
+            scope.payment_link = scope.total.$href('new_payment');
+            url = scope.total.$href('new_payment');
+            return $q.when(getTemplate(scope.link_type, scope)).then(function(template) {
+              element.html(template).show();
+              $compile(element.contents())(scope);
+              return setClassAndValue(scope, element, attributes);
+            }, function(err) {
+              $log.warn(err.data);
+              return element.remove();
+            });
+          }
+        });
+      }
+    };
+  });
+
+  angular.module('BB.Directives').directive('bbPaypalExpressButton', function($compile, $sce, $http, $templateCache, $q, $log, $window, UriTemplate) {
+    return {
+      restrict: 'EA',
+      replace: true,
+      template: "<a ng-href=\"{{href}}\" ng-click=\"showLoader()\">Pay</a>",
+      scope: {
+        total: '=',
+        bb: '=',
+        decideNextPage: '=',
+        paypalOptions: '=bbPaypalExpressButton',
+        notLoaded: '='
+      },
+      link: function(scope, element, attributes) {
+        var paypalOptions, total;
+        total = scope.total;
+        paypalOptions = scope.paypalOptions;
+        scope.href = new UriTemplate(total.$link('paypal_express').href).fillFromObject(paypalOptions);
+        return scope.showLoader = function() {
+          if (scope.notLoaded) {
+            return scope.notLoaded(scope);
+          }
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbPaypal', function(PathSvc) {
+    return {
+      restrict: 'A',
+      replace: true,
+      scope: {
+        ppDetails: "=bbPaypal"
+      },
+      templateUrl: PathSvc.directivePartial("paypal_button"),
+      link: function(scope, element, attrs) {
+        var keys;
+        scope.inputs = [];
+        if (!scope.ppDetails) {
+          return;
+        }
+        keys = _.keys(scope.ppDetails);
+        return _.each(keys, function(keyName) {
+          var obj;
+          obj = {
+            name: keyName,
+            value: scope.ppDetails[keyName]
+          };
+          return scope.inputs.push(obj);
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('pricepicker', function() {
+    var controller, link;
+    controller = function($scope) {
+      return $scope.$watch('price', function(price) {
+        if (price != null) {
+          return $scope.updateModel(price);
+        }
+      });
+    };
+    link = function(scope, element, attrs, ngModel) {
+      ngModel.$render = function() {
+        if (ngModel.$viewValue) {
+          return scope.price = ngModel.$viewValue;
+        }
+      };
+      return scope.updateModel = function(value) {
+        return ngModel.$setViewValue(value);
+      };
+    };
+    return {
+      require: 'ngModel',
+      link: link,
+      controller: controller,
+      scope: {
+        currency: '@'
+      },
+      template: "<span>{{0 | currency: currency | limitTo: 1}}</span>\n<input type=\"number\" ng-model=\"price\" class=\"form-control\" step=\"0.01\">"
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module("BB.Directives").directive('scoped', function($document, $timeout) {
+    var scopeIt;
+    this.compat = (function() {
+      var DOMRules, DOMStyle, changeSelectorTextAllowed, check, e, scopeSupported, testSheet, testStyle;
+      check = document.createElement('style');
+      if (typeof check.sheet !== 'undefined') {
+        DOMStyle = 'sheet';
+      } else if (typeof check.getSheet !== 'undefined') {
+        DOMStyle = 'getSheet';
+      } else {
+        DOMStyle = 'styleSheet';
+      }
+      scopeSupported = void 0 !== check.scoped;
+      document.body.appendChild(check);
+      testSheet = check[DOMStyle];
+      if (testSheet.addRule) {
+        testSheet.addRule('c', 'blink');
+      } else {
+        testSheet.insertRule('c{}', 0);
+      }
+      DOMRules = testSheet.rules ? 'rules' : 'cssRules';
+      testStyle = testSheet[DOMRules][0];
+      try {
+        testStyle.selectorText = 'd';
+      } catch (error) {
+        e = error;
+      }
+      changeSelectorTextAllowed = 'd' === testStyle.selectorText.toLowerCase();
+      check.parentNode.removeChild(check);
+      return {
+        scopeSupported: scopeSupported,
+        rules: DOMRules,
+        sheet: DOMStyle,
+        changeSelectorTextAllowed: changeSelectorTextAllowed
+      };
+    })();
+    scopeIt = (function(_this) {
+      return function(element) {
+        var allRules, glue, id, idCounter, index, par, results, rule, selector, sheet, styleNode, styleRule;
+        styleNode = element[0];
+        idCounter = 0;
+        sheet = styleNode[_this.compat.sheet];
+        if (!sheet) {
+          return;
+        }
+        allRules = sheet[_this.compat.rules];
+        par = styleNode.parentNode;
+        id = par.id || (par.id = 'scopedByScopedPolyfill_' + ++idCounter);
+        glue = '';
+        index = allRules.length || 0;
+        while (par) {
+          if (par.id) {
+            glue = '#' + par.id + ' ' + glue;
+          }
+          par = par.parentNode;
+        }
+        results = [];
+        while (index--) {
+          rule = allRules[index];
+          if (rule.selectorText) {
+            if (!rule.selectorText.match(new RegExp(glue))) {
+              selector = glue + ' ' + rule.selectorText.split(',').join(', ' + glue);
+              selector = selector.replace(/[\ ]+:root/gi, '');
+              if (_this.compat.changeSelectorTextAllowed) {
+                results.push(rule.selectorText = selector);
+              } else {
+                if (!rule.type || 1 === rule.type) {
+                  styleRule = rule.style.cssText;
+                  if (styleRule) {
+                    if (sheet.removeRule) {
+                      sheet.removeRule(index);
+                    } else {
+                      sheet.deleteRule(index);
+                    }
+                    if (sheet.addRule) {
+                      results.push(sheet.addRule(selector, styleRule));
+                    } else {
+                      results.push(sheet.insertRule(selector + '{' + styleRule + '}', index));
+                    }
+                  } else {
+                    results.push(void 0);
+                  }
+                } else {
+                  results.push(void 0);
+                }
+              }
+            } else {
+              results.push(void 0);
+            }
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      };
+    })(this);
+    return {
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        scope.scopeSupported = this.compat.scopeSupported;
+        if (!this.compat.scopeSupported) {
+          return $timeout(function() {
+            return scopeIt(element);
+          });
+        }
+      },
+      controller: function($scope, $element, $timeout) {
+        if (!$scope.scopeSupported) {
+          this.updateCss = function() {
+            return $timeout(function() {
+              return scopeIt($element);
+            });
+          };
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Directives');
+
+  app.directive('bbDisplayMode', function($compile, $window, $bbug, ViewportSize) {
+    return {
+      transclude: false,
+      restrict: 'A',
+      template: '<span class="visible-xs">&nbsp;</span><span class="visible-sm">&nbsp;</span><span class="visible-md">&nbsp;</span><span class="visible-lg">&nbsp;</span>',
+      link: function(scope, elem, attrs) {
+        var getCurrentSize, isVisible, markers, t, update;
+        markers = elem.find('span');
+        $bbug(elem).addClass("bb-display-mode");
+        scope.display = {};
+        isVisible = function(element) {
+          return element && element.style.display !== 'none' && element.offsetWidth && element.offsetHeight;
+        };
+        getCurrentSize = function() {
+          var currentSize, element, i, len;
+          currentSize = false;
+          for (i = 0, len = markers.length; i < len; i++) {
+            element = markers[i];
+            if (isVisible(element)) {
+              currentSize = element.className.slice(8, 11);
+              ViewportSize.setViewportSize(element.className.slice(8, 11));
+              break;
+            }
+          }
+          return currentSize;
+        };
+        update = (function(_this) {
+          return function() {
+            var nsize;
+            nsize = getCurrentSize();
+            if (nsize !== _this.currentSize) {
+              _this.currentSize = nsize;
+              scope.display.xs = false;
+              scope.display.sm = false;
+              scope.display.md = false;
+              scope.display.lg = false;
+              scope.display.not_xs = true;
+              scope.display.not_sm = true;
+              scope.display.not_md = true;
+              scope.display.not_lg = true;
+              scope.display[nsize] = true;
+              scope.display["not_" + nsize] = false;
+              return true;
+            }
+            return false;
+          };
+        })(this);
+        t = null;
+        angular.element($window).bind('resize', (function(_this) {
+          return function() {
+            window.clearTimeout(t);
+            return t = setTimeout(function() {
+              if (update()) {
+                return scope.$apply();
+              }
+            }, 50);
+          };
+        })(this));
+        return angular.element($window).bind('load', (function(_this) {
+          return function() {
+            if (update()) {
+              return scope.$apply();
+            }
+          };
+        })(this));
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('bbToggleEdit', function($compile, $window, $document) {
+    return {
+      restrict: 'AE',
+      link: function(scope, element, attr) {
+        scope.editing = false;
+        element.on('dblclick', (function(_this) {
+          return function(event) {
+            return scope.$apply(function() {
+              return scope.editing = true;
+            });
+          };
+        })(this));
+        $document.on('click', (function(_this) {
+          return function() {
+            if (!element.is(':hover')) {
+              return scope.$apply(function() {
+                return scope.editing = false;
+              });
+            }
+          };
+        })(this));
+        return true;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Directives').directive('popover', function() {
+    var openElement, openScope;
+    openElement = null;
+    openScope = null;
+    $('div[ng-controller="BBCtrl"]').off('.bbtooltip').on('click.bbtooltip', function(e) {
+      var target;
+      target = $(e.target).closest('[popover]')[0];
+      if (!target && openElement && openScope) {
+        $(openElement).next('.popover').remove();
+        openScope.tt_isOpen = false;
+      }
+      return true;
+    });
+    return {
+      restrict: 'EA',
+      priority: -1000,
+      link: function(scope, element) {
+        element.on('click.bbtooltip', function(e) {
+          if (openElement === $(e.target).closest('[popover]')[0]) {
+            e.preventDefault();
+            return;
+          }
+          if (openElement && openScope) {
+            $(openElement).next('.popover').remove();
+            openScope.tt_isOpen = false;
+          }
+          openElement = element[0];
+          return openScope = scope;
+        });
+        return scope.$on('$destroy', function() {
+          return $(element).off('.bbtooltip');
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function (angular) {
+  'use strict';
+
+  /* Directives */
+  var app = angular.module('BB.Directives');
+
+  app.directive('appVersion', function(version) {
+    return function(scope, elm, attrs) {
+      elm.text(version);
+    };
+  });
+}(window.angular));
+
+(function() {
+  var app;
+
+  app = angular.module('BB.Filters');
+
+  angular.module('BB.Filters').filter('stripPostcode', function() {
+    return function(address) {
+      var match;
+      match = address.toLowerCase().match(/[a-z]+\d/);
+      if (match) {
+        address = address.substr(0, match.index);
+      }
+      address = $.trim(address);
+      if (/,$/.test(address)) {
+        address = address.slice(0, -1);
+      }
+      return address;
+    };
+  });
+
+  angular.module('BB.Filters').filter('labelNumber', function() {
+    return function(input, labels) {
+      var response;
+      response = input;
+      if (labels[input]) {
+        response = labels[input];
+      }
+      return response;
+    };
+  });
+
+  angular.module('BB.Filters').filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
+    }
+  ]);
+
+  angular.module('BB.Filters').filter('rag', function() {
+    return function(value, v1, v2) {
+      if (value <= v1) {
+        return "red";
+      } else if (value <= v2) {
+        return "amber";
+      } else {
+        return "green";
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time', function($window) {
+    return function(v) {
+      return $window.sprintf("%02d:%02d", Math.floor(v / 60), v % 60);
+    };
+  });
+
+  angular.module('BB.Filters').filter('address_single_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var addr;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        addr = "";
+        addr += address.address1;
+        if (address.address2 && address.address2.length > 0) {
+          addr += ", ";
+          addr += address.address2;
+        }
+        if (address.address3 && address.address3.length > 0) {
+          addr += ", ";
+          addr += address.address3;
+        }
+        if (address.address4 && address.address4.length > 0) {
+          addr += ", ";
+          addr += address.address4;
+        }
+        if (address.address5 && address.address5.length > 0) {
+          addr += ", ";
+          addr += address.address5;
+        }
+        if (address.postcode && address.postcode.length > 0) {
+          addr += ", ";
+          addr += address.postcode;
+        }
+        return addr;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('address_multi_line', function() {
+    return (function(_this) {
+      return function(address) {
+        var str;
+        if (!address) {
+          return;
+        }
+        if (!address.address1) {
+          return;
+        }
+        str = "";
+        if (address.address1) {
+          str += address.address1;
+        }
+        if (address.address2 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address2) {
+          str += address.address2;
+        }
+        if (address.address3 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address3) {
+          str += address.address3;
+        }
+        if (address.address4 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address4) {
+          str += address.address4;
+        }
+        if (address.address5 && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.address5) {
+          str += address.address5;
+        }
+        if (address.postcode && str.length > 0) {
+          str += "<br/>";
+        }
+        if (address.postcode) {
+          str += address.postcode;
+        }
+        return str;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('map_lat_long', function() {
+    return (function(_this) {
+      return function(address) {
+        var cord;
+        if (!address) {
+          return;
+        }
+        if (!address.map_url) {
+          return;
+        }
+        cord = /([-+]*\d{1,3}[\.]\d*)[, ]([-+]*\d{1,3}[\.]\d*)/.exec(address.map_url);
+        return cord[0];
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('currency', function($filter) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        return $filter('icurrency')(number, currencyCode);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('icurrency', function($window, SettingsService) {
+    return (function(_this) {
+      return function(number, currencyCode) {
+        var currency, decimal, format, thousand;
+        currencyCode || (currencyCode = SettingsService.getCurrency());
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        if ($.inArray(currencyCode, ["USD", "AUD", "CAD", "MIXED", "GBP"]) >= 0) {
+          thousand = ",";
+          decimal = ".";
+          format = "%s%v";
+        } else {
+          thousand = ".";
+          decimal = ",";
+          format = "%s%v";
+        }
+        number = number / 100.0;
+        return $window.accounting.formatMoney(number, currency[currencyCode], 2, thousand, decimal, format);
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('raw_currency', function() {
+    return (function(_this) {
+      return function(number) {
+        return number / 100.0;
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('pretty_price', function($filter) {
+    return function(price, symbol) {
+      return $filter('ipretty_price')(price, symbol);
+    };
+  });
+
+  angular.module('BB.Filters').filter('ipretty_price', function($window, SettingsService) {
+    return function(price, symbol) {
+      var currency;
+      if (!symbol) {
+        currency = {
+          USD: "$",
+          GBP: "£",
+          AUD: "$",
+          EUR: "€",
+          CAD: "$",
+          MIXED: "~"
+        };
+        symbol = currency[SettingsService.getCurrency()];
+      }
+      price /= 100.0;
+      if (parseFloat(price) === 0) {
+        return 'Free';
+      } else if (parseFloat(price) % 1 === 0) {
+        return symbol + parseFloat(price);
+      } else {
+        return symbol + $window.sprintf("%.2f", parseFloat(price));
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period', function() {
+    return function(v, options) {
+      var hour_string, hours, min_string, mins, separator, str, val;
+      if (!angular.isNumber(v)) {
+        return;
+      }
+      hour_string = options && options.abbr_units ? "hr" : "hour";
+      min_string = options && options.abbr_units ? "min" : "minute";
+      separator = options && angular.isString(options.separator) ? options.separator : "and";
+      val = parseInt(v);
+      if (val < 60) {
+        str = val + " " + min_string;
+        if (val > 1) {
+          str += "s";
+        }
+        return str;
+      }
+      hours = parseInt(val / 60);
+      mins = val % 60;
+      if (mins === 0) {
+        if (hours === 1) {
+          return "1 " + hour_string;
+        } else {
+          return hours + " " + hour_string + "s";
+        }
+      } else {
+        str = hours + " " + hour_string;
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0) {
+          return str;
+        }
+        if (separator.length > 0) {
+          str += " " + separator;
+        }
+        str += " " + mins + " " + min_string;
+        if (mins > 1) {
+          str += "s";
+        }
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('twelve_hour_time', function($window) {
+    return function(time, options) {
+      var h, m, omit_mins_on_hour, separator, suffix, t;
+      if (!angular.isNumber(time)) {
+        return;
+      }
+      omit_mins_on_hour = options && options.omit_mins_on_hour || false;
+      separator = options && options.separator ? options.separator : ":";
+      t = time;
+      h = Math.floor(t / 60);
+      m = t % 60;
+      suffix = 'am';
+      if (h >= 12) {
+        suffix = 'pm';
+      }
+      if (h > 12) {
+        h -= 12;
+      }
+      if (m === 0 && omit_mins_on_hour) {
+        time = "" + h;
+      } else {
+        time = ("" + h + separator) + $window.sprintf("%02d", m);
+      }
+      time += suffix;
+      return time;
+    };
+  });
+
+  angular.module('BB.Filters').filter('time_period_from_seconds', function() {
+    return function(v) {
+      var hours, mins, secs, str, val;
+      val = parseInt(v);
+      if (val < 60) {
+        return "" + val + " seconds";
+      }
+      hours = Math.floor(val / 3600);
+      mins = Math.floor(val % 3600 / 60);
+      secs = Math.floor(val % 60);
+      str = "";
+      if (hours > 0) {
+        str += hours + " hour";
+        if (hours > 1) {
+          str += "s";
+        }
+        if (mins === 0 && secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      if (mins > 0) {
+        str += mins + " minute";
+        if (mins > 1) {
+          str += "s";
+        }
+        if (secs === 0) {
+          return str;
+        }
+        str += " and ";
+      }
+      str += secs + " second";
+      if (secs > 0) {
+        str += "s";
+      }
+      return str;
+    };
+  });
+
+  angular.module('BB.Filters').filter('round_up', function() {
+    return function(number, interval) {
+      var result;
+      result = number / interval;
+      result = parseInt(result);
+      result = result * interval;
+      if ((number % interval) > 0) {
+        result = result + interval;
+      }
+      return result;
+    };
+  });
+
+  angular.module('BB.Filters').filter('exclude_days', function() {
+    return function(days, excluded) {
+      return _.filter(days, function(day) {
+        return excluded.indexOf(day.date.format('dddd')) === -1;
+      });
+    };
+  });
+
+  angular.module('BB.Filters').filter('local_phone_number', function(SettingsService, ValidatorService) {
+    return function(phone_number) {
+      var cc;
+      if (!phone_number) {
+        return;
+      }
+      cc = SettingsService.getCountryCode();
+      switch (cc) {
+        case "gb":
+          return phone_number.replace(/^(\+44 \(0\)|\S{0})/, '0');
+        case "us":
+          return phone_number.replace(ValidatorService.us_phone_number, "($1) $2 $3");
+        default:
+          return phone_number;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('datetime', function(SettingsService) {
+    var hardcoded_formats;
+    hardcoded_formats = {
+      datetime: {
+        us: 'MM/DD/YYYY, h:mm a',
+        uk: 'DD/MM/YYYY, HH:mm'
+      },
+      date: {
+        us: 'MM/DD/YYYY',
+        uk: 'DD/MM/YYYY'
+      },
+      time: {
+        us: 'h:mm a',
+        uk: 'HH:mm'
+      }
+    };
+    return function(date, format, show_time_zone) {
+      var cc, new_date;
+      if (format == null) {
+        format = "LLL";
+      }
+      if (show_time_zone == null) {
+        show_time_zone = false;
+      }
+      if (hardcoded_formats[format]) {
+        cc = SettingsService.getCountryCode() === 'us' ? 'us' : 'uk';
+        format = hardcoded_formats[format][cc];
+      }
+      if (date && moment.isMoment(date)) {
+        new_date = date.clone();
+        new_date.tz(SettingsService.getDisplayTimeZone());
+        if (show_time_zone) {
+          format += ' zz';
+        }
+        return new_date.format(format);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('range', function() {
+    return function(input, min, max) {
+      var i, j, ref, ref1;
+      for (i = j = ref = parseInt(min), ref1 = parseInt(max); ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+        input.push(i);
+      }
+      return input;
+    };
+  });
+
+  angular.module('BB.Filters').filter('international_number', function() {
+    return (function(_this) {
+      return function(number, prefix) {
+        if (number && prefix) {
+          return prefix + " " + number;
+        } else if (number) {
+          return "" + number;
+        } else {
+          return "";
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter("startFrom", function() {
+    return function(input, start) {
+      if (input === undefined) {
+        return input;
+      } else {
+        return input.slice(+start);
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('add', function() {
+    return (function(_this) {
+      return function(item, value) {
+        if (item && value) {
+          item = parseInt(item);
+          return item + value;
+        }
+      };
+    })(this);
+  });
+
+  angular.module('BB.Filters').filter('spaces_remaining', function() {
+    return function(spaces) {
+      if (spaces < 1) {
+        return 0;
+      } else {
+        return spaces;
+      }
+    };
+  });
+
+  angular.module('BB.Filters').filter('key_translate', function() {
+    return function(input) {
+      var add_underscore, remove_punctuations, upper_case;
+      upper_case = angular.uppercase(input);
+      remove_punctuations = upper_case.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+      add_underscore = remove_punctuations.replace(/\ /g, "_");
+      return add_underscore;
+    };
+  });
+
+  angular.module('BB.Filters').filter('nl2br', function() {
+    return function(str) {
+      if (str) {
+        return str.replace(/\n/g, '<br/>');
+      }
+    };
+  });
+
+  app.filter('clearTimezone', function() {
+    return function(val, offset) {
+      if (val !== null && val.length > 19) {
+        return val.substring(0, 19);
+      }
+      return val;
+    };
+  });
+
+  app.filter("format_answer", function() {
+    return function(answer) {
+      if (typeof answer === "boolean") {
+        answer = answer === true ? "Yes" : "No";
+      } else if (moment(answer, 'YYYY-MM-DD', true).isValid()) {
+        answer = moment(answer).format("D MMMM YYYY");
+      }
+      return answer;
+    };
+  });
+
+  angular.module('BB.Filters').filter('serviceListFilter', function() {
+    return function(items, condition) {
+      var pattern;
+      if (items) {
+        pattern = new RegExp(condition, "i");
+        return items.filter(function(item) {
+          return item.name && item.name.match(pattern) || item.description && item.description.match(pattern);
+        });
+      } else {
+        return [];
+      }
+    };
   });
 
 }).call(this);
@@ -30788,172 +30788,6 @@ angular.module('BB.Directives')
 
 (function() {
   'use strict';
-  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
-    return {
-      update: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        booking.srcBooking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      },
-      addSurveyAnswersToBooking: function(booking) {
-        var data, deferred;
-        deferred = $q.defer();
-        data = booking.getPostData();
-        data.notify = false;
-        data.notify_admin = false;
-        booking.$put('self', {}, data).then((function(_this) {
-          return function(booking) {
-            return deferred.resolve(new BBModel.Purchase.Booking(booking));
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
-    return {
-      query: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      bookingRefQuery: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
-        halClient.$get(uri, params).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      },
-      update: function(params) {
-        var bdata, booking, data, defer, i, j, len, len1, ref, ref1;
-        defer = $q.defer();
-        if (!params.purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        data = {};
-        if (params.bookings) {
-          bdata = [];
-          ref = params.bookings;
-          for (i = 0, len = ref.length; i < len; i++) {
-            booking = ref[i];
-            bdata.push(booking.getPostData());
-          }
-          data.bookings = bdata;
-        }
-        if (params.move_reason) {
-          ref1 = data.bookings;
-          for (j = 0, len1 = ref1.length; j < len1; j++) {
-            booking = ref1[j];
-            booking.move_reason = params.move_reason;
-          }
-        }
-        params.purchase.$put('self', {}, data).then((function(_this) {
-          return function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      bookWaitlistItem: function(params) {
-        var data, defer, uri;
-        defer = $q.defer();
-        if (!params.purchase && !params.purchase_id) {
-          defer.reject("No purchase or purchase_id present");
-        }
-        data = {};
-        data.booking_id = params.booking.id;
-        if (params.purchase) {
-          params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
-            return function(purchase) {
-              purchase = new BBModel.Purchase.Total(purchase);
-              return defer.resolve(purchase);
-            };
-          })(this), function(err) {
-            return defer.reject(err);
-          });
-        } else if (params.purchase_id && params.url_root) {
-          uri = params.url_root + "/api/v1/purchases/" + params.purchase_id + '/book_waitlist_item';
-          halClient.$put(uri, {}, data).then(function(purchase) {
-            purchase = new BBModel.Purchase.Total(purchase);
-            return defer.resolve(purchase);
-          }, function(err) {
-            return defer.reject(err);
-          });
-        }
-        return defer.promise;
-      },
-      deleteAll: function(purchase) {
-        var defer;
-        defer = $q.defer();
-        if (!purchase) {
-          defer.reject("No purchase present");
-          return defer.promise;
-        }
-        purchase.$del('self').then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, (function(_this) {
-          return function(err) {
-            return defer.reject(err);
-          };
-        })(this));
-        return defer.promise;
-      },
-      deleteItem: function(params) {
-        var defer, uri;
-        defer = $q.defer();
-        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
-        halClient.$del(uri, {}).then(function(purchase) {
-          purchase = new BBModel.Purchase.Total(purchase);
-          return defer.resolve(purchase);
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
@@ -31618,6 +31452,172 @@ angular.module('BB.Directives')
       return Purchase_Total;
 
     })(BaseModel);
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory("PurchaseBookingService", function($q, halClient, BBModel) {
+    return {
+      update: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        booking.srcBooking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      },
+      addSurveyAnswersToBooking: function(booking) {
+        var data, deferred;
+        deferred = $q.defer();
+        data = booking.getPostData();
+        data.notify = false;
+        data.notify_admin = false;
+        booking.$put('self', {}, data).then((function(_this) {
+          return function(booking) {
+            return deferred.resolve(new BBModel.Purchase.Booking(booking));
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err, new BBModel.Purchase.Booking(booking));
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseService", function($q, halClient, BBModel, $window, UriTemplate) {
+    return {
+      query: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.url_root + "/api/v1/purchases/" + params.purchase_id;
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      bookingRefQuery: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = new UriTemplate(params.url_root + "/api/v1/purchases/booking_ref/{booking_ref}{?raw}").fillFromObject(params);
+        halClient.$get(uri, params).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      },
+      update: function(params) {
+        var bdata, booking, data, defer, i, j, len, len1, ref, ref1;
+        defer = $q.defer();
+        if (!params.purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        data = {};
+        if (params.bookings) {
+          bdata = [];
+          ref = params.bookings;
+          for (i = 0, len = ref.length; i < len; i++) {
+            booking = ref[i];
+            bdata.push(booking.getPostData());
+          }
+          data.bookings = bdata;
+        }
+        if (params.move_reason) {
+          ref1 = data.bookings;
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            booking = ref1[j];
+            booking.move_reason = params.move_reason;
+          }
+        }
+        params.purchase.$put('self', {}, data).then((function(_this) {
+          return function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      bookWaitlistItem: function(params) {
+        var data, defer, uri;
+        defer = $q.defer();
+        if (!params.purchase && !params.purchase_id) {
+          defer.reject("No purchase or purchase_id present");
+        }
+        data = {};
+        data.booking_id = params.booking.id;
+        if (params.purchase) {
+          params.purchase.$put('book_waitlist_item', {}, data).then((function(_this) {
+            return function(purchase) {
+              purchase = new BBModel.Purchase.Total(purchase);
+              return defer.resolve(purchase);
+            };
+          })(this), function(err) {
+            return defer.reject(err);
+          });
+        } else if (params.purchase_id && params.url_root) {
+          uri = params.url_root + "/api/v1/purchases/" + params.purchase_id + '/book_waitlist_item';
+          halClient.$put(uri, {}, data).then(function(purchase) {
+            purchase = new BBModel.Purchase.Total(purchase);
+            return defer.resolve(purchase);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        }
+        return defer.promise;
+      },
+      deleteAll: function(purchase) {
+        var defer;
+        defer = $q.defer();
+        if (!purchase) {
+          defer.reject("No purchase present");
+          return defer.promise;
+        }
+        purchase.$del('self').then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, (function(_this) {
+          return function(err) {
+            return defer.reject(err);
+          };
+        })(this));
+        return defer.promise;
+      },
+      deleteItem: function(params) {
+        var defer, uri;
+        defer = $q.defer();
+        uri = params.api_url + "/api/v1/purchases/" + params.long_id + "/purchase_item/" + params.purchase_item_id;
+        halClient.$del(uri, {}).then(function(purchase) {
+          purchase = new BBModel.Purchase.Total(purchase);
+          return defer.resolve(purchase);
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
   });
 
 }).call(this);
