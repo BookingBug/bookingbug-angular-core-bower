@@ -72,7 +72,7 @@
     }
   });
 
-  angular.module('BB.Services', ['ngResource', 'ngSanitize', 'ngLocalData']);
+  angular.module('BB.Services', ['ngResource', 'ngSanitize', 'ngLocalData', 'pascalprecht.translate']);
 
   angular.module('BB.Controllers', ['ngLocalData', 'ngSanitize']);
 
@@ -912,238 +912,6 @@ if (! ("JSON" in window && window.JSON)){JSON={}}(function(){function f(n){retur
 
 }).call(this);
 
-(function() {
-  window.Collection = (function() {
-    function Collection() {}
-
-    return Collection;
-
-  })();
-
-  window.Collection.Base = (function() {
-    function Base(res, items, params) {
-      var clean_params, key, m, n, val;
-      this.res = res;
-      this.items = items;
-      this.params = params;
-      this.callbacks = [];
-      clean_params = {};
-      for (key in params) {
-        val = params[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      this.jparams = JSON.stringify(clean_params);
-      if (res) {
-        for (n in res) {
-          m = res[n];
-          this[n] = m;
-        }
-      }
-    }
-
-    Base.prototype.checkItem = function(item) {
-      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
-      if (!this.matchesParams(item)) {
-        this.deleteItem(item);
-        return true;
-      } else {
-        ref = this.items;
-        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
-          existingItem = ref[index];
-          if (item.self === existingItem.self) {
-            this.items[index] = item;
-            ref1 = this.callbacks;
-            for (j = 0, len2 = ref1.length; j < len2; j++) {
-              call = ref1[j];
-              call[1](item, "update");
-            }
-            return true;
-          }
-        }
-      }
-      this.items.push(item);
-      ref2 = this.callbacks;
-      results = [];
-      for (k = 0, len3 = ref2.length; k < len3; k++) {
-        call = ref2[k];
-        results.push(call[1](item, "add"));
-      }
-      return results;
-    };
-
-    Base.prototype.deleteItem = function(item) {
-      var call, i, len, len1, ref, results;
-      len = this.items.length;
-      this.items = this.items.filter(function(x) {
-        return x.self !== item.self;
-      });
-      if (this.items.length !== len) {
-        ref = this.callbacks;
-        results = [];
-        for (i = 0, len1 = ref.length; i < len1; i++) {
-          call = ref[i];
-          results.push(call[1](item, "delete"));
-        }
-        return results;
-      }
-    };
-
-    Base.prototype.getItems = function() {
-      return this.items;
-    };
-
-    Base.prototype.addCallback = function(obj, fn) {
-      var call, i, len1, ref;
-      ref = this.callbacks;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        call = ref[i];
-        if (call[0] === obj) {
-          return;
-        }
-      }
-      return this.callbacks.push([obj, fn]);
-    };
-
-    Base.prototype.matchesParams = function(item) {
-      return true;
-    };
-
-    return Base;
-
-  })();
-
-  window.BaseCollections = (function() {
-    function BaseCollections() {
-      this.collections = [];
-    }
-
-    BaseCollections.prototype.count = function() {
-      return this.collections.length;
-    };
-
-    BaseCollections.prototype.add = function(col) {
-      return this.collections.push(col);
-    };
-
-    BaseCollections.prototype.checkItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.checkItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.deleteItems = function(item) {
-      var col, i, len1, ref, results;
-      ref = this.collections;
-      results = [];
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        results.push(col.deleteItem(item));
-      }
-      return results;
-    };
-
-    BaseCollections.prototype.find = function(prms) {
-      var clean_params, col, i, jprms, key, len1, ref, val;
-      clean_params = {};
-      for (key in prms) {
-        val = prms[key];
-        if (val != null) {
-          if (val.id != null) {
-            clean_params[key + "_id"] = val.id;
-          } else {
-            clean_params[key] = val;
-          }
-        }
-      }
-      jprms = JSON.stringify(clean_params);
-      ref = this.collections;
-      for (i = 0, len1 = ref.length; i < len1; i++) {
-        col = ref[i];
-        if (jprms === col.jparams) {
-          return col;
-        }
-      }
-    };
-
-    BaseCollections.prototype["delete"] = function(col) {
-      return this.collections = _.without(this.collections, col);
-    };
-
-    return BaseCollections;
-
-  })();
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Day = (function(superClass) {
-    extend(Day, superClass);
-
-    function Day() {
-      return Day.__super__.constructor.apply(this, arguments);
-    }
-
-    Day.prototype.checkItem = function(item) {
-      return Day.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Day;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("DayCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  window.Collection.Space = (function(superClass) {
-    extend(Space, superClass);
-
-    function Space() {
-      return Space.__super__.constructor.apply(this, arguments);
-    }
-
-    Space.prototype.checkItem = function(item) {
-      return Space.__super__.checkItem.apply(this, arguments);
-    };
-
-    return Space;
-
-  })(window.Collection.Base);
-
-  angular.module('BB.Services').provider("SpaceCollections", function() {
-    return {
-      $get: function() {
-        return new window.BaseCollections();
-      }
-    };
-  });
-
-}).call(this);
-
 
 angular
 .module('angular-hal', []).provider('data_cache', function() {
@@ -1852,6 +1620,238 @@ function getURIparam( name ){
   else
     return results[1];
 }
+(function() {
+  window.Collection = (function() {
+    function Collection() {}
+
+    return Collection;
+
+  })();
+
+  window.Collection.Base = (function() {
+    function Base(res, items, params) {
+      var clean_params, key, m, n, val;
+      this.res = res;
+      this.items = items;
+      this.params = params;
+      this.callbacks = [];
+      clean_params = {};
+      for (key in params) {
+        val = params[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      this.jparams = JSON.stringify(clean_params);
+      if (res) {
+        for (n in res) {
+          m = res[n];
+          this[n] = m;
+        }
+      }
+    }
+
+    Base.prototype.checkItem = function(item) {
+      var call, existingItem, i, index, j, k, len1, len2, len3, ref, ref1, ref2, results;
+      if (!this.matchesParams(item)) {
+        this.deleteItem(item);
+        return true;
+      } else {
+        ref = this.items;
+        for (index = i = 0, len1 = ref.length; i < len1; index = ++i) {
+          existingItem = ref[index];
+          if (item.self === existingItem.self) {
+            this.items[index] = item;
+            ref1 = this.callbacks;
+            for (j = 0, len2 = ref1.length; j < len2; j++) {
+              call = ref1[j];
+              call[1](item, "update");
+            }
+            return true;
+          }
+        }
+      }
+      this.items.push(item);
+      ref2 = this.callbacks;
+      results = [];
+      for (k = 0, len3 = ref2.length; k < len3; k++) {
+        call = ref2[k];
+        results.push(call[1](item, "add"));
+      }
+      return results;
+    };
+
+    Base.prototype.deleteItem = function(item) {
+      var call, i, len, len1, ref, results;
+      len = this.items.length;
+      this.items = this.items.filter(function(x) {
+        return x.self !== item.self;
+      });
+      if (this.items.length !== len) {
+        ref = this.callbacks;
+        results = [];
+        for (i = 0, len1 = ref.length; i < len1; i++) {
+          call = ref[i];
+          results.push(call[1](item, "delete"));
+        }
+        return results;
+      }
+    };
+
+    Base.prototype.getItems = function() {
+      return this.items;
+    };
+
+    Base.prototype.addCallback = function(obj, fn) {
+      var call, i, len1, ref;
+      ref = this.callbacks;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        call = ref[i];
+        if (call[0] === obj) {
+          return;
+        }
+      }
+      return this.callbacks.push([obj, fn]);
+    };
+
+    Base.prototype.matchesParams = function(item) {
+      return true;
+    };
+
+    return Base;
+
+  })();
+
+  window.BaseCollections = (function() {
+    function BaseCollections() {
+      this.collections = [];
+    }
+
+    BaseCollections.prototype.count = function() {
+      return this.collections.length;
+    };
+
+    BaseCollections.prototype.add = function(col) {
+      return this.collections.push(col);
+    };
+
+    BaseCollections.prototype.checkItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.checkItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.deleteItems = function(item) {
+      var col, i, len1, ref, results;
+      ref = this.collections;
+      results = [];
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        results.push(col.deleteItem(item));
+      }
+      return results;
+    };
+
+    BaseCollections.prototype.find = function(prms) {
+      var clean_params, col, i, jprms, key, len1, ref, val;
+      clean_params = {};
+      for (key in prms) {
+        val = prms[key];
+        if (val != null) {
+          if (val.id != null) {
+            clean_params[key + "_id"] = val.id;
+          } else {
+            clean_params[key] = val;
+          }
+        }
+      }
+      jprms = JSON.stringify(clean_params);
+      ref = this.collections;
+      for (i = 0, len1 = ref.length; i < len1; i++) {
+        col = ref[i];
+        if (jprms === col.jparams) {
+          return col;
+        }
+      }
+    };
+
+    BaseCollections.prototype["delete"] = function(col) {
+      return this.collections = _.without(this.collections, col);
+    };
+
+    return BaseCollections;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Day = (function(superClass) {
+    extend(Day, superClass);
+
+    function Day() {
+      return Day.__super__.constructor.apply(this, arguments);
+    }
+
+    Day.prototype.checkItem = function(item) {
+      return Day.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Day;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("DayCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  window.Collection.Space = (function(superClass) {
+    extend(Space, superClass);
+
+    function Space() {
+      return Space.__super__.constructor.apply(this, arguments);
+    }
+
+    Space.prototype.checkItem = function(item) {
+      return Space.__super__.checkItem.apply(this, arguments);
+    };
+
+    return Space;
+
+  })(window.Collection.Base);
+
+  angular.module('BB.Services').provider("SpaceCollections", function() {
+    return {
+      $get: function() {
+        return new window.BaseCollections();
+      }
+    };
+  });
+
+}).call(this);
+
 'use strict'
 
 // This is a customisation of the accordion-group directive in ui bootstrap
@@ -17449,6 +17449,5714 @@ angular.module('BB.Directives')
 }).call(this);
 
 (function() {
+  angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
+    return {
+      query: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = "/api/v1/company/{company_id}/addresses/{post_code}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company.id,
+          post_code: prms.post_code
+        });
+        halClient.$get(uri, {}).then(function(addressList) {
+          return deferred.resolve(addressList);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      getAddress: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        href = "/api/v1/company/{company_id}/addresses/address/{id}";
+        uri = new UriTemplate(href).fillFromObject({
+          company_id: prms.company.id,
+          id: prms.id
+        });
+        halClient.$get(uri, {}).then(function(customerAddress) {
+          return deferred.resolve(customerAddress);
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Services:Airbrake
+*
+* @description
+* JavaScript notifier for capturing errors in web browsers and reporting them to Airbrake.
+*
+ */
+
+(function() {
+  angular.module('BB.Services').factory('$exceptionHandler', function($log, AirbrakeConfig) {
+    var airbrake;
+    airbrake = new airbrakeJs.Client({
+      projectId: AirbrakeConfig.projectId,
+      projectKey: AirbrakeConfig.projectKey
+    });
+    airbrake.addFilter(function(notice) {
+      if (AirbrakeConfig.environment === 'development' || !notice.params.from_sdk) {
+        return false;
+      }
+      notice.context.environment = 'production';
+      return notice;
+    });
+    return function(exception, cause, sdkError) {
+      $log.error(exception);
+      airbrake.notify({
+        error: exception,
+        params: {
+          angular_cause: cause,
+          from_sdk: sdkError
+        }
+      });
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Services:Alert
+*
+* @description
+* Representation of an Alert Object
+*
+* @property {array} alerts The array with all types of alerts
+* @property {string} add Add alert message
+ */
+
+(function() {
+  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
+    var alertService, titleLookup;
+    $rootScope.alerts = [];
+
+    /***
+      * @ngdoc method
+      * @name titleLookup
+      * @methodOf BB.Services:Alert
+      * @description
+      * Title look up in according of type and title parameters
+      *
+      * @returns {boolean} The returned title
+     */
+    titleLookup = function(type, title) {
+      if (title) {
+        return title;
+      }
+      switch (type) {
+        case "error":
+        case "danger":
+          title = "Error";
+          break;
+        default:
+          title = null;
+      }
+      return title;
+    };
+    return alertService = {
+      add: function(type, arg) {
+        var alert, msg, persist, title;
+        title = arg.title, msg = arg.msg, persist = arg.persist;
+        if (persist == null) {
+          persist = true;
+        }
+        $rootScope.alerts = [];
+        alert = {
+          type: type,
+          title: titleLookup(type, title),
+          msg: msg,
+          close: function() {
+            return alertService.closeAlert(this);
+          }
+        };
+        $rootScope.alerts.push(alert);
+        if (!persist) {
+          $timeout(function() {
+            return $rootScope.alerts.splice($rootScope.alerts.indexOf(alert), 1);
+          }, 3000);
+        }
+        return $rootScope.$broadcast("alert:raised");
+      },
+
+      /***
+      * @ngdoc method
+      * @name closeAlert
+      * @methodOf BB.Services:Alert
+      * @description
+      * Close alert
+      *
+      * @returns {boolean}  close alert
+       */
+      closeAlert: function(alert) {
+        return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
+      },
+
+      /***
+      * @ngdoc method
+      * @name closeAlertIdx
+      * @methodOf BB.Services:Alert
+      * @description
+      * Close alert index
+      *
+      * @returns {boolean}  The returned close alert index
+       */
+      closeAlertIdx: function(index) {
+        return $rootScope.alerts.splice(index, 1);
+      },
+
+      /***
+      * @ngdoc method
+      * @name clear
+      * @methodOf BB.Services:Alert
+      * @description
+      * Clear alert message
+      *
+      * @returns {array} Newly clear array of the alert messages
+       */
+      clear: function() {
+        return $rootScope.alerts = [];
+      },
+
+      /***
+      * @ngdoc error
+      * @name clear
+      * @methodOf BB.Services:Alert
+      * @description
+      * Error alert
+      *
+      * @returns {array} The returned error alert
+       */
+      error: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('error', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
+      * @name danger
+      * @methodOf BB.Services:Alert
+      * @description
+      * Danger alert
+      *
+      * @returns {array} The returned danger alert
+       */
+      danger: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('danger', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
+      * @name info
+      * @methodOf BB.Services:Alert
+      * @description
+      * Info alert
+      *
+      * @returns {array} The returned info alert
+       */
+      info: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('info', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
+      * @name warning
+      * @methodOf BB.Services:Alert
+      * @description
+      * Warning alert
+      *
+      * @returns {array} The returned warning alert
+       */
+      warning: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('warning', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
+      * @name success
+      * @methodOf BB.Services:Alert
+      * @description
+      * Success alert
+      *
+      * @returns {array} The returned warning alert
+       */
+      success: function(alert) {
+        if (!alert) {
+          return;
+        }
+        return this.add('success', {
+          title: alert.title,
+          msg: alert.msg,
+          persist: alert.persist
+        });
+      },
+
+      /***
+      * @ngdoc error
+      * @name raise
+      * @methodOf BB.Services:Alert
+      * @description
+      * Raise alert
+      *
+      * @returns {array} The returned raise alert
+       */
+      raise: function(key) {
+        var alert;
+        if (!key) {
+          return;
+        }
+        alert = ErrorService.getAlert(key);
+        if (alert) {
+          return this.add(alert.type, {
+            title: alert.title,
+            msg: alert.msg,
+            persist: alert.persist
+          });
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
+    return {
+      addItem: function(company, params) {
+        var data, deferred, lnk;
+        deferred = $q.defer();
+        lnk = params.item.book_link;
+        data = params.item.getPostData();
+        if (!lnk) {
+          deferred.reject("rel book not found for event");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return lnk.$post('book', params, data).then(function(basket) {
+              var mbasket;
+              MutexService.unlock(mutex);
+              company.$flush('basket');
+              mbasket = new BBModel.Basket(basket, params.bb);
+              return basket.$get('items').then(function(items) {
+                var i, item, j, len, promises;
+                promises = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  item = new BBModel.BasketItem(i, params.bb);
+                  mbasket.addItem(item);
+                  promises = promises.concat(item.promises);
+                }
+                if (promises.length > 0) {
+                  return $q.all(promises).then(function() {
+                    return deferred.resolve(mbasket);
+                  });
+                } else {
+                  return deferred.resolve(mbasket);
+                }
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            }, function(err) {
+              MutexService.unlock(mutex);
+              return deferred.reject(err);
+            });
+          });
+        }
+        return deferred.promise;
+      },
+      applyCoupon: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return company.$post('coupon', {}, {
+            coupon: params.coupon
+          }).then(function(basket) {
+            var mbasket;
+            MutexService.unlock(mutex);
+            company.$flush('basket');
+            mbasket = new BBModel.Basket(basket, params.bb);
+            return basket.$get('items').then(function(items) {
+              var i, item, j, len, promises;
+              promises = [];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
+                item = new BBModel.BasketItem(i, params.bb);
+                mbasket.addItem(item);
+                promises = promises.concat(item.promises);
+              }
+              if (promises.length > 0) {
+                return $q.all(promises).then(function() {
+                  return deferred.resolve(mbasket);
+                });
+              } else {
+                return deferred.resolve(mbasket);
+              }
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        });
+        return deferred.promise;
+      },
+      updateBasket: function(company, params) {
+        var data, deferred, item, j, len, lnk, ref, xdata;
+        deferred = $q.defer();
+        data = {
+          entire_basket: true,
+          items: []
+        };
+        ref = params.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.book_link) {
+            lnk = item.book_link;
+          }
+          xdata = item.getPostData();
+          data.items.push(xdata);
+        }
+        if (!lnk) {
+          deferred.reject("rel book not found for event");
+          return deferred.promise;
+        }
+        MutexService.getLock().then(function(mutex) {
+          return lnk.$post('book', params, data).then(function(basket) {
+            var mbasket;
+            MutexService.unlock(mutex);
+            company.$flush('basket');
+            mbasket = new BBModel.Basket(basket, params.bb);
+            return basket.$get('items').then(function(items) {
+              var i, k, len1, promises;
+              promises = [];
+              for (k = 0, len1 = items.length; k < len1; k++) {
+                i = items[k];
+                item = new BBModel.BasketItem(i, params.bb);
+                mbasket.addItem(item);
+                promises = promises.concat(item.promises);
+              }
+              if (promises.length > 0) {
+                return $q.all(promises).then(function() {
+                  $rootScope.$broadcast("basket:updated", mbasket);
+                  return deferred.resolve(mbasket);
+                });
+              } else {
+                $rootScope.$broadcast("basket:updated", mbasket);
+                return deferred.resolve(mbasket);
+              }
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        });
+        return deferred.promise;
+      },
+      checkPrePaid: function(item, pre_paid_bookings) {
+        var booking, j, len, valid_pre_paid;
+        valid_pre_paid = null;
+        for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
+          booking = pre_paid_bookings[j];
+          if (booking.checkValidity(item)) {
+            valid_pre_paid = booking;
+            break;
+          }
+        }
+        return valid_pre_paid;
+      },
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('basket')) {
+          deferred.reject("rel basket not found for company");
+        } else {
+          company.$get('basket').then(function(basket) {
+            basket = new BBModel.Basket(basket, params.bb);
+            if (basket.$has('items')) {
+              basket.$get('items').then(function(items) {
+                var item, j, len, results;
+                results = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  item = items[j];
+                  results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
+                }
+                return results;
+              });
+            }
+            return deferred.resolve(basket);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      deleteItem: function(item, company, params) {
+        var deferred;
+        if (!params) {
+          params = {};
+        }
+        if (params.basket) {
+          params.basket.clearItem(item);
+        }
+        deferred = $q.defer();
+        if (!item.$has('self')) {
+          deferred.reject("rel self not found for item");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return item.$del('self', params).then(function(basket) {
+              MutexService.unlock(mutex);
+              company.$flush('basket');
+              basket = new BBModel.Basket(basket, params.bb);
+              if (basket.$has('items')) {
+                basket.$get('items').then(function(items) {
+                  var j, len, results;
+                  results = [];
+                  for (j = 0, len = items.length; j < len; j++) {
+                    item = items[j];
+                    results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
+                  }
+                  return results;
+                });
+              }
+              return deferred.resolve(basket);
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      checkout: function(company, basket, params) {
+        var data, deferred;
+        deferred = $q.defer();
+        if (!basket.$has('checkout')) {
+          deferred.reject("rel checkout not found for basket");
+        } else {
+          data = basket.getPostData();
+          if (params.bb.qudini_booking_id) {
+            data.qudini_booking_id = params.bb.qudini_booking_id;
+          }
+          if (params.bb.booking_settings) {
+            data.booking_settings = params.bb.booking_settings;
+          }
+          if (params.bb.no_notifications) {
+            data.no_notifications = params.bb.no_notifications;
+          }
+          data.affiliate_id = $rootScope.affiliate_id || params.affiliate_id;
+          basket.waiting_for_checkout = true;
+          MutexService.getLock().then(function(mutex) {
+            return basket.$post('checkout', params, data).then(function(total) {
+              var tot;
+              MutexService.unlock(mutex);
+              $rootScope.$broadcast('updateBookings');
+              tot = new BBModel.Purchase.Total(total);
+              $rootScope.$broadcast('newCheckout', tot);
+              basket.clear();
+              basket.waiting_for_checkout = false;
+              return deferred.resolve(tot);
+            }, function(err) {
+              basket.waiting_for_checkout = false;
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            basket.waiting_for_checkout = false;
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      empty: function(bb) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return bb.company.$del('basket').then(function(basket) {
+            MutexService.unlock(mutex);
+            bb.company.$flush('basket');
+            return deferred.resolve(new BBModel.Basket(basket, bb));
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }, function(err) {
+          MutexService.unlock(mutex);
+          return deferred.reject(err);
+        });
+        return deferred.promise;
+      },
+      memberCheckout: function(basket, params) {
+        var data, deferred, item;
+        deferred = $q.defer();
+        if (!basket.$has('checkout')) {
+          deferred.reject("rel checkout not found for basket");
+        } else if ($rootScope.member === null) {
+          deferred.reject("member not set");
+        } else {
+          basket._data.setOption('auth_token', $rootScope.member._data.getOption('auth_token'));
+          data = {
+            items: (function() {
+              var j, len, ref, results;
+              ref = basket.items;
+              results = [];
+              for (j = 0, len = ref.length; j < len; j++) {
+                item = ref[j];
+                results.push(item._data);
+              }
+              return results;
+            })()
+          };
+          basket.$post('checkout', params, data).then(function(total) {
+            if (total.$has('member')) {
+              total.$get('member').then(function(member) {
+                $rootScope.member.flushBookings();
+                return $rootScope.member = new BBModel.Member.Member(member);
+              });
+            }
+            return deferred.resolve(total);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      applyDeal: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          return params.bb.basket.$post('deal', {}, {
+            deal_code: params.deal_code
+          }).then(function(basket) {
+            var mbasket;
+            MutexService.unlock(mutex);
+            company.$flush('basket');
+            mbasket = new BBModel.Basket(basket, params.bb);
+            return basket.$get('items').then(function(items) {
+              var i, item, j, len, promises;
+              promises = [];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
+                item = new BBModel.BasketItem(i, params.bb);
+                mbasket.addItem(item);
+                promises = promises.concat(item.promises);
+              }
+              if (promises.length > 0) {
+                return $q.all(promises).then(function() {
+                  return deferred.resolve(mbasket);
+                });
+              } else {
+                return deferred.resolve(mbasket);
+              }
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          }, function(err) {
+            MutexService.unlock(mutex);
+            return deferred.reject(err);
+          });
+        });
+        return deferred.promise;
+      },
+      removeDeal: function(company, params) {
+        var deferred;
+        if (!params) {
+          params = {};
+        }
+        deferred = $q.defer();
+        if (!params.bb.basket.$has('deal')) {
+          return deferred.reject("No Remove Deal link found");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            return params.bb.basket.$put('deal', {}, {
+              deal_code_id: params.deal_code_id.toString()
+            }).then(function(basket) {
+              MutexService.unlock(mutex);
+              company.$flush('basket');
+              basket = new BBModel.Basket(basket, params.bb);
+              if (basket.$has('items')) {
+                return basket.$get('items').then(function(items) {
+                  var item, j, len;
+                  for (j = 0, len = items.length; j < len; j++) {
+                    item = items[j];
+                    basket.addItem(new BBModel.BasketItem(item, params.bb));
+                  }
+                  return deferred.resolve(basket);
+                }, function(err) {
+                  return deferred.reject(err);
+                });
+              }
+            }, function(err) {
+              MutexService.unlock(mutex);
+              return deferred.reject(err);
+            });
+          });
+          return deferred.promise;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("BreadcrumbService", function() {
+    var current_step;
+    current_step = 1;
+    return {
+      setCurrentStep: function(step) {
+        return current_step = step;
+      },
+      getCurrentStep: function() {
+        return current_step;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("BulkPurchaseService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('bulk_purchases')) {
+          deferred.reject("No bulk purchases found");
+        } else {
+          company.$get('bulk_purchases').then(function(resource) {
+            return resource.$get('bulk_purchases').then(function(bulk_purchases) {
+              var i;
+              return deferred.resolve((function() {
+                var j, len, results;
+                results = [];
+                for (j = 0, len = bulk_purchases.length; j < len; j++) {
+                  i = bulk_purchases[j];
+                  results.push(new BBModel.BulkPurchase(i));
+                }
+                return results;
+              })());
+            });
+          }, (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("CategoryService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('categories')) {
+          deferred.reject("No categories found");
+        } else {
+          company.$get('named_categories').then((function(_this) {
+            return function(resource) {
+              return resource.$get('categories').then(function(items) {
+                var _i, cat, categories, i, j, len;
+                categories = [];
+                for (_i = j = 0, len = items.length; j < len; _i = ++j) {
+                  i = items[_i];
+                  cat = new BBModel.Category(i);
+                  cat.order || (cat.order = _i);
+                  categories.push(cat);
+                }
+                return deferred.resolve(categories);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ClientService", function($q, BBModel, MutexService) {
+    var setDefaultCompanyId;
+    setDefaultCompanyId = function(company, client) {
+      client.default_company_id = company.id;
+    };
+    return {
+      create: function(company, client) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('client')) {
+          deferred.reject("Cannot create new people for this company");
+        } else {
+          MutexService.getLock().then(function(mutex) {
+            setDefaultCompanyId(company, client);
+            return company.$post('client', {}, client.getPostData()).then((function(_this) {
+              return function(cl) {
+                deferred.resolve(new BBModel.Client(cl));
+                return MutexService.unlock(mutex);
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                deferred.reject(err);
+                return MutexService.unlock(mutex);
+              };
+            })(this));
+          });
+        }
+        return deferred.promise;
+      },
+      update: function(company, client) {
+        var deferred;
+        deferred = $q.defer();
+        MutexService.getLock().then(function(mutex) {
+          setDefaultCompanyId(company, client);
+          return client.$put('self', {}, client.getPostData()).then((function(_this) {
+            return function(cl) {
+              deferred.resolve(new BBModel.Client(cl));
+              return MutexService.unlock(mutex);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              deferred.reject(err);
+              return MutexService.unlock(mutex);
+            };
+          })(this));
+        });
+        return deferred.promise;
+      },
+      create_or_update: function(company, client) {
+        if (client.$has('self')) {
+          return this.update(company, client);
+        } else {
+          return this.create(company, client);
+        }
+      },
+      query_by_email: function(company, email) {
+        var deferred;
+        deferred = $q.defer();
+        if ((company != null) && (email != null)) {
+          company.$get("client_by_email", {
+            email: email
+          }).then((function(_this) {
+            return function(client) {
+              if (client != null) {
+                return deferred.resolve(new BBModel.Client(client));
+              } else {
+                return deferred.resolve({});
+              }
+            };
+          })(this), function(err) {
+            return deferred.reject(err);
+          });
+        } else {
+          deferred.reject("No company or email defined");
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ClientDetailsService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('client_details')) {
+          deferred.reject("No client_details found");
+        } else {
+          company.$get('client_details').then((function(_this) {
+            return function(details) {
+              return deferred.resolve(new BBModel.ClientDetails(details));
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('ClinicService', function($q, BBModel, $window) {
+    return {
+      query: function(params) {
+        var company, defer;
+        company = params.company;
+        defer = $q.defer();
+        if (params.id) {
+          company.$get('clinics', params).then(function(clinic) {
+            clinic = new BBModel.Clinic(clinic);
+            return defer.resolve(clinic);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        } else {
+          company.$get('clinics', params).then(function(collection) {
+            return collection.$get('clinics').then(function(clinics) {
+              var s;
+              clinics = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = clinics.length; i < len; i++) {
+                  s = clinics[i];
+                  results.push(new BBModel.Clinic(s));
+                }
+                return results;
+              })();
+              return defer.resolve(clinics);
+            }, function(err) {
+              return defer.reject(err);
+            });
+          }, function(err) {
+            return defer.reject(err);
+          });
+        }
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
+    return {
+      query: function(company_id, options) {
+        var deferred, url;
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/company/" + company_id;
+        deferred = $q.defer();
+        halClient.$get(url, options).then((function(_this) {
+          return function(company) {
+            return deferred.resolve(company);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      queryChildren: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('companies')) {
+          deferred.reject("No child companies found");
+        } else {
+          company.$get('companies').then((function(_this) {
+            return function(resource) {
+              return resource.$get('companies').then(function(items) {
+                var companies, i, j, len;
+                companies = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  companies.push(new BBModel.Company(i));
+                }
+                return deferred.resolve(companies);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("CustomTextService", function($q, BBModel) {
+    return {
+      BookingText: function(company, basketItem) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get('booking_text').then((function(_this) {
+          return function(emb) {
+            return emb.$get('booking_text').then(function(details) {
+              var detail, i, len, link, msgs, name, ref;
+              msgs = [];
+              for (i = 0, len = details.length; i < len; i++) {
+                detail = details[i];
+                if (detail.message_type === "Booking") {
+                  ref = basketItem.parts_links;
+                  for (name in ref) {
+                    link = ref[name];
+                    if (detail.$href('item') === link) {
+                      if (msgs.indexOf(detail.message) === -1) {
+                        msgs.push(detail.message);
+                      }
+                    }
+                  }
+                }
+              }
+              return deferred.resolve(msgs);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      confirmationText: function(company, total) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get('booking_text').then(function(emb) {
+          return emb.$get('booking_text').then(function(details) {
+            return total.getMessages(details, "Confirm").then(function(msgs) {
+              return deferred.resolve(msgs);
+            });
+          });
+        }, function(err) {
+          return deferred.reject(err);
+        });
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("DateTimeUtilitiesService", function(SettingsService) {
+    var checkPerson, checkResource;
+    checkPerson = function(basket_item, item_defaults) {
+      return (basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self) || _.isBoolean(basket_item.person) || item_defaults.merge_people;
+    };
+    checkResource = function(basket_item, item_defaults) {
+      return (basket_item.defaults.resource && basket_item.defaults.resource.self === basket_item.resource.self) || _.isBoolean(basket_item.resource) || item_defaults.merge_resources;
+    };
+    return {
+      convertTimeSlotToMoment: function(date, time_slot) {
+        var datetime, hours, mins, val;
+        if (!(date && moment.isMoment(date) && time_slot)) {
+          return;
+        }
+        datetime = moment();
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          datetime = datetime.tz(SettingsService.getTimeZone());
+        }
+        val = parseInt(time_slot.time);
+        hours = parseInt(val / 60);
+        mins = val % 60;
+        datetime.hour(hours);
+        datetime.minutes(mins);
+        datetime.seconds(0);
+        datetime.date(date.date());
+        datetime.month(date.month());
+        datetime.year(date.year());
+        return datetime;
+      },
+      convertMomentToTime: function(datetime) {
+        return datetime.minutes() + datetime.hours() * 60;
+      },
+      checkDefaultTime: function(date, time_slots, basket_item, item_defaults) {
+        var found_time_slot, i, len, match, slot, time;
+        if (!basket_item.defaults.time) {
+          match = null;
+        } else if (checkPerson(basket_item, item_defaults) && checkResource(basket_item, item_defaults)) {
+          match = "full";
+        } else {
+          match = "partial";
+        }
+        found_time_slot = null;
+        if (basket_item.defaults.time && (basket_item.defaults.date && date.isSame(basket_item.defaults.date, 'day') || !basket_item.defaults.date)) {
+          time = basket_item.time ? basket_item.time.time : basket_item.defaults.time;
+          for (i = 0, len = time_slots.length; i < len; i++) {
+            slot = time_slots[i];
+            if (time && time === slot.time && slot.avail === 1) {
+              found_time_slot = slot;
+              break;
+            }
+          }
+        }
+        return {
+          match: match,
+          slot: found_time_slot
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("DayService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred, extra;
+        deferred = $q.defer();
+        if (prms.cItem.days_link) {
+          extra = {};
+          extra.month = prms.month;
+          extra.date = prms.date;
+          extra.edate = prms.edate;
+          if (prms.client) {
+            extra.location = prms.client.addressCsvLine();
+          }
+          if (prms.cItem.person && !prms.cItem.anyPerson()) {
+            extra.person_id = prms.cItem.person.id;
+          }
+          if (prms.cItem.resource && !prms.cItem.anyResource()) {
+            extra.resource_id = prms.cItem.resource.id;
+          }
+          prms.cItem.days_link.$get('days', extra).then((function(_this) {
+            return function(found) {
+              var afound, days, i, j, len;
+              afound = found.days;
+              days = [];
+              for (j = 0, len = afound.length; j < len; j++) {
+                i = afound[j];
+                if (i.type === prms.item) {
+                  days.push(new BBModel.Day(i));
+                }
+              }
+              return deferred.resolve(days);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        } else {
+          deferred.reject("No Days Link found");
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("DealService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('deals')) {
+          deferred.reject("No Deals found");
+        } else {
+          company.$get('deals').then((function(_this) {
+            return function(resource) {
+              return resource.$get('deals').then(function(deals) {
+                var deal;
+                deals = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = deals.length; i < len; i++) {
+                    deal = deals[i];
+                    results.push(new BBModel.Deal(deal));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(deals);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB').config(function($logProvider, $injector) {
+    return $logProvider.debugEnabled(true);
+  });
+
+  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel, $bbug) {
+    var logObjectKeys, showScopeChain;
+    logObjectKeys = function(obj, showValue) {
+      var key, value;
+      for (key in obj) {
+        value = obj[key];
+        if (obj.hasOwnProperty(key) && !_.isFunction(value) && !(/^\$\$/.test(key))) {
+          console.log(key);
+          if (showValue) {
+            console.log('\t', value, '\n');
+          }
+        }
+      }
+    };
+    showScopeChain = function() {
+      var $root, data, f;
+      $root = $('[ng-app]');
+      data = $root.data();
+      if (data && data.$scope) {
+        f = function(scope) {
+          console.log(scope.$id);
+          console.log(scope);
+          if (scope.$$nextSibling) {
+            return f(scope.$$nextSibling);
+          } else {
+            if (scope.$$childHead) {
+              return f(scope.$$childHead);
+            }
+          }
+        };
+        f(data.$scope);
+      }
+    };
+    (function() {
+      if (($location.host() === 'localhost' || $location.host() === '127.0.0.1') && $location.port() === 3000) {
+        return window.setTimeout(function() {
+          var scope;
+          scope = $rootScope;
+          while (scope) {
+            if (scope.controller === 'public.controllers.BBCtrl') {
+              break;
+            }
+            scope = scope.$$childHead;
+          }
+          $bbug($window).on('dblclick', function(e) {
+            var controller, controllerName, pscope;
+            scope = angular.element(e.target).scope();
+            controller = scope.hasOwnProperty('controller');
+            pscope = scope;
+            if (controller) {
+              controllerName = scope.controller;
+            }
+            while (!controller) {
+              pscope = pscope.$parent;
+              controllerName = pscope.controller;
+              controller = pscope.hasOwnProperty('controller');
+            }
+            $window.bbScope = scope;
+            $log.log(e.target);
+            $log.log($window.bbScope);
+            return $log.log('Controller ->', controllerName);
+          });
+          $window.bbBBCtrlScopeKeyNames = function(prop) {
+            return logObjectKeys(scope, prop);
+          };
+          $window.bbBBCtrlScope = function() {
+            return scope;
+          };
+          $window.bbCurrentItem = function() {
+            return scope.current_item;
+          };
+          return $window.bbShowScopeChain = showScopeChain;
+        }, 10);
+      }
+    })();
+    return {
+      logObjectKeys: logObjectKeys
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('Dialog', function($modal, $log) {
+    var controller;
+    controller = function($scope, $modalInstance, model, title, success, fail, body) {
+      $scope.body = body;
+      $scope.ok = function() {
+        return $modalInstance.close(model);
+      };
+      $scope.cancel = function() {
+        event.preventDefault();
+        event.stopPropagation();
+        return $modalInstance.dismiss('cancel');
+      };
+      return $modalInstance.result.then(function() {
+        if (success) {
+          return success(model);
+        }
+      }, function() {
+        if (fail) {
+          return fail();
+        }
+      });
+    };
+    return {
+      confirm: function(config) {
+        var templateUrl;
+        if (config.templateUrl) {
+          templateUrl = config.templateUrl;
+        }
+        templateUrl || (templateUrl = 'dialog.html');
+        return $modal.open({
+          templateUrl: templateUrl,
+          controller: controller,
+          size: config.size || 'sm',
+          resolve: {
+            model: function() {
+              return config.model;
+            },
+            title: function() {
+              return config.title;
+            },
+            success: function() {
+              return config.success;
+            },
+            fail: function() {
+              return config.fail;
+            },
+            body: function() {
+              return config.body;
+            }
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('ErrorService', function(SettingsService, $translate) {
+    var alerts, createCustomError, getAlert, getError;
+    alerts = [
+      {
+        key: 'GENERIC',
+        type: 'error',
+        title: '',
+        persist: true,
+        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
+      }, {
+        key: 'LOCATION_NOT_FOUND',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: "Sorry, we don't recognise that location"
+      }, {
+        key: 'MISSING_LOCATION',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Please enter your location'
+      }, {
+        key: 'MISSING_POSTCODE',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Please enter a postcode'
+      }, {
+        key: 'INVALID_POSTCODE',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Please enter a valid postcode'
+      }, {
+        key: 'ITEM_NO_LONGER_AVAILABLE',
+        type: 'error',
+        title: '',
+        persist: true,
+        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
+      }, {
+        key: 'NO_WAITLIST_SPACES_LEFT',
+        type: 'error',
+        title: '',
+        persist: true,
+        msg: 'Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available'
+      }, {
+        key: 'FORM_INVALID',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Please complete all required fields'
+      }, {
+        key: 'GEOLOCATION_ERROR',
+        type: 'error',
+        title: '',
+        persist: true,
+        msg: 'Sorry, we could not determine your location. Please try searching instead.'
+      }, {
+        key: 'EMPTY_BASKET_FOR_CHECKOUT',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You need to add some items to the basket before you can checkout.'
+      }, {
+        key: 'MAXIMUM_TICKETS',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, the maximum number of tickets per person has been reached.'
+      }, {
+        key: 'GIFT_CERTIFICATE_REQUIRED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'A valid Gift Certificate is required to proceed with this booking'
+      }, {
+        key: 'TIME_SLOT_NOT_SELECTED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You need to select a time slot'
+      }, {
+        key: 'STORE_NOT_SELECTED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You need to select a store'
+      }, {
+        key: 'APPT_AT_SAME_TIME',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Your appointment is already booked for this time'
+      }, {
+        key: 'REQ_TIME_NOT_AVAIL',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'The requested time slot is not available. Please choose a different time.'
+      }, {
+        key: 'TOPUP_SUCCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'Your wallet has been topped up'
+      }, {
+        key: 'TOPUP_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, your topup failed. Please try again.'
+      }, {
+        key: 'UPDATE_SUCCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'Updated'
+      }, {
+        key: 'UPDATE_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Update failed. Please try again'
+      }, {
+        key: 'ALREADY_REGISTERED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'You have already registered with this email address. Please login or reset your password.'
+      }, {
+        key: 'LOGIN_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, your email or password was not recognised. Please try again or reset your password.'
+      }, {
+        key: 'SSO_LOGIN_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, the login process failed. Please try again.'
+      }, {
+        key: 'PASSWORD_INVALID',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, your chosen password is invalid'
+      }, {
+        key: 'PASSWORD_RESET_REQ_SUCCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'We have sent you an email with instructions on how to reset your password.'
+      }, {
+        key: 'PASSWORD_RESET_REQ_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, we didn\'t find an account registered with that email.'
+      }, {
+        key: 'PASSWORD_RESET_SUCESS',
+        type: 'success',
+        title: '',
+        persist: true,
+        msg: 'Your password has been updated.'
+      }, {
+        key: 'PASSWORD_RESET_FAILED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Sorry, we couldn\'t update your password. Please try again.'
+      }, {
+        key: 'PASSWORD_MISMATCH',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: 'Your passwords don\'t match'
+      }, {
+        key: 'ATTENDEES_CHANGED',
+        type: 'info',
+        title: '',
+        persist: true,
+        msg: 'Your booking has been successfully updated'
+      }, {
+        key: 'PAYMENT_FAILED',
+        type: 'danger',
+        title: '',
+        persist: true,
+        msg: 'We were unable to take payment. Please contact your card issuer or try again using a different card'
+      }, {
+        key: 'ACCOUNT_DISABLED',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists."
+      }, {
+        key: 'FB_LOGIN_NOT_A_MEMBER',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: "Sorry, we couldn't find a login linked with your Facebook account. You will need to sign up using Facebook first."
+      }, {
+        key: 'PHONE_NUMBER_ALREADY_REGISTERED_ADMIN',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: "There's already an account registered with this phone number. Use the search field to find the customers account."
+      }, {
+        key: 'EMAIL_ALREADY_REGISTERED_ADMIN',
+        type: 'warning',
+        title: '',
+        persist: true,
+        msg: "There's already an account registered with this email. Use the search field to find the customers account."
+      }, {
+        key: 'WAITLIST_ACCEPTED',
+        type: 'success',
+        title: '',
+        persist: false,
+        msg: "Your booking is now confirmed!"
+      }, {
+        key: 'BOOKING_CANCELLED',
+        type: 'success',
+        title: '',
+        persist: false,
+        msg: "Your booking has been cancelled."
+      }, {
+        key: 'NOT_BOOKABLE_PERSON',
+        type: 'warning',
+        title: '',
+        persist: false,
+        msg: "Sorry, this person does not offer this service, please select another"
+      }, {
+        key: 'NOT_BOOKABLE_RESOURCE',
+        type: 'warning',
+        title: '',
+        persist: false,
+        msg: "Sorry, resource does not offer this service, pelase select another"
+      }
+    ];
+
+    /**
+     * @param {String} msg
+     * @returns {{msg: String}}
+     */
+    createCustomError = function(msg) {
+      return {
+        msg: msg
+      };
+    };
+    getError = function(key) {
+      var error, translate;
+      error = _.findWhere(alerts, {
+        key: key
+      });
+      error.persist = true;
+      translate = SettingsService.isInternationalizatonEnabled();
+      if (error && translate) {
+        return {
+          msg: $translate.instant('ERROR.' + key)
+        };
+      } else if (error && !translate) {
+        return error;
+      } else if (translate) {
+        return {
+          msg: 'GENERIC'
+        };
+      } else {
+        return alerts[0];
+      }
+    };
+    getAlert = function(key) {
+      var alert, translate;
+      alert = _.findWhere(alerts, {
+        key: key
+      });
+      translate = SettingsService.isInternationalizatonEnabled();
+      if (alert && translate) {
+        return {
+          msg: $translate.instant('ALERT.' + key)
+        };
+      } else if (alert && !translate) {
+        return alert;
+      } else {
+        return null;
+      }
+    };
+    return {
+      createCustomError: createCustomError,
+      getAlert: getAlert,
+      getError: getError
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          params.no_cache = true;
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              params.no_cache = false;
+              return resource.$get('events', params).then(function(events) {
+                var event;
+                events = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = events.length; i < len; i++) {
+                    event = events[i];
+                    results.push(new BBModel.Event(event));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(events);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      summary: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          params.summary = true;
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              return deferred.resolve(resource.events);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      queryEventCollection: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('events')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.event_group) {
+              params.event_group_id = params.item.event_group.id;
+            }
+            if (params.item.event_chain) {
+              params.event_chain_id = params.item.event_chain.id;
+            }
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          company.$get('events', params).then((function(_this) {
+            return function(resource) {
+              var collection;
+              collection = new BBModel.BBCollection(resource);
+              return deferred.resolve(collection);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventChainService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_chains')) {
+          deferred.reject("company does not have event_chains");
+        } else {
+          company.$get('event_chains', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('event_chains', params).then(function(event_chains) {
+                var event_chain;
+                event_chains = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_chains.length; i < len; i++) {
+                    event_chain = event_chains[i];
+                    results.push(new BBModel.EventChain(event_chain));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(event_chains);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      },
+      queryEventChainCollection: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_chains')) {
+          deferred.resolve([]);
+        } else {
+          company.$get('event_chains', params).then((function(_this) {
+            return function(resource) {
+              var collection;
+              collection = new BBModel.BBCollection(resource);
+              return deferred.resolve(collection);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventGroupService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_groups')) {
+          deferred.reject("company does not have event_groups");
+        } else {
+          company.$get('event_groups', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('event_groups', params).then(function(event_groups) {
+                var event_group;
+                event_groups = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_groups.length; i < len; i++) {
+                    event_group = event_groups[i];
+                    results.push(new BBModel.EventGroup(event_group));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(event_groups);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("EventSequenceService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('event_sequences')) {
+          deferred.reject("company does not have event_sequences");
+        } else {
+          company.$get('event_sequences', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('event_sequences', params).then(function(event_sequences) {
+                var event_sequence;
+                event_sequences = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = event_sequences.length; i < len; i++) {
+                    event_sequence = event_sequences[i];
+                    results.push(new BBModel.EventSequence(event_sequence));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(event_sequences);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('PathSvc', function($sce, AppConfig) {
+    return {
+      directivePartial: function(fileName) {
+        var partial_url;
+        if (AppConfig.partial_url) {
+          partial_url = AppConfig.partial_url;
+          return $sce.trustAsResourceUrl(partial_url + "/" + fileName + ".html");
+        } else {
+          return $sce.trustAsResourceUrl(fileName + ".html");
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  "use strict";
+  angular.module('BB.Services').factory('FormDataStoreService', function($rootScope, $window, $log, $parse) {
+    var checkForListeners, checkRegisteredWidgets, clear, dataStore, div, getParentScope, init, log, register, registeredWidgetArr, removeWidget, resetValuesOnScope, setIfUndefined, setListeners, setValuesOnScope, showInfo, storeFormData, toId;
+    registeredWidgetArr = [];
+    dataStore = {};
+    toId = 0;
+    div = '___';
+    log = function() {};
+    showInfo = function() {
+      return log(dataStore);
+    };
+    setIfUndefined = function(keyName, val) {
+      var getter, scope;
+      scope = this;
+      getter = $parse(keyName);
+      if (typeof getter(scope) === 'undefined') {
+        return getter.assign(scope, val);
+      }
+    };
+    resetValuesOnScope = function(scope, props) {
+      var i, len, prop, setter;
+      for (i = 0, len = props.length; i < len; i++) {
+        prop = props[i];
+        prop = $parse(prop);
+        setter = prop.assign;
+        setter(scope, null);
+      }
+    };
+    clear = function(scope, keepScopeValues) {
+      var data, key, widgetId;
+      if (!scope) {
+        throw new Error('Missing scope object. Cannot clear form data without scope');
+      }
+      if (_.isString(scope)) {
+        data = dataStore[scope];
+        if (!keepScopeValues) {
+          resetValuesOnScope(data[0], data[1]);
+        }
+        delete dataStore[scope];
+        return;
+      }
+      scope = getParentScope(scope);
+      if (scope && scope.bb) {
+        widgetId = scope.bb.uid;
+        removeWidget(scope);
+        for (key in dataStore) {
+          data = dataStore[key];
+          if (key.indexOf(widgetId) !== -1) {
+            if (data[3]) {
+              _.each(data[3], function(func) {
+                if (_.isFunction(func)) {
+                  return func();
+                }
+              });
+            }
+            if (!keepScopeValues) {
+              resetValuesOnScope(data[0], data[1]);
+            }
+            delete dataStore[key];
+          }
+        }
+      }
+    };
+    storeFormData = function() {
+      var i, key, len, ndata, prop, props, scope, step, val;
+      log('formDataStore ->', dataStore);
+      for (key in dataStore) {
+        step = dataStore[key];
+        log('\t', key);
+        scope = step[0];
+        props = step[1];
+        ndata = step[2];
+        if (!ndata) {
+          ndata = step[2] = {};
+        }
+        for (i = 0, len = props.length; i < len; i++) {
+          prop = props[i];
+          val = ndata[prop];
+          if (val === 'data:destroyed') {
+            ndata[prop] = null;
+          } else {
+            val = angular.copy(scope.$eval(prop));
+            ndata[prop] = val;
+          }
+          log('\t\t', prop, val);
+        }
+        log('\n');
+      }
+    };
+    setValuesOnScope = function(currentPage, scope) {
+      var cpage, storedValues;
+      cpage = dataStore[currentPage];
+      storedValues = cpage[2];
+      log('Decorating scope ->', currentPage, storedValues);
+      if (_.isObject(storedValues)) {
+        _.each(_.keys(storedValues), function(keyName) {
+          var getter;
+          if (typeof storedValues[keyName] !== 'undefined' && storedValues[keyName] !== 'data:destroyed') {
+            getter = $parse(keyName);
+            return getter.assign(scope, storedValues[keyName]);
+          }
+        });
+      }
+      cpage[0] = scope;
+      log(scope);
+      log('\n');
+    };
+    getParentScope = function(scope) {
+      while (scope) {
+        if (scope.hasOwnProperty('cid') && scope.cid === 'BBCtrl') {
+          return scope;
+        }
+        scope = scope.$parent;
+      }
+    };
+    checkRegisteredWidgets = function(scope) {
+      var i, isRegistered, len, rscope;
+      isRegistered = false;
+      scope = getParentScope(scope);
+      for (i = 0, len = registeredWidgetArr.length; i < len; i++) {
+        rscope = registeredWidgetArr[i];
+        if (rscope === scope) {
+          isRegistered = true;
+        }
+      }
+      return isRegistered;
+    };
+    checkForListeners = function(propsArr) {
+      var watchArr;
+      watchArr = [];
+      _.each(propsArr, function(propName, index) {
+        var split;
+        split = propName.split('->');
+        if (split.length === 2) {
+          watchArr.push(split);
+          return propsArr[index] = split[0];
+        }
+      });
+      return watchArr;
+    };
+    setListeners = function(scope, listenerArr, currentPage) {
+      var cpage, listenersArr;
+      if (listenerArr.length) {
+        cpage = dataStore[currentPage];
+        listenersArr = cpage[3] || [];
+        _.each(listenerArr, function(item, index) {
+          var func;
+          func = $rootScope.$on(item[1], function() {
+            var e;
+            try {
+              return cpage[2][item[0]] = 'data:destroyed';
+            } catch (error) {
+              e = error;
+              return log(e);
+            }
+          });
+          return listenersArr.push(func);
+        });
+        return cpage[3] = listenersArr;
+      }
+    };
+    init = function(uid, scope, propsArr) {
+      var currentPage, watchArr;
+      if (checkRegisteredWidgets(scope)) {
+        currentPage = scope.bb.uid + div + scope.bb.current_page + div + uid;
+        currentPage = currentPage.toLowerCase();
+        watchArr = checkForListeners(propsArr);
+        scope.clearStoredData = (function(currentPage) {
+          return function() {
+            clear(currentPage);
+          };
+        })(currentPage);
+        if (!currentPage) {
+          throw new Error("Missing current step");
+        }
+        if (dataStore[currentPage]) {
+          setValuesOnScope(currentPage, scope);
+          return;
+        }
+        log('Controller registered ->', currentPage, scope, '\n\n');
+        dataStore[currentPage] = [scope, propsArr];
+        setListeners(scope, watchArr, currentPage);
+      }
+    };
+    removeWidget = function(scope) {
+      registeredWidgetArr = _.without(registeredWidgetArr, scope);
+    };
+    register = function(scope) {
+      var registered;
+      registered = false;
+      if (scope && scope.$$childHead) {
+        scope = scope.$$childHead;
+      }
+      while (!_.has(scope, 'cid')) {
+        scope = scope.$parent;
+      }
+      if (!scope) {
+        return;
+      }
+      if (scope.cid !== 'BBCtrl') {
+        throw new Error("This directive can only be used with the BBCtrl");
+      }
+      _.each(registeredWidgetArr, function(stored) {
+        if (scope === stored) {
+          return registered = true;
+        }
+      });
+      if (!registered) {
+        log('Scope registered ->', scope);
+        scope.$on('destroy', removeWidget);
+        return registeredWidgetArr.push(scope);
+      }
+    };
+    $rootScope.$watch(function() {
+      $window.clearTimeout(toId);
+      toId = setTimeout(storeFormData, 300);
+    });
+    $rootScope.$on('save:formData', storeFormData);
+    $rootScope.$on('clear:formData', clear);
+    return {
+      init: init,
+      destroy: function(scope) {
+        return clear(scope, true);
+      },
+      showInfo: showInfo,
+      register: register,
+      setIfUndefined: setIfUndefined
+    };
+  });
+
+}).call(this);
+
+
+/*
+* @ngdoc service
+* @module BB.Services
+* @name GeneralOptions
+*
+* @description
+* Returns a set of General configuration options
+ */
+
+
+/*
+* @ngdoc service
+* @module BB.Services
+* @name GeneralOptionsProvider
+*
+* @description
+* Provider
+*
+* @example
+  <example>
+  angular.module('ExampleModule').config ['GeneralOptionsProvider', (GeneralOptionsProvider) ->
+    GeneralOptionsProvider.setOption('twelve_hour_format', true)
+  ]
+  </example>
+ */
+
+(function() {
+  angular.module('BB.Services').provider('GeneralOptions', [
+    function() {
+      var options;
+      options = {
+        twelve_hour_format: false,
+        calendar_minute_step: 10,
+        calendar_min_time: "09:00",
+        calendar_max_time: "18:00",
+        calendar_slot_duration: 5
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('GeolocationService', function($q) {
+    return {
+      haversine: function(position1, position2) {
+        var R, a, c, chLat, chLon, d, dLat, dLon, distance, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
+        pi = Math.PI;
+        R = 6371;
+        distances = [];
+        lat1 = position1.lat;
+        lon1 = position1.long;
+        lat2 = position2.lat;
+        lon2 = position2.long;
+        chLat = lat2 - lat1;
+        chLon = lon2 - lon1;
+        dLat = chLat * (pi / 180);
+        dLon = chLon * (pi / 180);
+        rLat1 = lat1 * (pi / 180);
+        rLat2 = lat2 * (pi / 180);
+        a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
+        c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        d = R * c;
+        d = d * 0.621371192;
+        distance = Math.round(d);
+        return distance;
+      },
+      geocode: function(address, prms) {
+        var deferred, ne, request, sw;
+        if (prms == null) {
+          prms = {};
+        }
+        deferred = $q.defer();
+        request = {
+          address: address
+        };
+        if (prms.region) {
+          request.region = prms.region;
+        }
+        if (prms.componentRestrictions) {
+          request.componentRestrictions = prms.componentRestrictions;
+        }
+        if (prms.bounds) {
+          sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
+          ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
+          request.bounds = new google.maps.LatLngBounds(sw, ne);
+        }
+        new google.maps.Geocoder().geocode(request, function(results, status) {
+          if (results && status === 'OK') {
+            return deferred.resolve({
+              results: results,
+              status: status
+            });
+          } else {
+            return deferred.reject(status);
+          }
+        });
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ItemService", function($q, BBModel, $rootScope) {
+    return {
+      query: function(prms) {
+        var deferred;
+        deferred = $q.defer();
+        if (prms.cItem.service && prms.item !== 'service') {
+          if (!prms.cItem.service.$has('items')) {
+            prms.cItem.service.$get('item').then((function(_this) {
+              return function(base_item) {
+                return _this.buildItems(base_item.$get('items'), prms, deferred);
+              };
+            })(this));
+          } else {
+            this.buildItems(prms.cItem.service.$get('items'), prms, deferred);
+          }
+        } else if (prms.cItem.resource && !prms.cItem.anyResource() && prms.item !== 'resource') {
+          if (!prms.cItem.resource.$has('items')) {
+            prms.cItem.resource.$get('item').then((function(_this) {
+              return function(base_item) {
+                return _this.buildItems(base_item.$get('items'), prms, deferred);
+              };
+            })(this));
+          } else {
+            this.buildItems(prms.cItem.resource.$get('items'), prms, deferred);
+          }
+        } else if (prms.cItem.person && !prms.cItem.anyPerson() && prms.item !== 'person') {
+          if (!prms.cItem.person.$has('items')) {
+            prms.cItem.person.$get('item').then((function(_this) {
+              return function(base_item) {
+                return _this.buildItems(base_item.$get('items'), prms, deferred);
+              };
+            })(this));
+          } else {
+            this.buildItems(prms.cItem.person.$get('items'), prms, deferred);
+          }
+        } else {
+          deferred.reject("No service link found");
+        }
+        return deferred.promise;
+      },
+      buildItems: function(base_items, prms, deferred) {
+        var wait_items;
+        wait_items = [base_items];
+        if (prms.wait) {
+          wait_items.push(prms.wait);
+        }
+        return $q.all(wait_items).then((function(_this) {
+          return function(resources) {
+            var resource;
+            resource = resources[0];
+            return resource.$get('items').then(function(found) {
+              var i, len, m, matching, v, wlist;
+              matching = [];
+              wlist = [];
+              for (i = 0, len = found.length; i < len; i++) {
+                v = found[i];
+                if (v.type === prms.item) {
+                  matching.push(new BBModel.BookableItem(v));
+                }
+              }
+              return $q.all((function() {
+                var j, len1, results;
+                results = [];
+                for (j = 0, len1 = matching.length; j < len1; j++) {
+                  m = matching[j];
+                  results.push(m.ready.promise);
+                }
+                return results;
+              })()).then(function() {
+                return deferred.resolve(matching);
+              });
+            });
+          };
+        })(this));
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ItemDetailsService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred;
+        deferred = $q.defer();
+        if (prms.cItem.service) {
+          if (!prms.cItem.service.$has('questions')) {
+            deferred.resolve(new BBModel.ItemDetails());
+          } else {
+            prms.cItem.service.$get('questions').then((function(_this) {
+              return function(details) {
+                return deferred.resolve(new BBModel.ItemDetails(details));
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+        } else if (prms.cItem.event_chain) {
+          if (!prms.cItem.event_chain.$has('questions')) {
+            deferred.resolve(new BBModel.ItemDetails());
+          } else {
+            prms.cItem.event_chain.$get('questions').then((function(_this) {
+              return function(details) {
+                return deferred.resolve(new BBModel.ItemDetails(details));
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+        } else if (prms.cItem.deal) {
+          if (!prms.cItem.deal.$has('questions')) {
+            deferred.resolve(new BBModel.ItemDetails());
+          } else {
+            prms.cItem.deal.$get('questions').then((function(_this) {
+              return function(details) {
+                return deferred.resolve(new BBModel.ItemDetails(details));
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+        } else {
+          deferred.resolve();
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('LoadingService', function($q, $window, $log, $rootScope, AlertService) {
+    return {
+      $loader: function(scope) {
+        var item, lservice;
+        lservice = this;
+        item = {
+          scope: scope,
+          setLoaded: function() {
+            return lservice.setLoaded(scope);
+          },
+          setLoadedAndShowError: function(err, error_string) {
+            return lservice.setLoadedAndShowError(scope, err, error_string);
+          },
+          notLoaded: function() {
+            lservice.notLoaded(scope);
+            return this;
+          }
+        };
+        return item;
+      },
+      setLoaded: function(cscope) {
+        var loadingFinished;
+        cscope.$emit('hide:loader', cscope);
+        cscope.isLoaded = true;
+        loadingFinished = true;
+        while (cscope) {
+          if (cscope.hasOwnProperty('scopeLoaded')) {
+            if (this.areScopesLoaded(cscope)) {
+              cscope.scopeLoaded = true;
+            } else {
+              loadingFinished = false;
+            }
+          }
+          cscope = cscope.$parent;
+        }
+        if (loadingFinished) {
+          $rootScope.$broadcast('loading:finished');
+        }
+      },
+      setLoadedAndShowError: function(scope, err, error_string) {
+        $log.warn(err, error_string);
+        scope.setLoaded(scope);
+        if (err && err.status === 409) {
+          return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+        } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
+          return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
+        } else {
+          return AlertService.danger(ErrorService.getError('GENERIC'));
+        }
+      },
+      areScopesLoaded: function(cscope) {
+        var child;
+        if (cscope.hasOwnProperty('isLoaded') && !cscope.isLoaded) {
+          return false;
+        } else {
+          child = cscope.$$childHead;
+          while (child) {
+            if (!this.areScopesLoaded(child)) {
+              return false;
+            }
+            child = child.$$nextSibling;
+          }
+          return true;
+        }
+      },
+      notLoaded: function(cscope) {
+        cscope.$emit('show:loader', cscope);
+        cscope.isLoaded = false;
+        while (cscope) {
+          if (cscope.hasOwnProperty('scopeLoaded')) {
+            cscope.scopeLoaded = false;
+          }
+          cscope = cscope.$parent;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('LocaleService', function($window) {
+    var locale;
+    locale = $window.getURIparam('locale');
+    if (locale) {
+      return locale;
+    } else if ($window.navigator.language) {
+      return $window.navigator.language;
+    } else {
+      return "en";
+    }
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage, $localStorage) {
+    return {
+      companyLogin: function(company, params, form) {
+        var deferred;
+        deferred = $q.defer();
+        company.$post('login', params, form).then((function(_this) {
+          return function(login) {
+            return login.$get('member').then(function(member) {
+              _this.setLogin(member);
+              return deferred.resolve(member);
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      login: function(form, options) {
+        var deferred, url;
+        deferred = $q.defer();
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/login";
+        halClient.$post(url, options, form).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('member').then(function(member) {
+              _this.setLogin(member);
+              return deferred.resolve(member);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      FBLogin: function(company, prms) {
+        var deferred;
+        deferred = $q.defer();
+        company.$post('facebook_login', {}, prms).then((function(_this) {
+          return function(login) {
+            return login.$get('member').then(function(member) {
+              member = new BBModel.Member.Member(member);
+              $sessionStorage.setItem("fb_user", true);
+              _this.setLogin(member);
+              return deferred.resolve(member);
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      companyQuery: (function(_this) {
+        return function(id) {
+          var comp_promise;
+          if (id) {
+            comp_promise = halClient.$get(location.protocol + '//' + location.host + '/api/v1/company/' + id);
+            return comp_promise.then(function(company) {
+              return company = new BBModel.Company(company);
+            });
+          }
+        };
+      })(this),
+      memberQuery: (function(_this) {
+        return function(params) {
+          var member_promise;
+          if (params.member_id && params.company_id) {
+            member_promise = halClient.$get(location.protocol + '//' + location.host + ("/api/v1/" + params.company_id + "/") + "members/" + params.member_id);
+            return member_promise.then(function(member) {
+              return member = new BBModel.Member.Member(member);
+            });
+          }
+        };
+      })(this),
+      ssoLogin: function(options, data) {
+        var deferred, url;
+        deferred = $q.defer();
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/login/sso/" + options['company_id'];
+        halClient.$post(url, {}, data).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('member').then(function(member) {
+              member = new BBModel.Member.Member(member);
+              _this.setLogin(member, true);
+              return deferred.resolve(member);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      isLoggedIn: function() {
+        this.checkLogin();
+        return $rootScope.member && (!$rootScope.user || $rootScope.user === void 0);
+      },
+      setLogin: function(member, persist) {
+        var auth_token;
+        auth_token = member.getOption('auth_token');
+        member = new BBModel.Member.Member(member);
+        $sessionStorage.setItem("login", member.$toStore());
+        $sessionStorage.setItem("auth_token", auth_token);
+        $rootScope.member = member;
+        if (persist) {
+          $localStorage.setItem("auth_token", auth_token);
+        }
+        return member;
+      },
+      member: function() {
+        this.checkLogin();
+        return $rootScope.member;
+      },
+      checkLogin: function() {
+        var member;
+        if ($rootScope.member) {
+          return true;
+        }
+        member = $sessionStorage.getItem("login");
+        if (member) {
+          member = halClient.createResource(member);
+          $rootScope.member = new BBModel.Member.Member(member);
+          return true;
+        } else {
+          return false;
+        }
+      },
+      logout: function(options) {
+        var deferred, url;
+        $rootScope.member = null;
+        deferred = $q.defer();
+        options || (options = {});
+        options['root'] || (options['root'] = "");
+        url = options['root'] + "/api/v1/logout";
+        $sessionStorage.clear();
+        $localStorage.clear();
+        halClient.$del(url, options, {}).then((function(_this) {
+          return function(logout) {
+            $sessionStorage.clear();
+            $localStorage.clear();
+            return deferred.resolve(true);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      FBLogout: function(options) {
+        $sessionStorage.removeItem("fb_user");
+        return this.logout(options);
+      },
+      sendPasswordReset: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        company.$post('email_password_reset', {}, params).then((function(_this) {
+          return function() {
+            return deferred.resolve(true);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      updatePassword: function(member, params) {
+        var deferred;
+        params.auth_token = member.getOption('auth_token');
+        if (member && params['new_password'] && params['confirm_new_password']) {
+          deferred = $q.defer();
+          member.$post('update_password', {}, params).then((function(_this) {
+            return function(login) {
+              return login.$get('member').then(function(member) {
+                _this.setLogin(member, params.persist_login);
+                return deferred.resolve(member);
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+          return deferred.promise;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("MembershipLevelsService", function($q, BBModel) {
+    return {
+      getMembershipLevels: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        company.$get("member_levels").then(function(resource) {
+          return resource.$get('membership_levels').then((function(_this) {
+            return function(membership_levels) {
+              var level, levels;
+              levels = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = membership_levels.length; i < len; i++) {
+                  level = membership_levels[i];
+                  results.push(new BBModel.MembershipLevel(level));
+                }
+                return results;
+              })();
+              return deferred.resolve(levels);
+            };
+          })(this));
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('ModalForm', function($modal, $log, Dialog) {
+    var bookForm, editForm, newForm;
+    newForm = function($scope, $modalInstance, company, title, new_rel, post_rel, success, fail) {
+      $scope.loading = true;
+      $scope.title = title;
+      $scope.company = company;
+      if ($scope.company.$has(new_rel)) {
+        $scope.company.$get(new_rel).then(function(schema) {
+          $scope.form = _.reject(schema.form, function(x) {
+            return x.type === 'submit';
+          });
+          $scope.schema = schema.schema;
+          $scope.form_model = {};
+          return $scope.loading = false;
+        });
+      } else {
+        $log.warn("company does not have '" + new_rel + "' rel");
+      }
+      $scope.submit = function(form) {
+        $scope.$broadcast('schemaFormValidate');
+        $scope.loading = true;
+        return $scope.company.$post(post_rel, {}, $scope.form_model).then(function(model) {
+          $scope.loading = false;
+          $modalInstance.close(model);
+          if (success) {
+            return success(model);
+          }
+        }, function(err) {
+          $scope.loading = false;
+          $modalInstance.close(err);
+          $log.error('Failed to create');
+          if (fail) {
+            return fail(err);
+          }
+        });
+      };
+      return $scope.cancel = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return $modalInstance.dismiss('cancel');
+      };
+    };
+    editForm = function($scope, $modalInstance, model, title, success, fail) {
+      $scope.loading = true;
+      $scope.title = title;
+      $scope.model = model;
+      if ($scope.model.$has('edit')) {
+        $scope.model.$get('edit').then(function(schema) {
+          $scope.form = _.reject(schema.form, function(x) {
+            return x.type === 'submit';
+          });
+          $scope.schema = schema.schema;
+          $scope.form_model = $scope.model;
+          return $scope.loading = false;
+        });
+      } else {
+        $log.warn("model does not have 'edit' rel");
+      }
+      $scope.submit = function(form) {
+        $scope.$broadcast('schemaFormValidate');
+        $scope.loading = true;
+        if ($scope.model.$update) {
+          return $scope.model.$update($scope.form_model).then(function() {
+            $scope.loading = false;
+            $modalInstance.close($scope.model);
+            if (success) {
+              return success($scope.model);
+            }
+          }, function(err) {
+            $scope.loading = false;
+            $modalInstance.close(err);
+            $log.error('Failed to create');
+            if (fail) {
+              return fail();
+            }
+          });
+        } else {
+          return $scope.model.$put('self', {}, $scope.form_model).then(function(model) {
+            $scope.loading = false;
+            $modalInstance.close(model);
+            if (success) {
+              return success(model);
+            }
+          }, function(err) {
+            $scope.loading = false;
+            $modalInstance.close(err);
+            $log.error('Failed to create');
+            if (fail) {
+              return fail();
+            }
+          });
+        }
+      };
+      $scope.cancel = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return $modalInstance.dismiss('cancel');
+      };
+      $scope.success = function(response) {
+        event.preventDefault();
+        event.stopPropagation();
+        $modalInstance.close();
+        if (success) {
+          return success(response);
+        }
+      };
+      return $scope.cancelEvent = function(event, type) {
+        if (type == null) {
+          type = 'booking';
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        $modalInstance.close();
+        return Dialog.confirm({
+          model: model,
+          body: "Are you sure you want to cancel this " + type + "?",
+          success: function(model) {
+            return model.$del('self').then(function(response) {
+              if (success) {
+                return success(response);
+              }
+            });
+          }
+        });
+      };
+    };
+    bookForm = function($scope, $modalInstance, model, company, title, success, fail) {
+      $scope.loading = true;
+      $scope.title = title;
+      $scope.model = model;
+      $scope.company = company;
+      if ($scope.model.$has('new_booking')) {
+        $scope.model.$get('new_booking').then(function(schema) {
+          $scope.form = _.reject(schema.form, function(x) {
+            return x.type === 'submit';
+          });
+          $scope.schema = schema.schema;
+          $scope.form_model = {};
+          return $scope.loading = false;
+        });
+      } else {
+        $log.warn("model does not have 'new_booking' rel");
+      }
+      $scope.submit = function(form) {
+        $scope.$broadcast('schemaFormValidate');
+        if (form.$valid) {
+          $scope.loading = true;
+          return $scope.company.$post('bookings', {}, $scope.form_model).then(function(booking) {
+            $scope.loading = false;
+            $modalInstance.close(booking);
+            if (success) {
+              return success(booking);
+            }
+          }, function(err) {
+            $scope.loading = false;
+            $modalInstance.close(err);
+            $log.error('Failed to create');
+            if (fail) {
+              return fail();
+            }
+          });
+        } else {
+          return $log.warn('Invalid form');
+        }
+      };
+      return $scope.cancel = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return $modalInstance.dismiss('cancel');
+      };
+    };
+    return {
+      "new": function(config) {
+        var templateUrl;
+        if (config.templateUrl) {
+          templateUrl = config.templateUrl;
+        }
+        templateUrl || (templateUrl = 'modal_form.html');
+        return $modal.open({
+          templateUrl: templateUrl,
+          controller: newForm,
+          size: config.size,
+          resolve: {
+            company: function() {
+              return config.company;
+            },
+            title: function() {
+              return config.title;
+            },
+            new_rel: function() {
+              return config.new_rel;
+            },
+            post_rel: function() {
+              return config.post_rel;
+            },
+            success: function() {
+              return config.success;
+            },
+            fail: function() {
+              return config.fail;
+            }
+          }
+        });
+      },
+      edit: function(config) {
+        var templateUrl;
+        if (config.templateUrl) {
+          templateUrl = config.templateUrl;
+        }
+        templateUrl || (templateUrl = 'modal_form.html');
+        return $modal.open({
+          templateUrl: templateUrl,
+          controller: editForm,
+          size: config.size,
+          resolve: {
+            model: function() {
+              return config.model;
+            },
+            title: function() {
+              return config.title;
+            },
+            success: function() {
+              return config.success;
+            },
+            fail: function() {
+              return config.fail;
+            }
+          }
+        });
+      },
+      book: function(config) {
+        var templateUrl;
+        if (config.templateUrl) {
+          templateUrl = config.templateUrl;
+        }
+        templateUrl || (templateUrl = 'modal_form.html');
+        return $modal.open({
+          templateUrl: templateUrl,
+          controller: bookForm,
+          size: config.size,
+          resolve: {
+            model: function() {
+              return config.model;
+            },
+            company: function() {
+              return config.company;
+            },
+            title: function() {
+              return config.title;
+            },
+            success: function() {
+              return config.success;
+            },
+            fail: function() {
+              return config.fail;
+            }
+          }
+        });
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("MutexService", function($q, $window, $rootScope) {
+    return {
+      getLock: function(prms) {
+        var iprom, mprom;
+        mprom = $q.defer();
+        iprom = $q.defer();
+        mprom.promise.then(function() {
+          var next_mux;
+          $rootScope.mutexes.shift();
+          if ($rootScope.mutexes.length > 0) {
+            next_mux = $rootScope.mutexes[0];
+            return next_mux.iprom.resolve(next_mux.mprom);
+          }
+        });
+        if (!$rootScope.mutexes || $rootScope.mutexes.length === 0) {
+          $rootScope.mutexes = [
+            {
+              mprom: mprom,
+              iprom: iprom
+            }
+          ];
+          iprom.resolve(mprom);
+          return iprom.promise;
+        } else {
+          $rootScope.mutexes.push({
+            mprom: mprom,
+            iprom: iprom
+          });
+          return iprom.promise;
+        }
+      },
+      unlock: function(mutex) {
+        return mutex.resolve();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PackageItemService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('packages')) {
+          deferred.reject("No packages found");
+        } else {
+          company.$get('packages').then(function(resource) {
+            return resource.$get('packages').then(function(package_items) {
+              var i;
+              return deferred.resolve((function() {
+                var j, len, results;
+                results = [];
+                for (j = 0, len = package_items.length; j < len; j++) {
+                  i = package_items[j];
+                  results.push(new BBModel.PackageItem(i));
+                }
+                return results;
+              })());
+            });
+          }, function(err) {
+            return deferred.reject(err);
+          });
+        }
+        return deferred.promise;
+      },
+      getPackageServices: function(package_item) {
+        var deferred;
+        deferred = $q.defer();
+        if (!package_item.$has('services')) {
+          deferred.reject("No services found");
+        } else {
+          package_item.$get('services').then(function(services) {
+            var s;
+            return deferred.resolve((function() {
+              var j, len, results;
+              results = [];
+              for (j = 0, len = services.length; j < len; j++) {
+                s = services[j];
+                results.push(new BBModel.Service(s));
+              }
+              return results;
+            })());
+          }, (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PaginationService", function() {
+    return {
+      initialise: function(options) {
+        var paginator;
+        if (!options) {
+          return;
+        }
+        paginator = {
+          current_page: 1,
+          page_size: options.page_size,
+          num_pages: null,
+          max_size: options.max_size,
+          num_items: null
+        };
+        return paginator;
+      },
+      update: function(paginator, length) {
+        var end, start, total;
+        if (!paginator || (length == null)) {
+          return;
+        }
+        paginator.num_items = length;
+        start = ((paginator.page_size - 1) * paginator.current_page) - ((paginator.page_size - 1) - paginator.current_page);
+        end = paginator.current_page * paginator.page_size;
+        total = end < paginator.page_size ? end : length;
+        end = end > total ? total : end;
+        total = total >= 100 ? "100+" : total;
+        return paginator.summary = start + " - " + end + " of " + total;
+      },
+      checkItems: function(paginator, items_loaded) {
+        var items_traversed, remaining_items;
+        items_traversed = paginator.page_size * (paginator.current_page - 1);
+        remaining_items = paginator.num_items - items_loaded;
+        return (items_loaded < (items_traversed + paginator.page_size)) && remaining_items > 0;
+      }
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Services:PathHelper
+*
+* @description
+* Helper service for retrieving params from $location.path 
+*
+ */
+
+(function() {
+  angular.module('BB.Services').factory('PathHelper', function($urlMatcherFactory, $location) {
+    return {
+
+      /***
+        * @ngdoc method
+        * @name matchRouteToPath
+        * @methodOf BB.Services:PathHelper
+        * @description
+        * Get the email pattern
+        * @param {string} the route format
+        * @param {string} optional argument specifying the param to return from the path if matched, e.g. 'page'
+        *
+        * @returns {Object} the match object or matched param
+       */
+      matchRouteToPath: function(route_format, param) {
+        var match, match_test, parts, pattern;
+        if (!$location.path() || !route_format) {
+          return false;
+        }
+        parts = route_format.split("/");
+        match = null;
+        while (parts.length > 0 && !match) {
+          match_test = parts.join("/");
+          pattern = $urlMatcherFactory.compile(match_test);
+          match = pattern.exec($location.path());
+          parts.pop();
+        }
+        if (match[param]) {
+          return match[param];
+        } else {
+          return match;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PersonService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('people')) {
+          deferred.reject("No people found");
+        } else {
+          company.$get('people').then((function(_this) {
+            return function(resource) {
+              return resource.$get('people').then(function(items) {
+                var i, j, len, people;
+                people = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  people.push(new BBModel.Person(i));
+                }
+                return deferred.resolve(people);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate, BBModel, $log, $rootScope) {
+    return {
+      getProduct: function(prms) {
+        var deferred, href, uri;
+        deferred = $q.defer();
+        if (prms.id) {
+          href = $rootScope.bb.api_url + "/api/v1/{company_id}/products/{id}";
+          uri = new UriTemplate(href).fillFromObject({
+            company_id: prms.company_id,
+            id: prms.product_id
+          });
+        } else if (prms.sku) {
+          href = $rootScope.bb.api_url + "/api/v1/{company_id}/products/find_by_sku/{sku}";
+          uri = new UriTemplate(href).fillFromObject({
+            company_id: prms.company_id,
+            sku: prms.sku
+          });
+        } else {
+          $log.warn("id or sku is required");
+          deferred.reject();
+        }
+        halClient.$get(uri, {}).then(function(product) {
+          return deferred.resolve(new BBModel.Product(product));
+        }, (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('products')) {
+          deferred.reject("No products found");
+        } else {
+          company.$get('products').then((function(_this) {
+            return function(resource) {
+              return resource.$get('products').then(function(items) {
+                var i, j, len, resources;
+                resources = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  resources.push(new BBModel.Product(i));
+                }
+                return deferred.resolve(resources);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("PurchaseTotalService", function($q, BBModel) {
+    return {
+      query: function(prms) {
+        var deferred;
+        deferred = $q.defer();
+        if (!prms.company.$has('total')) {
+          deferred.reject("No Total link found");
+        } else {
+          prms.company.$get('total', {
+            total_id: prms.total_id
+          }).then((function(_this) {
+            return function(total) {
+              return deferred.resolve(new BBModel.PurchaseTotal(total));
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('QueryStringService', function($window) {
+    return function(keyName) {
+      var hash, hashes, href, i, isNum, len, val, varObj;
+      varObj = {};
+      href = $window.location.href;
+      if (href.indexOf('?') < 0) {
+        return;
+      }
+      hashes = href.slice(href.indexOf('?') + 1).split(/[#&]/);
+      isNum = function(num) {
+        if (num == null) {
+          return;
+        }
+        if (num.substr(0, 1) === '0') {
+          return;
+        }
+        if (/[a-zA-Z\-\_\+\.\#\%\*\,]/.test(num)) {
+          return;
+        }
+        if (window.isNaN(window.parseInt(num, 10))) {
+          return;
+        }
+        return true;
+      };
+      for (i = 0, len = hashes.length; i < len; i++) {
+        hash = hashes[i];
+        hash = hash.split('=');
+        val = hash[1];
+        if (isNum(val)) {
+          val = window.parseInt(val, 10);
+        } else {
+          if (val === 'true') {
+            val = true;
+          } else if (val === 'false') {
+            val = false;
+          } else {
+            val = window.decodeURIComponent(val);
+          }
+        }
+        varObj[hash[0]] = val;
+      }
+      if (keyName) {
+        return varObj[keyName];
+      }
+      return varObj;
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BB.Services').factory('QuestionService', function($window, QueryStringService, $bbug) {
+    var addAnswersById, addAnswersByName, addAnswersFromDefaults, addDynamicAnswersByName, checkConditionalQuestions, convertDates, convertToSnakeCase, defaults, findByQuestionId, storeDefaults;
+    defaults = QueryStringService() || {};
+    convertDates = function(obj) {
+      return _.each(obj, function(val, key) {
+        var date;
+        date = $window.moment(obj[key]);
+        if (_.isString(obj[key]) && date.isValid()) {
+          return obj[key] = date;
+        }
+      });
+    };
+    if ($window.bb_setup) {
+      convertDates($window.bb_setup);
+      angular.extend(defaults, $window.bb_setup);
+    }
+    addAnswersById = function(questions) {
+      if (!questions) {
+        return;
+      }
+      if (angular.isArray(questions)) {
+        return _.each(questions, function(question) {
+          var id;
+          id = question.id + '';
+          if (!question.answer && defaults[id]) {
+            return question.answer = defaults[id];
+          }
+        });
+      } else {
+        if (defaults[questions.id + '']) {
+          return questions.answer = defaults[questions.id + ''];
+        }
+      }
+    };
+    convertToSnakeCase = function(str) {
+      str = str.toLowerCase();
+      str = $.trim(str);
+      str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
+      str = str.replace(/\s{2,}/g, ' ');
+      str = str.replace(/\s/g, '_');
+      return str;
+    };
+    addDynamicAnswersByName = function(questions) {
+      var keys;
+      if (angular.isArray(questions)) {
+        keys = _.keys(defaults);
+        return _.each(questions, function(question) {
+          var name;
+          name = convertToSnakeCase(question.name);
+          return _.each(keys, function(key) {
+            if (name.indexOf("_" + key) >= 0 || name.indexOf("_" + key + "_") >= 0 || name.indexOf(key + "_") >= 0) {
+              if (defaults[key] && !question.answer) {
+                question.answer = defaults[key];
+                delete defaults[key];
+              }
+            }
+          });
+        });
+      }
+    };
+    addAnswersByName = function(obj, keys) {
+      var i, key, len, type;
+      type = Object.prototype.toString.call(obj).slice(8, -1);
+      if (type === 'Object' && angular.isArray(keys)) {
+        for (i = 0, len = keys.length; i < len; i++) {
+          key = keys[i];
+          if (defaults[key] && !obj[key]) {
+            obj[key] = defaults[key];
+            delete defaults[key];
+          }
+        }
+      }
+    };
+    addAnswersFromDefaults = function(questions, defaultAnswers) {
+      var helpTextName, i, len, question, results, snakeCaseName;
+      results = [];
+      for (i = 0, len = questions.length; i < len; i++) {
+        question = questions[i];
+        helpTextName = question.help_text;
+        snakeCaseName = convertToSnakeCase(question.name);
+        if (defaultAnswers[question.id + '']) {
+          results.push(question.answer = defaultAnswers[question.id + '']);
+        } else if (defaultAnswers[helpTextName]) {
+          results.push(question.answer = defaultAnswers[helpTextName]);
+        } else if (defaultAnswers[snakeCaseName]) {
+          results.push(question.answer = defaultAnswers[snakeCaseName]);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+    storeDefaults = function(obj) {
+      return angular.extend(defaults, obj.bb_setup || {});
+    };
+    checkConditionalQuestions = function(questions) {
+      var a, ans, cond, found, i, len, q, ref, results, v;
+      results = [];
+      for (i = 0, len = questions.length; i < len; i++) {
+        q = questions[i];
+        if (q.settings && q.settings.conditional_question) {
+          cond = findByQuestionId(questions, parseInt(q.settings.conditional_question));
+          if (cond) {
+            ans = cond.getAnswerId();
+            found = false;
+            if ($bbug.isEmptyObject(q.settings.conditional_answers) && cond.detail_type === "check" && !cond.answer) {
+              found = true;
+            }
+            ref = q.settings.conditional_answers;
+            for (a in ref) {
+              v = ref[a];
+              if (a[0] === 'c' && parseInt(v) === 1 && cond.answer) {
+                found = true;
+              } else if (parseInt(a) === ans && parseInt(v) === 1) {
+                found = true;
+              }
+            }
+            if (found) {
+              results.push(q.showElement());
+            } else {
+              results.push(q.hideElement());
+            }
+          } else {
+            results.push(void 0);
+          }
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+    findByQuestionId = function(questions, qid) {
+      var i, len, q;
+      for (i = 0, len = questions.length; i < len; i++) {
+        q = questions[i];
+        if (q.id === qid) {
+          return q;
+        }
+      }
+      return null;
+    };
+    return {
+      getStoredData: function() {
+        return defaults;
+      },
+      storeDefaults: storeDefaults,
+      addAnswersById: addAnswersById,
+      addAnswersByName: addAnswersByName,
+      addDynamicAnswersByName: addDynamicAnswersByName,
+      addAnswersFromDefaults: addAnswersFromDefaults,
+      convertToSnakeCase: convertToSnakeCase,
+      checkConditionalQuestions: checkConditionalQuestions
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ReasonService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('reasons')) {
+          deferred.reject("Reasons not turned on for this Company.");
+        } else {
+          company.$get('reasons').then((function(_this) {
+            return function(resource) {
+              return resource.$get('reasons').then(function(items) {
+                var i, j, len, reason, reasons;
+                reasons = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  reason = new BBModel.Reason(i);
+                  reasons.push(reason);
+                }
+                return deferred.resolve(reasons);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module("BB.Services").factory("RecaptchaService", function($q, halClient, UriTemplate) {
+    return {
+      validateResponse: function(params) {
+        var deferred, href, prms, uri;
+        deferred = $q.defer();
+        href = params.api_url + "/api/v1/recaptcha";
+        uri = new UriTemplate(href);
+        prms = {};
+        prms.response = params.response;
+        halClient.$post(uri, {}, prms).then(function(response) {
+          return deferred.resolve(response);
+        }, function(err) {
+          return deferred.reject(err);
+        });
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ResourceService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('resources')) {
+          deferred.reject("No resource found");
+        } else {
+          company.$get('resources').then((function(_this) {
+            return function(resource) {
+              return resource.$get('resources').then(function(items) {
+                var i, j, len, resources;
+                resources = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  resources.push(new BBModel.Resource(i));
+                }
+                return deferred.resolve(resources);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("ServiceService", function($q, BBModel) {
+    return {
+      query: function(company) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('services')) {
+          deferred.reject("No services found");
+        } else {
+          company.$get('services').then((function(_this) {
+            return function(resource) {
+              return resource.$get('services').then(function(items) {
+                var i, j, len, services;
+                services = [];
+                for (j = 0, len = items.length; j < len; j++) {
+                  i = items[j];
+                  services.push(new BBModel.Service(i));
+                }
+                return deferred.resolve(services);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('SettingsService', function($modalStack) {
+    var company_time_zone, country_code, currency, display_time_zone, i18n, scroll_offset, use_local_time_zone;
+    i18n = false;
+    scroll_offset = 0;
+    country_code = null;
+    use_local_time_zone = false;
+    currency = null;
+    company_time_zone = null;
+    display_time_zone = null;
+    return {
+      update_document_title: false,
+      enableInternationalizaton: function() {
+        return i18n = true;
+      },
+      isInternationalizatonEnabled: function() {
+        return i18n;
+      },
+      setScrollOffset: function(value) {
+        return scroll_offset = parseInt(value);
+      },
+      getScrollOffset: function() {
+        return scroll_offset;
+      },
+      setCountryCode: function(value) {
+        country_code = value;
+        if (country_code && country_code.match(/^(gb|au)$/)) {
+          return moment.locale('en-' + country_code);
+        }
+      },
+      getCountryCode: function() {
+        return country_code;
+      },
+      setUseLocalTimeZone: function(value) {
+        use_local_time_zone = value;
+        return display_time_zone = moment.tz.guess();
+      },
+      getUseLocalTimeZone: function() {
+        return use_local_time_zone;
+      },
+      setCurrency: function(value) {
+        return currency = value;
+      },
+      getCurrency: function() {
+        return currency;
+      },
+      setTimeZone: function(value) {
+        return company_time_zone = value;
+      },
+      getTimeZone: function() {
+        return company_time_zone;
+      },
+      setDisplayTimeZone: function(value) {
+        return display_time_zone = value;
+      },
+      getDisplayTimeZone: function() {
+        if (display_time_zone) {
+          return display_time_zone;
+        } else {
+          return company_time_zone;
+        }
+      },
+      isModalOpen: function() {
+        return !!$modalStack.getTop();
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("SlotService", function($q, BBModel) {
+    return {
+      query: function(company, params) {
+        var deferred;
+        deferred = $q.defer();
+        if (!company.$has('slots')) {
+          deferred.resolve([]);
+        } else {
+          if (params.item) {
+            if (params.item.resource) {
+              params.resource_id = params.item.resource.id;
+            }
+            if (params.item.person) {
+              params.person_id = params.item.person.id;
+            }
+          }
+          company.$get('slots', params).then((function(_this) {
+            return function(resource) {
+              return resource.$get('slots', params).then(function(slots) {
+                var slot;
+                slots = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = slots.length; i < len; i++) {
+                    slot = slots[i];
+                    results.push(new BBModel.Slot(slot));
+                  }
+                  return results;
+                })();
+                return deferred.resolve(slots);
+              });
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BB.Services.service:SlotDates
+  *
+  * @description
+  * checks for the first date with available spaces
+   */
+  angular.module('BB.Services').factory('SlotDates', [
+    '$q', 'DayService', function($q, DayService) {
+      var cached, getFirstDayWithSlots;
+      cached = {
+        firstSlotDate: null,
+        timesQueried: 0
+      };
+      getFirstDayWithSlots = function(cItem, selected_day) {
+        var deferred, endDate;
+        deferred = $q.defer();
+        if (cached.firstSlotDate != null) {
+          deferred.resolve(cached.firstSlotDate);
+          return deferred.promise;
+        }
+        endDate = selected_day.clone().add(3, 'month');
+        DayService.query({
+          cItem: cItem,
+          date: selected_day.format('YYYY-MM-DD'),
+          edate: endDate.format('YYYY-MM-DD')
+        }).then(function(days) {
+          var firstAvailableSlots;
+          cached.timesQueried++;
+          firstAvailableSlots = _.find(days, function(day) {
+            return day.spaces > 0;
+          });
+          if (firstAvailableSlots) {
+            cached.firstSlotDate = firstAvailableSlots.date;
+            return deferred.resolve(cached.firstSlotDate);
+          } else {
+            if (cached.timesQueried <= 4) {
+              return getFirstDayWithSlots(cItem, endDate).then(function(day) {
+                return deferred.resolve(cached.firstSlotDate);
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            } else {
+              return deferred.reject(new Error('ERROR.NO_SLOT_AVAILABLE'));
+            }
+          }
+        }, function(err) {
+          return deferred.reject(new Error('ERROR.COULDNT_GET_AVAILABLE_DATES'));
+        });
+        return deferred.promise;
+      };
+      return {
+        getFirstDayWithSlots: getFirstDayWithSlots
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').config(function($provide) {
+    return $provide.decorator('$sniffer', function($delegate) {
+      var regexp, result, webkit_version;
+      regexp = /Safari\/([\d.]+)/;
+      result = regexp.exec(navigator.userAgent);
+      webkit_version = result ? parseFloat(result[1]) : null;
+      _.extend($delegate, {
+        webkit: webkit_version
+      });
+      return $delegate;
+    });
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("SpaceService", [
+    '$q', function($q, BBModel) {
+      return {
+        query: function(company) {
+          var deferred;
+          deferred = $q.defer();
+          if (!company.$has('spaces')) {
+            deferred.reject("No spaces found");
+          } else {
+            company.$get('spaces').then((function(_this) {
+              return function(resource) {
+                return resource.$get('spaces').then(function(items) {
+                  var i, j, len, spaces;
+                  spaces = [];
+                  for (j = 0, len = items.length; j < len; j++) {
+                    i = items[j];
+                    spaces.push(new BBModel.Space(i));
+                  }
+                  return deferred.resolve(spaces);
+                });
+              };
+            })(this), (function(_this) {
+              return function(err) {
+                return deferred.reject(err);
+              };
+            })(this));
+          }
+          return deferred.promise;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("SSOService", function($q, $rootScope, halClient, LoginService) {
+    return {
+      memberLogin: function(options) {
+        var data, deferred, url;
+        deferred = $q.defer();
+        options.root || (options.root = "");
+        url = options.root + "/api/v1/login/sso/" + options.company_id;
+        data = {
+          token: options.member_sso
+        };
+        halClient.$post(url, {}, data).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('member').then(function(member) {
+              member = LoginService.setLogin(member);
+              return deferred.resolve(member);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      },
+      adminLogin: function(options) {
+        var data, deferred, url;
+        deferred = $q.defer();
+        options.root || (options.root = "");
+        url = options.root + "/api/v1/login/admin_sso/" + options.company_id;
+        data = {
+          token: options.admin_sso
+        };
+        halClient.$post(url, {}, data).then((function(_this) {
+          return function(login) {
+            var params;
+            params = {
+              auth_token: login.auth_token
+            };
+            return login.$get('administrator').then(function(admin) {
+              return deferred.resolve(admin);
+            });
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("TemplateSvc", function($q, $http, $templateCache, BBModel) {
+    return {
+      get: function(path) {
+        var cacheTmpl, deferred;
+        deferred = $q.defer();
+        cacheTmpl = $templateCache.get(path);
+        if (cacheTmpl) {
+          deferred.resolve(angular.element(cacheTmpl));
+        } else {
+          $http({
+            method: 'GET',
+            url: path
+          }).success(function(tmpl, status) {
+            $templateCache.put(path, tmpl);
+            return deferred.resolve(angular.element(tmpl));
+          }).error(function(data, status) {
+            return deferred.reject(data);
+          });
+        }
+        return deferred.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient, SettingsService, DateTimeUtilitiesService) {
+    return {
+      query: function(prms) {
+        var company_utc_offset, deferred, display_utc_offset, end_date, extra, item_link, start_date;
+        deferred = $q.defer();
+        start_date = null;
+        end_date = null;
+        if (prms.date) {
+          prms.start_date = prms.date;
+        } else if (prms.cItem.date) {
+          prms.start_date = prms.cItem.date.date;
+        } else {
+          deferred.reject("No date set");
+          return deferred.promise;
+        }
+        start_date = prms.start_date;
+        if (prms.end_date) {
+          end_date = prms.end_date;
+        }
+        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
+          display_utc_offset = moment().tz(SettingsService.getDisplayTimeZone()).utcOffset();
+          company_utc_offset = moment().tz(SettingsService.getTimeZone()).utcOffset();
+          if (company_utc_offset < display_utc_offset) {
+            start_date = prms.start_date.clone().subtract(1, 'day');
+          } else if (company_utc_offset > display_utc_offset && prms.end_date) {
+            end_date = prms.end_date.clone().add(1, 'day');
+          }
+          prms.time_zone = SettingsService.getDisplayTimeZone();
+        }
+        if (prms.duration == null) {
+          if (prms.cItem && prms.cItem.duration) {
+            prms.duration = prms.cItem.duration;
+          }
+        }
+        item_link = prms.item_link;
+        if (prms.cItem && prms.cItem.days_link && !item_link) {
+          item_link = prms.cItem.days_link;
+        }
+        if (item_link) {
+          extra = {
+            date: start_date.toISODate()
+          };
+          if (prms.location) {
+            extra.location = prms.location;
+          }
+          if (prms.cItem.event_id) {
+            extra.event_id = prms.cItem.event_id;
+          }
+          if (prms.cItem.person && !prms.cItem.anyPerson() && !item_link.event_id && !extra.event_id) {
+            extra.person_id = prms.cItem.person.id;
+          }
+          if (prms.cItem.resource && !prms.cItem.anyResource() && !item_link.event_id && !extra.event_id) {
+            extra.resource_id = prms.cItem.resource.id;
+          }
+          if (end_date) {
+            extra.end_date = end_date.toISODate();
+          }
+          extra.duration = prms.duration;
+          extra.resource_ids = prms.resource_ids;
+          extra.num_resources = prms.num_resources;
+          if (prms.time_zone) {
+            extra.time_zone = prms.time_zone;
+          }
+          if (prms.cItem.id) {
+            extra.ignore_booking = prms.cItem.id;
+          }
+          if (extra.event_id) {
+            item_link = prms.company;
+          }
+          item_link.$get('times', extra).then((function(_this) {
+            return function(results) {
+              var times;
+              if (results.$has('date_links')) {
+                return results.$get('date_links').then(function(all_days) {
+                  var all_days_def, date_times, day, fn, j, len;
+                  date_times = {};
+                  all_days_def = [];
+                  fn = function(day) {
+                    var times;
+                    day.elink = $q.defer();
+                    all_days_def.push(day.elink.promise);
+                    if (day.$has('event_links')) {
+                      return day.$get('event_links').then(function(all_events) {
+                        var times;
+                        times = _this.merge_times(all_events, prms.cItem.service, prms.cItem, day.date);
+                        if (prms.available) {
+                          times = _.filter(times, function(t) {
+                            return t.avail >= prms.available;
+                          });
+                        }
+                        return day.elink.resolve(times);
+                      });
+                    } else if (day.times) {
+                      times = _this.merge_times([day], prms.cItem.service, prms.cItem, day.date);
+                      if (prms.available) {
+                        times = _.filter(times, function(t) {
+                          return t.avail >= prms.available;
+                        });
+                      }
+                      return day.elink.resolve(times);
+                    }
+                  };
+                  for (j = 0, len = all_days.length; j < len; j++) {
+                    day = all_days[j];
+                    fn(day);
+                  }
+                  return $q.all(all_days_def).then(function(times) {
+                    var d, key, new_date_times;
+                    date_times = _.chain(times).flatten().sortBy(function(slot) {
+                      return slot.datetime.unix();
+                    }).groupBy(function(slot) {
+                      return slot.datetime.toISODate();
+                    }).value();
+                    new_date_times = {};
+                    d = prms.start_date.clone();
+                    while (d <= prms.end_date) {
+                      key = d.toISODate();
+                      new_date_times[key] = date_times[key] ? date_times[key] : [];
+                      d = d.clone().add(1, 'day');
+                    }
+                    return deferred.resolve(new_date_times);
+                  });
+                });
+              } else if (results.$has('event_links')) {
+                return results.$get('event_links').then(function(all_events) {
+                  var times;
+                  times = _this.merge_times(all_events, prms.cItem.service, prms.cItem, prms.start_date);
+                  if (prms.available) {
+                    times = _.filter(times, function(t) {
+                      return t.avail >= prms.available;
+                    });
+                  }
+                  return deferred.resolve(times);
+                });
+              } else if (results.times) {
+                times = _this.merge_times([results], prms.cItem.service, prms.cItem, prms.start_date);
+                if (prms.available) {
+                  times = _.filter(times, function(t) {
+                    return t.avail >= prms.available;
+                  });
+                }
+                return deferred.resolve(times);
+              }
+            };
+          })(this), function(err) {
+            return deferred.reject(err);
+          });
+        } else {
+          deferred.reject("No day data");
+        }
+        return deferred.promise;
+      },
+      queryItems: function(prms) {
+        var defer, item, j, len, pslots, ref;
+        defer = $q.defer();
+        pslots = [];
+        ref = prms.items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          pslots.push(this.query({
+            company: prms.company,
+            cItem: item,
+            date: prms.start_date,
+            end_date: prms.end_date,
+            client: prms.client,
+            available: 1
+          }));
+        }
+        $q.all(pslots).then(function(res) {
+          return defer.resolve(res);
+        }, function(err) {
+          return defer.reject();
+        });
+        return defer.promise;
+      },
+      merge_times: function(all_events, service, item, date) {
+        var date_times, ev, i, j, k, l, len, len1, len2, ref, sorted_times, times;
+        if (!all_events || all_events.length === 0) {
+          return [];
+        }
+        all_events = _.shuffle(all_events);
+        sorted_times = [];
+        for (j = 0, len = all_events.length; j < len; j++) {
+          ev = all_events[j];
+          if (ev.times) {
+            ref = ev.times;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              i = ref[k];
+              if (!sorted_times[i.time] || sorted_times[i.time].avail === 0 || (Math.floor(Math.random() * all_events.length) === 0 && i.avail > 0)) {
+                i.event_id = ev.event_id;
+                sorted_times[i.time] = i;
+              }
+            }
+            if (item.held) {
+              this.checkCurrentItem(item.held, sorted_times, ev);
+            }
+            this.checkCurrentItem(item, sorted_times, ev);
+          }
+        }
+        times = [];
+        date_times = {};
+        for (l = 0, len2 = sorted_times.length; l < len2; l++) {
+          i = sorted_times[l];
+          if (i) {
+            if (!i.datetime) {
+              i.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(moment(date), i);
+            }
+            times.push(new BBModel.TimeSlot(i, service));
+          }
+        }
+        return times;
+      },
+      checkCurrentItem: function(item, sorted_times, ev) {
+        if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
+          item.time.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(item.date.date, item.time);
+          sorted_times[item.time.time] = item.time;
+          return halClient.clearCache(ev.$href("self"));
+        } else if (item && item.id && item.event_id === ev.event_id && item.time && sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
+          return sorted_times[item.time.time].avail = 1;
+        }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory('TimeSlotService', function($q, BBModel) {
+    return {
+      query: function(params) {
+        var company, defer;
+        defer = $q.defer();
+        company = params.company;
+        company.$get('slots', params).then(function(collection) {
+          return collection.$get('slots').then(function(slots) {
+            var s;
+            slots = (function() {
+              var i, len, results;
+              results = [];
+              for (i = 0, len = slots.length; i < len; i++) {
+                s = slots[i];
+                results.push(new BBModel.TimeSlot(s));
+              }
+              return results;
+            })();
+            return defer.resolve(slots);
+          }, function(err) {
+            return defer.reject(err);
+          });
+        }, function(err) {
+          return defer.reject(err);
+        });
+        return defer.promise;
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB.Services').factory("UnwrapService", function($q, BBModel) {
+    return {
+      unwrapCollection: function(model, key, resource) {
+        var deferred, models, service;
+        deferred = $q.defer();
+        if (angular.isArray(resource)) {
+          models = (function() {
+            var j, len, results;
+            results = [];
+            for (j = 0, len = resource.length; j < len; j++) {
+              service = resource[j];
+              results.push(new model(service));
+            }
+            return results;
+          })();
+          deferred.resolve(models);
+        } else if (resource.$has(key)) {
+          resource.$get(key).then((function(_this) {
+            return function(items) {
+              var i, j, len;
+              models = [];
+              for (j = 0, len = items.length; j < len; j++) {
+                i = items[j];
+                models.push(new model(i));
+              }
+              return deferred.resolve(models);
+            };
+          })(this), (function(_this) {
+            return function(err) {
+              return deferred.reject(err);
+            };
+          })(this));
+        } else {
+          deferred.reject();
+        }
+        return deferred.promise;
+      },
+      unwrapResource: function(model, resource) {
+        return new model(resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Address, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Person, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Person, 'people', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Resource, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Resource, 'resources', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Service, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Service, 'services', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.package_item", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.PackageItem, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.package_items", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.PackageItem, 'package_items', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.bulk_purchase", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.BulkPurchase, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.bulk_purchases", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.BulkPurchase, 'bulk_purchases', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.EventGroup, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.EventGroup, 'event_groups', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.EventChain, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.EventChain, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Category, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Category, 'categories', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Client, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Client, 'clients', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Client, 'clients', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Question, 'questions', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Question, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel, UnwrapService) {
+    return {
+      promise: false,
+      unwrap: function(items) {
+        var answers, i, j, len, models;
+        models = [];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
+          models.push(new BBModel.Answer(i));
+        }
+        answers = {
+          answers: models,
+          getAnswer: function(question) {
+            var a, k, len1, ref;
+            ref = this.answers;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              a = ref[k];
+              if (a.question_text === question || a.question_id === question) {
+                return a.value;
+              }
+            }
+          }
+        };
+        return answers;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(items) {
+        var i, j, len, results;
+        results = [];
+        for (j = 0, len = items.length; j < len; j++) {
+          i = items[j];
+          results.push(new BBModel.Admin.User(i));
+        }
+        return results;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Company, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Company, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.BusinessQuestion, 'company_questions', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.BusinessQuestion, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Image, 'images', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Member.Booking, 'bookings', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Member.Wallet, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.Product, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        var deferred;
+        deferred = $q.defer();
+        resource.$get('products').then((function(_this) {
+          return function(items) {
+            var cat, i, index, j, len, models;
+            models = [];
+            for (index = j = 0, len = items.length; j < len; index = ++j) {
+              i = items[index];
+              cat = new BBModel.Product(i);
+              cat.order || (cat.order = index);
+              models.push(cat);
+            }
+            return deferred.resolve(models);
+          };
+        })(this), (function(_this) {
+          return function(err) {
+            return deferred.reject(err);
+          };
+        })(this));
+        return deferred.promise;
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.PrePaidBooking, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.PrePaidBooking, 'pre_paid_bookings', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.external_purchase", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.ExternalPurchase, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.external_purchases", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.ExternalPurchase, 'external_purchases', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.purchase_item", function($q, BBModel, UnwrapService) {
+    return {
+      unwrap: function(resource) {
+        return UnwrapService.unwrapResource(BBModel.PurchaseItem, resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.purchase_items", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.events", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Event, 'events', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.all_children", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Service, 'services', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.child_services", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.Service, 'child_services', resource);
+      }
+    };
+  });
+
+  angular.module('BB.Services').factory("BB.Service.booking_text", function($q, BBModel, UnwrapService) {
+    return {
+      promise: true,
+      unwrap: function(resource) {
+        return UnwrapService.unwrapCollection(BBModel.BookingText, 'booking_text', resource);
+      }
+    };
+  });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB.Services:Validator
+*
+* @description
+* Representation of an Validator Object
+*
+* @property {string} uk_postcode_regex The UK postcode regex
+* @property {string} uk_postcode_regex_lenient The UK postcode regex (lenient)
+* @property {string} number_only_regex The number only regex
+* @property {integer} uk_mobile_regex_strict The UK mobile regex (strict)
+* @property {integer} mobile_regex_lenient Mobile number regex (lenient)
+* @property {integer} uk_landline_regex_strict The UK landline regex (strict)
+* @property {integer} uk_landline_regex_lenient The UK landline regex (lenient)
+* @property {integer} international_number The international number
+* @property {string} alphanumeric The alphanumeric
+* @property {string} alpha The letters and spaces
+* @property {integer} us_phone_number The Us phone number
+ */
+
+(function() {
+  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, SettingsService, BBModel, $q, $bbug) {
+    var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, standard_password, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient, us_postcode_regex;
+    uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
+    us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
+    uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
+    number_only_regex = /^\d+$/;
+    uk_mobile_regex_strict = /^((\+44|0)\s*7\s*([45789]\s*\d\s*\d|6\s*2\s*4)\s*\d\s*\d\s*\d\s*\d\s*\d\s*\d)$/;
+    mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
+    uk_landline_regex_strict = /^(\+44|0)\s*[1-9]\s*\d{1,4}\s*\d{3,4}\s*\d{2,4}$/;
+    uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
+    international_number = /^(\+)([\d \(\)]{9,19})$/;
+    email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
+    standard_password = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    alphanumeric = /^[a-zA-Z0-9]*$/;
+    geocode_result = null;
+    return {
+      alpha: /^[a-zA-Z\s-]*$/,
+      us_phone_number: /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/,
+
+      /***
+        * @ngdoc method
+        * @name getEmailPattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the email pattern
+        *
+        * @returns {string} The returned the email pattern
+       */
+      getEmailPattern: function() {
+        return email_regex;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getStandardPassword
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the email pattern
+        *
+        * @returns {string} Returns Password must contain at least 7 characters and 1 number password pattern
+       */
+      getStandardPassword: function() {
+        return standard_password;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getUKPostcodePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK postcode pattern
+        *
+        * @returns {string} The returned the UK postcode regex lenient
+       */
+
+      /***
+        * @ngdoc method
+        * @name getUKPostcodePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK postcode patternt
+        *
+        * @returns {integer} Return the UK postcode pattern
+       */
+      getUKPostcodePattern: function() {
+        return uk_postcode_regex_lenient;
+      },
+      getMailingPattern: function() {
+        var cc;
+        cc = SettingsService.getCountryCode();
+        if (cc = "us") {
+          return us_postcode_regex;
+        } else {
+          return uk_postcode_regex_lenient;
+        }
+      },
+
+      /***
+        * @ngdoc method
+        * @name getNumberOnlyPattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the number only pattern
+        *
+        * @returns {integer} Return the number only regex
+       */
+      getNumberOnlyPattern: function() {
+        return number_only_regex;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getAlphaNumbericPattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the alphanumeric pattern
+        *
+        * @returns {string} The returned the alphanumeric regex
+       */
+      getAlphaNumbericPattern: function() {
+        return alphanumeric;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getUKMobilePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK mobile pattern if strict is equals with false
+        *
+        * @returns {integer} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
+       */
+      getUKMobilePattern: function(strict) {
+        if (strict == null) {
+          strict = false;
+        }
+        if (strict) {
+          return uk_mobile_regex_strict;
+        }
+        return mobile_regex_lenient;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getMobilePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the mobile pattern
+        *
+        * @returns {integer} The returned the mobile regex lenient
+       */
+      getMobilePattern: function() {
+        return mobile_regex_lenient;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getUKLandlinePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the UK landline patternt if strict is equals with false
+        *
+        * @returns {integer} The returned the UK landline regex strict if this is strict else return UK landline regex lenient
+       */
+      getUKLandlinePattern: function(strict) {
+        if (strict == null) {
+          strict = false;
+        }
+        if (strict) {
+          return uk_landline_regex_strict;
+        }
+        return uk_landline_regex_lenient;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getIntPhonePattern
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the international number
+        *
+        * @returns {integer} The returned the international number
+       */
+      getIntPhonePattern: function() {
+        return international_number;
+      },
+
+      /***
+        * @ngdoc method
+        * @name getGeocodeResult
+        * @methodOf BB.Services:Validator
+        * @description
+        * Get the geocode result
+        *
+        * @returns {string} The returned geocode result
+       */
+      getGeocodeResult: function() {
+        if (geocode_result) {
+          return geocode_result;
+        }
+      },
+
+      /***
+        * @ngdoc method
+        * @name validatePostcode
+        * @methodOf BB.Services:Validator
+        * @description
+        * Validate the postcode in according with form and prm parameters
+        *
+        * @returns {promise} A promise for valid postocde
+       */
+      validatePostcode: function(form, prms) {
+        var deferred, geocoder, ne, postcode, req, sw;
+        AlertService.clear();
+        if (!form || !form.postcode) {
+          return false;
+        }
+        if (form.$error.required) {
+          AlertService.raise('MISSING_POSTCODE');
+          return false;
+        } else if (form.$error.pattern) {
+          AlertService.raise('INVALID_POSTCODE');
+          return false;
+        } else {
+          deferred = $q.defer();
+          postcode = form.postcode.$viewValue;
+          req = {
+            address: postcode
+          };
+          if (prms.region) {
+            req.region = prms.region;
+          }
+          req.componentRestrictions = {
+            'postalCode': req.address
+          };
+          if (prms.bounds) {
+            sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
+            ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
+            req.bounds = new google.maps.LatLngBounds(sw, ne);
+          }
+          geocoder = new google.maps.Geocoder();
+          geocoder.geocode(req, function(results, status) {
+            if (results.length === 1 && status === 'OK') {
+              geocode_result = results[0];
+              return deferred.resolve(true);
+            } else {
+              AlertService.raise('INVALID_POSTCODE');
+              $rootScope.$apply();
+              return deferred.reject(false);
+            }
+          });
+          return deferred.promise;
+        }
+      },
+
+      /***
+        * @ngdoc method
+        * @name validateForm
+        * @methodOf BB.Services:Validator
+        * @description
+        * Validate the form in according with form parameter
+        *
+        * @returns {boolean} Checks if this is valid or not
+       */
+      validateForm: function(form) {
+        if (!form) {
+          return false;
+        }
+        form.submitted = true;
+        $rootScope.$broadcast("form:validated", form);
+        if (form.$invalid && form.raise_alerts && form.alert) {
+          AlertService.danger(form.alert);
+          return false;
+        } else if (form.$invalid && form.raise_alerts) {
+          AlertService.danger(ErrorService.getError('FORM_INVALID'));
+          return false;
+        } else if (form.$invalid) {
+          return false;
+        } else {
+          return true;
+        }
+      }
+
+      /***
+       * @ngdoc method
+       * @name resetForm
+       * @methodOf BB.Services:Validator
+       * @description
+       * Reset the form in according with form parameter
+       *
+       * @returns {boolean} Checks if this is reset or not
+       */
+    };
+  });
+
+  ({
+    resetForm: function(form) {
+      if (form) {
+        form.submitted = false;
+        return form.$setPristine();
+      }
+    },
+
+    /***
+      * @ngdoc method
+      * @name resetForms
+      * @methodOf BB.Services:Validator
+      * @description
+      * Reset the forms in according with forms parameter
+      *
+      * @returns {boolean} Checks if this is reset or not
+     */
+    resetForms: function(forms) {
+      var form, i, len, results1;
+      if (forms && $bbug.isArray(forms)) {
+        results1 = [];
+        for (i = 0, len = forms.length; i < len; i++) {
+          form = forms[i];
+          form.submitted = false;
+          results1.push(form.$setPristine());
+        }
+        return results1;
+      }
+    }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BB.Services.service:ViewportSize
+  *
+  * @description
+  * Stores the current screen size breakpoint.
+   */
+  angular.module('BB.Services').factory('ViewportSize', [
+    '$rootScope', function($rootScope) {
+      var viewport_size;
+      viewport_size = null;
+      return {
+        setViewportSize: function(size) {
+          if (size !== viewport_size) {
+            viewport_size = size;
+            return $rootScope.$broadcast('ViewportSize:changed');
+          }
+        },
+        getViewportSize: function() {
+          return viewport_size;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /***
+  * @ngdoc service
+  * @name BB.Models:BBWidget
+  *
+  * @description
+  * Representation of an BBWidget Object
+  *
+  * @property {integer} uid The unique id of the widget
+  * @property {string} page_suffix Widget page suffix
+  * @property {array} steps The widget steps
+  * @property {array} allSteps The all steps of the widget
+  * @property {object} item_defaults Widget defaults item
+  * @property {boolean} Checks if widget using basket or not
+  * @property {boolean} confirmCheckout Checks if widget confirm is checkout or not
+  * @property {boolean} isAdm,in Verify if user is admin
+  * @property {string} payment_status The payment status
+   */
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper, SettingsService) {
+    var Widget;
+    return Widget = (function() {
+      function Widget() {
+        this.clearAddress = bind(this.clearAddress, this);
+        this.emptyStackedItems = bind(this.emptyStackedItems, this);
+        this.deleteStackedItemByService = bind(this.deleteStackedItemByService, this);
+        this.removeItemFromStack = bind(this.removeItemFromStack, this);
+        this.deleteStackedItem = bind(this.deleteStackedItem, this);
+        this.sortStackedItems = bind(this.sortStackedItems, this);
+        this.setStackedItems = bind(this.setStackedItems, this);
+        this.stackItem = bind(this.stackItem, this);
+        this.waitForRoutes = bind(this.waitForRoutes, this);
+        this.setBasicRoute = bind(this.setBasicRoute, this);
+        this.setRoute = bind(this.setRoute, this);
+        this.calculatePercentageComplete = bind(this.calculatePercentageComplete, this);
+        this.recordStep = bind(this.recordStep, this);
+        this.recordCurrentPage = bind(this.recordCurrentPage, this);
+        this.uid = _.uniqueId('bbwidget_');
+        this.page_suffix = "";
+        this.steps = [];
+        this.allSteps = [];
+        this.item_defaults = {};
+        this.usingBasket = false;
+        this.confirmCheckout = false;
+        this.isAdmin = false;
+        this.payment_status = null;
+      }
+
+
+      /***
+      * @ngdoc method
+      * @name pageURL
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Get page url in according of route
+      *
+      * @returns {object} The returned the page url
+       */
+
+      Widget.prototype.pageURL = function(route) {
+        return route + '.html';
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name updateRoute
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Update page route
+      *
+      * @returns {string} The returned the url
+       */
+
+      Widget.prototype.updateRoute = function(page) {
+        var company, date, event, event_group, pattern, prms, service_name, time, url;
+        if (!this.routeFormat) {
+          return;
+        }
+        page || (page = this.current_page);
+        pattern = $urlMatcherFactory.compile(this.routeFormat);
+        service_name = "-";
+        event_group = "-";
+        event = "-";
+        if (this.current_item) {
+          if (this.current_item.service) {
+            service_name = this.convertToDashSnakeCase(this.current_item.service.name);
+          }
+          if (this.current_item.event_group) {
+            event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
+          }
+          if (this.current_item.event) {
+            event = this.current_item.event.id;
+          }
+          if (this.current_item.date) {
+            date = this.current_item.date.date.toISODate();
+          }
+          if (this.current_item.time) {
+            time = this.current_item.time.time;
+          }
+          if (this.current_item.company) {
+            company = this.convertToDashSnakeCase(this.current_item.company.name);
+          }
+        }
+        if (this.route_values) {
+          prms = angular.copy(this.route_values);
+        }
+        prms || (prms = {});
+        angular.extend(prms, {
+          page: page,
+          company: company,
+          service: service_name,
+          event_group: event_group,
+          date: date,
+          time: time,
+          event: event
+        });
+        url = pattern.format(prms);
+        url = url.replace(/\/+$/, "");
+        $location.path(url);
+        this.routing = true;
+        return url;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setRouteFormat
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set route format
+      *
+      * @returns {object} The returned the match
+       */
+
+      Widget.prototype.setRouteFormat = function(route) {
+        var match;
+        this.routeFormat = route;
+        if (!this.routeFormat) {
+          return;
+        }
+        this.routing = true;
+        match = PathHelper.matchRouteToPath(this.routeFormat);
+        if (match) {
+          if (match.company) {
+            this.item_defaults.company = decodeURIComponent(match.company);
+          }
+          if (match.service && match.service !== "-") {
+            this.item_defaults.service = decodeURIComponent(match.service);
+          }
+          if (match.event_group && match.event_group !== "-") {
+            this.item_defaults.event_group = match.event_group;
+          }
+          if (match.event && match.event !== "-") {
+            this.item_defaults.event = decodeURIComponent(match.event);
+          }
+          if (match.person) {
+            this.item_defaults.person = decodeURIComponent(match.person);
+          }
+          if (match.resource) {
+            this.item_defaults.resource = decodeURIComponent(match.resource);
+          }
+          if (match.resources) {
+            this.item_defaults.resources = decodeURIComponent(match.resoures);
+          }
+          if (match.date) {
+            this.item_defaults.date = match.date;
+          }
+          if (match.time) {
+            this.item_defaults.time = match.time;
+          }
+          return this.route_matches = match;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name matchURLToStep
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Match url to step
+      *
+      * @returns {integer} Returns the step number
+       */
+
+      Widget.prototype.matchURLToStep = function() {
+        var page, step;
+        page = PathHelper.matchRouteToPath(this.routeFormat, 'page');
+        step = _.findWhere(this.allSteps, {
+          page: page
+        });
+        if (step) {
+          return step.number;
+        } else {
+          return null;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name convertToDashSnakeCase
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Convert to dash snake case in according of str parameter
+      *
+      * @returns {string} The returned str
+       */
+
+      Widget.prototype.convertToDashSnakeCase = function(str) {
+        str = str.toLowerCase();
+        str = $.trim(str);
+        str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
+        str = str.replace(/\s{2,}/g, ' ');
+        str = str.replace(/\s/g, '-');
+        return str;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name recordCurrentPage
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Records the current page and determines the current step from either the predefined steps or the steps that have been passed already
+      *
+      * @returns {string} The returned record step
+       */
+
+      Widget.prototype.recordCurrentPage = function() {
+        var j, k, l, len, len1, len2, match, ref, ref1, ref2, setDocumentTitle, step, title;
+        setDocumentTitle = function(title) {
+          if (SettingsService.update_document_title && title) {
+            return document.title = title;
+          }
+        };
+        if (!this.current_step) {
+          this.current_step = 0;
+        }
+        match = false;
+        if (this.allSteps) {
+          ref = this.allSteps;
+          for (j = 0, len = ref.length; j < len; j++) {
+            step = ref[j];
+            if (step.page === this.current_page) {
+              this.current_step = step.number;
+              setDocumentTitle(step.title);
+              match = true;
+            }
+          }
+        }
+        if (!match) {
+          ref1 = this.steps;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            step = ref1[k];
+            if (step && step.page === this.current_page) {
+              this.current_step = step.number;
+              setDocumentTitle(step.title);
+              match = true;
+            }
+          }
+        }
+        if (!match) {
+          this.current_step += 1;
+        }
+        title = "";
+        if (this.allSteps) {
+          ref2 = this.allSteps;
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            step = ref2[l];
+            step.active = false;
+            step.passed = step.number < this.current_step;
+          }
+          if (this.allSteps[this.current_step - 1]) {
+            this.allSteps[this.current_step - 1].active = true;
+            title = this.allSteps[this.current_step - 1].title;
+          }
+        }
+        return this.recordStep(this.current_step, title);
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name recordStep
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Record step in according of step and title parameters. Calculate percentile complete
+      *
+      * @returns {boolean} If is the last step or not
+       */
+
+      Widget.prototype.recordStep = function(step_number, title) {
+        var j, len, ref, step;
+        this.steps[step_number - 1] = {
+          url: this.updateRoute(this.current_page),
+          current_item: this.current_item.getStep(),
+          page: this.current_page,
+          number: step_number,
+          title: title,
+          stacked_length: this.stacked_items.length
+        };
+        BreadcrumbService.setCurrentStep(step_number);
+        ref = this.steps;
+        for (j = 0, len = ref.length; j < len; j++) {
+          step = ref[j];
+          if (step) {
+            step.passed = step.number < this.current_step;
+            step.active = step.number === this.current_step;
+          }
+          if (step && step.number === step_number) {
+            this.calculatePercentageComplete(step.number);
+          }
+        }
+        if ((this.allSteps && this.allSteps.length === step_number) || this.current_page === 'checkout') {
+          return this.last_step_reached = true;
+        } else {
+          return this.last_step_reached = false;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name calculatePercentageComplete
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Calculate percentage complete in according of step number parameter
+      *
+      * @returns {integer} The returned percentage complete
+       */
+
+      Widget.prototype.calculatePercentageComplete = function(step_number) {
+        return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setRoute
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set route data
+      *
+      * @returns {object} The returned route set
+       */
+
+      Widget.prototype.setRoute = function(rdata) {
+        var i, j, k, len, len1, ref, route, step;
+        this.allSteps.length = 0;
+        this.nextSteps = {};
+        if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
+          this.firstStep = rdata[0].page;
+        }
+        for (i = j = 0, len = rdata.length; j < len; i = ++j) {
+          step = rdata[i];
+          if (step.disable_breadcrumbs) {
+            this.disableGoingBackAtStep = i + 1;
+          }
+          if (rdata[i + 1]) {
+            this.nextSteps[step.page] = rdata[i + 1].page;
+          }
+          this.allSteps.push({
+            number: i + 1,
+            title: step.title,
+            page: step.page
+          });
+          if (step.when) {
+            this.routeSteps || (this.routeSteps = {});
+            ref = step.when;
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              route = ref[k];
+              this.routeSteps[route] = step.page;
+            }
+          }
+        }
+        if (this.$wait_for_routing) {
+          return this.$wait_for_routing.resolve();
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setBasicRoute
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set basic route in according of routes parameter
+      *
+      * @returns {object} The returned route set
+       */
+
+      Widget.prototype.setBasicRoute = function(routes) {
+        var i, j, len, step;
+        this.nextSteps = {};
+        this.firstStep = routes[0];
+        for (i = j = 0, len = routes.length; j < len; i = ++j) {
+          step = routes[i];
+          this.nextSteps[step] = routes[i + 1];
+        }
+        if (this.$wait_for_routing) {
+          return this.$wait_for_routing.resolve();
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name waitForRoutes
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Wait for route
+      *
+      * @returns {object}  The returned waiting route
+       */
+
+      Widget.prototype.waitForRoutes = function() {
+        if (!this.$wait_for_routing) {
+          return this.$wait_for_routing = $q.defer();
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name stackItem
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Push item in stacked items in according of item parameter
+      *
+      * @returns {array} The returned sorted stacked items
+       */
+
+      Widget.prototype.stackItem = function(item) {
+        this.stacked_items.push(item);
+        this.sortStackedItems();
+        if (this.stacked_items.length === 1) {
+          return this.current_item = item;
+        }
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name setStackedItems
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Set stacket items in according of items parameter
+      *
+      * @returns {array} The returned sorted stacked items
+       */
+
+      Widget.prototype.setStackedItems = function(items) {
+        this.stacked_items = items;
+        return this.sortStackedItems();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name sortStackedItems
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Sort stacked items
+      *
+      * @returns {array} The returned sorted stacked items
+       */
+
+      Widget.prototype.sortStackedItems = function() {
+        var arr, item, j, len, ref;
+        arr = [];
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          arr = arr.concat(item.promises);
+        }
+        return $q.all(arr)['finally']((function(_this) {
+          return function() {
+            return _this.stacked_items = _this.stacked_items.sort(function(a, b) {
+              var ref1, ref2;
+              if (a.time && b.time) {
+                return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
+                  1: -1
+                };
+              } else if (a.service.category && !b.service.category) {
+                return 1;
+              } else if (b.service.category && !a.service.category) {
+                return -1;
+              } else if (!b.service.category && !a.service.category) {
+                return 1;
+              } else {
+                return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
+                  1: -1
+                };
+              }
+            });
+          };
+        })(this));
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name deleteStackedItem
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Delete stacked item in according of item parameter
+      *
+      * @returns {array} The returned stacked items
+       */
+
+      Widget.prototype.deleteStackedItem = function(item) {
+        if (item && item.id) {
+          BasketService.deleteItem(item, this.company, {
+            bb: this
+          });
+        }
+        return this.stacked_items = this.stacked_items.filter(function(i) {
+          return i !== item;
+        });
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name removeItemFromStack
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Remove item from stack in according of item parameter
+      *
+      * @returns {array} The returned stacked items
+       */
+
+      Widget.prototype.removeItemFromStack = function(item) {
+        return this.stacked_items = this.stacked_items.filter(function(i) {
+          return i !== item;
+        });
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name deleteStackedItemByService
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Delete stacked item bu service in according of item parameter
+      *
+      * @returns {array} The returned stacked items
+       */
+
+      Widget.prototype.deleteStackedItemByService = function(item) {
+        var i, j, len, ref;
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (i && i.service && i.service.self === item.self && i.id) {
+            BasketService.deleteItem(i, this.company, {
+              bb: this
+            });
+          }
+        }
+        return this.stacked_items = this.stacked_items.filter(function(i) {
+          return i && i.service && i.service.self !== item.self;
+        });
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name emptyStackedItems
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Empty stacked items
+      *
+      * @returns {array} The returned stacked items empty
+       */
+
+      Widget.prototype.emptyStackedItems = function() {
+        return this.stacked_items = [];
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name pushStackToBasket
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Push stack to basket
+      *
+      * @returns {array} The returned stacked items
+       */
+
+      Widget.prototype.pushStackToBasket = function() {
+        var i, j, len, ref;
+        this.basket || (this.basket = new new BBModel.Basket(null, this));
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          this.basket.addItem(i);
+        }
+        return this.emptyStackedItems();
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name totalStackedItemsDuration
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Total stacked items duration
+      *
+      * @returns {array} The returned duration
+       */
+
+      Widget.prototype.totalStackedItemsDuration = function() {
+        var duration, item, j, len, ref;
+        duration = 0;
+        ref = this.stacked_items;
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          if (item.service && item.service.listed_duration) {
+            duration += item.service.listed_duration;
+          }
+        }
+        return duration;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearStackedItemsDateTime
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Clear stacked items date and time
+      *
+      * @returns {array} The returned item with date and time clear
+       */
+
+      Widget.prototype.clearStackedItemsDateTime = function() {
+        var item, j, len, ref, results;
+        ref = this.stacked_items;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          item = ref[j];
+          results.push(item.clearDateTime());
+        }
+        return results;
+      };
+
+
+      /***
+      * @ngdoc method
+      * @name clearAddress
+      * @methodOf BB.Models:BBWidget
+      * @description
+      * Clear address
+      *
+      * @returns {string} The returned address clear
+       */
+
+      Widget.prototype.clearAddress = function() {
+        delete this.address1;
+        delete this.address2;
+        delete this.address3;
+        delete this.address4;
+        return delete this.address5;
+      };
+
+      return Widget;
+
+    })();
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /***
@@ -24538,5714 +30246,6 @@ angular.module('BB.Directives')
       return TimeSlot;
 
     })(BaseModel);
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("AddressListService", function($q, $window, halClient, UriTemplate) {
-    return {
-      query: function(prms) {
-        var deferred, href, uri;
-        deferred = $q.defer();
-        href = "/api/v1/company/{company_id}/addresses/{post_code}";
-        uri = new UriTemplate(href).fillFromObject({
-          company_id: prms.company.id,
-          post_code: prms.post_code
-        });
-        halClient.$get(uri, {}).then(function(addressList) {
-          return deferred.resolve(addressList);
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      getAddress: function(prms) {
-        var deferred, href, uri;
-        deferred = $q.defer();
-        href = "/api/v1/company/{company_id}/addresses/address/{id}";
-        uri = new UriTemplate(href).fillFromObject({
-          company_id: prms.company.id,
-          id: prms.id
-        });
-        halClient.$get(uri, {}).then(function(customerAddress) {
-          return deferred.resolve(customerAddress);
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Services:Airbrake
-*
-* @description
-* JavaScript notifier for capturing errors in web browsers and reporting them to Airbrake.
-*
- */
-
-(function() {
-  angular.module('BB.Services').factory('$exceptionHandler', function($log, AirbrakeConfig) {
-    var airbrake;
-    airbrake = new airbrakeJs.Client({
-      projectId: AirbrakeConfig.projectId,
-      projectKey: AirbrakeConfig.projectKey
-    });
-    airbrake.addFilter(function(notice) {
-      if (AirbrakeConfig.environment === 'development' || !notice.params.from_sdk) {
-        return false;
-      }
-      notice.context.environment = 'production';
-      return notice;
-    });
-    return function(exception, cause, sdkError) {
-      $log.error(exception);
-      airbrake.notify({
-        error: exception,
-        params: {
-          angular_cause: cause,
-          from_sdk: sdkError
-        }
-      });
-    };
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Services:Alert
-*
-* @description
-* Representation of an Alert Object
-*
-* @property {array} alerts The array with all types of alerts
-* @property {string} add Add alert message
- */
-
-(function() {
-  angular.module('BB.Services').factory('AlertService', function($rootScope, ErrorService, $timeout) {
-    var alertService, titleLookup;
-    $rootScope.alerts = [];
-
-    /***
-      * @ngdoc method
-      * @name titleLookup
-      * @methodOf BB.Services:Alert
-      * @description
-      * Title look up in according of type and title parameters
-      *
-      * @returns {boolean} The returned title
-     */
-    titleLookup = function(type, title) {
-      if (title) {
-        return title;
-      }
-      switch (type) {
-        case "error":
-        case "danger":
-          title = "Error";
-          break;
-        default:
-          title = null;
-      }
-      return title;
-    };
-    return alertService = {
-      add: function(type, arg) {
-        var alert, msg, persist, title;
-        title = arg.title, msg = arg.msg, persist = arg.persist;
-        if (persist == null) {
-          persist = true;
-        }
-        $rootScope.alerts = [];
-        alert = {
-          type: type,
-          title: titleLookup(type, title),
-          msg: msg,
-          close: function() {
-            return alertService.closeAlert(this);
-          }
-        };
-        $rootScope.alerts.push(alert);
-        if (!persist) {
-          $timeout(function() {
-            return $rootScope.alerts.splice($rootScope.alerts.indexOf(alert), 1);
-          }, 3000);
-        }
-        return $rootScope.$broadcast("alert:raised");
-      },
-
-      /***
-      * @ngdoc method
-      * @name closeAlert
-      * @methodOf BB.Services:Alert
-      * @description
-      * Close alert
-      *
-      * @returns {boolean}  close alert
-       */
-      closeAlert: function(alert) {
-        return this.closeAlertIdx($rootScope.alerts.indexOf(alert));
-      },
-
-      /***
-      * @ngdoc method
-      * @name closeAlertIdx
-      * @methodOf BB.Services:Alert
-      * @description
-      * Close alert index
-      *
-      * @returns {boolean}  The returned close alert index
-       */
-      closeAlertIdx: function(index) {
-        return $rootScope.alerts.splice(index, 1);
-      },
-
-      /***
-      * @ngdoc method
-      * @name clear
-      * @methodOf BB.Services:Alert
-      * @description
-      * Clear alert message
-      *
-      * @returns {array} Newly clear array of the alert messages
-       */
-      clear: function() {
-        return $rootScope.alerts = [];
-      },
-
-      /***
-      * @ngdoc error
-      * @name clear
-      * @methodOf BB.Services:Alert
-      * @description
-      * Error alert
-      *
-      * @returns {array} The returned error alert
-       */
-      error: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('error', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-
-      /***
-      * @ngdoc error
-      * @name danger
-      * @methodOf BB.Services:Alert
-      * @description
-      * Danger alert
-      *
-      * @returns {array} The returned danger alert
-       */
-      danger: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('danger', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-
-      /***
-      * @ngdoc error
-      * @name info
-      * @methodOf BB.Services:Alert
-      * @description
-      * Info alert
-      *
-      * @returns {array} The returned info alert
-       */
-      info: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('info', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-
-      /***
-      * @ngdoc error
-      * @name warning
-      * @methodOf BB.Services:Alert
-      * @description
-      * Warning alert
-      *
-      * @returns {array} The returned warning alert
-       */
-      warning: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('warning', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-
-      /***
-      * @ngdoc error
-      * @name success
-      * @methodOf BB.Services:Alert
-      * @description
-      * Success alert
-      *
-      * @returns {array} The returned warning alert
-       */
-      success: function(alert) {
-        if (!alert) {
-          return;
-        }
-        return this.add('success', {
-          title: alert.title,
-          msg: alert.msg,
-          persist: alert.persist
-        });
-      },
-
-      /***
-      * @ngdoc error
-      * @name raise
-      * @methodOf BB.Services:Alert
-      * @description
-      * Raise alert
-      *
-      * @returns {array} The returned raise alert
-       */
-      raise: function(key) {
-        var alert;
-        if (!key) {
-          return;
-        }
-        alert = ErrorService.getAlert(key);
-        if (alert) {
-          return this.add(alert.type, {
-            title: alert.title,
-            msg: alert.msg,
-            persist: alert.persist
-          });
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("BasketService", function($q, $rootScope, BBModel, MutexService) {
-    return {
-      addItem: function(company, params) {
-        var data, deferred, lnk;
-        deferred = $q.defer();
-        lnk = params.item.book_link;
-        data = params.item.getPostData();
-        if (!lnk) {
-          deferred.reject("rel book not found for event");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return lnk.$post('book', params, data).then(function(basket) {
-              var mbasket;
-              MutexService.unlock(mutex);
-              company.$flush('basket');
-              mbasket = new BBModel.Basket(basket, params.bb);
-              return basket.$get('items').then(function(items) {
-                var i, item, j, len, promises;
-                promises = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  item = new BBModel.BasketItem(i, params.bb);
-                  mbasket.addItem(item);
-                  promises = promises.concat(item.promises);
-                }
-                if (promises.length > 0) {
-                  return $q.all(promises).then(function() {
-                    return deferred.resolve(mbasket);
-                  });
-                } else {
-                  return deferred.resolve(mbasket);
-                }
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            }, function(err) {
-              MutexService.unlock(mutex);
-              return deferred.reject(err);
-            });
-          });
-        }
-        return deferred.promise;
-      },
-      applyCoupon: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return company.$post('coupon', {}, {
-            coupon: params.coupon
-          }).then(function(basket) {
-            var mbasket;
-            MutexService.unlock(mutex);
-            company.$flush('basket');
-            mbasket = new BBModel.Basket(basket, params.bb);
-            return basket.$get('items').then(function(items) {
-              var i, item, j, len, promises;
-              promises = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                item = new BBModel.BasketItem(i, params.bb);
-                mbasket.addItem(item);
-                promises = promises.concat(item.promises);
-              }
-              if (promises.length > 0) {
-                return $q.all(promises).then(function() {
-                  return deferred.resolve(mbasket);
-                });
-              } else {
-                return deferred.resolve(mbasket);
-              }
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        });
-        return deferred.promise;
-      },
-      updateBasket: function(company, params) {
-        var data, deferred, item, j, len, lnk, ref, xdata;
-        deferred = $q.defer();
-        data = {
-          entire_basket: true,
-          items: []
-        };
-        ref = params.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.book_link) {
-            lnk = item.book_link;
-          }
-          xdata = item.getPostData();
-          data.items.push(xdata);
-        }
-        if (!lnk) {
-          deferred.reject("rel book not found for event");
-          return deferred.promise;
-        }
-        MutexService.getLock().then(function(mutex) {
-          return lnk.$post('book', params, data).then(function(basket) {
-            var mbasket;
-            MutexService.unlock(mutex);
-            company.$flush('basket');
-            mbasket = new BBModel.Basket(basket, params.bb);
-            return basket.$get('items').then(function(items) {
-              var i, k, len1, promises;
-              promises = [];
-              for (k = 0, len1 = items.length; k < len1; k++) {
-                i = items[k];
-                item = new BBModel.BasketItem(i, params.bb);
-                mbasket.addItem(item);
-                promises = promises.concat(item.promises);
-              }
-              if (promises.length > 0) {
-                return $q.all(promises).then(function() {
-                  $rootScope.$broadcast("basket:updated", mbasket);
-                  return deferred.resolve(mbasket);
-                });
-              } else {
-                $rootScope.$broadcast("basket:updated", mbasket);
-                return deferred.resolve(mbasket);
-              }
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        });
-        return deferred.promise;
-      },
-      checkPrePaid: function(item, pre_paid_bookings) {
-        var booking, j, len, valid_pre_paid;
-        valid_pre_paid = null;
-        for (j = 0, len = pre_paid_bookings.length; j < len; j++) {
-          booking = pre_paid_bookings[j];
-          if (booking.checkValidity(item)) {
-            valid_pre_paid = booking;
-            break;
-          }
-        }
-        return valid_pre_paid;
-      },
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('basket')) {
-          deferred.reject("rel basket not found for company");
-        } else {
-          company.$get('basket').then(function(basket) {
-            basket = new BBModel.Basket(basket, params.bb);
-            if (basket.$has('items')) {
-              basket.$get('items').then(function(items) {
-                var item, j, len, results;
-                results = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  item = items[j];
-                  results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
-                }
-                return results;
-              });
-            }
-            return deferred.resolve(basket);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      deleteItem: function(item, company, params) {
-        var deferred;
-        if (!params) {
-          params = {};
-        }
-        if (params.basket) {
-          params.basket.clearItem(item);
-        }
-        deferred = $q.defer();
-        if (!item.$has('self')) {
-          deferred.reject("rel self not found for item");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return item.$del('self', params).then(function(basket) {
-              MutexService.unlock(mutex);
-              company.$flush('basket');
-              basket = new BBModel.Basket(basket, params.bb);
-              if (basket.$has('items')) {
-                basket.$get('items').then(function(items) {
-                  var j, len, results;
-                  results = [];
-                  for (j = 0, len = items.length; j < len; j++) {
-                    item = items[j];
-                    results.push(basket.addItem(new BBModel.BasketItem(item, params.bb)));
-                  }
-                  return results;
-                });
-              }
-              return deferred.resolve(basket);
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      checkout: function(company, basket, params) {
-        var data, deferred;
-        deferred = $q.defer();
-        if (!basket.$has('checkout')) {
-          deferred.reject("rel checkout not found for basket");
-        } else {
-          data = basket.getPostData();
-          if (params.bb.qudini_booking_id) {
-            data.qudini_booking_id = params.bb.qudini_booking_id;
-          }
-          if (params.bb.booking_settings) {
-            data.booking_settings = params.bb.booking_settings;
-          }
-          if (params.bb.no_notifications) {
-            data.no_notifications = params.bb.no_notifications;
-          }
-          data.affiliate_id = $rootScope.affiliate_id || params.affiliate_id;
-          basket.waiting_for_checkout = true;
-          MutexService.getLock().then(function(mutex) {
-            return basket.$post('checkout', params, data).then(function(total) {
-              var tot;
-              MutexService.unlock(mutex);
-              $rootScope.$broadcast('updateBookings');
-              tot = new BBModel.Purchase.Total(total);
-              $rootScope.$broadcast('newCheckout', tot);
-              basket.clear();
-              basket.waiting_for_checkout = false;
-              return deferred.resolve(tot);
-            }, function(err) {
-              basket.waiting_for_checkout = false;
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            basket.waiting_for_checkout = false;
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      empty: function(bb) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return bb.company.$del('basket').then(function(basket) {
-            MutexService.unlock(mutex);
-            bb.company.$flush('basket');
-            return deferred.resolve(new BBModel.Basket(basket, bb));
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }, function(err) {
-          MutexService.unlock(mutex);
-          return deferred.reject(err);
-        });
-        return deferred.promise;
-      },
-      memberCheckout: function(basket, params) {
-        var data, deferred, item;
-        deferred = $q.defer();
-        if (!basket.$has('checkout')) {
-          deferred.reject("rel checkout not found for basket");
-        } else if ($rootScope.member === null) {
-          deferred.reject("member not set");
-        } else {
-          basket._data.setOption('auth_token', $rootScope.member._data.getOption('auth_token'));
-          data = {
-            items: (function() {
-              var j, len, ref, results;
-              ref = basket.items;
-              results = [];
-              for (j = 0, len = ref.length; j < len; j++) {
-                item = ref[j];
-                results.push(item._data);
-              }
-              return results;
-            })()
-          };
-          basket.$post('checkout', params, data).then(function(total) {
-            if (total.$has('member')) {
-              total.$get('member').then(function(member) {
-                $rootScope.member.flushBookings();
-                return $rootScope.member = new BBModel.Member.Member(member);
-              });
-            }
-            return deferred.resolve(total);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      applyDeal: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          return params.bb.basket.$post('deal', {}, {
-            deal_code: params.deal_code
-          }).then(function(basket) {
-            var mbasket;
-            MutexService.unlock(mutex);
-            company.$flush('basket');
-            mbasket = new BBModel.Basket(basket, params.bb);
-            return basket.$get('items').then(function(items) {
-              var i, item, j, len, promises;
-              promises = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                item = new BBModel.BasketItem(i, params.bb);
-                mbasket.addItem(item);
-                promises = promises.concat(item.promises);
-              }
-              if (promises.length > 0) {
-                return $q.all(promises).then(function() {
-                  return deferred.resolve(mbasket);
-                });
-              } else {
-                return deferred.resolve(mbasket);
-              }
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          }, function(err) {
-            MutexService.unlock(mutex);
-            return deferred.reject(err);
-          });
-        });
-        return deferred.promise;
-      },
-      removeDeal: function(company, params) {
-        var deferred;
-        if (!params) {
-          params = {};
-        }
-        deferred = $q.defer();
-        if (!params.bb.basket.$has('deal')) {
-          return deferred.reject("No Remove Deal link found");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            return params.bb.basket.$put('deal', {}, {
-              deal_code_id: params.deal_code_id.toString()
-            }).then(function(basket) {
-              MutexService.unlock(mutex);
-              company.$flush('basket');
-              basket = new BBModel.Basket(basket, params.bb);
-              if (basket.$has('items')) {
-                return basket.$get('items').then(function(items) {
-                  var item, j, len;
-                  for (j = 0, len = items.length; j < len; j++) {
-                    item = items[j];
-                    basket.addItem(new BBModel.BasketItem(item, params.bb));
-                  }
-                  return deferred.resolve(basket);
-                }, function(err) {
-                  return deferred.reject(err);
-                });
-              }
-            }, function(err) {
-              MutexService.unlock(mutex);
-              return deferred.reject(err);
-            });
-          });
-          return deferred.promise;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("BreadcrumbService", function() {
-    var current_step;
-    current_step = 1;
-    return {
-      setCurrentStep: function(step) {
-        return current_step = step;
-      },
-      getCurrentStep: function() {
-        return current_step;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("BulkPurchaseService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('bulk_purchases')) {
-          deferred.reject("No bulk purchases found");
-        } else {
-          company.$get('bulk_purchases').then(function(resource) {
-            return resource.$get('bulk_purchases').then(function(bulk_purchases) {
-              var i;
-              return deferred.resolve((function() {
-                var j, len, results;
-                results = [];
-                for (j = 0, len = bulk_purchases.length; j < len; j++) {
-                  i = bulk_purchases[j];
-                  results.push(new BBModel.BulkPurchase(i));
-                }
-                return results;
-              })());
-            });
-          }, (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CategoryService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('categories')) {
-          deferred.reject("No categories found");
-        } else {
-          company.$get('named_categories').then((function(_this) {
-            return function(resource) {
-              return resource.$get('categories').then(function(items) {
-                var _i, cat, categories, i, j, len;
-                categories = [];
-                for (_i = j = 0, len = items.length; j < len; _i = ++j) {
-                  i = items[_i];
-                  cat = new BBModel.Category(i);
-                  cat.order || (cat.order = _i);
-                  categories.push(cat);
-                }
-                return deferred.resolve(categories);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ClientService", function($q, BBModel, MutexService) {
-    var setDefaultCompanyId;
-    setDefaultCompanyId = function(company, client) {
-      client.default_company_id = company.id;
-    };
-    return {
-      create: function(company, client) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('client')) {
-          deferred.reject("Cannot create new people for this company");
-        } else {
-          MutexService.getLock().then(function(mutex) {
-            setDefaultCompanyId(company, client);
-            return company.$post('client', {}, client.getPostData()).then((function(_this) {
-              return function(cl) {
-                deferred.resolve(new BBModel.Client(cl));
-                return MutexService.unlock(mutex);
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                deferred.reject(err);
-                return MutexService.unlock(mutex);
-              };
-            })(this));
-          });
-        }
-        return deferred.promise;
-      },
-      update: function(company, client) {
-        var deferred;
-        deferred = $q.defer();
-        MutexService.getLock().then(function(mutex) {
-          setDefaultCompanyId(company, client);
-          return client.$put('self', {}, client.getPostData()).then((function(_this) {
-            return function(cl) {
-              deferred.resolve(new BBModel.Client(cl));
-              return MutexService.unlock(mutex);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              deferred.reject(err);
-              return MutexService.unlock(mutex);
-            };
-          })(this));
-        });
-        return deferred.promise;
-      },
-      create_or_update: function(company, client) {
-        if (client.$has('self')) {
-          return this.update(company, client);
-        } else {
-          return this.create(company, client);
-        }
-      },
-      query_by_email: function(company, email) {
-        var deferred;
-        deferred = $q.defer();
-        if ((company != null) && (email != null)) {
-          company.$get("client_by_email", {
-            email: email
-          }).then((function(_this) {
-            return function(client) {
-              if (client != null) {
-                return deferred.resolve(new BBModel.Client(client));
-              } else {
-                return deferred.resolve({});
-              }
-            };
-          })(this), function(err) {
-            return deferred.reject(err);
-          });
-        } else {
-          deferred.reject("No company or email defined");
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ClientDetailsService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('client_details')) {
-          deferred.reject("No client_details found");
-        } else {
-          company.$get('client_details').then((function(_this) {
-            return function(details) {
-              return deferred.resolve(new BBModel.ClientDetails(details));
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ClinicService', function($q, BBModel, $window) {
-    return {
-      query: function(params) {
-        var company, defer;
-        company = params.company;
-        defer = $q.defer();
-        if (params.id) {
-          company.$get('clinics', params).then(function(clinic) {
-            clinic = new BBModel.Clinic(clinic);
-            return defer.resolve(clinic);
-          }, function(err) {
-            return defer.reject(err);
-          });
-        } else {
-          company.$get('clinics', params).then(function(collection) {
-            return collection.$get('clinics').then(function(clinics) {
-              var s;
-              clinics = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = clinics.length; i < len; i++) {
-                  s = clinics[i];
-                  results.push(new BBModel.Clinic(s));
-                }
-                return results;
-              })();
-              return defer.resolve(clinics);
-            }, function(err) {
-              return defer.reject(err);
-            });
-          }, function(err) {
-            return defer.reject(err);
-          });
-        }
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CompanyService", function($q, halClient, BBModel) {
-    return {
-      query: function(company_id, options) {
-        var deferred, url;
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/company/" + company_id;
-        deferred = $q.defer();
-        halClient.$get(url, options).then((function(_this) {
-          return function(company) {
-            return deferred.resolve(company);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      queryChildren: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('companies')) {
-          deferred.reject("No child companies found");
-        } else {
-          company.$get('companies').then((function(_this) {
-            return function(resource) {
-              return resource.$get('companies').then(function(items) {
-                var companies, i, j, len;
-                companies = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  companies.push(new BBModel.Company(i));
-                }
-                return deferred.resolve(companies);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("CustomTextService", function($q, BBModel) {
-    return {
-      BookingText: function(company, basketItem) {
-        var deferred;
-        deferred = $q.defer();
-        company.$get('booking_text').then((function(_this) {
-          return function(emb) {
-            return emb.$get('booking_text').then(function(details) {
-              var detail, i, len, link, msgs, name, ref;
-              msgs = [];
-              for (i = 0, len = details.length; i < len; i++) {
-                detail = details[i];
-                if (detail.message_type === "Booking") {
-                  ref = basketItem.parts_links;
-                  for (name in ref) {
-                    link = ref[name];
-                    if (detail.$href('item') === link) {
-                      if (msgs.indexOf(detail.message) === -1) {
-                        msgs.push(detail.message);
-                      }
-                    }
-                  }
-                }
-              }
-              return deferred.resolve(msgs);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      confirmationText: function(company, total) {
-        var deferred;
-        deferred = $q.defer();
-        company.$get('booking_text').then(function(emb) {
-          return emb.$get('booking_text').then(function(details) {
-            return total.getMessages(details, "Confirm").then(function(msgs) {
-              return deferred.resolve(msgs);
-            });
-          });
-        }, function(err) {
-          return deferred.reject(err);
-        });
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("DateTimeUtilitiesService", function(SettingsService) {
-    var checkPerson, checkResource;
-    checkPerson = function(basket_item, item_defaults) {
-      return (basket_item.defaults.person && basket_item.defaults.person.self === basket_item.person.self) || _.isBoolean(basket_item.person) || item_defaults.merge_people;
-    };
-    checkResource = function(basket_item, item_defaults) {
-      return (basket_item.defaults.resource && basket_item.defaults.resource.self === basket_item.resource.self) || _.isBoolean(basket_item.resource) || item_defaults.merge_resources;
-    };
-    return {
-      convertTimeSlotToMoment: function(date, time_slot) {
-        var datetime, hours, mins, val;
-        if (!(date && moment.isMoment(date) && time_slot)) {
-          return;
-        }
-        datetime = moment();
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          datetime = datetime.tz(SettingsService.getTimeZone());
-        }
-        val = parseInt(time_slot.time);
-        hours = parseInt(val / 60);
-        mins = val % 60;
-        datetime.hour(hours);
-        datetime.minutes(mins);
-        datetime.seconds(0);
-        datetime.date(date.date());
-        datetime.month(date.month());
-        datetime.year(date.year());
-        return datetime;
-      },
-      convertMomentToTime: function(datetime) {
-        return datetime.minutes() + datetime.hours() * 60;
-      },
-      checkDefaultTime: function(date, time_slots, basket_item, item_defaults) {
-        var found_time_slot, i, len, match, slot, time;
-        if (!basket_item.defaults.time) {
-          match = null;
-        } else if (checkPerson(basket_item, item_defaults) && checkResource(basket_item, item_defaults)) {
-          match = "full";
-        } else {
-          match = "partial";
-        }
-        found_time_slot = null;
-        if (basket_item.defaults.time && (basket_item.defaults.date && date.isSame(basket_item.defaults.date, 'day') || !basket_item.defaults.date)) {
-          time = basket_item.time ? basket_item.time.time : basket_item.defaults.time;
-          for (i = 0, len = time_slots.length; i < len; i++) {
-            slot = time_slots[i];
-            if (time && time === slot.time && slot.avail === 1) {
-              found_time_slot = slot;
-              break;
-            }
-          }
-        }
-        return {
-          match: match,
-          slot: found_time_slot
-        };
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("DayService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred, extra;
-        deferred = $q.defer();
-        if (prms.cItem.days_link) {
-          extra = {};
-          extra.month = prms.month;
-          extra.date = prms.date;
-          extra.edate = prms.edate;
-          if (prms.client) {
-            extra.location = prms.client.addressCsvLine();
-          }
-          if (prms.cItem.person && !prms.cItem.anyPerson()) {
-            extra.person_id = prms.cItem.person.id;
-          }
-          if (prms.cItem.resource && !prms.cItem.anyResource()) {
-            extra.resource_id = prms.cItem.resource.id;
-          }
-          prms.cItem.days_link.$get('days', extra).then((function(_this) {
-            return function(found) {
-              var afound, days, i, j, len;
-              afound = found.days;
-              days = [];
-              for (j = 0, len = afound.length; j < len; j++) {
-                i = afound[j];
-                if (i.type === prms.item) {
-                  days.push(new BBModel.Day(i));
-                }
-              }
-              return deferred.resolve(days);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        } else {
-          deferred.reject("No Days Link found");
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("DealService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('deals')) {
-          deferred.reject("No Deals found");
-        } else {
-          company.$get('deals').then((function(_this) {
-            return function(resource) {
-              return resource.$get('deals').then(function(deals) {
-                var deal;
-                deals = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = deals.length; i < len; i++) {
-                    deal = deals[i];
-                    results.push(new BBModel.Deal(deal));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(deals);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB').config(function($logProvider, $injector) {
-    return $logProvider.debugEnabled(true);
-  });
-
-  angular.module('BB.Services').factory("DebugUtilsService", function($rootScope, $location, $window, $log, BBModel, $bbug) {
-    var logObjectKeys, showScopeChain;
-    logObjectKeys = function(obj, showValue) {
-      var key, value;
-      for (key in obj) {
-        value = obj[key];
-        if (obj.hasOwnProperty(key) && !_.isFunction(value) && !(/^\$\$/.test(key))) {
-          console.log(key);
-          if (showValue) {
-            console.log('\t', value, '\n');
-          }
-        }
-      }
-    };
-    showScopeChain = function() {
-      var $root, data, f;
-      $root = $('[ng-app]');
-      data = $root.data();
-      if (data && data.$scope) {
-        f = function(scope) {
-          console.log(scope.$id);
-          console.log(scope);
-          if (scope.$$nextSibling) {
-            return f(scope.$$nextSibling);
-          } else {
-            if (scope.$$childHead) {
-              return f(scope.$$childHead);
-            }
-          }
-        };
-        f(data.$scope);
-      }
-    };
-    (function() {
-      if (($location.host() === 'localhost' || $location.host() === '127.0.0.1') && $location.port() === 3000) {
-        return window.setTimeout(function() {
-          var scope;
-          scope = $rootScope;
-          while (scope) {
-            if (scope.controller === 'public.controllers.BBCtrl') {
-              break;
-            }
-            scope = scope.$$childHead;
-          }
-          $bbug($window).on('dblclick', function(e) {
-            var controller, controllerName, pscope;
-            scope = angular.element(e.target).scope();
-            controller = scope.hasOwnProperty('controller');
-            pscope = scope;
-            if (controller) {
-              controllerName = scope.controller;
-            }
-            while (!controller) {
-              pscope = pscope.$parent;
-              controllerName = pscope.controller;
-              controller = pscope.hasOwnProperty('controller');
-            }
-            $window.bbScope = scope;
-            $log.log(e.target);
-            $log.log($window.bbScope);
-            return $log.log('Controller ->', controllerName);
-          });
-          $window.bbBBCtrlScopeKeyNames = function(prop) {
-            return logObjectKeys(scope, prop);
-          };
-          $window.bbBBCtrlScope = function() {
-            return scope;
-          };
-          $window.bbCurrentItem = function() {
-            return scope.current_item;
-          };
-          return $window.bbShowScopeChain = showScopeChain;
-        }, 10);
-      }
-    })();
-    return {
-      logObjectKeys: logObjectKeys
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('Dialog', function($modal, $log) {
-    var controller;
-    controller = function($scope, $modalInstance, model, title, success, fail, body) {
-      $scope.body = body;
-      $scope.ok = function() {
-        return $modalInstance.close(model);
-      };
-      $scope.cancel = function() {
-        event.preventDefault();
-        event.stopPropagation();
-        return $modalInstance.dismiss('cancel');
-      };
-      return $modalInstance.result.then(function() {
-        if (success) {
-          return success(model);
-        }
-      }, function() {
-        if (fail) {
-          return fail();
-        }
-      });
-    };
-    return {
-      confirm: function(config) {
-        var templateUrl;
-        if (config.templateUrl) {
-          templateUrl = config.templateUrl;
-        }
-        templateUrl || (templateUrl = 'dialog.html');
-        return $modal.open({
-          templateUrl: templateUrl,
-          controller: controller,
-          size: config.size || 'sm',
-          resolve: {
-            model: function() {
-              return config.model;
-            },
-            title: function() {
-              return config.title;
-            },
-            success: function() {
-              return config.success;
-            },
-            fail: function() {
-              return config.fail;
-            },
-            body: function() {
-              return config.body;
-            }
-          }
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ErrorService', function(SettingsService, $translate) {
-    var alerts, createCustomError, getAlert, getError;
-    alerts = [
-      {
-        key: 'GENERIC',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: "Sorry, it appears that something went wrong. Please try again or call the business you're booking with if the problem persists."
-      }, {
-        key: 'LOCATION_NOT_FOUND',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Sorry, we don't recognise that location"
-      }, {
-        key: 'MISSING_LOCATION',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter your location'
-      }, {
-        key: 'MISSING_POSTCODE',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a postcode'
-      }, {
-        key: 'INVALID_POSTCODE',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please enter a valid postcode'
-      }, {
-        key: 'ITEM_NO_LONGER_AVAILABLE',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry. The item you were trying to book is no longer available. Please try again.'
-      }, {
-        key: 'NO_WAITLIST_SPACES_LEFT',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the space has now been taken, you are still in the waitlist and we will notify you if more spaces become available'
-      }, {
-        key: 'FORM_INVALID',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Please complete all required fields'
-      }, {
-        key: 'GEOLOCATION_ERROR',
-        type: 'error',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we could not determine your location. Please try searching instead.'
-      }, {
-        key: 'EMPTY_BASKET_FOR_CHECKOUT',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to add some items to the basket before you can checkout.'
-      }, {
-        key: 'MAXIMUM_TICKETS',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the maximum number of tickets per person has been reached.'
-      }, {
-        key: 'GIFT_CERTIFICATE_REQUIRED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'A valid Gift Certificate is required to proceed with this booking'
-      }, {
-        key: 'TIME_SLOT_NOT_SELECTED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to select a time slot'
-      }, {
-        key: 'STORE_NOT_SELECTED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You need to select a store'
-      }, {
-        key: 'APPT_AT_SAME_TIME',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your appointment is already booked for this time'
-      }, {
-        key: 'REQ_TIME_NOT_AVAIL',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'The requested time slot is not available. Please choose a different time.'
-      }, {
-        key: 'TOPUP_SUCCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Your wallet has been topped up'
-      }, {
-        key: 'TOPUP_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your topup failed. Please try again.'
-      }, {
-        key: 'UPDATE_SUCCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Updated'
-      }, {
-        key: 'UPDATE_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Update failed. Please try again'
-      }, {
-        key: 'ALREADY_REGISTERED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'You have already registered with this email address. Please login or reset your password.'
-      }, {
-        key: 'LOGIN_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your email or password was not recognised. Please try again or reset your password.'
-      }, {
-        key: 'SSO_LOGIN_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, the login process failed. Please try again.'
-      }, {
-        key: 'PASSWORD_INVALID',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, your chosen password is invalid'
-      }, {
-        key: 'PASSWORD_RESET_REQ_SUCCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'We have sent you an email with instructions on how to reset your password.'
-      }, {
-        key: 'PASSWORD_RESET_REQ_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we didn\'t find an account registered with that email.'
-      }, {
-        key: 'PASSWORD_RESET_SUCESS',
-        type: 'success',
-        title: '',
-        persist: true,
-        msg: 'Your password has been updated.'
-      }, {
-        key: 'PASSWORD_RESET_FAILED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Sorry, we couldn\'t update your password. Please try again.'
-      }, {
-        key: 'PASSWORD_MISMATCH',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: 'Your passwords don\'t match'
-      }, {
-        key: 'ATTENDEES_CHANGED',
-        type: 'info',
-        title: '',
-        persist: true,
-        msg: 'Your booking has been successfully updated'
-      }, {
-        key: 'PAYMENT_FAILED',
-        type: 'danger',
-        title: '',
-        persist: true,
-        msg: 'We were unable to take payment. Please contact your card issuer or try again using a different card'
-      }, {
-        key: 'ACCOUNT_DISABLED',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Your account appears to be disabled. Please contact the business you're booking with if the problem persists."
-      }, {
-        key: 'FB_LOGIN_NOT_A_MEMBER',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "Sorry, we couldn't find a login linked with your Facebook account. You will need to sign up using Facebook first."
-      }, {
-        key: 'PHONE_NUMBER_ALREADY_REGISTERED_ADMIN',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "There's already an account registered with this phone number. Use the search field to find the customers account."
-      }, {
-        key: 'EMAIL_ALREADY_REGISTERED_ADMIN',
-        type: 'warning',
-        title: '',
-        persist: true,
-        msg: "There's already an account registered with this email. Use the search field to find the customers account."
-      }, {
-        key: 'WAITLIST_ACCEPTED',
-        type: 'success',
-        title: '',
-        persist: false,
-        msg: "Your booking is now confirmed!"
-      }, {
-        key: 'BOOKING_CANCELLED',
-        type: 'success',
-        title: '',
-        persist: false,
-        msg: "Your booking has been cancelled."
-      }, {
-        key: 'NOT_BOOKABLE_PERSON',
-        type: 'warning',
-        title: '',
-        persist: false,
-        msg: "Sorry, this person does not offer this service, please select another"
-      }, {
-        key: 'NOT_BOOKABLE_RESOURCE',
-        type: 'warning',
-        title: '',
-        persist: false,
-        msg: "Sorry, resource does not offer this service, pelase select another"
-      }
-    ];
-
-    /**
-     * @param {String} msg
-     * @returns {{msg: String}}
-     */
-    createCustomError = function(msg) {
-      return {
-        msg: msg
-      };
-    };
-    getError = function(key) {
-      var error, translate;
-      error = _.findWhere(alerts, {
-        key: key
-      });
-      error.persist = true;
-      translate = SettingsService.isInternationalizatonEnabled();
-      if (error && translate) {
-        return {
-          msg: $translate.instant('ERROR.' + key)
-        };
-      } else if (error && !translate) {
-        return error;
-      } else if (translate) {
-        return {
-          msg: 'GENERIC'
-        };
-      } else {
-        return alerts[0];
-      }
-    };
-    getAlert = function(key) {
-      var alert, translate;
-      alert = _.findWhere(alerts, {
-        key: key
-      });
-      translate = SettingsService.isInternationalizatonEnabled();
-      if (alert && translate) {
-        return {
-          msg: $translate.instant('ALERT.' + key)
-        };
-      } else if (alert && !translate) {
-        return alert;
-      } else {
-        return null;
-      }
-    };
-    return {
-      createCustomError: createCustomError,
-      getAlert: getAlert,
-      getError: getError
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('events')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.event_group) {
-              params.event_group_id = params.item.event_group.id;
-            }
-            if (params.item.event_chain) {
-              params.event_chain_id = params.item.event_chain.id;
-            }
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          params.no_cache = true;
-          company.$get('events', params).then((function(_this) {
-            return function(resource) {
-              params.no_cache = false;
-              return resource.$get('events', params).then(function(events) {
-                var event;
-                events = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = events.length; i < len; i++) {
-                    event = events[i];
-                    results.push(new BBModel.Event(event));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(events);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      },
-      summary: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('events')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.event_group) {
-              params.event_group_id = params.item.event_group.id;
-            }
-            if (params.item.event_chain) {
-              params.event_chain_id = params.item.event_chain.id;
-            }
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          params.summary = true;
-          company.$get('events', params).then((function(_this) {
-            return function(resource) {
-              return deferred.resolve(resource.events);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      },
-      queryEventCollection: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('events')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.event_group) {
-              params.event_group_id = params.item.event_group.id;
-            }
-            if (params.item.event_chain) {
-              params.event_chain_id = params.item.event_chain.id;
-            }
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          company.$get('events', params).then((function(_this) {
-            return function(resource) {
-              var collection;
-              collection = new BBModel.BBCollection(resource);
-              return deferred.resolve(collection);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventChainService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_chains')) {
-          deferred.reject("company does not have event_chains");
-        } else {
-          company.$get('event_chains', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('event_chains', params).then(function(event_chains) {
-                var event_chain;
-                event_chains = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = event_chains.length; i < len; i++) {
-                    event_chain = event_chains[i];
-                    results.push(new BBModel.EventChain(event_chain));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(event_chains);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      },
-      queryEventChainCollection: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_chains')) {
-          deferred.resolve([]);
-        } else {
-          company.$get('event_chains', params).then((function(_this) {
-            return function(resource) {
-              var collection;
-              collection = new BBModel.BBCollection(resource);
-              return deferred.resolve(collection);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventGroupService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_groups')) {
-          deferred.reject("company does not have event_groups");
-        } else {
-          company.$get('event_groups', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('event_groups', params).then(function(event_groups) {
-                var event_group;
-                event_groups = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = event_groups.length; i < len; i++) {
-                    event_group = event_groups[i];
-                    results.push(new BBModel.EventGroup(event_group));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(event_groups);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("EventSequenceService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('event_sequences')) {
-          deferred.reject("company does not have event_sequences");
-        } else {
-          company.$get('event_sequences', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('event_sequences', params).then(function(event_sequences) {
-                var event_sequence;
-                event_sequences = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = event_sequences.length; i < len; i++) {
-                    event_sequence = event_sequences[i];
-                    results.push(new BBModel.EventSequence(event_sequence));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(event_sequences);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('PathSvc', function($sce, AppConfig) {
-    return {
-      directivePartial: function(fileName) {
-        var partial_url;
-        if (AppConfig.partial_url) {
-          partial_url = AppConfig.partial_url;
-          return $sce.trustAsResourceUrl(partial_url + "/" + fileName + ".html");
-        } else {
-          return $sce.trustAsResourceUrl(fileName + ".html");
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  "use strict";
-  angular.module('BB.Services').factory('FormDataStoreService', function($rootScope, $window, $log, $parse) {
-    var checkForListeners, checkRegisteredWidgets, clear, dataStore, div, getParentScope, init, log, register, registeredWidgetArr, removeWidget, resetValuesOnScope, setIfUndefined, setListeners, setValuesOnScope, showInfo, storeFormData, toId;
-    registeredWidgetArr = [];
-    dataStore = {};
-    toId = 0;
-    div = '___';
-    log = function() {};
-    showInfo = function() {
-      return log(dataStore);
-    };
-    setIfUndefined = function(keyName, val) {
-      var getter, scope;
-      scope = this;
-      getter = $parse(keyName);
-      if (typeof getter(scope) === 'undefined') {
-        return getter.assign(scope, val);
-      }
-    };
-    resetValuesOnScope = function(scope, props) {
-      var i, len, prop, setter;
-      for (i = 0, len = props.length; i < len; i++) {
-        prop = props[i];
-        prop = $parse(prop);
-        setter = prop.assign;
-        setter(scope, null);
-      }
-    };
-    clear = function(scope, keepScopeValues) {
-      var data, key, widgetId;
-      if (!scope) {
-        throw new Error('Missing scope object. Cannot clear form data without scope');
-      }
-      if (_.isString(scope)) {
-        data = dataStore[scope];
-        if (!keepScopeValues) {
-          resetValuesOnScope(data[0], data[1]);
-        }
-        delete dataStore[scope];
-        return;
-      }
-      scope = getParentScope(scope);
-      if (scope && scope.bb) {
-        widgetId = scope.bb.uid;
-        removeWidget(scope);
-        for (key in dataStore) {
-          data = dataStore[key];
-          if (key.indexOf(widgetId) !== -1) {
-            if (data[3]) {
-              _.each(data[3], function(func) {
-                if (_.isFunction(func)) {
-                  return func();
-                }
-              });
-            }
-            if (!keepScopeValues) {
-              resetValuesOnScope(data[0], data[1]);
-            }
-            delete dataStore[key];
-          }
-        }
-      }
-    };
-    storeFormData = function() {
-      var i, key, len, ndata, prop, props, scope, step, val;
-      log('formDataStore ->', dataStore);
-      for (key in dataStore) {
-        step = dataStore[key];
-        log('\t', key);
-        scope = step[0];
-        props = step[1];
-        ndata = step[2];
-        if (!ndata) {
-          ndata = step[2] = {};
-        }
-        for (i = 0, len = props.length; i < len; i++) {
-          prop = props[i];
-          val = ndata[prop];
-          if (val === 'data:destroyed') {
-            ndata[prop] = null;
-          } else {
-            val = angular.copy(scope.$eval(prop));
-            ndata[prop] = val;
-          }
-          log('\t\t', prop, val);
-        }
-        log('\n');
-      }
-    };
-    setValuesOnScope = function(currentPage, scope) {
-      var cpage, storedValues;
-      cpage = dataStore[currentPage];
-      storedValues = cpage[2];
-      log('Decorating scope ->', currentPage, storedValues);
-      if (_.isObject(storedValues)) {
-        _.each(_.keys(storedValues), function(keyName) {
-          var getter;
-          if (typeof storedValues[keyName] !== 'undefined' && storedValues[keyName] !== 'data:destroyed') {
-            getter = $parse(keyName);
-            return getter.assign(scope, storedValues[keyName]);
-          }
-        });
-      }
-      cpage[0] = scope;
-      log(scope);
-      log('\n');
-    };
-    getParentScope = function(scope) {
-      while (scope) {
-        if (scope.hasOwnProperty('cid') && scope.cid === 'BBCtrl') {
-          return scope;
-        }
-        scope = scope.$parent;
-      }
-    };
-    checkRegisteredWidgets = function(scope) {
-      var i, isRegistered, len, rscope;
-      isRegistered = false;
-      scope = getParentScope(scope);
-      for (i = 0, len = registeredWidgetArr.length; i < len; i++) {
-        rscope = registeredWidgetArr[i];
-        if (rscope === scope) {
-          isRegistered = true;
-        }
-      }
-      return isRegistered;
-    };
-    checkForListeners = function(propsArr) {
-      var watchArr;
-      watchArr = [];
-      _.each(propsArr, function(propName, index) {
-        var split;
-        split = propName.split('->');
-        if (split.length === 2) {
-          watchArr.push(split);
-          return propsArr[index] = split[0];
-        }
-      });
-      return watchArr;
-    };
-    setListeners = function(scope, listenerArr, currentPage) {
-      var cpage, listenersArr;
-      if (listenerArr.length) {
-        cpage = dataStore[currentPage];
-        listenersArr = cpage[3] || [];
-        _.each(listenerArr, function(item, index) {
-          var func;
-          func = $rootScope.$on(item[1], function() {
-            var e;
-            try {
-              return cpage[2][item[0]] = 'data:destroyed';
-            } catch (error) {
-              e = error;
-              return log(e);
-            }
-          });
-          return listenersArr.push(func);
-        });
-        return cpage[3] = listenersArr;
-      }
-    };
-    init = function(uid, scope, propsArr) {
-      var currentPage, watchArr;
-      if (checkRegisteredWidgets(scope)) {
-        currentPage = scope.bb.uid + div + scope.bb.current_page + div + uid;
-        currentPage = currentPage.toLowerCase();
-        watchArr = checkForListeners(propsArr);
-        scope.clearStoredData = (function(currentPage) {
-          return function() {
-            clear(currentPage);
-          };
-        })(currentPage);
-        if (!currentPage) {
-          throw new Error("Missing current step");
-        }
-        if (dataStore[currentPage]) {
-          setValuesOnScope(currentPage, scope);
-          return;
-        }
-        log('Controller registered ->', currentPage, scope, '\n\n');
-        dataStore[currentPage] = [scope, propsArr];
-        setListeners(scope, watchArr, currentPage);
-      }
-    };
-    removeWidget = function(scope) {
-      registeredWidgetArr = _.without(registeredWidgetArr, scope);
-    };
-    register = function(scope) {
-      var registered;
-      registered = false;
-      if (scope && scope.$$childHead) {
-        scope = scope.$$childHead;
-      }
-      while (!_.has(scope, 'cid')) {
-        scope = scope.$parent;
-      }
-      if (!scope) {
-        return;
-      }
-      if (scope.cid !== 'BBCtrl') {
-        throw new Error("This directive can only be used with the BBCtrl");
-      }
-      _.each(registeredWidgetArr, function(stored) {
-        if (scope === stored) {
-          return registered = true;
-        }
-      });
-      if (!registered) {
-        log('Scope registered ->', scope);
-        scope.$on('destroy', removeWidget);
-        return registeredWidgetArr.push(scope);
-      }
-    };
-    $rootScope.$watch(function() {
-      $window.clearTimeout(toId);
-      toId = setTimeout(storeFormData, 300);
-    });
-    $rootScope.$on('save:formData', storeFormData);
-    $rootScope.$on('clear:formData', clear);
-    return {
-      init: init,
-      destroy: function(scope) {
-        return clear(scope, true);
-      },
-      showInfo: showInfo,
-      register: register,
-      setIfUndefined: setIfUndefined
-    };
-  });
-
-}).call(this);
-
-
-/*
-* @ngdoc service
-* @module BB.Services
-* @name GeneralOptions
-*
-* @description
-* Returns a set of General configuration options
- */
-
-
-/*
-* @ngdoc service
-* @module BB.Services
-* @name GeneralOptionsProvider
-*
-* @description
-* Provider
-*
-* @example
-  <example>
-  angular.module('ExampleModule').config ['GeneralOptionsProvider', (GeneralOptionsProvider) ->
-    GeneralOptionsProvider.setOption('twelve_hour_format', true)
-  ]
-  </example>
- */
-
-(function() {
-  angular.module('BB.Services').provider('GeneralOptions', [
-    function() {
-      var options;
-      options = {
-        twelve_hour_format: false,
-        calendar_minute_step: 10,
-        calendar_min_time: "09:00",
-        calendar_max_time: "18:00",
-        calendar_slot_duration: 5
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('GeolocationService', function($q) {
-    return {
-      haversine: function(position1, position2) {
-        var R, a, c, chLat, chLon, d, dLat, dLon, distance, distances, lat1, lat2, lon1, lon2, pi, rLat1, rLat2;
-        pi = Math.PI;
-        R = 6371;
-        distances = [];
-        lat1 = position1.lat;
-        lon1 = position1.long;
-        lat2 = position2.lat;
-        lon2 = position2.long;
-        chLat = lat2 - lat1;
-        chLon = lon2 - lon1;
-        dLat = chLat * (pi / 180);
-        dLon = chLon * (pi / 180);
-        rLat1 = lat1 * (pi / 180);
-        rLat2 = lat2 * (pi / 180);
-        a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
-        c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        d = R * c;
-        d = d * 0.621371192;
-        distance = Math.round(d);
-        return distance;
-      },
-      geocode: function(address, prms) {
-        var deferred, ne, request, sw;
-        if (prms == null) {
-          prms = {};
-        }
-        deferred = $q.defer();
-        request = {
-          address: address
-        };
-        if (prms.region) {
-          request.region = prms.region;
-        }
-        if (prms.componentRestrictions) {
-          request.componentRestrictions = prms.componentRestrictions;
-        }
-        if (prms.bounds) {
-          sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
-          ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
-          request.bounds = new google.maps.LatLngBounds(sw, ne);
-        }
-        new google.maps.Geocoder().geocode(request, function(results, status) {
-          if (results && status === 'OK') {
-            return deferred.resolve({
-              results: results,
-              status: status
-            });
-          } else {
-            return deferred.reject(status);
-          }
-        });
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ItemService", function($q, BBModel, $rootScope) {
-    return {
-      query: function(prms) {
-        var deferred;
-        deferred = $q.defer();
-        if (prms.cItem.service && prms.item !== 'service') {
-          if (!prms.cItem.service.$has('items')) {
-            prms.cItem.service.$get('item').then((function(_this) {
-              return function(base_item) {
-                return _this.buildItems(base_item.$get('items'), prms, deferred);
-              };
-            })(this));
-          } else {
-            this.buildItems(prms.cItem.service.$get('items'), prms, deferred);
-          }
-        } else if (prms.cItem.resource && !prms.cItem.anyResource() && prms.item !== 'resource') {
-          if (!prms.cItem.resource.$has('items')) {
-            prms.cItem.resource.$get('item').then((function(_this) {
-              return function(base_item) {
-                return _this.buildItems(base_item.$get('items'), prms, deferred);
-              };
-            })(this));
-          } else {
-            this.buildItems(prms.cItem.resource.$get('items'), prms, deferred);
-          }
-        } else if (prms.cItem.person && !prms.cItem.anyPerson() && prms.item !== 'person') {
-          if (!prms.cItem.person.$has('items')) {
-            prms.cItem.person.$get('item').then((function(_this) {
-              return function(base_item) {
-                return _this.buildItems(base_item.$get('items'), prms, deferred);
-              };
-            })(this));
-          } else {
-            this.buildItems(prms.cItem.person.$get('items'), prms, deferred);
-          }
-        } else {
-          deferred.reject("No service link found");
-        }
-        return deferred.promise;
-      },
-      buildItems: function(base_items, prms, deferred) {
-        var wait_items;
-        wait_items = [base_items];
-        if (prms.wait) {
-          wait_items.push(prms.wait);
-        }
-        return $q.all(wait_items).then((function(_this) {
-          return function(resources) {
-            var resource;
-            resource = resources[0];
-            return resource.$get('items').then(function(found) {
-              var i, len, m, matching, v, wlist;
-              matching = [];
-              wlist = [];
-              for (i = 0, len = found.length; i < len; i++) {
-                v = found[i];
-                if (v.type === prms.item) {
-                  matching.push(new BBModel.BookableItem(v));
-                }
-              }
-              return $q.all((function() {
-                var j, len1, results;
-                results = [];
-                for (j = 0, len1 = matching.length; j < len1; j++) {
-                  m = matching[j];
-                  results.push(m.ready.promise);
-                }
-                return results;
-              })()).then(function() {
-                return deferred.resolve(matching);
-              });
-            });
-          };
-        })(this));
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ItemDetailsService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred;
-        deferred = $q.defer();
-        if (prms.cItem.service) {
-          if (!prms.cItem.service.$has('questions')) {
-            deferred.resolve(new BBModel.ItemDetails());
-          } else {
-            prms.cItem.service.$get('questions').then((function(_this) {
-              return function(details) {
-                return deferred.resolve(new BBModel.ItemDetails(details));
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-        } else if (prms.cItem.event_chain) {
-          if (!prms.cItem.event_chain.$has('questions')) {
-            deferred.resolve(new BBModel.ItemDetails());
-          } else {
-            prms.cItem.event_chain.$get('questions').then((function(_this) {
-              return function(details) {
-                return deferred.resolve(new BBModel.ItemDetails(details));
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-        } else if (prms.cItem.deal) {
-          if (!prms.cItem.deal.$has('questions')) {
-            deferred.resolve(new BBModel.ItemDetails());
-          } else {
-            prms.cItem.deal.$get('questions').then((function(_this) {
-              return function(details) {
-                return deferred.resolve(new BBModel.ItemDetails(details));
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-        } else {
-          deferred.resolve();
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('LoadingService', function($q, $window, $log, $rootScope, AlertService) {
-    return {
-      $loader: function(scope) {
-        var item, lservice;
-        lservice = this;
-        item = {
-          scope: scope,
-          setLoaded: function() {
-            return lservice.setLoaded(scope);
-          },
-          setLoadedAndShowError: function(err, error_string) {
-            return lservice.setLoadedAndShowError(scope, err, error_string);
-          },
-          notLoaded: function() {
-            lservice.notLoaded(scope);
-            return this;
-          }
-        };
-        return item;
-      },
-      setLoaded: function(cscope) {
-        var loadingFinished;
-        cscope.$emit('hide:loader', cscope);
-        cscope.isLoaded = true;
-        loadingFinished = true;
-        while (cscope) {
-          if (cscope.hasOwnProperty('scopeLoaded')) {
-            if (this.areScopesLoaded(cscope)) {
-              cscope.scopeLoaded = true;
-            } else {
-              loadingFinished = false;
-            }
-          }
-          cscope = cscope.$parent;
-        }
-        if (loadingFinished) {
-          $rootScope.$broadcast('loading:finished');
-        }
-      },
-      setLoadedAndShowError: function(scope, err, error_string) {
-        $log.warn(err, error_string);
-        scope.setLoaded(scope);
-        if (err && err.status === 409) {
-          return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
-        } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
-          return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
-        } else {
-          return AlertService.danger(ErrorService.getError('GENERIC'));
-        }
-      },
-      areScopesLoaded: function(cscope) {
-        var child;
-        if (cscope.hasOwnProperty('isLoaded') && !cscope.isLoaded) {
-          return false;
-        } else {
-          child = cscope.$$childHead;
-          while (child) {
-            if (!this.areScopesLoaded(child)) {
-              return false;
-            }
-            child = child.$$nextSibling;
-          }
-          return true;
-        }
-      },
-      notLoaded: function(cscope) {
-        cscope.$emit('show:loader', cscope);
-        cscope.isLoaded = false;
-        while (cscope) {
-          if (cscope.hasOwnProperty('scopeLoaded')) {
-            cscope.scopeLoaded = false;
-          }
-          cscope = cscope.$parent;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('LocaleService', function($window) {
-    var locale;
-    locale = $window.getURIparam('locale');
-    if (locale) {
-      return locale;
-    } else if ($window.navigator.language) {
-      return $window.navigator.language;
-    } else {
-      return "en";
-    }
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("LoginService", function($q, halClient, $rootScope, BBModel, $sessionStorage, $localStorage) {
-    return {
-      companyLogin: function(company, params, form) {
-        var deferred;
-        deferred = $q.defer();
-        company.$post('login', params, form).then((function(_this) {
-          return function(login) {
-            return login.$get('member').then(function(member) {
-              _this.setLogin(member);
-              return deferred.resolve(member);
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      login: function(form, options) {
-        var deferred, url;
-        deferred = $q.defer();
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/login";
-        halClient.$post(url, options, form).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('member').then(function(member) {
-              _this.setLogin(member);
-              return deferred.resolve(member);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      FBLogin: function(company, prms) {
-        var deferred;
-        deferred = $q.defer();
-        company.$post('facebook_login', {}, prms).then((function(_this) {
-          return function(login) {
-            return login.$get('member').then(function(member) {
-              member = new BBModel.Member.Member(member);
-              $sessionStorage.setItem("fb_user", true);
-              _this.setLogin(member);
-              return deferred.resolve(member);
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      companyQuery: (function(_this) {
-        return function(id) {
-          var comp_promise;
-          if (id) {
-            comp_promise = halClient.$get(location.protocol + '//' + location.host + '/api/v1/company/' + id);
-            return comp_promise.then(function(company) {
-              return company = new BBModel.Company(company);
-            });
-          }
-        };
-      })(this),
-      memberQuery: (function(_this) {
-        return function(params) {
-          var member_promise;
-          if (params.member_id && params.company_id) {
-            member_promise = halClient.$get(location.protocol + '//' + location.host + ("/api/v1/" + params.company_id + "/") + "members/" + params.member_id);
-            return member_promise.then(function(member) {
-              return member = new BBModel.Member.Member(member);
-            });
-          }
-        };
-      })(this),
-      ssoLogin: function(options, data) {
-        var deferred, url;
-        deferred = $q.defer();
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/login/sso/" + options['company_id'];
-        halClient.$post(url, {}, data).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('member').then(function(member) {
-              member = new BBModel.Member.Member(member);
-              _this.setLogin(member, true);
-              return deferred.resolve(member);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      isLoggedIn: function() {
-        this.checkLogin();
-        return $rootScope.member && (!$rootScope.user || $rootScope.user === void 0);
-      },
-      setLogin: function(member, persist) {
-        var auth_token;
-        auth_token = member.getOption('auth_token');
-        member = new BBModel.Member.Member(member);
-        $sessionStorage.setItem("login", member.$toStore());
-        $sessionStorage.setItem("auth_token", auth_token);
-        $rootScope.member = member;
-        if (persist) {
-          $localStorage.setItem("auth_token", auth_token);
-        }
-        return member;
-      },
-      member: function() {
-        this.checkLogin();
-        return $rootScope.member;
-      },
-      checkLogin: function() {
-        var member;
-        if ($rootScope.member) {
-          return true;
-        }
-        member = $sessionStorage.getItem("login");
-        if (member) {
-          member = halClient.createResource(member);
-          $rootScope.member = new BBModel.Member.Member(member);
-          return true;
-        } else {
-          return false;
-        }
-      },
-      logout: function(options) {
-        var deferred, url;
-        $rootScope.member = null;
-        deferred = $q.defer();
-        options || (options = {});
-        options['root'] || (options['root'] = "");
-        url = options['root'] + "/api/v1/logout";
-        $sessionStorage.clear();
-        $localStorage.clear();
-        halClient.$del(url, options, {}).then((function(_this) {
-          return function(logout) {
-            $sessionStorage.clear();
-            $localStorage.clear();
-            return deferred.resolve(true);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      FBLogout: function(options) {
-        $sessionStorage.removeItem("fb_user");
-        return this.logout(options);
-      },
-      sendPasswordReset: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        company.$post('email_password_reset', {}, params).then((function(_this) {
-          return function() {
-            return deferred.resolve(true);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      updatePassword: function(member, params) {
-        var deferred;
-        params.auth_token = member.getOption('auth_token');
-        if (member && params['new_password'] && params['confirm_new_password']) {
-          deferred = $q.defer();
-          member.$post('update_password', {}, params).then((function(_this) {
-            return function(login) {
-              return login.$get('member').then(function(member) {
-                _this.setLogin(member, params.persist_login);
-                return deferred.resolve(member);
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-          return deferred.promise;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("MembershipLevelsService", function($q, BBModel) {
-    return {
-      getMembershipLevels: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        company.$get("member_levels").then(function(resource) {
-          return resource.$get('membership_levels').then((function(_this) {
-            return function(membership_levels) {
-              var level, levels;
-              levels = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = membership_levels.length; i < len; i++) {
-                  level = membership_levels[i];
-                  results.push(new BBModel.MembershipLevel(level));
-                }
-                return results;
-              })();
-              return deferred.resolve(levels);
-            };
-          })(this));
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('ModalForm', function($modal, $log, Dialog) {
-    var bookForm, editForm, newForm;
-    newForm = function($scope, $modalInstance, company, title, new_rel, post_rel, success, fail) {
-      $scope.loading = true;
-      $scope.title = title;
-      $scope.company = company;
-      if ($scope.company.$has(new_rel)) {
-        $scope.company.$get(new_rel).then(function(schema) {
-          $scope.form = _.reject(schema.form, function(x) {
-            return x.type === 'submit';
-          });
-          $scope.schema = schema.schema;
-          $scope.form_model = {};
-          return $scope.loading = false;
-        });
-      } else {
-        $log.warn("company does not have '" + new_rel + "' rel");
-      }
-      $scope.submit = function(form) {
-        $scope.$broadcast('schemaFormValidate');
-        $scope.loading = true;
-        return $scope.company.$post(post_rel, {}, $scope.form_model).then(function(model) {
-          $scope.loading = false;
-          $modalInstance.close(model);
-          if (success) {
-            return success(model);
-          }
-        }, function(err) {
-          $scope.loading = false;
-          $modalInstance.close(err);
-          $log.error('Failed to create');
-          if (fail) {
-            return fail(err);
-          }
-        });
-      };
-      return $scope.cancel = function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        return $modalInstance.dismiss('cancel');
-      };
-    };
-    editForm = function($scope, $modalInstance, model, title, success, fail) {
-      $scope.loading = true;
-      $scope.title = title;
-      $scope.model = model;
-      if ($scope.model.$has('edit')) {
-        $scope.model.$get('edit').then(function(schema) {
-          $scope.form = _.reject(schema.form, function(x) {
-            return x.type === 'submit';
-          });
-          $scope.schema = schema.schema;
-          $scope.form_model = $scope.model;
-          return $scope.loading = false;
-        });
-      } else {
-        $log.warn("model does not have 'edit' rel");
-      }
-      $scope.submit = function(form) {
-        $scope.$broadcast('schemaFormValidate');
-        $scope.loading = true;
-        if ($scope.model.$update) {
-          return $scope.model.$update($scope.form_model).then(function() {
-            $scope.loading = false;
-            $modalInstance.close($scope.model);
-            if (success) {
-              return success($scope.model);
-            }
-          }, function(err) {
-            $scope.loading = false;
-            $modalInstance.close(err);
-            $log.error('Failed to create');
-            if (fail) {
-              return fail();
-            }
-          });
-        } else {
-          return $scope.model.$put('self', {}, $scope.form_model).then(function(model) {
-            $scope.loading = false;
-            $modalInstance.close(model);
-            if (success) {
-              return success(model);
-            }
-          }, function(err) {
-            $scope.loading = false;
-            $modalInstance.close(err);
-            $log.error('Failed to create');
-            if (fail) {
-              return fail();
-            }
-          });
-        }
-      };
-      $scope.cancel = function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        return $modalInstance.dismiss('cancel');
-      };
-      $scope.success = function(response) {
-        event.preventDefault();
-        event.stopPropagation();
-        $modalInstance.close();
-        if (success) {
-          return success(response);
-        }
-      };
-      return $scope.cancelEvent = function(event, type) {
-        if (type == null) {
-          type = 'booking';
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        $modalInstance.close();
-        return Dialog.confirm({
-          model: model,
-          body: "Are you sure you want to cancel this " + type + "?",
-          success: function(model) {
-            return model.$del('self').then(function(response) {
-              if (success) {
-                return success(response);
-              }
-            });
-          }
-        });
-      };
-    };
-    bookForm = function($scope, $modalInstance, model, company, title, success, fail) {
-      $scope.loading = true;
-      $scope.title = title;
-      $scope.model = model;
-      $scope.company = company;
-      if ($scope.model.$has('new_booking')) {
-        $scope.model.$get('new_booking').then(function(schema) {
-          $scope.form = _.reject(schema.form, function(x) {
-            return x.type === 'submit';
-          });
-          $scope.schema = schema.schema;
-          $scope.form_model = {};
-          return $scope.loading = false;
-        });
-      } else {
-        $log.warn("model does not have 'new_booking' rel");
-      }
-      $scope.submit = function(form) {
-        $scope.$broadcast('schemaFormValidate');
-        if (form.$valid) {
-          $scope.loading = true;
-          return $scope.company.$post('bookings', {}, $scope.form_model).then(function(booking) {
-            $scope.loading = false;
-            $modalInstance.close(booking);
-            if (success) {
-              return success(booking);
-            }
-          }, function(err) {
-            $scope.loading = false;
-            $modalInstance.close(err);
-            $log.error('Failed to create');
-            if (fail) {
-              return fail();
-            }
-          });
-        } else {
-          return $log.warn('Invalid form');
-        }
-      };
-      return $scope.cancel = function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        return $modalInstance.dismiss('cancel');
-      };
-    };
-    return {
-      "new": function(config) {
-        var templateUrl;
-        if (config.templateUrl) {
-          templateUrl = config.templateUrl;
-        }
-        templateUrl || (templateUrl = 'modal_form.html');
-        return $modal.open({
-          templateUrl: templateUrl,
-          controller: newForm,
-          size: config.size,
-          resolve: {
-            company: function() {
-              return config.company;
-            },
-            title: function() {
-              return config.title;
-            },
-            new_rel: function() {
-              return config.new_rel;
-            },
-            post_rel: function() {
-              return config.post_rel;
-            },
-            success: function() {
-              return config.success;
-            },
-            fail: function() {
-              return config.fail;
-            }
-          }
-        });
-      },
-      edit: function(config) {
-        var templateUrl;
-        if (config.templateUrl) {
-          templateUrl = config.templateUrl;
-        }
-        templateUrl || (templateUrl = 'modal_form.html');
-        return $modal.open({
-          templateUrl: templateUrl,
-          controller: editForm,
-          size: config.size,
-          resolve: {
-            model: function() {
-              return config.model;
-            },
-            title: function() {
-              return config.title;
-            },
-            success: function() {
-              return config.success;
-            },
-            fail: function() {
-              return config.fail;
-            }
-          }
-        });
-      },
-      book: function(config) {
-        var templateUrl;
-        if (config.templateUrl) {
-          templateUrl = config.templateUrl;
-        }
-        templateUrl || (templateUrl = 'modal_form.html');
-        return $modal.open({
-          templateUrl: templateUrl,
-          controller: bookForm,
-          size: config.size,
-          resolve: {
-            model: function() {
-              return config.model;
-            },
-            company: function() {
-              return config.company;
-            },
-            title: function() {
-              return config.title;
-            },
-            success: function() {
-              return config.success;
-            },
-            fail: function() {
-              return config.fail;
-            }
-          }
-        });
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("MutexService", function($q, $window, $rootScope) {
-    return {
-      getLock: function(prms) {
-        var iprom, mprom;
-        mprom = $q.defer();
-        iprom = $q.defer();
-        mprom.promise.then(function() {
-          var next_mux;
-          $rootScope.mutexes.shift();
-          if ($rootScope.mutexes.length > 0) {
-            next_mux = $rootScope.mutexes[0];
-            return next_mux.iprom.resolve(next_mux.mprom);
-          }
-        });
-        if (!$rootScope.mutexes || $rootScope.mutexes.length === 0) {
-          $rootScope.mutexes = [
-            {
-              mprom: mprom,
-              iprom: iprom
-            }
-          ];
-          iprom.resolve(mprom);
-          return iprom.promise;
-        } else {
-          $rootScope.mutexes.push({
-            mprom: mprom,
-            iprom: iprom
-          });
-          return iprom.promise;
-        }
-      },
-      unlock: function(mutex) {
-        return mutex.resolve();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PackageItemService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('packages')) {
-          deferred.reject("No packages found");
-        } else {
-          company.$get('packages').then(function(resource) {
-            return resource.$get('packages').then(function(package_items) {
-              var i;
-              return deferred.resolve((function() {
-                var j, len, results;
-                results = [];
-                for (j = 0, len = package_items.length; j < len; j++) {
-                  i = package_items[j];
-                  results.push(new BBModel.PackageItem(i));
-                }
-                return results;
-              })());
-            });
-          }, function(err) {
-            return deferred.reject(err);
-          });
-        }
-        return deferred.promise;
-      },
-      getPackageServices: function(package_item) {
-        var deferred;
-        deferred = $q.defer();
-        if (!package_item.$has('services')) {
-          deferred.reject("No services found");
-        } else {
-          package_item.$get('services').then(function(services) {
-            var s;
-            return deferred.resolve((function() {
-              var j, len, results;
-              results = [];
-              for (j = 0, len = services.length; j < len; j++) {
-                s = services[j];
-                results.push(new BBModel.Service(s));
-              }
-              return results;
-            })());
-          }, (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PaginationService", function() {
-    return {
-      initialise: function(options) {
-        var paginator;
-        if (!options) {
-          return;
-        }
-        paginator = {
-          current_page: 1,
-          page_size: options.page_size,
-          num_pages: null,
-          max_size: options.max_size,
-          num_items: null
-        };
-        return paginator;
-      },
-      update: function(paginator, length) {
-        var end, start, total;
-        if (!paginator || (length == null)) {
-          return;
-        }
-        paginator.num_items = length;
-        start = ((paginator.page_size - 1) * paginator.current_page) - ((paginator.page_size - 1) - paginator.current_page);
-        end = paginator.current_page * paginator.page_size;
-        total = end < paginator.page_size ? end : length;
-        end = end > total ? total : end;
-        total = total >= 100 ? "100+" : total;
-        return paginator.summary = start + " - " + end + " of " + total;
-      },
-      checkItems: function(paginator, items_loaded) {
-        var items_traversed, remaining_items;
-        items_traversed = paginator.page_size * (paginator.current_page - 1);
-        remaining_items = paginator.num_items - items_loaded;
-        return (items_loaded < (items_traversed + paginator.page_size)) && remaining_items > 0;
-      }
-    };
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Services:PathHelper
-*
-* @description
-* Helper service for retrieving params from $location.path 
-*
- */
-
-(function() {
-  angular.module('BB.Services').factory('PathHelper', function($urlMatcherFactory, $location) {
-    return {
-
-      /***
-        * @ngdoc method
-        * @name matchRouteToPath
-        * @methodOf BB.Services:PathHelper
-        * @description
-        * Get the email pattern
-        * @param {string} the route format
-        * @param {string} optional argument specifying the param to return from the path if matched, e.g. 'page'
-        *
-        * @returns {Object} the match object or matched param
-       */
-      matchRouteToPath: function(route_format, param) {
-        var match, match_test, parts, pattern;
-        if (!$location.path() || !route_format) {
-          return false;
-        }
-        parts = route_format.split("/");
-        match = null;
-        while (parts.length > 0 && !match) {
-          match_test = parts.join("/");
-          pattern = $urlMatcherFactory.compile(match_test);
-          match = pattern.exec($location.path());
-          parts.pop();
-        }
-        if (match[param]) {
-          return match[param];
-        } else {
-          return match;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PersonService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('people')) {
-          deferred.reject("No people found");
-        } else {
-          company.$get('people').then((function(_this) {
-            return function(resource) {
-              return resource.$get('people').then(function(items) {
-                var i, j, len, people;
-                people = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  people.push(new BBModel.Person(i));
-                }
-                return deferred.resolve(people);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ProductService", function($q, $window, halClient, UriTemplate, BBModel, $log, $rootScope) {
-    return {
-      getProduct: function(prms) {
-        var deferred, href, uri;
-        deferred = $q.defer();
-        if (prms.id) {
-          href = $rootScope.bb.api_url + "/api/v1/{company_id}/products/{id}";
-          uri = new UriTemplate(href).fillFromObject({
-            company_id: prms.company_id,
-            id: prms.product_id
-          });
-        } else if (prms.sku) {
-          href = $rootScope.bb.api_url + "/api/v1/{company_id}/products/find_by_sku/{sku}";
-          uri = new UriTemplate(href).fillFromObject({
-            company_id: prms.company_id,
-            sku: prms.sku
-          });
-        } else {
-          $log.warn("id or sku is required");
-          deferred.reject();
-        }
-        halClient.$get(uri, {}).then(function(product) {
-          return deferred.resolve(new BBModel.Product(product));
-        }, (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('products')) {
-          deferred.reject("No products found");
-        } else {
-          company.$get('products').then((function(_this) {
-            return function(resource) {
-              return resource.$get('products').then(function(items) {
-                var i, j, len, resources;
-                resources = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  resources.push(new BBModel.Product(i));
-                }
-                return deferred.resolve(resources);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("PurchaseTotalService", function($q, BBModel) {
-    return {
-      query: function(prms) {
-        var deferred;
-        deferred = $q.defer();
-        if (!prms.company.$has('total')) {
-          deferred.reject("No Total link found");
-        } else {
-          prms.company.$get('total', {
-            total_id: prms.total_id
-          }).then((function(_this) {
-            return function(total) {
-              return deferred.resolve(new BBModel.PurchaseTotal(total));
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('QueryStringService', function($window) {
-    return function(keyName) {
-      var hash, hashes, href, i, isNum, len, val, varObj;
-      varObj = {};
-      href = $window.location.href;
-      if (href.indexOf('?') < 0) {
-        return;
-      }
-      hashes = href.slice(href.indexOf('?') + 1).split(/[#&]/);
-      isNum = function(num) {
-        if (num == null) {
-          return;
-        }
-        if (num.substr(0, 1) === '0') {
-          return;
-        }
-        if (/[a-zA-Z\-\_\+\.\#\%\*\,]/.test(num)) {
-          return;
-        }
-        if (window.isNaN(window.parseInt(num, 10))) {
-          return;
-        }
-        return true;
-      };
-      for (i = 0, len = hashes.length; i < len; i++) {
-        hash = hashes[i];
-        hash = hash.split('=');
-        val = hash[1];
-        if (isNum(val)) {
-          val = window.parseInt(val, 10);
-        } else {
-          if (val === 'true') {
-            val = true;
-          } else if (val === 'false') {
-            val = false;
-          } else {
-            val = window.decodeURIComponent(val);
-          }
-        }
-        varObj[hash[0]] = val;
-      }
-      if (keyName) {
-        return varObj[keyName];
-      }
-      return varObj;
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BB.Services').factory('QuestionService', function($window, QueryStringService, $bbug) {
-    var addAnswersById, addAnswersByName, addAnswersFromDefaults, addDynamicAnswersByName, checkConditionalQuestions, convertDates, convertToSnakeCase, defaults, findByQuestionId, storeDefaults;
-    defaults = QueryStringService() || {};
-    convertDates = function(obj) {
-      return _.each(obj, function(val, key) {
-        var date;
-        date = $window.moment(obj[key]);
-        if (_.isString(obj[key]) && date.isValid()) {
-          return obj[key] = date;
-        }
-      });
-    };
-    if ($window.bb_setup) {
-      convertDates($window.bb_setup);
-      angular.extend(defaults, $window.bb_setup);
-    }
-    addAnswersById = function(questions) {
-      if (!questions) {
-        return;
-      }
-      if (angular.isArray(questions)) {
-        return _.each(questions, function(question) {
-          var id;
-          id = question.id + '';
-          if (!question.answer && defaults[id]) {
-            return question.answer = defaults[id];
-          }
-        });
-      } else {
-        if (defaults[questions.id + '']) {
-          return questions.answer = defaults[questions.id + ''];
-        }
-      }
-    };
-    convertToSnakeCase = function(str) {
-      str = str.toLowerCase();
-      str = $.trim(str);
-      str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
-      str = str.replace(/\s{2,}/g, ' ');
-      str = str.replace(/\s/g, '_');
-      return str;
-    };
-    addDynamicAnswersByName = function(questions) {
-      var keys;
-      if (angular.isArray(questions)) {
-        keys = _.keys(defaults);
-        return _.each(questions, function(question) {
-          var name;
-          name = convertToSnakeCase(question.name);
-          return _.each(keys, function(key) {
-            if (name.indexOf("_" + key) >= 0 || name.indexOf("_" + key + "_") >= 0 || name.indexOf(key + "_") >= 0) {
-              if (defaults[key] && !question.answer) {
-                question.answer = defaults[key];
-                delete defaults[key];
-              }
-            }
-          });
-        });
-      }
-    };
-    addAnswersByName = function(obj, keys) {
-      var i, key, len, type;
-      type = Object.prototype.toString.call(obj).slice(8, -1);
-      if (type === 'Object' && angular.isArray(keys)) {
-        for (i = 0, len = keys.length; i < len; i++) {
-          key = keys[i];
-          if (defaults[key] && !obj[key]) {
-            obj[key] = defaults[key];
-            delete defaults[key];
-          }
-        }
-      }
-    };
-    addAnswersFromDefaults = function(questions, defaultAnswers) {
-      var helpTextName, i, len, question, results, snakeCaseName;
-      results = [];
-      for (i = 0, len = questions.length; i < len; i++) {
-        question = questions[i];
-        helpTextName = question.help_text;
-        snakeCaseName = convertToSnakeCase(question.name);
-        if (defaultAnswers[question.id + '']) {
-          results.push(question.answer = defaultAnswers[question.id + '']);
-        } else if (defaultAnswers[helpTextName]) {
-          results.push(question.answer = defaultAnswers[helpTextName]);
-        } else if (defaultAnswers[snakeCaseName]) {
-          results.push(question.answer = defaultAnswers[snakeCaseName]);
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    };
-    storeDefaults = function(obj) {
-      return angular.extend(defaults, obj.bb_setup || {});
-    };
-    checkConditionalQuestions = function(questions) {
-      var a, ans, cond, found, i, len, q, ref, results, v;
-      results = [];
-      for (i = 0, len = questions.length; i < len; i++) {
-        q = questions[i];
-        if (q.settings && q.settings.conditional_question) {
-          cond = findByQuestionId(questions, parseInt(q.settings.conditional_question));
-          if (cond) {
-            ans = cond.getAnswerId();
-            found = false;
-            if ($bbug.isEmptyObject(q.settings.conditional_answers) && cond.detail_type === "check" && !cond.answer) {
-              found = true;
-            }
-            ref = q.settings.conditional_answers;
-            for (a in ref) {
-              v = ref[a];
-              if (a[0] === 'c' && parseInt(v) === 1 && cond.answer) {
-                found = true;
-              } else if (parseInt(a) === ans && parseInt(v) === 1) {
-                found = true;
-              }
-            }
-            if (found) {
-              results.push(q.showElement());
-            } else {
-              results.push(q.hideElement());
-            }
-          } else {
-            results.push(void 0);
-          }
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    };
-    findByQuestionId = function(questions, qid) {
-      var i, len, q;
-      for (i = 0, len = questions.length; i < len; i++) {
-        q = questions[i];
-        if (q.id === qid) {
-          return q;
-        }
-      }
-      return null;
-    };
-    return {
-      getStoredData: function() {
-        return defaults;
-      },
-      storeDefaults: storeDefaults,
-      addAnswersById: addAnswersById,
-      addAnswersByName: addAnswersByName,
-      addDynamicAnswersByName: addDynamicAnswersByName,
-      addAnswersFromDefaults: addAnswersFromDefaults,
-      convertToSnakeCase: convertToSnakeCase,
-      checkConditionalQuestions: checkConditionalQuestions
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ReasonService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('reasons')) {
-          deferred.reject("Reasons not turned on for this Company.");
-        } else {
-          company.$get('reasons').then((function(_this) {
-            return function(resource) {
-              return resource.$get('reasons').then(function(items) {
-                var i, j, len, reason, reasons;
-                reasons = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  reason = new BBModel.Reason(i);
-                  reasons.push(reason);
-                }
-                return deferred.resolve(reasons);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module("BB.Services").factory("RecaptchaService", function($q, halClient, UriTemplate) {
-    return {
-      validateResponse: function(params) {
-        var deferred, href, prms, uri;
-        deferred = $q.defer();
-        href = params.api_url + "/api/v1/recaptcha";
-        uri = new UriTemplate(href);
-        prms = {};
-        prms.response = params.response;
-        halClient.$post(uri, {}, prms).then(function(response) {
-          return deferred.resolve(response);
-        }, function(err) {
-          return deferred.reject(err);
-        });
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ResourceService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('resources')) {
-          deferred.reject("No resource found");
-        } else {
-          company.$get('resources').then((function(_this) {
-            return function(resource) {
-              return resource.$get('resources').then(function(items) {
-                var i, j, len, resources;
-                resources = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  resources.push(new BBModel.Resource(i));
-                }
-                return deferred.resolve(resources);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("ServiceService", function($q, BBModel) {
-    return {
-      query: function(company) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('services')) {
-          deferred.reject("No services found");
-        } else {
-          company.$get('services').then((function(_this) {
-            return function(resource) {
-              return resource.$get('services').then(function(items) {
-                var i, j, len, services;
-                services = [];
-                for (j = 0, len = items.length; j < len; j++) {
-                  i = items[j];
-                  services.push(new BBModel.Service(i));
-                }
-                return deferred.resolve(services);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('SettingsService', function($modalStack) {
-    var company_time_zone, country_code, currency, display_time_zone, i18n, scroll_offset, use_local_time_zone;
-    i18n = false;
-    scroll_offset = 0;
-    country_code = null;
-    use_local_time_zone = false;
-    currency = null;
-    company_time_zone = null;
-    display_time_zone = null;
-    return {
-      update_document_title: false,
-      enableInternationalizaton: function() {
-        return i18n = true;
-      },
-      isInternationalizatonEnabled: function() {
-        return i18n;
-      },
-      setScrollOffset: function(value) {
-        return scroll_offset = parseInt(value);
-      },
-      getScrollOffset: function() {
-        return scroll_offset;
-      },
-      setCountryCode: function(value) {
-        country_code = value;
-        if (country_code && country_code.match(/^(gb|au)$/)) {
-          return moment.locale('en-' + country_code);
-        }
-      },
-      getCountryCode: function() {
-        return country_code;
-      },
-      setUseLocalTimeZone: function(value) {
-        use_local_time_zone = value;
-        return display_time_zone = moment.tz.guess();
-      },
-      getUseLocalTimeZone: function() {
-        return use_local_time_zone;
-      },
-      setCurrency: function(value) {
-        return currency = value;
-      },
-      getCurrency: function() {
-        return currency;
-      },
-      setTimeZone: function(value) {
-        return company_time_zone = value;
-      },
-      getTimeZone: function() {
-        return company_time_zone;
-      },
-      setDisplayTimeZone: function(value) {
-        return display_time_zone = value;
-      },
-      getDisplayTimeZone: function() {
-        if (display_time_zone) {
-          return display_time_zone;
-        } else {
-          return company_time_zone;
-        }
-      },
-      isModalOpen: function() {
-        return !!$modalStack.getTop();
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("SlotService", function($q, BBModel) {
-    return {
-      query: function(company, params) {
-        var deferred;
-        deferred = $q.defer();
-        if (!company.$has('slots')) {
-          deferred.resolve([]);
-        } else {
-          if (params.item) {
-            if (params.item.resource) {
-              params.resource_id = params.item.resource.id;
-            }
-            if (params.item.person) {
-              params.person_id = params.item.person.id;
-            }
-          }
-          company.$get('slots', params).then((function(_this) {
-            return function(resource) {
-              return resource.$get('slots', params).then(function(slots) {
-                var slot;
-                slots = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = slots.length; i < len; i++) {
-                    slot = slots[i];
-                    results.push(new BBModel.Slot(slot));
-                  }
-                  return results;
-                })();
-                return deferred.resolve(slots);
-              });
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BB.Services.service:SlotDates
-  *
-  * @description
-  * checks for the first date with available spaces
-   */
-  angular.module('BB.Services').factory('SlotDates', [
-    '$q', 'DayService', function($q, DayService) {
-      var cached, getFirstDayWithSlots;
-      cached = {
-        firstSlotDate: null,
-        timesQueried: 0
-      };
-      getFirstDayWithSlots = function(cItem, selected_day) {
-        var deferred, endDate;
-        deferred = $q.defer();
-        if (cached.firstSlotDate != null) {
-          deferred.resolve(cached.firstSlotDate);
-          return deferred.promise;
-        }
-        endDate = selected_day.clone().add(3, 'month');
-        DayService.query({
-          cItem: cItem,
-          date: selected_day.format('YYYY-MM-DD'),
-          edate: endDate.format('YYYY-MM-DD')
-        }).then(function(days) {
-          var firstAvailableSlots;
-          cached.timesQueried++;
-          firstAvailableSlots = _.find(days, function(day) {
-            return day.spaces > 0;
-          });
-          if (firstAvailableSlots) {
-            cached.firstSlotDate = firstAvailableSlots.date;
-            return deferred.resolve(cached.firstSlotDate);
-          } else {
-            if (cached.timesQueried <= 4) {
-              return getFirstDayWithSlots(cItem, endDate).then(function(day) {
-                return deferred.resolve(cached.firstSlotDate);
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            } else {
-              return deferred.reject(new Error('ERROR.NO_SLOT_AVAILABLE'));
-            }
-          }
-        }, function(err) {
-          return deferred.reject(new Error('ERROR.COULDNT_GET_AVAILABLE_DATES'));
-        });
-        return deferred.promise;
-      };
-      return {
-        getFirstDayWithSlots: getFirstDayWithSlots
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').config(function($provide) {
-    return $provide.decorator('$sniffer', function($delegate) {
-      var regexp, result, webkit_version;
-      regexp = /Safari\/([\d.]+)/;
-      result = regexp.exec(navigator.userAgent);
-      webkit_version = result ? parseFloat(result[1]) : null;
-      _.extend($delegate, {
-        webkit: webkit_version
-      });
-      return $delegate;
-    });
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("SpaceService", [
-    '$q', function($q, BBModel) {
-      return {
-        query: function(company) {
-          var deferred;
-          deferred = $q.defer();
-          if (!company.$has('spaces')) {
-            deferred.reject("No spaces found");
-          } else {
-            company.$get('spaces').then((function(_this) {
-              return function(resource) {
-                return resource.$get('spaces').then(function(items) {
-                  var i, j, len, spaces;
-                  spaces = [];
-                  for (j = 0, len = items.length; j < len; j++) {
-                    i = items[j];
-                    spaces.push(new BBModel.Space(i));
-                  }
-                  return deferred.resolve(spaces);
-                });
-              };
-            })(this), (function(_this) {
-              return function(err) {
-                return deferred.reject(err);
-              };
-            })(this));
-          }
-          return deferred.promise;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("SSOService", function($q, $rootScope, halClient, LoginService) {
-    return {
-      memberLogin: function(options) {
-        var data, deferred, url;
-        deferred = $q.defer();
-        options.root || (options.root = "");
-        url = options.root + "/api/v1/login/sso/" + options.company_id;
-        data = {
-          token: options.member_sso
-        };
-        halClient.$post(url, {}, data).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('member').then(function(member) {
-              member = LoginService.setLogin(member);
-              return deferred.resolve(member);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      },
-      adminLogin: function(options) {
-        var data, deferred, url;
-        deferred = $q.defer();
-        options.root || (options.root = "");
-        url = options.root + "/api/v1/login/admin_sso/" + options.company_id;
-        data = {
-          token: options.admin_sso
-        };
-        halClient.$post(url, {}, data).then((function(_this) {
-          return function(login) {
-            var params;
-            params = {
-              auth_token: login.auth_token
-            };
-            return login.$get('administrator').then(function(admin) {
-              return deferred.resolve(admin);
-            });
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("TemplateSvc", function($q, $http, $templateCache, BBModel) {
-    return {
-      get: function(path) {
-        var cacheTmpl, deferred;
-        deferred = $q.defer();
-        cacheTmpl = $templateCache.get(path);
-        if (cacheTmpl) {
-          deferred.resolve(angular.element(cacheTmpl));
-        } else {
-          $http({
-            method: 'GET',
-            url: path
-          }).success(function(tmpl, status) {
-            $templateCache.put(path, tmpl);
-            return deferred.resolve(angular.element(tmpl));
-          }).error(function(data, status) {
-            return deferred.reject(data);
-          });
-        }
-        return deferred.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("TimeService", function($q, BBModel, halClient, SettingsService, DateTimeUtilitiesService) {
-    return {
-      query: function(prms) {
-        var company_utc_offset, deferred, display_utc_offset, end_date, extra, item_link, start_date;
-        deferred = $q.defer();
-        start_date = null;
-        end_date = null;
-        if (prms.date) {
-          prms.start_date = prms.date;
-        } else if (prms.cItem.date) {
-          prms.start_date = prms.cItem.date.date;
-        } else {
-          deferred.reject("No date set");
-          return deferred.promise;
-        }
-        start_date = prms.start_date;
-        if (prms.end_date) {
-          end_date = prms.end_date;
-        }
-        if (SettingsService.getDisplayTimeZone() !== SettingsService.getTimeZone()) {
-          display_utc_offset = moment().tz(SettingsService.getDisplayTimeZone()).utcOffset();
-          company_utc_offset = moment().tz(SettingsService.getTimeZone()).utcOffset();
-          if (company_utc_offset < display_utc_offset) {
-            start_date = prms.start_date.clone().subtract(1, 'day');
-          } else if (company_utc_offset > display_utc_offset && prms.end_date) {
-            end_date = prms.end_date.clone().add(1, 'day');
-          }
-          prms.time_zone = SettingsService.getDisplayTimeZone();
-        }
-        if (prms.duration == null) {
-          if (prms.cItem && prms.cItem.duration) {
-            prms.duration = prms.cItem.duration;
-          }
-        }
-        item_link = prms.item_link;
-        if (prms.cItem && prms.cItem.days_link && !item_link) {
-          item_link = prms.cItem.days_link;
-        }
-        if (item_link) {
-          extra = {
-            date: start_date.toISODate()
-          };
-          if (prms.location) {
-            extra.location = prms.location;
-          }
-          if (prms.cItem.event_id) {
-            extra.event_id = prms.cItem.event_id;
-          }
-          if (prms.cItem.person && !prms.cItem.anyPerson() && !item_link.event_id && !extra.event_id) {
-            extra.person_id = prms.cItem.person.id;
-          }
-          if (prms.cItem.resource && !prms.cItem.anyResource() && !item_link.event_id && !extra.event_id) {
-            extra.resource_id = prms.cItem.resource.id;
-          }
-          if (end_date) {
-            extra.end_date = end_date.toISODate();
-          }
-          extra.duration = prms.duration;
-          extra.resource_ids = prms.resource_ids;
-          extra.num_resources = prms.num_resources;
-          if (prms.time_zone) {
-            extra.time_zone = prms.time_zone;
-          }
-          if (prms.cItem.id) {
-            extra.ignore_booking = prms.cItem.id;
-          }
-          if (extra.event_id) {
-            item_link = prms.company;
-          }
-          item_link.$get('times', extra).then((function(_this) {
-            return function(results) {
-              var times;
-              if (results.$has('date_links')) {
-                return results.$get('date_links').then(function(all_days) {
-                  var all_days_def, date_times, day, fn, j, len;
-                  date_times = {};
-                  all_days_def = [];
-                  fn = function(day) {
-                    var times;
-                    day.elink = $q.defer();
-                    all_days_def.push(day.elink.promise);
-                    if (day.$has('event_links')) {
-                      return day.$get('event_links').then(function(all_events) {
-                        var times;
-                        times = _this.merge_times(all_events, prms.cItem.service, prms.cItem, day.date);
-                        if (prms.available) {
-                          times = _.filter(times, function(t) {
-                            return t.avail >= prms.available;
-                          });
-                        }
-                        return day.elink.resolve(times);
-                      });
-                    } else if (day.times) {
-                      times = _this.merge_times([day], prms.cItem.service, prms.cItem, day.date);
-                      if (prms.available) {
-                        times = _.filter(times, function(t) {
-                          return t.avail >= prms.available;
-                        });
-                      }
-                      return day.elink.resolve(times);
-                    }
-                  };
-                  for (j = 0, len = all_days.length; j < len; j++) {
-                    day = all_days[j];
-                    fn(day);
-                  }
-                  return $q.all(all_days_def).then(function(times) {
-                    var d, key, new_date_times;
-                    date_times = _.chain(times).flatten().sortBy(function(slot) {
-                      return slot.datetime.unix();
-                    }).groupBy(function(slot) {
-                      return slot.datetime.toISODate();
-                    }).value();
-                    new_date_times = {};
-                    d = prms.start_date.clone();
-                    while (d <= prms.end_date) {
-                      key = d.toISODate();
-                      new_date_times[key] = date_times[key] ? date_times[key] : [];
-                      d = d.clone().add(1, 'day');
-                    }
-                    return deferred.resolve(new_date_times);
-                  });
-                });
-              } else if (results.$has('event_links')) {
-                return results.$get('event_links').then(function(all_events) {
-                  var times;
-                  times = _this.merge_times(all_events, prms.cItem.service, prms.cItem, prms.start_date);
-                  if (prms.available) {
-                    times = _.filter(times, function(t) {
-                      return t.avail >= prms.available;
-                    });
-                  }
-                  return deferred.resolve(times);
-                });
-              } else if (results.times) {
-                times = _this.merge_times([results], prms.cItem.service, prms.cItem, prms.start_date);
-                if (prms.available) {
-                  times = _.filter(times, function(t) {
-                    return t.avail >= prms.available;
-                  });
-                }
-                return deferred.resolve(times);
-              }
-            };
-          })(this), function(err) {
-            return deferred.reject(err);
-          });
-        } else {
-          deferred.reject("No day data");
-        }
-        return deferred.promise;
-      },
-      queryItems: function(prms) {
-        var defer, item, j, len, pslots, ref;
-        defer = $q.defer();
-        pslots = [];
-        ref = prms.items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          pslots.push(this.query({
-            company: prms.company,
-            cItem: item,
-            date: prms.start_date,
-            end_date: prms.end_date,
-            client: prms.client,
-            available: 1
-          }));
-        }
-        $q.all(pslots).then(function(res) {
-          return defer.resolve(res);
-        }, function(err) {
-          return defer.reject();
-        });
-        return defer.promise;
-      },
-      merge_times: function(all_events, service, item, date) {
-        var date_times, ev, i, j, k, l, len, len1, len2, ref, sorted_times, times;
-        if (!all_events || all_events.length === 0) {
-          return [];
-        }
-        all_events = _.shuffle(all_events);
-        sorted_times = [];
-        for (j = 0, len = all_events.length; j < len; j++) {
-          ev = all_events[j];
-          if (ev.times) {
-            ref = ev.times;
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              i = ref[k];
-              if (!sorted_times[i.time] || sorted_times[i.time].avail === 0 || (Math.floor(Math.random() * all_events.length) === 0 && i.avail > 0)) {
-                i.event_id = ev.event_id;
-                sorted_times[i.time] = i;
-              }
-            }
-            if (item.held) {
-              this.checkCurrentItem(item.held, sorted_times, ev);
-            }
-            this.checkCurrentItem(item, sorted_times, ev);
-          }
-        }
-        times = [];
-        date_times = {};
-        for (l = 0, len2 = sorted_times.length; l < len2; l++) {
-          i = sorted_times[l];
-          if (i) {
-            if (!i.datetime) {
-              i.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(moment(date), i);
-            }
-            times.push(new BBModel.TimeSlot(i, service));
-          }
-        }
-        return times;
-      },
-      checkCurrentItem: function(item, sorted_times, ev) {
-        if (item && item.id && item.event_id === ev.event_id && item.time && !sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
-          item.time.datetime = DateTimeUtilitiesService.convertTimeSlotToMoment(item.date.date, item.time);
-          sorted_times[item.time.time] = item.time;
-          return halClient.clearCache(ev.$href("self"));
-        } else if (item && item.id && item.event_id === ev.event_id && item.time && sorted_times[item.time.time] && item.date && item.date.date.toISODate() === ev.date) {
-          return sorted_times[item.time.time].avail = 1;
-        }
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory('TimeSlotService', function($q, BBModel) {
-    return {
-      query: function(params) {
-        var company, defer;
-        defer = $q.defer();
-        company = params.company;
-        company.$get('slots', params).then(function(collection) {
-          return collection.$get('slots').then(function(slots) {
-            var s;
-            slots = (function() {
-              var i, len, results;
-              results = [];
-              for (i = 0, len = slots.length; i < len; i++) {
-                s = slots[i];
-                results.push(new BBModel.TimeSlot(s));
-              }
-              return results;
-            })();
-            return defer.resolve(slots);
-          }, function(err) {
-            return defer.reject(err);
-          });
-        }, function(err) {
-          return defer.reject(err);
-        });
-        return defer.promise;
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BB.Services').factory("UnwrapService", function($q, BBModel) {
-    return {
-      unwrapCollection: function(model, key, resource) {
-        var deferred, models, service;
-        deferred = $q.defer();
-        if (angular.isArray(resource)) {
-          models = (function() {
-            var j, len, results;
-            results = [];
-            for (j = 0, len = resource.length; j < len; j++) {
-              service = resource[j];
-              results.push(new model(service));
-            }
-            return results;
-          })();
-          deferred.resolve(models);
-        } else if (resource.$has(key)) {
-          resource.$get(key).then((function(_this) {
-            return function(items) {
-              var i, j, len;
-              models = [];
-              for (j = 0, len = items.length; j < len; j++) {
-                i = items[j];
-                models.push(new model(i));
-              }
-              return deferred.resolve(models);
-            };
-          })(this), (function(_this) {
-            return function(err) {
-              return deferred.reject(err);
-            };
-          })(this));
-        } else {
-          deferred.reject();
-        }
-        return deferred.promise;
-      },
-      unwrapResource: function(model, resource) {
-        return new model(resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.address", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Address, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.person", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Person, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.people", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Person, 'people', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.resource", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Resource, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.resources", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Resource, 'resources', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.service", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Service, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.services", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Service, 'services', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.package_item", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.PackageItem, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.package_items", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.PackageItem, 'package_items', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.bulk_purchase", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.BulkPurchase, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.bulk_purchases", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.BulkPurchase, 'bulk_purchases', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_group", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.EventGroup, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_groups", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.EventGroup, 'event_groups', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_chain", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.EventChain, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.event_chains", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.EventChain, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.category", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Category, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.categories", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Category, 'categories', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.client", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Client, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.child_clients", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Client, 'clients', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.clients", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Client, 'clients', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.questions", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Question, 'questions', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.question", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Question, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.answers", function($q, BBModel, UnwrapService) {
-    return {
-      promise: false,
-      unwrap: function(items) {
-        var answers, i, j, len, models;
-        models = [];
-        for (j = 0, len = items.length; j < len; j++) {
-          i = items[j];
-          models.push(new BBModel.Answer(i));
-        }
-        answers = {
-          answers: models,
-          getAnswer: function(question) {
-            var a, k, len1, ref;
-            ref = this.answers;
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              a = ref[k];
-              if (a.question_text === question || a.question_id === question) {
-                return a.value;
-              }
-            }
-          }
-        };
-        return answers;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.administrators", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(items) {
-        var i, j, len, results;
-        results = [];
-        for (j = 0, len = items.length; j < len; j++) {
-          i = items[j];
-          results.push(new BBModel.Admin.User(i));
-        }
-        return results;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Company, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.parent", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Company, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company_questions", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.BusinessQuestion, 'company_questions', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.company_question", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.BusinessQuestion, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.images", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Image, 'images', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.bookings", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Member.Booking, 'bookings', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.wallet", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Member.Wallet, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.product", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.Product, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.products", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        var deferred;
-        deferred = $q.defer();
-        resource.$get('products').then((function(_this) {
-          return function(items) {
-            var cat, i, index, j, len, models;
-            models = [];
-            for (index = j = 0, len = items.length; j < len; index = ++j) {
-              i = items[index];
-              cat = new BBModel.Product(i);
-              cat.order || (cat.order = index);
-              models.push(cat);
-            }
-            return deferred.resolve(models);
-          };
-        })(this), (function(_this) {
-          return function(err) {
-            return deferred.reject(err);
-          };
-        })(this));
-        return deferred.promise;
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.pre_paid_booking", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.PrePaidBooking, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.pre_paid_bookings", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.PrePaidBooking, 'pre_paid_bookings', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.external_purchase", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.ExternalPurchase, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.external_purchases", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.ExternalPurchase, 'external_purchases', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.purchase_item", function($q, BBModel, UnwrapService) {
-    return {
-      unwrap: function(resource) {
-        return UnwrapService.unwrapResource(BBModel.PurchaseItem, resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.purchase_items", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.PurchaseItem, 'purchase_items', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.events", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Event, 'events', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.all_children", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Service, 'services', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.child_services", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.Service, 'child_services', resource);
-      }
-    };
-  });
-
-  angular.module('BB.Services').factory("BB.Service.booking_text", function($q, BBModel, UnwrapService) {
-    return {
-      promise: true,
-      unwrap: function(resource) {
-        return UnwrapService.unwrapCollection(BBModel.BookingText, 'booking_text', resource);
-      }
-    };
-  });
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BB.Services:Validator
-*
-* @description
-* Representation of an Validator Object
-*
-* @property {string} uk_postcode_regex The UK postcode regex
-* @property {string} uk_postcode_regex_lenient The UK postcode regex (lenient)
-* @property {string} number_only_regex The number only regex
-* @property {integer} uk_mobile_regex_strict The UK mobile regex (strict)
-* @property {integer} mobile_regex_lenient Mobile number regex (lenient)
-* @property {integer} uk_landline_regex_strict The UK landline regex (strict)
-* @property {integer} uk_landline_regex_lenient The UK landline regex (lenient)
-* @property {integer} international_number The international number
-* @property {string} alphanumeric The alphanumeric
-* @property {string} alpha The letters and spaces
-* @property {integer} us_phone_number The Us phone number
- */
-
-(function() {
-  angular.module('BB.Services').factory('ValidatorService', function($rootScope, AlertService, SettingsService, BBModel, $q, $bbug) {
-    var alphanumeric, email_regex, geocode_result, international_number, mobile_regex_lenient, number_only_regex, standard_password, uk_landline_regex_lenient, uk_landline_regex_strict, uk_mobile_regex_strict, uk_postcode_regex, uk_postcode_regex_lenient, us_postcode_regex;
-    uk_postcode_regex = /^(((([A-PR-UWYZ][0-9][0-9A-HJKS-UW]?)|([A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?))\s{0,1}[0-9]([ABD-HJLNP-UW-Z]{2}))|(GIR\s{0,2}0AA))$/i;
-    us_postcode_regex = /^\d{5}(?:[-\s]\d{4})?$/;
-    uk_postcode_regex_lenient = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
-    number_only_regex = /^\d+$/;
-    uk_mobile_regex_strict = /^((\+44|0)\s*7\s*([45789]\s*\d\s*\d|6\s*2\s*4)\s*\d\s*\d\s*\d\s*\d\s*\d\s*\d)$/;
-    mobile_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    uk_landline_regex_strict = /^(\+44|0)\s*[1-9]\s*\d{1,4}\s*\d{3,4}\s*\d{2,4}$/;
-    uk_landline_regex_lenient = /^(0|\+)([\d \(\)]{9,19})$/;
-    international_number = /^(\+)([\d \(\)]{9,19})$/;
-    email_regex = /^$|^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i;
-    standard_password = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    alphanumeric = /^[a-zA-Z0-9]*$/;
-    geocode_result = null;
-    return {
-      alpha: /^[a-zA-Z\s-]*$/,
-      us_phone_number: /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/,
-
-      /***
-        * @ngdoc method
-        * @name getEmailPattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the email pattern
-        *
-        * @returns {string} The returned the email pattern
-       */
-      getEmailPattern: function() {
-        return email_regex;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getStandardPassword
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the email pattern
-        *
-        * @returns {string} Returns Password must contain at least 7 characters and 1 number password pattern
-       */
-      getStandardPassword: function() {
-        return standard_password;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getUKPostcodePattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the UK postcode pattern
-        *
-        * @returns {string} The returned the UK postcode regex lenient
-       */
-
-      /***
-        * @ngdoc method
-        * @name getUKPostcodePattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the UK postcode patternt
-        *
-        * @returns {integer} Return the UK postcode pattern
-       */
-      getUKPostcodePattern: function() {
-        return uk_postcode_regex_lenient;
-      },
-      getMailingPattern: function() {
-        var cc;
-        cc = SettingsService.getCountryCode();
-        if (cc = "us") {
-          return us_postcode_regex;
-        } else {
-          return uk_postcode_regex_lenient;
-        }
-      },
-
-      /***
-        * @ngdoc method
-        * @name getNumberOnlyPattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the number only pattern
-        *
-        * @returns {integer} Return the number only regex
-       */
-      getNumberOnlyPattern: function() {
-        return number_only_regex;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getAlphaNumbericPattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the alphanumeric pattern
-        *
-        * @returns {string} The returned the alphanumeric regex
-       */
-      getAlphaNumbericPattern: function() {
-        return alphanumeric;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getUKMobilePattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the UK mobile pattern if strict is equals with false
-        *
-        * @returns {integer} The returned the UK mobile regixt strict if this is strict else return mobile_regex_lenient
-       */
-      getUKMobilePattern: function(strict) {
-        if (strict == null) {
-          strict = false;
-        }
-        if (strict) {
-          return uk_mobile_regex_strict;
-        }
-        return mobile_regex_lenient;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getMobilePattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the mobile pattern
-        *
-        * @returns {integer} The returned the mobile regex lenient
-       */
-      getMobilePattern: function() {
-        return mobile_regex_lenient;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getUKLandlinePattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the UK landline patternt if strict is equals with false
-        *
-        * @returns {integer} The returned the UK landline regex strict if this is strict else return UK landline regex lenient
-       */
-      getUKLandlinePattern: function(strict) {
-        if (strict == null) {
-          strict = false;
-        }
-        if (strict) {
-          return uk_landline_regex_strict;
-        }
-        return uk_landline_regex_lenient;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getIntPhonePattern
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the international number
-        *
-        * @returns {integer} The returned the international number
-       */
-      getIntPhonePattern: function() {
-        return international_number;
-      },
-
-      /***
-        * @ngdoc method
-        * @name getGeocodeResult
-        * @methodOf BB.Services:Validator
-        * @description
-        * Get the geocode result
-        *
-        * @returns {string} The returned geocode result
-       */
-      getGeocodeResult: function() {
-        if (geocode_result) {
-          return geocode_result;
-        }
-      },
-
-      /***
-        * @ngdoc method
-        * @name validatePostcode
-        * @methodOf BB.Services:Validator
-        * @description
-        * Validate the postcode in according with form and prm parameters
-        *
-        * @returns {promise} A promise for valid postocde
-       */
-      validatePostcode: function(form, prms) {
-        var deferred, geocoder, ne, postcode, req, sw;
-        AlertService.clear();
-        if (!form || !form.postcode) {
-          return false;
-        }
-        if (form.$error.required) {
-          AlertService.raise('MISSING_POSTCODE');
-          return false;
-        } else if (form.$error.pattern) {
-          AlertService.raise('INVALID_POSTCODE');
-          return false;
-        } else {
-          deferred = $q.defer();
-          postcode = form.postcode.$viewValue;
-          req = {
-            address: postcode
-          };
-          if (prms.region) {
-            req.region = prms.region;
-          }
-          req.componentRestrictions = {
-            'postalCode': req.address
-          };
-          if (prms.bounds) {
-            sw = new google.maps.LatLng(prms.bounds.sw.x, prms.bounds.sw.y);
-            ne = new google.maps.LatLng(prms.bounds.ne.x, prms.bounds.ne.y);
-            req.bounds = new google.maps.LatLngBounds(sw, ne);
-          }
-          geocoder = new google.maps.Geocoder();
-          geocoder.geocode(req, function(results, status) {
-            if (results.length === 1 && status === 'OK') {
-              geocode_result = results[0];
-              return deferred.resolve(true);
-            } else {
-              AlertService.raise('INVALID_POSTCODE');
-              $rootScope.$apply();
-              return deferred.reject(false);
-            }
-          });
-          return deferred.promise;
-        }
-      },
-
-      /***
-        * @ngdoc method
-        * @name validateForm
-        * @methodOf BB.Services:Validator
-        * @description
-        * Validate the form in according with form parameter
-        *
-        * @returns {boolean} Checks if this is valid or not
-       */
-      validateForm: function(form) {
-        if (!form) {
-          return false;
-        }
-        form.submitted = true;
-        $rootScope.$broadcast("form:validated", form);
-        if (form.$invalid && form.raise_alerts && form.alert) {
-          AlertService.danger(form.alert);
-          return false;
-        } else if (form.$invalid && form.raise_alerts) {
-          AlertService.danger(ErrorService.getError('FORM_INVALID'));
-          return false;
-        } else if (form.$invalid) {
-          return false;
-        } else {
-          return true;
-        }
-      }
-
-      /***
-       * @ngdoc method
-       * @name resetForm
-       * @methodOf BB.Services:Validator
-       * @description
-       * Reset the form in according with form parameter
-       *
-       * @returns {boolean} Checks if this is reset or not
-       */
-    };
-  });
-
-  ({
-    resetForm: function(form) {
-      if (form) {
-        form.submitted = false;
-        return form.$setPristine();
-      }
-    },
-
-    /***
-      * @ngdoc method
-      * @name resetForms
-      * @methodOf BB.Services:Validator
-      * @description
-      * Reset the forms in according with forms parameter
-      *
-      * @returns {boolean} Checks if this is reset or not
-     */
-    resetForms: function(forms) {
-      var form, i, len, results1;
-      if (forms && $bbug.isArray(forms)) {
-        results1 = [];
-        for (i = 0, len = forms.length; i < len; i++) {
-          form = forms[i];
-          form.submitted = false;
-          results1.push(form.$setPristine());
-        }
-        return results1;
-      }
-    }
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BB.Services.service:ViewportSize
-  *
-  * @description
-  * Stores the current screen size breakpoint.
-   */
-  angular.module('BB.Services').factory('ViewportSize', [
-    '$rootScope', function($rootScope) {
-      var viewport_size;
-      viewport_size = null;
-      return {
-        setViewportSize: function(size) {
-          if (size !== viewport_size) {
-            viewport_size = size;
-            return $rootScope.$broadcast('ViewportSize:changed');
-          }
-        },
-        getViewportSize: function() {
-          return viewport_size;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /***
-  * @ngdoc service
-  * @name BB.Models:BBWidget
-  *
-  * @description
-  * Representation of an BBWidget Object
-  *
-  * @property {integer} uid The unique id of the widget
-  * @property {string} page_suffix Widget page suffix
-  * @property {array} steps The widget steps
-  * @property {array} allSteps The all steps of the widget
-  * @property {object} item_defaults Widget defaults item
-  * @property {boolean} Checks if widget using basket or not
-  * @property {boolean} confirmCheckout Checks if widget confirm is checkout or not
-  * @property {boolean} isAdm,in Verify if user is admin
-  * @property {string} payment_status The payment status
-   */
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  angular.module('BB.Models').factory("BBWidget", function($q, BBModel, BasketService, $urlMatcherFactory, $location, BreadcrumbService, $window, $rootScope, PathHelper, SettingsService) {
-    var Widget;
-    return Widget = (function() {
-      function Widget() {
-        this.clearAddress = bind(this.clearAddress, this);
-        this.emptyStackedItems = bind(this.emptyStackedItems, this);
-        this.deleteStackedItemByService = bind(this.deleteStackedItemByService, this);
-        this.removeItemFromStack = bind(this.removeItemFromStack, this);
-        this.deleteStackedItem = bind(this.deleteStackedItem, this);
-        this.sortStackedItems = bind(this.sortStackedItems, this);
-        this.setStackedItems = bind(this.setStackedItems, this);
-        this.stackItem = bind(this.stackItem, this);
-        this.waitForRoutes = bind(this.waitForRoutes, this);
-        this.setBasicRoute = bind(this.setBasicRoute, this);
-        this.setRoute = bind(this.setRoute, this);
-        this.calculatePercentageComplete = bind(this.calculatePercentageComplete, this);
-        this.recordStep = bind(this.recordStep, this);
-        this.recordCurrentPage = bind(this.recordCurrentPage, this);
-        this.uid = _.uniqueId('bbwidget_');
-        this.page_suffix = "";
-        this.steps = [];
-        this.allSteps = [];
-        this.item_defaults = {};
-        this.usingBasket = false;
-        this.confirmCheckout = false;
-        this.isAdmin = false;
-        this.payment_status = null;
-      }
-
-
-      /***
-      * @ngdoc method
-      * @name pageURL
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Get page url in according of route
-      *
-      * @returns {object} The returned the page url
-       */
-
-      Widget.prototype.pageURL = function(route) {
-        return route + '.html';
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name updateRoute
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Update page route
-      *
-      * @returns {string} The returned the url
-       */
-
-      Widget.prototype.updateRoute = function(page) {
-        var company, date, event, event_group, pattern, prms, service_name, time, url;
-        if (!this.routeFormat) {
-          return;
-        }
-        page || (page = this.current_page);
-        pattern = $urlMatcherFactory.compile(this.routeFormat);
-        service_name = "-";
-        event_group = "-";
-        event = "-";
-        if (this.current_item) {
-          if (this.current_item.service) {
-            service_name = this.convertToDashSnakeCase(this.current_item.service.name);
-          }
-          if (this.current_item.event_group) {
-            event_group = this.convertToDashSnakeCase(this.current_item.event_group.name);
-          }
-          if (this.current_item.event) {
-            event = this.current_item.event.id;
-          }
-          if (this.current_item.date) {
-            date = this.current_item.date.date.toISODate();
-          }
-          if (this.current_item.time) {
-            time = this.current_item.time.time;
-          }
-          if (this.current_item.company) {
-            company = this.convertToDashSnakeCase(this.current_item.company.name);
-          }
-        }
-        if (this.route_values) {
-          prms = angular.copy(this.route_values);
-        }
-        prms || (prms = {});
-        angular.extend(prms, {
-          page: page,
-          company: company,
-          service: service_name,
-          event_group: event_group,
-          date: date,
-          time: time,
-          event: event
-        });
-        url = pattern.format(prms);
-        url = url.replace(/\/+$/, "");
-        $location.path(url);
-        this.routing = true;
-        return url;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setRouteFormat
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Set route format
-      *
-      * @returns {object} The returned the match
-       */
-
-      Widget.prototype.setRouteFormat = function(route) {
-        var match;
-        this.routeFormat = route;
-        if (!this.routeFormat) {
-          return;
-        }
-        this.routing = true;
-        match = PathHelper.matchRouteToPath(this.routeFormat);
-        if (match) {
-          if (match.company) {
-            this.item_defaults.company = decodeURIComponent(match.company);
-          }
-          if (match.service && match.service !== "-") {
-            this.item_defaults.service = decodeURIComponent(match.service);
-          }
-          if (match.event_group && match.event_group !== "-") {
-            this.item_defaults.event_group = match.event_group;
-          }
-          if (match.event && match.event !== "-") {
-            this.item_defaults.event = decodeURIComponent(match.event);
-          }
-          if (match.person) {
-            this.item_defaults.person = decodeURIComponent(match.person);
-          }
-          if (match.resource) {
-            this.item_defaults.resource = decodeURIComponent(match.resource);
-          }
-          if (match.resources) {
-            this.item_defaults.resources = decodeURIComponent(match.resoures);
-          }
-          if (match.date) {
-            this.item_defaults.date = match.date;
-          }
-          if (match.time) {
-            this.item_defaults.time = match.time;
-          }
-          return this.route_matches = match;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name matchURLToStep
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Match url to step
-      *
-      * @returns {integer} Returns the step number
-       */
-
-      Widget.prototype.matchURLToStep = function() {
-        var page, step;
-        page = PathHelper.matchRouteToPath(this.routeFormat, 'page');
-        step = _.findWhere(this.allSteps, {
-          page: page
-        });
-        if (step) {
-          return step.number;
-        } else {
-          return null;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name convertToDashSnakeCase
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Convert to dash snake case in according of str parameter
-      *
-      * @returns {string} The returned str
-       */
-
-      Widget.prototype.convertToDashSnakeCase = function(str) {
-        str = str.toLowerCase();
-        str = $.trim(str);
-        str = str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|'’!<>;:,.~`=+-@£&%"]/g, '');
-        str = str.replace(/\s{2,}/g, ' ');
-        str = str.replace(/\s/g, '-');
-        return str;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name recordCurrentPage
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Records the current page and determines the current step from either the predefined steps or the steps that have been passed already
-      *
-      * @returns {string} The returned record step
-       */
-
-      Widget.prototype.recordCurrentPage = function() {
-        var j, k, l, len, len1, len2, match, ref, ref1, ref2, setDocumentTitle, step, title;
-        setDocumentTitle = function(title) {
-          if (SettingsService.update_document_title && title) {
-            return document.title = title;
-          }
-        };
-        if (!this.current_step) {
-          this.current_step = 0;
-        }
-        match = false;
-        if (this.allSteps) {
-          ref = this.allSteps;
-          for (j = 0, len = ref.length; j < len; j++) {
-            step = ref[j];
-            if (step.page === this.current_page) {
-              this.current_step = step.number;
-              setDocumentTitle(step.title);
-              match = true;
-            }
-          }
-        }
-        if (!match) {
-          ref1 = this.steps;
-          for (k = 0, len1 = ref1.length; k < len1; k++) {
-            step = ref1[k];
-            if (step && step.page === this.current_page) {
-              this.current_step = step.number;
-              setDocumentTitle(step.title);
-              match = true;
-            }
-          }
-        }
-        if (!match) {
-          this.current_step += 1;
-        }
-        title = "";
-        if (this.allSteps) {
-          ref2 = this.allSteps;
-          for (l = 0, len2 = ref2.length; l < len2; l++) {
-            step = ref2[l];
-            step.active = false;
-            step.passed = step.number < this.current_step;
-          }
-          if (this.allSteps[this.current_step - 1]) {
-            this.allSteps[this.current_step - 1].active = true;
-            title = this.allSteps[this.current_step - 1].title;
-          }
-        }
-        return this.recordStep(this.current_step, title);
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name recordStep
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Record step in according of step and title parameters. Calculate percentile complete
-      *
-      * @returns {boolean} If is the last step or not
-       */
-
-      Widget.prototype.recordStep = function(step_number, title) {
-        var j, len, ref, step;
-        this.steps[step_number - 1] = {
-          url: this.updateRoute(this.current_page),
-          current_item: this.current_item.getStep(),
-          page: this.current_page,
-          number: step_number,
-          title: title,
-          stacked_length: this.stacked_items.length
-        };
-        BreadcrumbService.setCurrentStep(step_number);
-        ref = this.steps;
-        for (j = 0, len = ref.length; j < len; j++) {
-          step = ref[j];
-          if (step) {
-            step.passed = step.number < this.current_step;
-            step.active = step.number === this.current_step;
-          }
-          if (step && step.number === step_number) {
-            this.calculatePercentageComplete(step.number);
-          }
-        }
-        if ((this.allSteps && this.allSteps.length === step_number) || this.current_page === 'checkout') {
-          return this.last_step_reached = true;
-        } else {
-          return this.last_step_reached = false;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name calculatePercentageComplete
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Calculate percentage complete in according of step number parameter
-      *
-      * @returns {integer} The returned percentage complete
-       */
-
-      Widget.prototype.calculatePercentageComplete = function(step_number) {
-        return this.percentage_complete = step_number && this.allSteps ? step_number / this.allSteps.length * 100 : 0;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setRoute
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Set route data
-      *
-      * @returns {object} The returned route set
-       */
-
-      Widget.prototype.setRoute = function(rdata) {
-        var i, j, k, len, len1, ref, route, step;
-        this.allSteps.length = 0;
-        this.nextSteps = {};
-        if (!(rdata === void 0 || rdata === null || rdata[0] === void 0)) {
-          this.firstStep = rdata[0].page;
-        }
-        for (i = j = 0, len = rdata.length; j < len; i = ++j) {
-          step = rdata[i];
-          if (step.disable_breadcrumbs) {
-            this.disableGoingBackAtStep = i + 1;
-          }
-          if (rdata[i + 1]) {
-            this.nextSteps[step.page] = rdata[i + 1].page;
-          }
-          this.allSteps.push({
-            number: i + 1,
-            title: step.title,
-            page: step.page
-          });
-          if (step.when) {
-            this.routeSteps || (this.routeSteps = {});
-            ref = step.when;
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              route = ref[k];
-              this.routeSteps[route] = step.page;
-            }
-          }
-        }
-        if (this.$wait_for_routing) {
-          return this.$wait_for_routing.resolve();
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setBasicRoute
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Set basic route in according of routes parameter
-      *
-      * @returns {object} The returned route set
-       */
-
-      Widget.prototype.setBasicRoute = function(routes) {
-        var i, j, len, step;
-        this.nextSteps = {};
-        this.firstStep = routes[0];
-        for (i = j = 0, len = routes.length; j < len; i = ++j) {
-          step = routes[i];
-          this.nextSteps[step] = routes[i + 1];
-        }
-        if (this.$wait_for_routing) {
-          return this.$wait_for_routing.resolve();
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name waitForRoutes
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Wait for route
-      *
-      * @returns {object}  The returned waiting route
-       */
-
-      Widget.prototype.waitForRoutes = function() {
-        if (!this.$wait_for_routing) {
-          return this.$wait_for_routing = $q.defer();
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name stackItem
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Push item in stacked items in according of item parameter
-      *
-      * @returns {array} The returned sorted stacked items
-       */
-
-      Widget.prototype.stackItem = function(item) {
-        this.stacked_items.push(item);
-        this.sortStackedItems();
-        if (this.stacked_items.length === 1) {
-          return this.current_item = item;
-        }
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name setStackedItems
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Set stacket items in according of items parameter
-      *
-      * @returns {array} The returned sorted stacked items
-       */
-
-      Widget.prototype.setStackedItems = function(items) {
-        this.stacked_items = items;
-        return this.sortStackedItems();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name sortStackedItems
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Sort stacked items
-      *
-      * @returns {array} The returned sorted stacked items
-       */
-
-      Widget.prototype.sortStackedItems = function() {
-        var arr, item, j, len, ref;
-        arr = [];
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          arr = arr.concat(item.promises);
-        }
-        return $q.all(arr)['finally']((function(_this) {
-          return function() {
-            return _this.stacked_items = _this.stacked_items.sort(function(a, b) {
-              var ref1, ref2;
-              if (a.time && b.time) {
-                return (ref1 = a.time.time > b.time.time) != null ? ref1 : {
-                  1: -1
-                };
-              } else if (a.service.category && !b.service.category) {
-                return 1;
-              } else if (b.service.category && !a.service.category) {
-                return -1;
-              } else if (!b.service.category && !a.service.category) {
-                return 1;
-              } else {
-                return (ref2 = a.service.category.order > b.service.category.order) != null ? ref2 : {
-                  1: -1
-                };
-              }
-            });
-          };
-        })(this));
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name deleteStackedItem
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Delete stacked item in according of item parameter
-      *
-      * @returns {array} The returned stacked items
-       */
-
-      Widget.prototype.deleteStackedItem = function(item) {
-        if (item && item.id) {
-          BasketService.deleteItem(item, this.company, {
-            bb: this
-          });
-        }
-        return this.stacked_items = this.stacked_items.filter(function(i) {
-          return i !== item;
-        });
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name removeItemFromStack
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Remove item from stack in according of item parameter
-      *
-      * @returns {array} The returned stacked items
-       */
-
-      Widget.prototype.removeItemFromStack = function(item) {
-        return this.stacked_items = this.stacked_items.filter(function(i) {
-          return i !== item;
-        });
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name deleteStackedItemByService
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Delete stacked item bu service in according of item parameter
-      *
-      * @returns {array} The returned stacked items
-       */
-
-      Widget.prototype.deleteStackedItemByService = function(item) {
-        var i, j, len, ref;
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          if (i && i.service && i.service.self === item.self && i.id) {
-            BasketService.deleteItem(i, this.company, {
-              bb: this
-            });
-          }
-        }
-        return this.stacked_items = this.stacked_items.filter(function(i) {
-          return i && i.service && i.service.self !== item.self;
-        });
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name emptyStackedItems
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Empty stacked items
-      *
-      * @returns {array} The returned stacked items empty
-       */
-
-      Widget.prototype.emptyStackedItems = function() {
-        return this.stacked_items = [];
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name pushStackToBasket
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Push stack to basket
-      *
-      * @returns {array} The returned stacked items
-       */
-
-      Widget.prototype.pushStackToBasket = function() {
-        var i, j, len, ref;
-        this.basket || (this.basket = new new BBModel.Basket(null, this));
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          i = ref[j];
-          this.basket.addItem(i);
-        }
-        return this.emptyStackedItems();
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name totalStackedItemsDuration
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Total stacked items duration
-      *
-      * @returns {array} The returned duration
-       */
-
-      Widget.prototype.totalStackedItemsDuration = function() {
-        var duration, item, j, len, ref;
-        duration = 0;
-        ref = this.stacked_items;
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          if (item.service && item.service.listed_duration) {
-            duration += item.service.listed_duration;
-          }
-        }
-        return duration;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearStackedItemsDateTime
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Clear stacked items date and time
-      *
-      * @returns {array} The returned item with date and time clear
-       */
-
-      Widget.prototype.clearStackedItemsDateTime = function() {
-        var item, j, len, ref, results;
-        ref = this.stacked_items;
-        results = [];
-        for (j = 0, len = ref.length; j < len; j++) {
-          item = ref[j];
-          results.push(item.clearDateTime());
-        }
-        return results;
-      };
-
-
-      /***
-      * @ngdoc method
-      * @name clearAddress
-      * @methodOf BB.Models:BBWidget
-      * @description
-      * Clear address
-      *
-      * @returns {string} The returned address clear
-       */
-
-      Widget.prototype.clearAddress = function() {
-        delete this.address1;
-        delete this.address2;
-        delete this.address3;
-        delete this.address4;
-        return delete this.address5;
-      };
-
-      return Widget;
-
-    })();
   });
 
 }).call(this);
