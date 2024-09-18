@@ -25104,6 +25104,9 @@ angular.module('BB.Directives')
           return prom.then((function(_this) {
             return function(details) {
               var a, i, len, q, ref;
+              if (!details.currency_code && _this.company) {
+                details.currency_code = _this.company.currency_code;
+              }
               _this.item_details = new BBModel.ItemDetails(details);
               _this.has_questions = _this.item_details.hasQuestions;
               if (_this.questions) {
